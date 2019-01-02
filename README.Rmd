@@ -1,8 +1,3 @@
----
-title: "PostgreSQL translation engine"
-output: html_document
----
-
 Developing a PostgreSQL translation engine made of the following components:
 - configuration file
 - translation tables describing translation rules
