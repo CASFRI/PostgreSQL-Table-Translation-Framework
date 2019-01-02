@@ -1,0 +1,89 @@
+---
+title: "Translation engine specifications"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Engine tasks:
+
+#### Configuration
+- Config values can be passed as list of variables if long (in which case parameter to provide to engine is location of config file), or as parameters to the engine if there are few.
+
+#### Translation file validation
+- Translation engine should validate the list of target attributes and helper function names before starting translation.
+- Regular expression to check function name is correct, and contents of parentheses are valid. Parsing function will evaluate each helper function. Parser should also check output values in the translationRules are valid.
+- Check if descUtdWithRules is FALSE. Stop if FALSE.
+- Check targetAttributes are in the correct order using targetAttributeList.
+
+#### Logging and resuming
+- Logging invalid values - log each invalidation once and report number of occurrences.
+    - E.g. 'Species "bFf" entered 204 times.'
+- Logging is recorded as a table in the database
+    - Fields: time, translationFileName, description, count, rowNumber
+- Log file is used to resume translation after stop.
+    - Log file should log progress of translation every 100 lines.
+
+#### Helper functions
+- Can distinguish between absent and invalid values. Absent = -9999, invalid = -8888.
+ 
+\  
+
+Table 1. Spec configuration parameters.
+```{r echo = FALSE}
+library(knitr)
+tab1 <- read.csv("./rmdTabs/engineSpecsTab1.csv")
+kable(tab1)
+```
+
+\  
+
+Table 2. Spec translation file.
+```{r echo = FALSE}
+tab2 <- read.csv("./rmdTabs/engineSpecsTab2.csv")
+kable(tab2)
+```
+
+\  
+\  
+
+### Helper Functions Specifications
+**Helper function** - to determine if a value is valid or invalid
+
+#### Constants
+- -9999 = Invalid values that are not null
+- -8888 = Undefined value - true null value - applies to all types
+- -1111 = Empty string ("") - does not apply to int and float
+
+- Note: Talk to Benedicte about constants
+
+- From Perl code:
+    - INFTY => -1
+    - ERRCODE => -9999
+    - SPECIES_ERRCODE => "XXXX ERRC"
+    - MISSCODE => -1111
+    - UNDEF=> -8889
+
+#### Validation rules functions
+
+- **bool TT_Between(str variable, int lower_bnd, bool lb_inclusive=TRUE, int upper_bnd, bool ub_inclusive=TRUE)**
+    - Returns a boolean: true if "variable" is >= "lower_bnd" and <= "upper_bnd"; else false
+    - "lower_bnd" and "upper_bnd" are inclusive by default
+    - Set "lb_inclusive" or "ub_inclusive" to FALSE to exclude corresponding bounds
+
+- **bool TT_GreaterThan(str variable, float lower_bnd, bool lb_inclusive=TRUE)**
+    - Returns a boolean: TRUE if "variable" is >= "lower_bnd"; else FALSE
+    - "lower_bnd" is inclusive by default
+    - Set "lb_inclusive" to FALSE to exclude corresponding bounds
+
+- **bool TT_LesserThan(str variable, float upper_bnd, bool ub_inclusive=TRUE)**
+    - Returns a boolean: TRUE if "variable" is >= "upper_bnd"; else FALSE
+    - "upper_bnd" is inclusive by default
+    - Set "ub_inclusive" to FALSE to exclude corresponding bounds
+
+#### Invalid rules functions
+
+- **Int TT_Invalid(str attribute_name, int null_value, int empty_value, int invalid_value)**
+    - Returns "null_value" if "attribute_name" is a true null, "empty_value" if the "attribute_name" is an empty string,  "invalid_value" otherwise (if not null or not empty).

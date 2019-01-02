@@ -1,0 +1,8 @@
+Validation file attribute,Example values,Description
+targetAttribute,firstname,Name of the target attribute after translation
+targetAttributeType,int,Type of target attribute
+validationRules,notnull,Rule to validate the source attribute
+invalidRules,"nullOrInv(“CDE_CO”, -9999, -8888)",What to return when validation rule returns FALSE
+translationRules,"map(“DOW”, “1,2,3,4,5,6,7”, “Mo,Tu,We,Th,Fr,Sa,Su”)",Way to transform source attribute into target attribute
+description,“convert number representing day of week with two letter abbreviation”,"Textual description of the validation, invalid, and translation rules. Can be used by non-technical person to describe translation process"
+descUtdWithRules,FALSE,Flag for non-technical person to indicate that rules are not up to date with description
