@@ -1,6 +1,6 @@
 ---
 title: "Translation engine specifications"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
