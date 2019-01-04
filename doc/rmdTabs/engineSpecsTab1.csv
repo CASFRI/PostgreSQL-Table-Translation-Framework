@@ -1,4 +1,5 @@
-Config attribute name,Possible values,Description,Example value
-stopWhenInvalid,TRUE/FALSE,Should the engine stop when engine invalidates value? Default to FALSE,FALSE
-targetAttributeList,; separated list of attribute names,List of target attributes. Default to nothing,Name; Address; Street;
-logFrequency,int,Number of lines at which to log progress. Default to 500,100
+attributeName,Description,possibleValues,defaultValue,exampleValue
+targetAttributeList,List of target attributes. Default to nothing.,""";"" separated list of attribute names","""""",Name; Address; Street;
+stopWhenInvalid,Determine if the engine should stop when a validation rule fails.,TRUE/FALSE,TRUE,FALSE
+logFrequency,Number of lines at which to log the translation progress. Used to know from where to resume execution.,int,500,100
+ignoreDescUpToDateWithRules,Ignore when some descUpToDateWithRules flag are set to FALSE.,TRUE/FALSE,FALSE,TRUE

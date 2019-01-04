@@ -1,8 +1,8 @@
-Validation file attribute,Example values,Description
-targetAttribute,firstname,Name of the target attribute after translation
-targetAttributeType,int,Type of target attribute
-validationRules,notnull,Rule to validate the source attribute
-invalidRules,"nullOrInv(“CDE_CO”, -9999, -8888)",What to return when validation rule returns FALSE
-translationRules,"map(“DOW”, “1,2,3,4,5,6,7”, “Mo,Tu,We,Th,Fr,Sa,Su”)",Way to transform source attribute into target attribute
-description,“convert number representing day of week with two letter abbreviation”,"Textual description of the validation, invalid, and translation rules. Can be used by non-technical person to describe translation process"
-descUtdWithRules,FALSE,Flag for non-technical person to indicate that rules are not up to date with description
+attributeName,description,exampleValue
+targetAttribute,Name of the target attribute after translation.,fullName
+targetAttributeType,"Type of target attribute (int, decimal, text)",text
+validateRules,"Rule, defined as a set of semi-colon separated list of helper functions, to validate the source attribute.","notNull(""first_name, last_name"");smallerThan(""first_name, last_name"", 20)"
+invalidRules,Rule indicating what to return when validation rule resolve to FALSE.,"invalid(“first_name, last_name”, -9999, -8888, -1111)"
+translateRules,Rules defining the way to transform source attributes into the target attribute.,"concat(""first_name"", "" "", ""last_name"")"
+description,"Textual description of the validation, invalid, and translation rules. Can be used by non-technical person to describe translation process",Concatenate first_name with last_name to procuce fullName.
+descUpToDateWithRules,Boolean flag indicating that rules are not up to date with the description. Often used when the person writing the description is not the same as the person writing the actual rules or when both columns can not be modified at the same time. The translation engine stops when encounterng a FALSE flag unless specified in the configuration.,FALSE
