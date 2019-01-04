@@ -188,8 +188,8 @@ $(document).ready(function () {
 </div>
 
 
-<div id="general-features" class="section level4">
-<h4>General Features</h4>
+<div id="features" class="section level4">
+<h4>Features</h4>
 <p>The translation engine basically applies a set of translation rules, defined in a translation file, to create a new target table from a existing source table.</p>
 <ul>
 <li><p><strong>Configuration -</strong> The translation engine behavior can be configurated using a set of key/value parameters.</p></li>
@@ -205,10 +205,10 @@ $(document).ready(function () {
 <ul>
 <li>Configuration parameters are defined as a set of key/value.</li>
 <li>As far as the number of parameters is small, they can be passed as list of parameter to the main translation engine PostgreSQL function.</li>
-<li>As soon as the number of parameter becomes too big, they should be stored in a filesystem CSV table. In that case the only parameter to pass to the function would be the location of the configuration file.</li>
-<li>Current parameters are listed in table 2 below.</li>
+<li>As soon as the number of parameter becomes too big, they should be stored in a filesystem CSV table. In that case the only parameter passed to the function would be the location of the configuration file.</li>
+<li>Current parameters are listed in table 1 below.</li>
 </ul>
-<p><strong>Table 2. Configuration parameters</strong></p>
+<p><strong>Table 1. Configuration parameters</strong></p>
 <table>
 <thead>
 <tr class="header">
@@ -221,18 +221,18 @@ $(document).ready(function () {
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">stopWhenInvalid</td>
-<td align="left">Should the engine stop when engine invalidates value? Default to FALSE</td>
-<td align="left">TRUE/FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
 <td align="left">targetAttributeList</td>
 <td align="left">List of target attributes. Default to nothing.</td>
 <td align="left">“;” separated list of attribute names</td>
 <td align="left">“”</td>
 <td align="left">Name; Address; Street;</td>
+</tr>
+<tr class="even">
+<td align="left">stopWhenInvalid</td>
+<td align="left">Determine if the engine should stop when a validation rule fails.</td>
+<td align="left">TRUE/FALSE</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">logFrequency</td>
@@ -246,18 +246,18 @@ $(document).ready(function () {
 <td align="left">Ignore when some descUpToDateWithRules flag are set to FALSE.</td>
 <td align="left">TRUE/FALSE</td>
 <td align="left">FALSE</td>
-<td align="left"></td>
+<td align="left">TRUE</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div id="translation-files" class="section level4">
-<h4>Translation files</h4>
+<h4>Translation Files</h4>
 <ul>
 <li>A translation file is a filesystem CSV file.</li>
-<li>Table 1 list the different attributes of a translation file.</li>
+<li>Table 2 list the different attributes of a translation file.</li>
 </ul>
-<p><strong>Table 1. Translation file attributes</strong></p>
+<p><strong>Table 2. Translation file attributes</strong></p>
 <table>
 <thead>
 <tr class="header">
@@ -308,10 +308,11 @@ $(document).ready(function () {
 <div id="translation-file-validation" class="section level4">
 <h4>Translation File Validation</h4>
 <ul>
-<li>Translation engine should validate the list of target attributes and helper function names before starting translation.</li>
-<li>Regular expression to check function name is correct, and contents of parentheses are valid. Parsing function will evaluate each helper function. Parser should also check output values in the translationRules are valid.</li>
-<li>Check if descUtdWithRules is FALSE. Stop if FALSE.</li>
-<li>Check targetAttributes are in the correct order using targetAttributeList.</li>
+<li>The translation engine should validate the list of target attributes and helper function names before starting any translation.</li>
+<li>null or empty values are not accepted in the tranlation file.</li>
+<li>The translation engine should stop if the list of target attribute does not match the names and the order defined in the targetAttributeList configuration variable.</li>
+<li>Regular expression are used to check if helper function names are correct and contents of parentheses are valid. Parsing function will evaluate each helper function. Parser should also check if values outputted by the translationRules matches targetAttributeType.</li>
+<li>The translation engine should stop by default if descUpToDateWithRules is set to FALSE for any target attribute. This behavior is configurable.</li>
 </ul>
 </div>
 <div id="logging-and-resuming" class="section level4">
