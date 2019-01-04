@@ -124,7 +124,7 @@ existing source table.
 <tr class="even">
 <td align="left">invalidRules</td>
 <td align="left">Rule indicating what to return when validation rule resolve to FALSE.</td>
-<td align="left">invalid(first_name, last_name, -9999, -8888, -1111)</td>
+<td align="left">invalid(“first_name, last_name”, -9999, -8888, -1111)</td>
 </tr>
 <tr class="odd">
 <td align="left">translateRules</td>
