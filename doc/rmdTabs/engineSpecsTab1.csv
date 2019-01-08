@@ -1,5 +1,5 @@
 attributeName,Description,possibleValues,defaultValue,exampleValue
-targetAttributeList,List of target attributes. Default to nothing.,""";"" separated list of attribute names","""""",Name; Address; Street;
+targetAttributeList,List of target attributes.,""";"" separated list of attribute names","""""",Name; Address; Street;
 stopWhenInvalid,Determine if the engine should stop when a validation rule fails.,TRUE/FALSE,TRUE,FALSE
-logFrequency,Number of lines at which to log the translation progress. Used to know from where to resume execution.,int,500,100
-ignoreDescUpToDateWithRules,Ignore when some descUpToDateWithRules flag are set to FALSE.,TRUE/FALSE,FALSE,TRUE
+logFrequency,Number of lines at which to log the translation progress used by the translation engine to know from where to resume a following execution.,int,500,100
+ignoreDescUpToDateWithRules,Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one want to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.,TRUE/FALSE,FALSE,TRUE

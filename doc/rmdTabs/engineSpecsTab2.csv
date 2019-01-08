@@ -1,6 +1,6 @@
 attributeName,description,exampleValue
-targetAttribute,Name of the target attribute after translation.,fullName
-targetAttributeType,"Type of target attribute (int, decimal, text)",text
+targetAttribute,Name of the target attribute after translation. Should not contain SPACEs and be shorter than 64 characters.,fullName
+targetAttributeType,"Type of target attribute (int, decimal, text). All PostgreSQL types are allowed.",text
 validateRules,"Rule, defined as a set of semi-colon separated list of helper functions, to validate the source attribute.","notNull(""first_name, last_name"");smallerThan(""first_name, last_name"", 20)"
 invalidRules,Rule indicating what to return when validation rule resolve to FALSE.,"invalid(“first_name, last_name”, -9999, -8888, -1111)"
 translateRules,Rules defining the way to transform source attributes into the target attribute.,"concat(""first_name"", "" "", ""last_name"")"

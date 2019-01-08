@@ -7,16 +7,18 @@ existing source table.
 -   **Configuration -** The translation engine behavior can be
     configurated using a set of key/value parameters.
 
--   **Translation file row -** Each target table attribute has it's own
-    row in the translation file. Each row implements a validation rule,
-    determining if the source values are acceptables, an invalid rule,
-    determining what to do when validation fails and a translation rule
-    determining how to create the target attribute value from the source
-    attribute values.
+-   **Translation file -** Translation of a source table into a target
+    table is completely defined in a translation table. Each target
+    table attribute is translated following a set of rules defined in
+    one row of the translation table. Each row implements a validation
+    rule, determining if the source values are acceptables, an invalid
+    rule, determining what to do when validation fails and a translation
+    rule determining how to create the target attribute value from the
+    source attribute values.
 
 -   **Translation file validation -** Validation files are validated
     before being processed. Target attributes should correspond to what
-    is defined in the configuration file, helper function should exist
+    is defined in the configuration file, helper functions should exist
     and no null value should be present.
 
 -   **Rules documentation -** In addition to rules, a translation rule
@@ -38,13 +40,13 @@ existing source table.
 
 -   Configuration parameters are defined as a set of key/value.
 -   As far as the number of parameters is small, they can be passed as
-    list of parameter to the main translation engine PostgreSQL
+    list of parameters to the main translation engine PostgreSQL
     function.
--   As soon as the number of parameter becomes too big, they should be
-    stored in a filesystem CSV table. In that case the only parameter
-    passed to the function would be the location of the configuration
-    file.
--   Current parameters are listed in table 1 below.
+-   As soon as the number of parameters becomes too big, they should be
+    stored in a filesystem CSV table having two columns: "parameter""
+    and "value".. In that case the only parameter passed to the function
+    would be the location of the configuration file.
+-   Current configuration parameters are listed in table 1 below.
 
 **Table 1. Configuration parameters**
 
@@ -61,7 +63,7 @@ existing source table.
 <tbody>
 <tr class="odd">
 <td align="left">targetAttributeList</td>
-<td align="left">List of target attributes. Default to nothing.</td>
+<td align="left">List of target attributes.</td>
 <td align="left">&quot;;&quot; separated list of attribute names</td>
 <td align="left">&quot;&quot;</td>
 <td align="left">Name; Address; Street;</td>
@@ -75,14 +77,14 @@ existing source table.
 </tr>
 <tr class="odd">
 <td align="left">logFrequency</td>
-<td align="left">Number of lines at which to log the translation progress. Used to know from where to resume execution.</td>
+<td align="left">Number of lines at which to log the translation progress used by the translation engine to know from where to resume a following execution.</td>
 <td align="left">int</td>
 <td align="left">500</td>
 <td align="left">100</td>
 </tr>
 <tr class="even">
 <td align="left">ignoreDescUpToDateWithRules</td>
-<td align="left">Ignore when some descUpToDateWithRules flag are set to FALSE.</td>
+<td align="left">Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one want to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.</td>
 <td align="left">TRUE/FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">TRUE</td>
@@ -108,12 +110,12 @@ existing source table.
 <tbody>
 <tr class="odd">
 <td align="left">targetAttribute</td>
-<td align="left">Name of the target attribute after translation.</td>
+<td align="left">Name of the target attribute after translation. Should not contain SPACEs and be shorter than 64 characters.</td>
 <td align="left">fullName</td>
 </tr>
 <tr class="even">
 <td align="left">targetAttributeType</td>
-<td align="left">Type of target attribute (int, decimal, text)</td>
+<td align="left">Type of target attribute (int, decimal, text). All PostgreSQL types are allowed.</td>
 <td align="left">text</td>
 </tr>
 <tr class="odd">
@@ -146,12 +148,19 @@ existing source table.
 
 #### Translation File Validation
 
--   The translation engine should validate the list of target attributes
-    and helper function names before starting any translation.
--   null or empty values are not accepted in the tranlation file.
--   The translation engine should stop if the list of target attribute
-    does not match the names and the order defined in the
-    targetAttributeList configuration variable.
+-   The translation engine must validate the structure and the content
+    of the valisation file before starting any translation:
+
+    -   the list of target attributes names must match the names and the
+        order defined in the targetAttributeList configuration variable.
+        Each name should be shorter than 64 charaters and contain no
+        spaces.
+    -   helper function names should match existing function and their
+        parameters should be in the right format.
+    -   there should be no null or empty values in the tranlation file.
+
+-   The translation engine should stop if the translation file is
+    invalidated in any way. This should not be configurable.
 -   Regular expression are used to check if helper function names are
     correct and contents of parentheses are valid. Parsing function will
     evaluate each helper function. Parser should also check if values
@@ -170,58 +179,66 @@ existing source table.
 -   Log file is used to resume translation after stop.
     -   Log file should log progress of translation every 100 lines.
 
-#### Helper Functions
-
--   Can distinguish between absent and invalid values. Absent = -9999,
-    invalid = -8888.
-
- 
-
 ### Helper Functions Specifications
 
-**Helper function** - to determine if a value is valid or invalid
+-   There are three types of helper function:
 
-#### Constants
+    -   **validate helper functions:** Boolean functions returning FALSE
+        when passed attributes do not fulfill some specific conditions.
 
--   -9999 = Invalid values that are not null
--   -8888 = Undefined value - true null value - applies to all types
--   -1111 = Empty string ("") - does not apply to int and float
+    -   **invalid helper functions:** Return a specific value when
+        validate rules are NOT fulfilled.
 
--   Note: Talk to Benedicte about constants
+    -   **translate helper functions:** Return a specific value when
+        validate rules are fulfilled.
 
--   From Perl code:
-    -   INFTY =&gt; -1
-    -   ERRCODE =&gt; -9999
-    -   SPECIES\_ERRCODE =&gt; "XXXX ERRC"
-    -   MISSCODE =&gt; -1111
-    -   UNDEF=&gt; -8889
+-   All validate and invalid helper functions should be able to accept a
+    single attribute or a comma separated list of attributes. E.g.
+    smallerThan("first\_name, last\_name", 20) so that the function
+    returns FALSE is any of the listed value does not fulfill the
+    condition.
+-   When applicable, translate helper functions should be designed to be
+    able to transform one or many attributes into one.
 
-#### Validation rules functions
+#### List of validate rules functions
 
--   **bool TT\_Between(str variable, int lower\_bnd, bool
+-   **bool between(str variable, int lower\_bnd, bool
     lb\_inclusive=TRUE, int upper\_bnd, bool ub\_inclusive=TRUE)**
     -   Returns a boolean: true if "variable" is &gt;= "lower\_bnd" and
         &lt;= "upper\_bnd"; else false
     -   "lower\_bnd" and "upper\_bnd" are inclusive by default
     -   Set "lb\_inclusive" or "ub\_inclusive" to FALSE to exclude
         corresponding bounds
--   **bool TT\_GreaterThan(str variable, float lower\_bnd, bool
+-   **bool greaterThan(str variable, float lower\_bnd, bool
     lb\_inclusive=TRUE)**
     -   Returns a boolean: TRUE if "variable" is &gt;= "lower\_bnd";
         else FALSE
     -   "lower\_bnd" is inclusive by default
     -   Set "lb\_inclusive" to FALSE to exclude corresponding bounds
--   **bool TT\_LesserThan(str variable, float upper\_bnd, bool
+-   **bool lesserThan(str variable, float upper\_bnd, bool
     ub\_inclusive=TRUE)**
     -   Returns a boolean: TRUE if "variable" is &gt;= "upper\_bnd";
         else FALSE
     -   "upper\_bnd" is inclusive by default
     -   Set "ub\_inclusive" to FALSE to exclude corresponding bounds
 
-#### Invalid rules functions
+#### List of invalid rules functions
 
--   **Int TT\_Invalid(str attribute\_name, int null\_value, int
+-   **Int invalid(str attribute\_names, int null\_value, int
     empty\_value, int invalid\_value)**
-    -   Returns "null\_value" if "attribute\_name" is a true null,
-        "empty\_value" if the "attribute\_name" is an empty string,
-        "invalid\_value" otherwise (if not null or not empty).
+    -   Returns "null\_value" if one attribute listed in
+        "attribute\_names" is a true null, "empty\_value" if one
+        attribute listed in "attribute\_names" is an empty string or
+        "invalid\_value" otherwise (if not null and not empty string).
+        -e.g. invalid("-8888", "-1111", "-9999")
+
+#### Notes
+
+-   From Perl code:
+    -   INFTY =&gt; -1
+    -   ERRCODE =&gt; -9999 = Invalid values that are not null
+    -   SPECIES\_ERRCODE =&gt; "XXXX ERRC"
+    -   MISSCODE =&gt; -1111 = Empty string ("") - does not apply to int
+        and float
+    -   UNDEF=&gt; -8888 = Undefined value - true null value - applies
+        to all types

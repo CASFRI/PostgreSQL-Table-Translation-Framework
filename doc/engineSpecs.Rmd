@@ -1,8 +1,8 @@
 ---
 title: "Translation Engine Specifications"
 output:
- md_document: default
  html_document: default
+ md_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,9 +16,9 @@ The translation engine basically applies a set of translation rules, defined in 
 
 - **Configuration -** The translation engine behavior can be configurated using a set of key/value parameters.
 
-- **Translation file row -** Each target table attribute has it's own row in the translation file. Each row implements a validation rule, determining if the source values are acceptables, an invalid rule, determining what to do when validation fails and a translation rule determining how to create the target attribute value from the source attribute values.
+- **Translation file -** Translation of a source table into a target table is completely defined in a translation table. Each target table attribute is translated following a set of rules defined in one row of the translation table. Each row implements a validation rule, determining if the source values are acceptables, an invalid rule, determining what to do when validation fails and a translation rule determining how to create the target attribute value from the source attribute values.
 
-- **Translation file validation -** Validation files are validated before being processed. Target attributes should correspond to what is defined in the configuration file, helper function should exist and no null value should be present.
+- **Translation file validation -** Validation files are validated before being processed. Target attributes should correspond to what is defined in the configuration file, helper functions should exist and no null value should be present.
 
 - **Rules documentation -** In addition to rules, a translation rule row allows textually describing (documenting) corresponding rules and flag them when they are not in synch with the description. This allows an editor to textually specify rules without actually implementing them but still be able to warn the rule writer that the spec changed.
 
@@ -28,9 +28,9 @@ The translation engine basically applies a set of translation rules, defined in 
 
 #### Configuration
 - Configuration parameters are defined as a set of key/value.
-- As far as the number of parameters is small, they can be passed as list of parameter to the main translation engine PostgreSQL function.
-- As soon as the number of parameter becomes too big, they should be stored in a filesystem CSV table. In that case the only parameter passed to the function would be the location of the configuration file.
-- Current parameters are listed in table 1 below.
+- As far as the number of parameters is small, they can be passed as list of parameters to the main translation engine PostgreSQL function.
+- As soon as the number of parameters becomes too big, they should be stored in a filesystem CSV table having two columns: "parameter"" and "value".. In that case the only parameter passed to the function would be the location of the configuration file.
+- Current configuration parameters are listed in table 1 below.
 
 **Table 1. Configuration parameters**
 ```{r echo = FALSE}
@@ -51,9 +51,15 @@ kable(tab2)
 
 
 #### Translation File Validation
-- The translation engine should validate the list of target attributes and helper function names before starting any translation.
-- null or empty values are not accepted in the tranlation file.
-- The translation engine should stop if the list of target attribute does not match the names and the order defined in the targetAttributeList configuration variable.
+- The translation engine must validate the structure and the content of the valisation file before starting any translation:
+
+    - the list of target attributes names must match the names and the order defined in the targetAttributeList configuration variable. Each name should be shorter than 64 charaters and contain no spaces.
+    - helper function names should match existing function and their parameters should be in the right format.
+    - there should be no null or empty values in the tranlation file.
+
+
+
+- The translation engine should stop if the translation file is invalidated in any way. This should not be configurable.
 - Regular expression are used to check if helper function names are correct and contents of parentheses are valid. Parsing function will evaluate each helper function. Parser should also check if values outputted by the translationRules matches targetAttributeType.
 - The translation engine should stop by default if descUpToDateWithRules is set to FALSE for any target attribute. This behavior is configurable.
 
@@ -65,50 +71,50 @@ kable(tab2)
 - Log file is used to resume translation after stop.
     - Log file should log progress of translation every 100 lines.
 
-#### Helper Functions
-- Can distinguish between absent and invalid values. Absent = -9999, invalid = -8888.
  
 
-
-
-\  
-
-
 ### Helper Functions Specifications
-**Helper function** - to determine if a value is valid or invalid
 
-#### Constants
-- -9999 = Invalid values that are not null
-- -8888 = Undefined value - true null value - applies to all types
-- -1111 = Empty string ("") - does not apply to int and float
+- There are three types of helper function:
 
-- Note: Talk to Benedicte about constants
+    - **validate helper functions:** Boolean functions returning FALSE when passed attributes do not fulfill some specific conditions.
 
-- From Perl code:
-    - INFTY => -1
-    - ERRCODE => -9999
-    - SPECIES_ERRCODE => "XXXX ERRC"
-    - MISSCODE => -1111
-    - UNDEF=> -8889
+    - **invalid helper functions:** Return a specific value when validate rules are NOT fulfilled.
+    
+    - **translate helper functions:** Return a specific value when validate rules are fulfilled.
+    
+- All validate and invalid helper functions should be able to accept a single attribute or a comma separated list of attributes. E.g. smallerThan("first_name, last_name", 20) so that the function returns FALSE is any of the listed value does not fulfill the condition.
+- When applicable, translate helper functions should be designed to be able to transform one or many attributes into one.
 
-#### Validation rules functions
 
-- **bool TT_Between(str variable, int lower_bnd, bool lb_inclusive=TRUE, int upper_bnd, bool ub_inclusive=TRUE)**
+#### List of validate rules functions
+
+- **bool between(str variable, int lower_bnd, bool lb_inclusive=TRUE, int upper_bnd, bool ub_inclusive=TRUE)**
     - Returns a boolean: true if "variable" is >= "lower_bnd" and <= "upper_bnd"; else false
     - "lower_bnd" and "upper_bnd" are inclusive by default
     - Set "lb_inclusive" or "ub_inclusive" to FALSE to exclude corresponding bounds
 
-- **bool TT_GreaterThan(str variable, float lower_bnd, bool lb_inclusive=TRUE)**
+- **bool greaterThan(str variable, float lower_bnd, bool lb_inclusive=TRUE)**
     - Returns a boolean: TRUE if "variable" is >= "lower_bnd"; else FALSE
     - "lower_bnd" is inclusive by default
     - Set "lb_inclusive" to FALSE to exclude corresponding bounds
 
-- **bool TT_LesserThan(str variable, float upper_bnd, bool ub_inclusive=TRUE)**
+- **bool lesserThan(str variable, float upper_bnd, bool ub_inclusive=TRUE)**
     - Returns a boolean: TRUE if "variable" is >= "upper_bnd"; else FALSE
     - "upper_bnd" is inclusive by default
     - Set "ub_inclusive" to FALSE to exclude corresponding bounds
 
-#### Invalid rules functions
+#### List of invalid rules functions
 
-- **Int TT_Invalid(str attribute_name, int null_value, int empty_value, int invalid_value)**
-    - Returns "null_value" if "attribute_name" is a true null, "empty_value" if the "attribute_name" is an empty string,  "invalid_value" otherwise (if not null or not empty).
+- **Int invalid(str attribute_names, int null_value, int empty_value, int invalid_value)**
+    - Returns "null_value" if one attribute listed in "attribute_names" is a true null, "empty_value" if one attribute listed in "attribute_names" is an empty string or "invalid_value" otherwise (if not null and not empty string).
+     -e.g. invalid("-8888", "-1111", "-9999")
+     
+#### Notes
+
+- From Perl code:
+    - INFTY => -1
+    - ERRCODE => -9999 = Invalid values that are not null
+    - SPECIES_ERRCODE => "XXXX ERRC"
+    - MISSCODE => -1111 = Empty string ("") - does not apply to int and float
+    - UNDEF=> -8888 = Undefined value - true null value - applies to all types
