@@ -190,20 +190,39 @@ $(document).ready(function () {
 
 <div id="features" class="section level4">
 <h4>Features</h4>
-<p>The translation engine basically applies a set of translation rules, defined in a translation file, to create a new target table from a existing source table.</p>
+<p>The translation engine basically applies a set of translation rules, defined in a translation table, to create a new target table from a existing source table.</p>
 <ul>
-<li><p><strong>Configuration -</strong> The translation engine behavior can be configurated using a set of key/value parameters.</p></li>
-<li><p><strong>Translation file -</strong> Translation of a source table into a target table is completely defined in a translation table. Each target table attribute is translated following a set of rules defined in one row of the translation table. Each row implements a validation rule, determining if the source values are acceptables, an invalid rule, determining what to do when validation fails and a translation rule determining how to create the target attribute value from the source attribute values.</p></li>
-<li><p><strong>Translation file validation -</strong> Validation files are validated before being processed. Target attributes should correspond to what is defined in the configuration file, helper functions should exist and no null value should be present.</p></li>
+<li><p><strong>Installation -</strong> The translation engine is installed as a set of PostgreSQL functions defined in a .SQL file.</p></li>
+<li><p><strong>Execution -</strong> The translation engine is executed as any normal SQL function. It returns a SETOF rows of type RECORD.</p></li>
+<li><p><strong>Configuration parameters -</strong> The translation engine behavior can be configurated using a set of key/value parameters.</p></li>
+<li><p><strong>Translation table -</strong> Rules for translating a source table into a target table are defined in a translation table. Each target table attribute is translated following a set of rules defined in one row of the translation table. Each row implements a set of validation rules, determining if the source values are acceptables, an invalidation rule, determining what to do when validation fails, and a translation rule, determining how to create the target attribute value from the source attribute values.</p></li>
 <li><p><strong>Rules documentation -</strong> In addition to rules, a translation rule row allows textually describing (documenting) corresponding rules and flag them when they are not in synch with the description. This allows an editor to textually specify rules without actually implementing them but still be able to warn the rule writer that the spec changed.</p></li>
-<li><p><strong>Log -</strong> The translation engine log any invalid value and the progress of the translation process. It can be configured to stop or not when encountering an invalid value.</p></li>
-<li><p><strong>Resuming -</strong> The translation engine can be configured to resume from previous execution using the progress status logeg in the log file.</p></li>
+<li><p><strong>Translation file validation -</strong> Translation tables are validated before being processed. Target attributes should correspond to what is defined in the configuration file, helper functions should exist and no null value should be present.</p></li>
+<li><p><strong>Logging -</strong> The translation engine produce a log table indicating invalidated values and progress of the translation process. The translation engine can be configured to stop or not as soon as it encounters an invalid value.</p></li>
+<li><p><strong>Resuming -</strong> The translation engine can be configured to resume from previous execution using the progress status logged in the log file.</p></li>
 </ul>
 </div>
-<div id="configuration" class="section level4">
-<h4>Configuration</h4>
+<div id="execution" class="section level4">
+<h4>Execution</h4>
 <ul>
-<li>Configuration parameters are defined as a set of key/value.</li>
+<li>The translation engine is executed as any normal SQL function (TT_Translate(parameters…)).</li>
+<li>It can be used as part of any SELECT, FROM or WHERE SQL statement parts. e.g. CREATE TABLE AS SELECT (TT_Translate(parameters…)).*</li>
+<li>TT_Translate(parameters…) returns a SETOF rows of type RECORD.</li>
+<li><p>Note: If it is not possible to return a SETOF RECORD, an initialisation function TT_Init() could create a empty table with the right types and TT_Translate() could rewrite itself into a temporary function with the right table as return type. TT_Translate() would then return the result of this temporary function…</p></li>
+<li><p>A typical execution sequence would look like:</p>
+<ol style="list-style-type: decimal">
+<li>Write a very basic translation table.</li>
+<li>Translate.</li>
+<li>Translation stops as soon as a validation rule not providing an invalidation value fails or when its last parameter is specifically set to TRUE.</li>
+<li>Update the translation table and resume execution, back to 2).</li>
+<li>Translation file is complete, execution from scratch without stop on invalidation and all invalidation values provided.</li>
+</ol></li>
+</ul>
+</div>
+<div id="configuration-parameters" class="section level4">
+<h4>Configuration parameters</h4>
+<ul>
+<li>Translation engine configuration parameters are defined as a set of key/value.</li>
 <li>As far as the number of parameters is small, they can be passed as list of parameters to the main translation engine PostgreSQL function.</li>
 <li>As soon as the number of parameters becomes too big, they should be stored in a filesystem CSV table having two columns: “parameter”&quot; and “value”.. In that case the only parameter passed to the function would be the location of the configuration file.</li>
 <li>Current configuration parameters are listed in table 1 below.</li>
@@ -229,7 +248,7 @@ $(document).ready(function () {
 </tr>
 <tr class="even">
 <td align="left">stopWhenInvalid</td>
-<td align="left">Determine if the engine should stop when a validation rule fails.</td>
+<td align="left">Globally determine if the engine should stop when a validation rule fails. This is mainly to validate and fix the source table. When set to FALSE, validation rules can still be individually set so that the engine stop when when they resolve to FALSE.</td>
 <td align="left">TRUE/FALSE</td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
@@ -251,10 +270,10 @@ $(document).ready(function () {
 </tbody>
 </table>
 </div>
-<div id="translation-files" class="section level4">
-<h4>Translation Files</h4>
+<div id="translation-tables" class="section level4">
+<h4>Translation Tables</h4>
 <ul>
-<li>A translation file is a filesystem CSV file.</li>
+<li>A translation table is normal PostgreSQL table having a specific structure.</li>
 <li>Table 2 list the different attributes of a translation file.</li>
 </ul>
 <p><strong>Table 2. Translation file attributes</strong></p>
@@ -308,7 +327,7 @@ $(document).ready(function () {
 <div id="translation-file-validation" class="section level4">
 <h4>Translation File Validation</h4>
 <ul>
-<li><p>The translation engine must validate the structure and the content of the valisation file before starting any translation:</p>
+<li><p>The translation engine must validate the structure and the content of the valisation file before starting any translation (or during the first translation?):</p>
 <ul>
 <li>the list of target attributes names must match the names and the order defined in the targetAttributeList configuration variable. Each name should be shorter than 64 charaters and contain no spaces.</li>
 <li>helper function names should match existing function and their parameters should be in the right format.</li>
@@ -322,15 +341,21 @@ $(document).ready(function () {
 <div id="logging-and-resuming" class="section level4">
 <h4>Logging and Resuming</h4>
 <ul>
-<li>Logging invalid values - log each invalidation once and report number of occurrences.
+<li>The translation engine logs, in a logging table, the translation process and any invalid value.</li>
+<li>The translation engine normally stops as soon as it encounters an invalid value. It can resume its process, in a subsequent execution, starting at the row having triggered the invalid entry. This row is computed from the logging table as the first row trigerring the last PROGRESS entry + the count of processed rows for this entry.</li>
+<li>The logging table has the following columns:
 <ul>
-<li>E.g. ‘Species “bFf” entered 204 times.’</li>
+<li>logid - identifier of the log entry. A simple incrementing number.</li>
+<li>timestamp - date and time of the log entry.</li>
+<li>type - type of the logging entry (PROGRESS or INVALIDATION).</li>
+<li>message - logging message itself mostly indicating reason of invalidation.</li>
+<li>rownumber - number of the first row having triggered the log entry.</li>
+<li>count - number of occurrence of the same invalidation since first trigered in the case of an INVALIDATION entry or the number or row processed in the case of a PROGRESS entry. That last number is used to determine the row from which to resume in a subsequent execution if this option is activated.</li>
 </ul></li>
-<li>Logging is recorded as a table in the database
-<ul>
-<li>Fields: time, translationFileName, description, count, rowNumber</li>
-</ul></li>
-<li>Log file is used to resume translation after stop.
+<li>All invalid values are reported even if invalidation rules are defined for those values.</li>
+<li>By default the translation engine stops when encountering an invalid value. It can also be set to not stop. In this case the tranlation process may generate thousands, even millions of similar log entries. To avoid this, entries of the same type are simply counted and reported with their count of occurence.</li>
+<li>The translation engine may be configured to continue even if an invalid value is encountered. This behavior is usefull to get a complete report of invalid values.</li>
+<li>Logging tables are used to resume translation after stop if configurated like this.
 <ul>
 <li>Log file should log progress of translation every 100 lines.</li>
 </ul></li>
@@ -341,15 +366,18 @@ $(document).ready(function () {
 <ul>
 <li><p>There are three types of helper function:</p>
 <ul>
-<li><p><strong>validate helper functions:</strong> Boolean functions returning FALSE when passed attributes do not fulfill some specific conditions.</p></li>
-<li><p><strong>invalid helper functions:</strong> Return a specific value when validate rules are NOT fulfilled.</p></li>
-<li><p><strong>translate helper functions:</strong> Return a specific value when validate rules are fulfilled.</p></li>
+<li><p><strong>validation helper functions:</strong> Boolean functions returning FALSE when passed attributes do not fulfill some specific conditions.</p></li>
+<li><p><strong>invalidation helper functions:</strong> Return a specific value when validation rules are NOT fulfilled. This can be an invalid code, a default value or an attempt to fix the invalid value.</p></li>
+<li><p><strong>translation helper functions:</strong> Return a specific value when validation rules are fulfilled.</p></li>
 </ul></li>
-<li>All validate and invalid helper functions should be able to accept a single attribute or a comma separated list of attributes. E.g. smallerThan(“first_name, last_name”, 20) so that the function returns FALSE is any of the listed value does not fulfill the condition.</li>
-<li><p>When applicable, translate helper functions should be designed to be able to transform one or many attributes into one.</p></li>
+<li>All validation and invalidation helper functions should be able to accept a single attribute or a comma separated list of attributes. E.g. smallerThan(“first_name, last_name”, 20) so that the function returns FALSE is any of the listed value does not fulfill the condition.</li>
+<li>When applicable, translate helper functions should be designed to be able to transform one or many attributes into one.</li>
+<li>Only the validation rules can be a semi-colon separated list of helper functions. Every function in the list must resolve to TRUE for the complete validation rule to be TRUE. This is the equivalent of putting a AND logical operator between each function.</li>
+<li>invalidation and translation rules, as they must return a single value, can not be composed of a list of functions. Both types of functions MUST return a value compatible with the type of the target attribute as defined by targetAttributeType.</li>
+<li><p>translation function should always double check for null values and if the passed values are of the right type.</p></li>
 </ul>
-<div id="list-of-validate-rules-functions" class="section level4">
-<h4>List of validate rules functions</h4>
+<div id="list-of-validation-rules-functions" class="section level4">
+<h4>List of validation rules functions</h4>
 <ul>
 <li><strong>bool between(str variable, int lower_bnd, bool lb_inclusive=TRUE, int upper_bnd, bool ub_inclusive=TRUE)</strong>
 <ul>
@@ -378,12 +406,16 @@ $(document).ready(function () {
 <ul>
 <li>Returns “null_value” if one attribute listed in “attribute_names” is a true null, “empty_value” if one attribute listed in “attribute_names” is an empty string or “invalid_value” otherwise (if not null and not empty string). -e.g. invalid(“-8888”, “-1111”, “-9999”)</li>
 </ul></li>
+<li><strong>void stop()</strong>
+<ul>
+<li>Stop the translation engine.</li>
+</ul></li>
 </ul>
 </div>
 <div id="notes" class="section level4">
 <h4>Notes</h4>
 <ul>
-<li>From Perl code:
+<li>CAS specific error codes extracted from Perl code:
 <ul>
 <li>INFTY =&gt; -1</li>
 <li>ERRCODE =&gt; -9999 = Invalid values that are not null</li>
