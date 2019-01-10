@@ -29,9 +29,9 @@ existing source table.
 -   **Execution -** The translation engine is executed as any normal SQL
     function. It returns a SETOF rows of type RECORD.
 
--   **Translation file validation -** Translation tables are validated
+-   **Translation table validation -** Translation tables are validated
     before being processed. Target attributes should match the attribute
-    names and their order as defined in the configuration file. Helper
+    names and their order as defined in the configuration. Helper
     functions should exist and no NULL value should be present in the
     translation table.
 
@@ -42,7 +42,7 @@ existing source table.
 
 -   **Resuming -** The translation engine can be configured to resume
     from the previous execution using the progress status logged in the
-    log file.
+    log table.
 
 #### Configuration parameters
 
@@ -105,6 +105,13 @@ existing source table.
 <td align="left">100</td>
 </tr>
 <tr class="even">
+<td align="left">resume</td>
+<td align="left">Resume from lastexecution.</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
 <td align="left">ignoreDescUpToDateWithRules</td>
 <td align="left">Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one want to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.</td>
 <td align="left">TRUE/FALSE</td>
@@ -168,8 +175,8 @@ existing source table.
 
 -   The translation engine is executed as any normal SQL function
     (TT\_Translate(parameters...)).
--   It can be used as part of any SELECT, FROM or WHERE SQL statement
-    parts. e.g. CREATE TABLE AS SELECT (TT\_Translate(parameters...)).\*
+-   It can be used as part of any SELECT, FROM or WHERE SQL clause. e.g.
+    CREATE TABLE test AS SELECT (TT\_Translate(parameters...)).\*
 -   TT\_Translate(parameters...) returns a SETOF rows of type RECORD.
 
 -   Note: If it is not possible to return a SETOF RECORD, an
@@ -187,44 +194,106 @@ existing source table.
     source table as a parameter but in the FROm clause. TT\_Translate()
     would only refer to its values.
 
--   The execution stops if any of these condition is encountered:
+-   The translation engine can be used in two very different scenarios:
 
-    -   The configuration variable "stopOnInvalid"" is set to TRUE and a
-        source value is invalidated by a validation rule. This use case
-        is helpful for validating and fixing source values when
-        possible.
-    -   No invalidation value is defined for a validation rule and the
-        source value is invalidated by this validation rule. This makes
-        it mandatory to define an invalidation value. The translation
-        process can not finish otherwise.
-    -   The configuration variable "stopOnInvalid"" is set to FALSE, all
-        invalidation values are provided, one validation rule has its
-        "stopOnInvalid" flag set and a source value is invalidated by
-        this validation rule. This use case is helpful in a typical
-        execution sequence as described below:
+**First Scenario - Fixing the source table errors**
 
--   Typical execution sequence:
+-   The first scenario is when one wants to be able to fix invalid
+    values from the source table before they are being translated to the
+    target table.
+-   In this scenario there is no need to provide invalidation (error)
+    codes in the translation table since the source table will
+    continuously be fixed during the translation table coding process
+    and no invalid value should ever have to be translated.
+-   To be able to fix invalid source values however, the engine has to
+    stop as soon as it encounters an invalid value. The invalid value
+    can then be fixed and the execution resumed from where it was
+    stopped.
+-   To enable this, the translation engine provides a global
+    "stopOnInvalid" configuration parameter. This setting makes the
+    engine to stop inconditionnally whenever a validation rule resolve
+    to FALSE.
+-   The typical execution sequence in this scenario goes like this:
 
-    1.  Write a basic translation table.
-    2.  Translate.
-    3.  Translation stops as soon as a validation rule not providing an
-        invalidation value or having its "stopOnInvalid" parameter
-        specifically set to TRUE fails.
-    4.  Update the translation table and resume execution; back to step
-        2).
-    5.  Translation file is complete. Translate from scratch with all
-        invalidation values provided and "stopOnInvalid" set to FALSE in
-        the configuraiton file and not set (default to FALSE) in any
-        validation rule.
+    1.  Set the global "stopOnInvalid" configuration variable to TRUE.
+    2.  Write a basic translation table.
+    3.  Translate.
+    4.  Translation stops as soon as a source value is invavalidated by
+        a validation rule.
+    5.  Fix the source table value (and the translation table if
+        necessary) and resume execution. Back to step 3).
+    6.  Translation table and translation are complete.
+
+**Second Scenario - Not fixing source table errors**
+
+-   The second scenario is when one does not want to fix invalid values
+    from the source table but still want to handle them by replacing
+    them with an invalidation (error) code in the target table.
+-   In this scenario the translation table coder HAS to provide some
+    invalidation codes in the translation table. The engine should stop
+    as soon as it encounters an invalid value for a validation rule that
+    does not have an invalidation code defined. This force the
+    translation table coder to provides these codes and make sure the
+    target table becomes valid (with proper value or invaliadtion code,
+    nothing else).
+-   In this scenario the translation table coder also wants to be able
+    to stop the translation engine as soon as an unknown value, not
+    taken into account yet in the validation rules, is encountered, so
+    he can fix the translation table and resume translation. The global
+    "stopOnInvalid" configuration parameter is of no help to make the
+    engine stop on this condition since setting it to TRUE would make
+    the engine stop for already handled invalid values. The proper way
+    to stop the engine in this case is to make every validation rule
+    helper function to take a last argument specifying if this rule
+    should make the engine to stop if it fails. This way every unhandled
+    values can be added to the validation rules and execution can be
+    resumed afterward.
+-   The typical execution sequence in this scenario goes like this:
+
+    1.  Set the global "stopOnInvalid" configuration variable to FALSE.
+    2.  Write a basic translation table with no invalidation codes.
+    3.  Translate.
+    4.  Translation stops as soon as a validation rule, not providing an
+        invalidation code or having its "stopOnInvalid" parameter
+        specifically set to TRUE, fails.
+    5.  Update the translation table with updated valiation rules,
+        invalidation rules the "stopOnInvalid" of the faulty validation
+        rule set to TRUE and resume execution. Back to step 3).
+    6.  Translation table is complete. Translate from scratch with all
+        invalidation codes provided and "stopOnInvalid" unset in all the
+        validation rules.
+
+  
+
+-   In summary the translation engine execution stops if any of these
+    conditions is encountered:
+
+    -   The configuration variable "stopOnInvalid" is set to TRUE and a
+        source value is invalidated by a validation rule. This is
+        helpful for the first scenario.
+    -   No invalidation code is defined for a validation rule and the
+        source value is invalidated by this validation rule. This is
+        helpful for the second scenario. It makes it mandatory to define
+        invalidation codes as soon as error are found in the source
+        table. The translation process can not finish without all these
+        codes being defined (unless there are no error in the source
+        file).
+    -   The configuration variable "stopOnInvalid" is set to FALSE, all
+        invalidation codes are provided, one validation rule has its
+        "stopOnInvalid" flag set to TRUE and a source value is
+        invalidated by this validation rule. This is typical of the
+        second scenario while searching for invalid values.
+
+  
 
 -   These configuration options provide enough flexibility for many use
     cases.
 -   Multiple translations are managed though normal SQL coding.
 
-#### Translation File Validation
+#### Translation Table Validation
 
 -   The translation engine must validate the structure and the content
-    of the valisation file before starting any translation (or during
+    of the validation table before starting any translation (or during
     the first translation?):
 
     -   the list of target attributes names must match the names and the
@@ -233,7 +302,8 @@ existing source table.
         contain no spaces.
     -   helper function names should match existing function and their
         parameters should be in the right format.
-    -   there should be no null or empty values in the translation file.
+    -   there should be no null or empty values in the translation
+        table.
 
 -   The translation engine should stop if the translation table is
     invalidated in any way. This should not be configurable.
@@ -242,7 +312,7 @@ existing source table.
     helper function. Parser should also check if values outputted by the
     translation rule matches "targetAttributeType".
 -   The translation engine should stop by default if
-    "descUpToDateWithRules"" is set to FALSE for any target attribute.
+    "descUpToDateWithRules" is set to FALSE for any target attribute.
     This behavior is configurable.
 
 #### Logging and Resuming
@@ -290,55 +360,94 @@ existing source table.
 
 ### Helper Functions Specifications
 
+-   Helper functions are used to define validation and translation rules
+    in the translation file.
 -   There are two types of helper function:
 
     -   **validation helper functions:** Return an invalidation code
         when passed values do not fulfill some specific conditions or a
-        valid value.
+        valid value. Used only in the "validationRules" column of the
+        translation table.
 
     -   **translation helper functions:** Return a specific value when
-        validation rules are fulfilled.
+        validation rules are fulfilled. Used only in the
+        "transationRules" column of the translation table.
 
 -   All validation helper functions should be able to accept a single
     attribute or a comma separated list of attributes. E.g.
     smallerThan("first\_name, last\_name", 20) so that the function
-    returns FALSE is any of the listed value does not fulfill the
-    condition.
--   When applicable, translate helper functions should be designed to be
-    able to transform one or many attributes into one.
--   Only "validationRules" can be a semi-colon separated list of helper
-    functions. This is the equivalent of putting a AND logical operator
-    between each function.
+    returns FALSE if any listed value does not fulfill the condition
+    implemented by the function.
+-   "validationRules" can be composed of a semi-colon separated list of
+    validation helper functions. This is the equivalent of putting a AND
+    logical operator between each function.
 -   Every validation function must take a list of values, some
-    parameters, an invalidation value and a flag indicating to stop the
+    parameters, an invalidation code and a flag indicating to stop the
     translation engine or not when one value is invalidated.
 -   Every validation function must return TRUE, FALSE or the
-    invalidation value.
+    invalidation code (or both as an array of two values to resolve any
+    conflict of interpretation).
+
+-   When applicable, translation helper functions should be designed to
+    be able to transform one or many attributes into one.
 -   Translation rules must take a list of values and a set of parameters
     and return a single value of type compatible with the type of the
     target attribute as defined by "targetAttributeType".
 -   Translation functions should always double check for null values and
     if the passed values are of the right type.
 
-#### List of validation rules functions
+#### List of validation rules functions (work in progress, many more to come)
 
--   **bool between(str variable, int lowerBound, bool lbInclusive=TRUE,
-    int upperBound, bool ubInclusive=TRUE, str invalidValue=NULL,
-    boolean stopEngine=FALSE)**
+-   **any between(decimal variable, decimal lowerBound, bool
+    lbInclusive=TRUE, decimal upperBound, bool ubInclusive=TRUE, str
+    invalidCode=NULL, boolean stopOnInvalid=FALSE)**
     -   TRUE if "variable" &gt;= "lowerBound" and "variable" &lt;=
-        "upperBound", FALSE or invalidValue otherwise.
+        "upperBound", FALSE or invalidCode otherwise.
     -   "lbInclusive" and "ubInclusive" determines if corresponding
         bounds are inclusive or not.
--   **bool greaterThan(str variable, float lowerBound, bool
-    inclusive=TRUE, str invalidValue=NULL, boolean stopEngine=FALSE)**
-    -   TRUE if "variable" is &gt;= "lowerBound", FALSE or invalidValue
+
+  
+
+-   **any greaterThan(decimal variable, decimal lowerBound, bool
+    inclusive=TRUE, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
+    -   TRUE if "variable" is &gt;= "lowerBound", FALSE or invalidCode
         otherwise.
     -   "inclusive" determines if "lowerBound" is inclusive.
--   **bool lesserThan(str variable, float upperBound, bool
-    inclusive=TRUE, str invalidValue=NULL, boolean stopEngine=FALSE)**
-    -   TRUE if "variable" is &gt;= "upperBound", FALSE or invalidValue
+
+  
+
+-   **any lesserThan(decimal variable, decimal upperBound, bool
+    inclusive=TRUE, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
+    -   TRUE if "variable" is &gt;= "upperBound", FALSE or invalidCode
         otherwise.
     -   "inclusive" determines if "upperBound" is inclusive.
+
+  
+
+-   **any match(str variable, str list, str invalidCode=NULL, boolean
+    stopOnInvalid=FALSE)**
+    -   TRUE if "variable" is found in the first "value" column of the
+        "list" table, FALSE or invalidCode otherwise.
+
+#### List of translation rules functions (work in progress, many more to come)
+
+-   **any copy(any variable)**
+    -   Simply copy the source value since it is valid and does not need
+        translation.
+
+  
+
+-   **decimal scale(decimal variable, decimal lowerBound1, decimal
+    upperBound1, decimal lowerBound2, decimal upperBound2)**
+    -   Scale "variable" from a "lowerBound1"-"upperBound1" interval to
+        a "lowerBound2"-"upperbound2" interval.
+
+  
+
+-   **str map(str variable, str sourceList, str targetList)**
+    -   Map "variable" to a value from the "value" column of the
+        "sourceList" table and return the corresponding value from
+        "value" column of the "targetList" table.
 
 #### Notes
 
