@@ -163,6 +163,18 @@ kable(tab2)
 
 #### List of validation rules functions (work in progress, many more to come)
 
+- **any notNull(str variable, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
+    - TRUE if "variable" is not a NULL value, FALSE or invalidCode otherwise.
+
+\
+
+
+- **any notEmpty(str variable, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
+    - TRUE if "variable" is not an empty string, FALSE or invalidCode otherwise.
+
+\
+
+
 - **any between(decimal variable, decimal lowerBound, bool lbInclusive=TRUE, decimal upperBound, bool ubInclusive=TRUE, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
     - TRUE if "variable" >= "lowerBound" and "variable" <= "upperBound", FALSE or invalidCode otherwise.
     - "lbInclusive" and "ubInclusive" determines if corresponding bounds are inclusive or not.
@@ -184,7 +196,7 @@ kable(tab2)
 \
 
 
-- **any match(str variable, str list, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
+- **any matchStr(str variable, str list, str invalidCode=NULL, boolean stopOnInvalid=FALSE)**
     - TRUE if "variable" is found in the first "value" column of the "list" table, FALSE or invalidCode otherwise.
 
     

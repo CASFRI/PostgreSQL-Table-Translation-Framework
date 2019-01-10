@@ -436,6 +436,22 @@ $(document).ready(function () {
 <div id="list-of-validation-rules-functions-work-in-progress-many-more-to-come" class="section level4">
 <h4>List of validation rules functions (work in progress, many more to come)</h4>
 <ul>
+<li><strong>any notNull(str variable, str invalidCode=NULL, boolean stopOnInvalid=FALSE)</strong>
+<ul>
+<li>TRUE if “variable” is not a NULL value, FALSE or invalidCode otherwise.</li>
+</ul></li>
+</ul>
+<p><br />
+</p>
+<ul>
+<li><strong>any notEmpty(str variable, str invalidCode=NULL, boolean stopOnInvalid=FALSE)</strong>
+<ul>
+<li>TRUE if “variable” is not an empty string, FALSE or invalidCode otherwise.</li>
+</ul></li>
+</ul>
+<p><br />
+</p>
+<ul>
 <li><strong>any between(decimal variable, decimal lowerBound, bool lbInclusive=TRUE, decimal upperBound, bool ubInclusive=TRUE, str invalidCode=NULL, boolean stopOnInvalid=FALSE)</strong>
 <ul>
 <li>TRUE if “variable” &gt;= “lowerBound” and “variable” &lt;= “upperBound”, FALSE or invalidCode otherwise.</li>
@@ -463,7 +479,7 @@ $(document).ready(function () {
 <p><br />
 </p>
 <ul>
-<li><strong>any match(str variable, str list, str invalidCode=NULL, boolean stopOnInvalid=FALSE)</strong>
+<li><strong>any matchStr(str variable, str list, str invalidCode=NULL, boolean stopOnInvalid=FALSE)</strong>
 <ul>
 <li>TRUE if “variable” is found in the first “value” column of the “list” table, FALSE or invalidCode otherwise.</li>
 </ul></li>
