@@ -1,8 +1,8 @@
 #### Features
 
-The translation engine basically applies a set of translation rules,
-defined in a translation table, to create a new target table from a
-existing source table.
+The translation engine applies a set of translation rules, defined in a
+translation table, to create a new target table from an existing source
+table.
 
 -   **Installation -** The translation engine is installed as a set of
     PostgreSQL functions defined in a .SQL file.
@@ -20,11 +20,12 @@ existing source table.
     attribute value from the source attribute values.
 
 -   **Rules documentation -** In addition to validation and translation
-    rules, a translation row allows textually describing (documenting)
-    corresponding rules and flag them when they are not in sync with the
-    description. This allows an editor to textually specify rules
-    without actually implementing them but still be able to warn the
-    actual rule coder that the translation specification changed.
+    rules, a translation row allows a text description (documentation)
+    of the corresponding rules and a flag indicating whether the
+    translation rules are in sync with the description. This allows an
+    editor to textually specify rules without actually implementing
+    them, the flag warns the actual rule coder that the translation
+    specification changed.
 
 -   **Execution -** The translation engine is executed as any normal SQL
     function. It returns a SETOF rows of type RECORD.
@@ -35,7 +36,7 @@ existing source table.
     functions should exist and no NULL value should be present in the
     translation table.
 
--   **Logging -** The translation engine produce a log table indicating
+-   **Logging -** The translation engine produces a log table indicating
     invalidated values and progress of the translation process. The
     translation engine can be configured to stop or not as soon as it
     encounters an invalid value.
@@ -106,14 +107,14 @@ existing source table.
 </tr>
 <tr class="even">
 <td align="left">resume</td>
-<td align="left">Resume from lastexecution.</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td align="left">Resume from last execution.</td>
+<td align="left">TRUE/FALSE</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">ignoreDescUpToDateWithRules</td>
-<td align="left">Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one want to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.</td>
+<td align="left">Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one wants to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.</td>
 <td align="left">TRUE/FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">TRUE</td>
@@ -123,7 +124,7 @@ existing source table.
 
 #### Translation Tables
 
--   A translation table is normal PostgreSQL table having a specific
+-   A translation table is a normal PostgreSQL table with a specific
     structure.
 -   Table 2 list the different attributes of a translation table.
 
@@ -186,33 +187,31 @@ existing source table.
     TT\_Translate() would then return the result of this temporary
     function...
 
--   Another option would be to have the translation engine to return one
+-   Another option would be to have the translation engine return one
     row per call. The drawback is that the translation table would have
     to be read for each source row. i.e. maybe millions of time. One
     advantage of this option is that the TT\_Translate() function would
     be more compatible with SQL syntax in that it would not refer to the
-    source table as a parameter but in the FROm clause. TT\_Translate()
+    source table as a parameter but in the FROM clause. TT\_Translate()
     would only refer to its values.
 
 -   The translation engine can be used in two very different scenarios:
 
-**First Scenario - Fixing the source table errors**
+**First Scenario - Fixing source table errors**
 
--   The first scenario is when one wants to be able to fix invalid
-    values from the source table before they are being translated to the
-    target table.
+-   The first scenario is when one wants to fix invalid values in the
+    source table before they are translated by the target table.
 -   In this scenario there is no need to provide invalidation (error)
     codes in the translation table since the source table will
     continuously be fixed during the translation table coding process
     and no invalid value should ever have to be translated.
--   To be able to fix invalid source values however, the engine has to
-    stop as soon as it encounters an invalid value. The invalid value
-    can then be fixed and the execution resumed from where it was
-    stopped.
+-   To fix invalid source values, the engine has to stop as soon as it
+    encounters an invalid value. The invalid value can then be fixed in
+    the source table and the execution resumed from where it stopped.
 -   To enable this, the translation engine provides a global
     "stopOnInvalid" configuration parameter. This setting makes the
-    engine to stop inconditionnally whenever a validation rule resolve
-    to FALSE.
+    engine stop unconditionnally whenever a validation rule resolves to
+    FALSE.
 -   The typical execution sequence in this scenario goes like this:
 
     1.  Set the global "stopOnInvalid" configuration variable to TRUE.
@@ -227,27 +226,26 @@ existing source table.
 **Second Scenario - Not fixing source table errors**
 
 -   The second scenario is when one does not want to fix invalid values
-    from the source table but still want to handle them by replacing
+    from the source table, but still wants to handle them by replacing
     them with an invalidation (error) code in the target table.
--   In this scenario the translation table coder HAS to provide some
+-   In this scenario the translation table coder **has** to provide some
     invalidation codes in the translation table. The engine should stop
     as soon as it encounters an invalid value for a validation rule that
-    does not have an invalidation code defined. This force the
-    translation table coder to provides these codes and make sure the
-    target table becomes valid (with proper value or invaliadtion code,
-    nothing else).
+    does not have an invalidation code defined. This forces the
+    translation table coder to provide these codes and makes sure the
+    target table is valid (with either a proper value or an invalidation
+    code).
 -   In this scenario the translation table coder also wants to be able
     to stop the translation engine as soon as an unknown value, not
-    taken into account yet in the validation rules, is encountered, so
-    he can fix the translation table and resume translation. The global
-    "stopOnInvalid" configuration parameter is of no help to make the
-    engine stop on this condition since setting it to TRUE would make
-    the engine stop for already handled invalid values. The proper way
-    to stop the engine in this case is to make every validation rule
-    helper function to take a last argument specifying if this rule
-    should make the engine to stop if it fails. This way every unhandled
-    values can be added to the validation rules and execution can be
-    resumed afterward.
+    taken into account yet in the validation rules, is encountered. They
+    can then fix the translation table and resume translation. The
+    global "stopOnInvalid" configuration parameter is no help here,
+    since setting it to TRUE would make the engine stop for already
+    handled invalid values. The proper way to stop the engine in this
+    case is to make every validation rule helper function take an
+    argument specifying if this rule should make the engine stop if it
+    fails. This way, unhandled values can be added to the validation
+    rules and execution can be resumed.
 -   The typical execution sequence in this scenario goes like this:
 
     1.  Set the global "stopOnInvalid" configuration variable to FALSE.
@@ -257,8 +255,8 @@ existing source table.
         invalidation code or having its "stopOnInvalid" parameter
         specifically set to TRUE, fails.
     5.  Update the translation table with updated valiation rules,
-        invalidation rules the "stopOnInvalid" of the faulty validation
-        rule set to TRUE and resume execution. Back to step 3).
+        invalidation rules, and the "stopOnInvalid" of the faulty
+        validation rule set to TRUE. Resume execution. Back to step 3).
     6.  Translation table is complete. Translate from scratch with all
         invalidation codes provided and "stopOnInvalid" unset in all the
         validation rules.
@@ -274,7 +272,7 @@ existing source table.
     -   No invalidation code is defined for a validation rule and the
         source value is invalidated by this validation rule. This is
         helpful for the second scenario. It makes it mandatory to define
-        invalidation codes as soon as error are found in the source
+        invalidation codes as soon as errors are found in the source
         table. The translation process can not finish without all these
         codes being defined (unless there are no error in the source
         file).
@@ -296,18 +294,18 @@ existing source table.
     of the validation table before starting any translation (or during
     the first translation?):
 
-    -   the list of target attributes names must match the names and the
+    -   The list of target attributes names must match the names and the
         order defined in the "targetAttributeList" configuration
         variable. Each name should be shorter than 64 charaters and
         contain no spaces.
-    -   helper function names should match existing function and their
+    -   Helper function names should match existing functions and their
         parameters should be in the right format.
-    -   there should be no null or empty values in the translation
+    -   There should be no null or empty values in the translation
         table.
 
 -   The translation engine should stop if the translation table is
     invalidated in any way. This should not be configurable.
--   Regular expression are used to check if helper function names and
+-   Regular expressions are used to check if helper function names and
     their parameters are valid. Parsing function will evaluate each
     helper function. Parser should also check if values outputted by the
     translation rule matches "targetAttributeType".
@@ -337,8 +335,8 @@ existing source table.
         last number is used to determine the row from which to resume in
         a subsequent execution if this option is activated.
 -   If the translation engine is stopped by an invalidation condition,
-    or because of a system failure, it can resume its process, in a
-    subsequent execution, starting at the row having triggered the
+    or because of a system failure, it can resume its process in a
+    subsequent execution starting at the row having triggered the
     invalid entry or after the last row processed. In the first case
     this row is determined by the "rowNumber" logging table attribute.
     In the last case this row is computed from the first row triggering
@@ -347,7 +345,7 @@ existing source table.
 -   All invalid values are reported in the log even if invalidation
     rules are defined for those values and the engine is not set to stop
     on invalidation.
--   If the translation engine is set to not stop when encountering an
+-   If the translation engine is not set to stop when encountering an
     invalid value, it may generate thousands, even millions of similar
     log entries. To avoid this, entries of the same type are simply
     counted and their count is reported instead of reporting one row per
@@ -387,14 +385,13 @@ existing source table.
 -   Every validation function must return TRUE, FALSE or the
     invalidation code (or both as an array of two values to resolve any
     conflict of interpretation).
-
 -   When applicable, translation helper functions should be designed to
-    be able to transform one or many attributes into one.
+    transform one or many attributes into one attribute.
 -   Translation rules must take a list of values and a set of parameters
-    and return a single value of type compatible with the type of the
-    target attribute as defined by "targetAttributeType".
+    and return a single value of type compatible with
+    "targetAttributeType".
 -   Translation functions should always double check for null values and
-    if the passed values are of the right type.
+    that the passed values are of the correct type.
 
 #### List of validation rules functions (work in progress, many more to come)
 
