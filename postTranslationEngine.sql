@@ -14,13 +14,58 @@
 -------------------------------------------------------------------------------
 -- Begin Function Definitions...
 -------------------------------------------------------------------------------
+-- TT_TypeGuess
+-- Guess the best type for a string. Used by TT_FctCallValid()
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FctExist
+--
+--   fctString text
+--
+-- RETURNS boolean
+--
+-- Return TRUE if fctString exists as a function having the specified parameter types
+------------------------------------------------------------
+--
+-- Self contained example:
+-- 
+-- SELECT TT_FctExist('TT_TypeGuess(text)')
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FctCallValid
+-- Determine if a function having the specified parameter values. Use TT_TypeGuess
+-- to determine the type and then TT_FctExist()
+------------------------------------------------------------
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_FullTableName
 --
 --   schemaName name - Name of the schema.
 --   tableName name       - Name of the table.
 --
 -- RETURNS text       - Full name of the table.
--------------------------------------------------------------------------------
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 CREATE OR REPLACE FUNCTION TT_FullTableName(
   schemaName name,
@@ -37,6 +82,7 @@ RETURNS text AS $$
     RETURN quote_ident(newschemaname) || '.' || quote_ident(tablename);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_ValidateTTable
@@ -58,7 +104,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   - there should be no null or empty values in the translation table.
 --  Return an error and stop the process if any invalid value is found in the
 --  translation table.
--------------------------------------------------------------------------------
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, name, text[]);
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTableSchema name,
@@ -71,6 +120,7 @@ RETURNS text AS $f$
     RETURN TRUE;
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_Prepare
@@ -89,7 +139,10 @@ $f$ LANGUAGE plpgsql VOLATILE;
 -- function able to return SETOF rows of arbitrary variable types. The function 
 -- created by this function "freeze" and declare the return type of the translation
 -- funtion enabling the package to return rows of arbitrriyl typed rows.
--------------------------------------------------------------------------------
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, name, text[]);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
@@ -155,8 +208,10 @@ $f$ LANGUAGE plpgsql VOLATILE;
 --   RETURNS SETOF RECORDS
 --
 -- Translate a source table according to the rules defined in a tranlation table.
--------------------------------------------------------------------------------
-
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
 --DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
@@ -174,8 +229,9 @@ RETURNS SETOF RECORD AS $$
     rec tt_type;
   BEGIN
     -- Validate the translation file. TODO
-    -- Validate the existence of source table. TODO
-    
+    -- Validate the existence of the source table. TODO
+    -- Determine if we must resume from last execution or not. TODO
+    -- Create the log table
     SELECT 1, 2 INTO rec;
     RETURN NEXT rec;
     RETURN;
