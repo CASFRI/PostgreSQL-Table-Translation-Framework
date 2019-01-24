@@ -1,0 +1,27 @@
+﻿------------------------------------------------------------------------------
+-- PostgreSQL Table Tranlation Engine - Helper functions file
+-- Version 0.1 for PostgreSQL 9.x
+-- https://github.com/edwardsmarc/postTranslationEngine
+--
+-- This is free software; you can redistribute and/or modify it under
+-- the terms of the GNU General Public Licence. See the COPYING file.
+--
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+--                         Marc Edwards <medwards219@gmail.com>,
+--                         Pierre Vernier <pierre.vernier@gmail.com>
+--
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Begin Function Definitions...
+-------------------------------------------------------------------------------
+-- TT_Name
+--  Parameter1 type description
+--  Parameter2 type description
+--  Etc...
+-- Description
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 24/01/2019 added in v0.1
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
