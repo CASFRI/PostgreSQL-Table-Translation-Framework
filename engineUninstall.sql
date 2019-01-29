@@ -14,5 +14,8 @@
 
 DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, name, text[]);
-DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, name, text[]);
+DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
+DROP FUNCTION IF EXISTS TT_ParseRules(text);
+DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
+DROP TYPE IF EXISTS TT_RuleDef;

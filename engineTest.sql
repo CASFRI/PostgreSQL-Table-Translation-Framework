@@ -16,25 +16,25 @@ SET lc_messages TO 'en_US.UTF-8';
 -- Create a test source table
 DROP TABLE IF EXISTS test_sourcetable1;
 CREATE TABLE test_sourcetable1 AS
-SELECT 'a'::text id, 1 height
+SELECT 'a'::text id, 1 crown_closure
 UNION ALL
-SELECT 'b'::text, 3 height
+SELECT 'b'::text, 3 
 UNION ALL
-SELECT 'c'::text, 5 height;
+SELECT 'c'::text, 101;
 
 -- Create a test translation table
 DROP TABLE IF EXISTS test_translationTable;
 CREATE TABLE test_translationTable AS
 SELECT 'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'int'::text targetAttributeType,
-       'notNull(crown_closure, -8888);between(crown_closure, 0, 100, -9999)'::text validationRules,
+       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copy(crown_closure)'::text translationRules,
        'Test'::text description,
        TRUE descUpToDateWithRules
 UNION ALL
 SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'int'::text targetAttributeType,
-       'notNull(crown_closure, -8888);between(crown_closure, 0, 100, -9999)'::text validationRules,
+       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copy(crown_closure)'::text translationRules,
        'Test'::text description,
        TRUE descUpToDateWithRules;
@@ -52,9 +52,11 @@ SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
 -- by returning nothing.
 WITH test_nb AS (
     SELECT 'TT_FullTableName'::text function_tested, 1 maj_num,  5 nb_test UNION ALL
-    SELECT 'TT_ValidateTTable'::text,                2,          0         UNION ALL
-    SELECT 'TT_Prepare'::text,                       3,          0         UNION ALL
-    SELECT '_TT_Translate'::text,                    4,          0
+    SELECT 'TT_ParseArgs'::text,                     2,          1         UNION ALL
+    SELECT 'TT_ParseRules'::text,                    3,          1         UNION ALL
+    SELECT 'TT_ValidateTTable'::text,                4,          1         UNION ALL
+    SELECT 'TT_Prepare'::text,                       5,          0         UNION ALL
+    SELECT '_TT_Translate'::text,                    6,          0
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -103,6 +105,26 @@ SELECT '1.5'::text number,
        'Both names starting with a digit'::text description,
         TT_FullTableName('1schema', '1table')  = '"1schema"."1table"' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '2.1'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Basic test, space and numeric'::text description,
+        TT_ParseArgs('aa, bb,-111.11')  = ARRAY['aa', 'bb', '-111.11'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.1'::text number,
+       'TT_ParseRules'::text function_tested,
+       'Basic test, space and numeric'::text description,
+        TT_ParseRules('test1(aa, bb,-999.55); test2(cc, dd,222.22)') = ARRAY[('test1', '{aa,bb,-999.55}', '', FALSE)::TT_RuleDef, ('test2', '{cc,dd,222.22}', '', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.1'::text number,
+       'TT_ValidateTTable'::text function_tested,
+       'Basic test'::text description,
+        array_agg(rec)::text = '{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,\\\\\"\"{crown_closure,-8888}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100,-9999}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\"}\",\"{\"\"(copy,{crown_closure},\\\\\"\"\\\\\"\",f)\"\"}\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,\\\\\"\"{crown_closure,-8888}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100,-9999}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\"}\",\"{\"\"(copy,{crown_closure},\\\\\"\"\\\\\"\",f)\"\"}\",Test,t)"}'
+FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
+
+---------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
 ORDER BY maj_num::int, min_num::int
@@ -116,3 +138,7 @@ ORDER BY maj_num::int, min_num::int
 
 --SELECT (TT_Translate('public', 'test_sourcetable1')).*
 
+--CREATE TABLE "test2" AS SELECT 1
+--SELECT * FROM "public".test2
+
+--SELECT * FROM public."1test1"
