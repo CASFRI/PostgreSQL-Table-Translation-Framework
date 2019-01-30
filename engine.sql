@@ -365,6 +365,7 @@ RETURNS SETOF RECORD AS $$
     arg text;
     newrule text;
     val text;
+    argval text;
     result boolean;
   BEGIN
     -- Validate the existence of the source table. TODO
@@ -388,38 +389,38 @@ RAISE NOTICE '00 query = %', query;
 RAISE NOTICE '11 translatedrow = %', translatedrow;
          FOREACH rule IN ARRAY translatedrow.validationRules LOOP
 --RAISE NOTICE '11 rule.args = %', rule.args;
-           newrule = 'TT_' || rule.fctname || '(';
+           newrule = 'SELECT TT_' || rule.fctname || '(';
            FOREACH arg IN ARRAY rule.args LOOP
-             val = to_jsonb(sourcerow)->arg;
-             IF val IS NULL THEN
+             argval = to_jsonb(sourcerow)->arg;
+             IF argval IS NULL THEN
                newrule = newrule || arg || ', ';
 --RAISE NOTICE '22 arg = %', arg;
 
              ELSE
-               newrule = newrule || val || ', ';
---RAISE NOTICE '33 val = %', val;
+               newrule = newrule || argval || ', ';
+--RAISE NOTICE '33 argval = %', argval;
              END IF;
            END LOOP;
            newrule = left(newrule, char_length(newrule) - 2) || ')';
 RAISE NOTICE '44 newrule = %', newrule::text;
            
            EXECUTE newrule INTO STRICT result;
-    --       IF NOT result THEN
-    --         IF stopOnInvalied THEN 
-    --           RAISE NOTICE
-    --         END IF;
-    --         val = errorCode;
-    --       END IF
-         RETURN NEXT (2, 3);
+RAISE NOTICE '55 result = %', result;
+           val = rule.errorCode;
+           IF NOT result THEN
+RAISE NOTICE '55 result = %', result;
+             IF rule.stopOnInvalid THEN 
+RAISE EXCEPTION 'Invalid rule: % found...', newrule;
+             END IF;
+
+           END IF
          END LOOP ;
-         EXIT WHEN NOT FOUND;
-    --     IF val IS NULL THEN 
+         IF result THEN
     --       replace values in translationRule
     --       EXECUTE invalidRule INTO STRICT val;
-    --     END IF
+         END IF
           
        END LOOP;
-       EXIT WHEN NOT FOUND;
     --   RETURN NEXT val1, val2, val3,...
        RETURN NEXT (1, 2);
     END LOOP;
