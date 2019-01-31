@@ -9,9 +9,7 @@
 -- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
---
 -------------------------------------------------------------------------------
-
 -------------------------------------------------------------------------------
 -- Types Definitions...
 -------------------------------------------------------------------------------
@@ -72,12 +70,13 @@ CREATE OR REPLACE FUNCTION TT_ParseArgs(
 )
 RETURNS text[] AS $$
   DECLARE
-    ret text[];
+    result text[];
   BEGIN
      SELECT array_agg(a[1])
+     -- Match any double quoted string or word
      FROM (SELECT regexp_matches(argStr, '("[-;,\w\s]+"|[-.\w]+)', 'g') a) foo
-     INTO STRICT ret;
-    RETURN ret;
+     INTO STRICT result;
+    RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -85,7 +84,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_ParseRules
 --
---  ruleStr text - Rule string to parse into it differetn components.
+--  ruleStr text - Rule string to parse into its different components.
 --
 --  RETURNS TT_HelperFctDef[]
 --
@@ -105,8 +104,18 @@ RETURNS TT_RuleDef[] AS $$
     ruleDef TT_RuleDef;
     ruleDefs TT_RuleDef[];
   BEGIN
-    --FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)\s*\(([^;]+)\)', 'g') LOOP
-    FOR rules IN SELECT regexp_matches('between(crown_closure, 0, 100| -9999, TRUE)', '(\w+)\s*\(([^;|]+)\|?\s*([^;,|]+)?,?\s*(TRUE|FALSE)?\)', 'g') LOOP
+    -- Split the ruleStr into each separate rule: function name, list of arguments, error code and stopOnInvalid flag
+    FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)' ||       -- fonction name
+                                                '\s*' ||         -- any space
+                                                '\(' ||          -- first parenthesis
+                                                '([^;|]+)' ||    -- a list of arguments
+                                                '\|?\s*' ||      -- a vertical bar followed by any spaces
+                                                '([^;,|]+)?' ||  -- the error code
+                                                ',?\s*' ||       -- a comma followed by any spaces
+                                                '(TRUE|FALSE)?\)'-- TRUE or FALSE
+                                                , 'g') LOOP
+   
+    --FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)\s*\(([^;|]+)\|?\s*([^;,|]+)?,?\s*(TRUE|FALSE)?\)', 'g') LOOP
       ruleDef.fctName = rules[1];
       ruleDef.args = TT_ParseArgs(rules[2]);
       ruleDef.errorcode = rules[3];
@@ -114,6 +123,58 @@ RETURNS TT_RuleDef[] AS $$
       ruleDefs = array_append(ruleDefs, ruleDef);
     END LOOP;
     RETURN ruleDefs;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Evaluate
+--
+--  - fctName    - Name of the founction to evaluate. Will always be prefixed 
+--                 with "TT_"
+--  - arg        - Array of arguments to passs to the function
+--  - vals       - Replacement values passed as a jsonb object (since PostgresQL 
+--                 does not allow passing RECORD to functions).
+--  - returnType - Determine the type of the returned value (declared 
+--                 generically as anyelement).
+--
+--  RETURNS anyelement
+--
+-- Evaluate a function given its name, some arguments and replacement values. 
+-- returnType determines the return type.
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 30/01/2019 added in v0.1
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_Evaluate(text, text[], jsonb, anyelement);
+CREATE OR REPLACE FUNCTION TT_Evaluate(
+  fctName text,
+  args text[],
+  vals jsonb,
+  returnType anyelement
+)
+RETURNS anyelement AS $$
+  DECLARE
+    ruleQuery text;
+    argVal text;
+    arg text;
+    result ALIAS FOR $0;
+  BEGIN
+    ruleQuery = 'SELECT TT_' || fctName || '(';
+    -- Search for any argument names in the provided value jsonb object
+    FOREACH arg IN ARRAY args LOOP
+      argVal = vals->arg;
+      IF argVal IS NULL THEN
+        ruleQuery = ruleQuery || arg || ', ';
+      ELSE
+        ruleQuery = ruleQuery || argVal || ', ';
+      END IF;
+    END LOOP;
+    -- Remove the last comma.
+    ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')';
+
+    EXECUTE ruleQuery INTO STRICT result;
+    RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -187,6 +248,7 @@ RETURNS text[] AS $$
     FROM information_schema.columns
     WHERE table_schema = schemaName AND table_name = tableName
     INTO STRICT colNames;
+    
     RETURN colNames;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -230,19 +292,17 @@ CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTableSchema name,
   translationTable name
 )
-RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRules TT_RuleDef[], description text, descUpToDateWithRules boolean) AS $$
+RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef, description text, descUpToDateWithRules boolean) AS $$
   DECLARE
     row RECORD;
     query text;
   BEGIN
     query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable);
---RAISE NOTICE 'TT_ValidateTTable query1 = %', translationTableSchema;
---RAISE NOTICE 'TT_ValidateTTable query2 = %', translationTable;
     FOR row IN EXECUTE query LOOP
       targetAttribute = row.targetAttribute;
       targetAttributeType = row.targetAttributeType;
       validationRules = TT_ParseRules(row.validationRules);
-      translationRules = TT_ParseRules(row.translationRules);
+      translationRule = (TT_ParseRules(row.translationRules))[1];
       description = COALESCE(row.description, '');
       descUpToDateWithRules = row.descUpToDateWithRules;
       RETURN NEXT;
@@ -260,25 +320,24 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   translationTable name       - Name of the translation table.
 --   fctName name                - Name iof the function to create. Default to 
 --                                 'TT_Translate'.
---   attributeList               - 
 --
 --   RETURNS text                - Name of the function created.
 --
--- Create the base translation function to execute as the actual tranlation. This
--- function exists in order to palliate the fact that PostgreSQL does not allow creating
--- function able to return SETOF rows of arbitrary variable types. The function 
--- created by this function "freeze" and declare the return type of the translation
--- funtion enabling the package to return rows of arbitrriyl typed rows.
+-- Create the base translation function to execute when tranlating. This
+-- function exists in order to palliate the fact that PostgreSQL does not allow 
+-- creating functions able to return SETOF rows of arbitrary variable types. 
+-- The function created by this function "freeze" and declare the return type 
+-- of the actual translation funtion enabling the package to return rows of 
+-- arbitrary typed rows.
 ------------------------------------------------------------
 -- Pierre Racine (pierre.racine@sbf.ulaval.ca)
 -- 24/01/2019 added in v0.1
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, name, text[]);
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
-  fctName name DEFAULT 'TT_Translate',
-  attributeList text[] DEFAULT NULL
+  fctName name DEFAULT 'TT_Translate'
 )
 RETURNS text AS $f$
   DECLARE 
@@ -292,8 +351,8 @@ RETURNS text AS $f$
     query = 'DROP FUNCTION TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);';
     EXECUTE query;
 
+    -- Build the list of attribute types
     query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '') FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
---RAISE NOTICE 'query11 = %', query;
     EXECUTE query INTO STRICT paramlist;
       
     query = 'CREATE OR REPLACE FUNCTION TT_Translate(
@@ -309,7 +368,15 @@ RETURNS text AS $f$
              )
              RETURNS TABLE (' || paramlist || ') AS $$
              BEGIN
-               RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema, sourceTable, translationTableSchema, translationTable) AS t(id int, col2 int);
+               RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema, 
+                                                        sourceTable, 
+                                                        translationTableSchema, 
+                                                        translationTable, 
+                                                        targetAttributeList, 
+                                                        stopOnInvalid, 
+                                                        logFrequency, 
+                                                        resume, 
+                                                        ignoreDescUpToDateWithRules) AS t(id int, col2 int);
                RETURN;
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
@@ -357,72 +424,47 @@ CREATE OR REPLACE FUNCTION _TT_Translate(
 RETURNS SETOF RECORD AS $$
   DECLARE
     sourcerow RECORD;
+    translationrow RECORD;
     translatedrow RECORD;
     rule TT_RuleDef;
-    ruleStr text;
-    query text;
-    
-    arg text;
-    newrule text;
-    val text;
-    argval text;
-    result boolean;
+    finalQuery text;
+    finalVal text;
+    isValid boolean;
+    jsonbRow jsonb;
   BEGIN
     -- Validate the existence of the source table. TODO
-    -- Parse and validate the translation file. TODO
-    --   Parsing function could:
-    --   1) Parse only, leaving the validation and resolution to subsequent steps
-    --      Pro: make parse and validate functions more simple as well as arguments
-    --      Con: why would we want to parse and validate separately?
-    --   2) Parse and validate, leaving the resolution to a subsequent step
-    --      Pro: impossible to try t
-    --   3) Parse, validate and resolve at the same time
-    --      Con: Have to parse and validate for every input values
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
-    -- Apply each parsed translation table row to each row of the source table
-    query = 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable);
-
-RAISE NOTICE '00 query = %', query;
-    FOR sourcerow IN EXECUTE query LOOP
-       FOR translatedrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
-RAISE NOTICE '11 translatedrow = %', translatedrow;
-         FOREACH rule IN ARRAY translatedrow.validationRules LOOP
---RAISE NOTICE '11 rule.args = %', rule.args;
-           newrule = 'SELECT TT_' || rule.fctname || '(';
-           FOREACH arg IN ARRAY rule.args LOOP
-             argval = to_jsonb(sourcerow)->arg;
-             IF argval IS NULL THEN
-               newrule = newrule || arg || ', ';
---RAISE NOTICE '22 arg = %', arg;
-
-             ELSE
-               newrule = newrule || argval || ', ';
---RAISE NOTICE '33 argval = %', argval;
-             END IF;
-           END LOOP;
-           newrule = left(newrule, char_length(newrule) - 2) || ')';
-RAISE NOTICE '44 newrule = %', newrule::text;
-           
-           EXECUTE newrule INTO STRICT result;
-RAISE NOTICE '55 result = %', result;
-           val = rule.errorCode;
-           IF NOT result THEN
-RAISE NOTICE '55 result = %', result;
-             IF rule.stopOnInvalid THEN 
-RAISE EXCEPTION 'Invalid rule: % found...', newrule;
-             END IF;
-
-           END IF
+    -- FOR each row of the source table
+    FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
+       -- Convert the row to a json object so we can pass it to TT_Evaluate() (PostgreSQL does not allow passing RECORD to functions)
+       jsonbRow = to_jsonb(sourcerow);
+       finalQuery = 'SELECT';
+       -- Iterate over each translation table row. One row per output attribute
+       FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
+         -- Iterate over each invalid rule
+         FOREACH rule IN ARRAY translationrow.validationRules LOOP
+           -- Evaluate the rule
+           isValid = TT_Evaluate(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+           -- initialize the final value
+           finalVal = rule.errorCode;
+           -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
+           IF NOT isValid AND rule.stopOnInvalid THEN
+               RAISE EXCEPTION 'Invalid rule found...';
+           END IF;
          END LOOP ;
-         IF result THEN
-    --       replace values in translationRule
-    --       EXECUTE invalidRule INTO STRICT val;
-         END IF
-          
+         -- If all validation rule passed, execute the translation rule
+         IF isValid THEN
+           EXECUTE 'SELECT TT_Evaluate($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
+           USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
+         END IF;
+         -- Built the return query while computing values
+         finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
        END LOOP;
-    --   RETURN NEXT val1, val2, val3,...
-       RETURN NEXT (1, 2);
+       -- Execute the final query building the returned RECORD
+       finalQuery = left(finalQuery, char_length(finalQuery) - 1);
+       EXECUTE finalQuery INTO translatedrow;
+       RETURN NEXT translatedrow;
     END LOOP;
     RETURN;
   END;

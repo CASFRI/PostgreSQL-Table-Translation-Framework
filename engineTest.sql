@@ -9,7 +9,6 @@
 -- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
---
 -------------------------------------------------------------------------------
 SET lc_messages TO 'en_US.UTF-8';
 
@@ -115,23 +114,26 @@ UNION ALL
 SELECT '3.1'::text number,
        'TT_ParseRules'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseRules('test1(aa, bb,-999.55); test2(cc, dd,222.22)') = ARRAY[('test1', '{aa,bb,-999.55}', '', FALSE)::TT_RuleDef, ('test2', '{cc,dd,222.22}', '', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(aa, bb,-999.55); test2(cc, dd,222.22)') = ARRAY[('test1', '{aa,bb,-999.55}', NULL, FALSE)::TT_RuleDef, ('test2', '{cc,dd,222.22}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
-        array_agg(rec)::text = '{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,\\\\\"\"{crown_closure,-8888}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100,-9999}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\"}\",\"{\"\"(copy,{crown_closure},\\\\\"\"\\\\\"\",f)\"\"}\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,\\\\\"\"{crown_closure,-8888}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100,-9999}\\\\\"\",\\\\\"\"\\\\\"\",f)\"\"}\",\"{\"\"(copy,{crown_closure},\\\\\"\"\\\\\"\",f)\"\"}\",Test,t)"}'
+        array_agg(rec)::text = 
+'{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)"}'
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
-
 ---------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
 -- to display only failing tests...
---) foo WHERE NOT passed;
+--) foo WHERE NOT passed
+;
 
+DROP TABLE IF EXISTS test_sourcetable1;
+DROP TABLE IF EXISTS test_translationTable;
 --SELECT TT_Prepare('public', 'test_translationtable');
 
 --SELECT * FROM TT_Translate('public', 'test_sourcetable1')

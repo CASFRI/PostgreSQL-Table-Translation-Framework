@@ -1,5 +1,5 @@
 ﻿------------------------------------------------------------------------------
--- PostgreSQL Table Tranlation Engine - Helper functions file
+-- PostgreSQL Table Tranlation Engine - Helper functions uninstallation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
 --
@@ -11,8 +11,8 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 --
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
--- Begin Function Definitions...
+-- Begin Validation Function Definitions...
+-- Validation functions return only boolean values (TRUE or FALSE).
 -------------------------------------------------------------------------------
 -- TT_NotNull
 --
@@ -56,3 +56,25 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
+-- Begin Translation Function Definitions...
+-- Translation functions return any kind of value (not only boolean).
+-------------------------------------------------------------------------------
+-- TT_Copy
+--
+--  var any  - Variable to return.
+--
+-- Return the value.
+------------------------------------------------------------
+-- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- 31/01/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Copy(
+  var anyelement
+)
+RETURNS anyelement AS $$
+  BEGIN
+    RETURN var;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
