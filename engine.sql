@@ -119,7 +119,7 @@ RETURNS TT_RuleDef[] AS $$
       ruleDef.fctName = rules[1];
       ruleDef.args = TT_ParseArgs(rules[2]);
       ruleDef.errorcode = rules[3];
-      ruleDef.stopOnInvalid = rules[4];
+      ruleDef.stopOnInvalid = coalesce(rules[4]::boolean, FALSE);
       ruleDefs = array_append(ruleDefs, ruleDef);
     END LOOP;
     RETURN ruleDefs;
@@ -303,7 +303,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       targetAttributeType = row.targetAttributeType;
       validationRules = TT_ParseRules(row.validationRules);
       translationRule = (TT_ParseRules(row.translationRules))[1];
-      description = COALESCE(row.description, '');
+      description = coalesce(row.description, '');
       descUpToDateWithRules = row.descUpToDateWithRules;
       RETURN NEXT;
     END LOOP;
