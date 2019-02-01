@@ -53,7 +53,7 @@ WITH test_nb AS (
     SELECT 'TT_FullTableName'::text function_tested, 1 maj_num,  5 nb_test UNION ALL
     SELECT 'TT_ParseArgs'::text,                     2,         11         UNION ALL
     SELECT 'TT_ParseRules'::text,                    3,          9         UNION ALL
-    SELECT 'TT_ValidateTTable'::text,                4,          1         UNION ALL
+    SELECT 'TT_ValidateTTable'::text,                4,          4         UNION ALL
     SELECT 'TT_Prepare'::text,                       5,          0         UNION ALL
     SELECT '_TT_Translate'::text,                    6,          0
 ),
@@ -227,14 +227,39 @@ SELECT '3.9'::text number,
        'Test what''s in the test translation table'::text description,
         array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, 0, 100}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, 0, 100}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
 FROM public.test_translationtable
+---------------------------------------------------------
+-- Test 4 - TT_ValidateTTable
 --------------------------------------------------------
 UNION ALL
 SELECT '4.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)"}'
+'{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
+--------------------------------------------------------
+UNION ALL
+SELECT '4.2'::text number,
+       'TT_ValidateTTable'::text function_tested,
+       'Test for NULL'::text description,
+        array_agg(rec)::text IS NULL passed
+FROM (SELECT TT_ValidateTTable() rec) foo
+--------------------------------------------------------
+UNION ALL
+SELECT '4.3'::text number,
+       'TT_ValidateTTable'::text function_tested,
+       'Test for emptys'::text description,
+        array_agg(rec)::text IS NULL passed
+FROM (SELECT TT_ValidateTTable('', '') rec) foo
+--------------------------------------------------------
+UNION ALL
+SELECT '4.4'::text number,
+       'TT_ValidateTTable'::text function_tested,
+       'Test default schema to public'::text description,
+        array_agg(rec)::text = 
+'{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)"}' passed
+FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
+---------------------------------------------------------
 ---------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 

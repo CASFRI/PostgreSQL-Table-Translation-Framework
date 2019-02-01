@@ -31,9 +31,6 @@ CREATE TYPE TT_RuleDef AS (
 --
 -- RETURNS text      - Full name of the table.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 CREATE OR REPLACE FUNCTION TT_FullTableName(
   schemaName name,
@@ -53,6 +50,28 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_DropAllTranslate
+--
+-- RETURNS SETOF text      - All DROP query executed.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DropAllTranslate();
+CREATE OR REPLACE FUNCTION TT_DropAllTranslate(
+)
+RETURNS SETOF text AS $$
+  DECLARE
+    res RECORD;
+  BEGIN
+    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text query
+               FROM pg_proc WHERE left(proname, 12) = 'tt_translate' AND pg_function_is_visible(oid) LOOP
+      EXECUTE res.query;
+      RETURN NEXT res.query;
+    END LOOP;
+  RETURN;
+END
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_ParseArgs
 --
 --  argStr text - Rule string to parse into it differetn components.
@@ -60,9 +79,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  RETURNS text[]
 --
 -- Parse an argument string into its separate components.
-------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
@@ -91,9 +107,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Parse a rule string into function name, arguments, error code and stop on 
 -- invalid flag.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseRules(
     ruleStr text DEFAULT NULL
@@ -114,8 +127,6 @@ RETURNS TT_RuleDef[] AS $$
                                                 ',?\s*' ||       -- a comma followed by any spaces
                                                 '(TRUE|FALSE)?\)'-- TRUE or FALSE
                                                 , 'g') LOOP
-   
-    --FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)\s*\(([^;|]+)\|?\s*([^;,|]+)?,?\s*(TRUE|FALSE)?\)', 'g') LOOP
       ruleDef.fctName = rules[1];
       ruleDef.args = TT_ParseArgs(rules[2]);
       ruleDef.errorcode = rules[3];
@@ -142,9 +153,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Evaluate a function given its name, some arguments and replacement values. 
 -- returnType determines the return type.
-------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 30/01/2019 added in v0.1
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_Evaluate(text, text[], jsonb, anyelement);
 CREATE OR REPLACE FUNCTION TT_Evaluate(
@@ -183,9 +191,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_TypeGuess
 -- Guess the best type for a string. Used by TT_FctCallValid()
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 -- Code
 -------------------------------------------------------------------------------
 
@@ -203,9 +208,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- 
 -- SELECT TT_FctExist('TT_TypeGuess(text)')
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 -- Code
 -- See https://stackoverflow.com/questions/24773603/how-to-find-if-a-function-exists-in-postgresql
 -------------------------------------------------------------------------------
@@ -214,10 +216,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_FctCallValid
 -- Determine if a function having the specified parameter values. Use TT_TypeGuess
 -- to determine the type and then TT_FctExist()
-------------------------------------------------------------
-------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
 ------------------------------------------------------------
 -- Code
 -------------------------------------------------------------------------------
@@ -231,9 +229,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   RETURNS text[]   - ARRAY of column names.
 --
 -- Return the column names for the speficied table.
-------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ColumnNames(name, name);
 CREATE OR REPLACE FUNCTION TT_ColumnNames(
@@ -284,19 +279,23 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  Stop the process if any invalid value is found in the
 --  translation table.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
-  translationTableSchema name,
-  translationTable name
+  translationTableSchema name DEFAULT NULL,
+  translationTable name DEFAULT NULL
 )
 RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef, description text, descUpToDateWithRules boolean) AS $$
   DECLARE
     row RECORD;
     query text;
   BEGIN
+    IF translationTable IS NULL THEN
+      translationTable = translationTableSchema;
+      translationTableSchema = 'public';
+    END IF;
+    IF translationTable IS NULL or translationTable = '' THEN
+      RETURN;
+    END IF;
     query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable);
     FOR row IN EXECUTE query LOOP
       targetAttribute = row.targetAttribute;
@@ -330,14 +329,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- of the actual translation funtion enabling the package to return rows of 
 -- arbitrary typed rows.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
-------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
-  fctName name DEFAULT 'TT_Translate'
+  fctNameSuf name DEFAULT ''
 )
 RETURNS text AS $f$
   DECLARE 
@@ -355,7 +351,7 @@ RETURNS text AS $f$
     query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '') FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
       
-    query = 'CREATE OR REPLACE FUNCTION TT_Translate(
+    query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
                sourceTableSchema name,
                sourceTable name,
                translationTableSchema name DEFAULT NULL,
@@ -381,7 +377,7 @@ RETURNS text AS $f$
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
     EXECUTE query;
-    RETURN fctName;
+    RETURN 'TT_Translate' || fctNameSuf;
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
 
@@ -405,9 +401,6 @@ $f$ LANGUAGE plpgsql VOLATILE;
 --   RETURNS SETOF RECORDS
 --
 -- Translate a source table according to the rules defined in a tranlation table.
-------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
--- 24/01/2019 added in v0.1
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
