@@ -66,15 +66,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
-    argStr text
+    argStr text DEFAULT NULL
 )
 RETURNS text[] AS $$
   DECLARE
-    result text[];
+    result text[] = '{}';
   BEGIN
-     SELECT array_agg(a[1])
+     SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
      -- Match any double quoted string or word
-     FROM (SELECT regexp_matches(argStr, '("[-;,\w\s]+"|[-.\w]+)', 'g') a) foo
+     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|"[-;'',\.\w\s]*"|[-\.''"\w]+)', 'g') a) foo
      INTO STRICT result;
     RETURN result;
   END;
@@ -96,7 +96,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseRules(
-    ruleStr text
+    ruleStr text DEFAULT NULL
 )
 RETURNS TT_RuleDef[] AS $$
   DECLARE
@@ -108,7 +108,7 @@ RETURNS TT_RuleDef[] AS $$
     FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)' ||       -- fonction name
                                                 '\s*' ||         -- any space
                                                 '\(' ||          -- first parenthesis
-                                                '([^;|]+)' ||    -- a list of arguments
+                                                '([^;|]*)' ||    -- a list of arguments
                                                 '\|?\s*' ||      -- a vertical bar followed by any spaces
                                                 '([^;,|]+)?' ||  -- the error code
                                                 ',?\s*' ||       -- a comma followed by any spaces
@@ -348,7 +348,7 @@ RETURNS text AS $f$
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
     -- Drop any existing TT_Translate function
-    query = 'DROP FUNCTION TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);';
     EXECUTE query;
 
     -- Build the list of attribute types
