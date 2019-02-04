@@ -90,7 +90,7 @@ SELECT '1.4'::text number,
        TT_NotNull(NULL::text) IS FALSE passed
 
 ---------------------------------------------------------
--- Test 1 - TT_Between
+-- Test 2 - TT_Between
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.1'::text number,
