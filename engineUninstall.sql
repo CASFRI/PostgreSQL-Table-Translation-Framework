@@ -19,5 +19,8 @@ DROP FUNCTION IF EXISTS TT_Evaluate(text, text[], jsonb, anyelement);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 DROP FUNCTION IF EXISTS TT_DropAllTranslate();
+DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
+DROP FUNCTION IF EXISTS TT_FctExists(name, name, text[]);
+DROP FUNCTION IF EXISTS TT_FctExists(name, text[]);
 DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 DROP TYPE IF EXISTS TT_RuleDef;

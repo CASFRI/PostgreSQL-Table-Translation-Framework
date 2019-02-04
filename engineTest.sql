@@ -38,7 +38,7 @@ SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'Test'::text description,
        TRUE descUpToDateWithRules;
 
---SELECT * FROM test_translationTable;
+SELECT TT_Prepare('test_translationtable');
 
 -----------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
@@ -54,8 +54,10 @@ WITH test_nb AS (
     SELECT 'TT_ParseArgs'::text,                     2,         11         UNION ALL
     SELECT 'TT_ParseRules'::text,                    3,          9         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                4,          4         UNION ALL
-    SELECT 'TT_Prepare'::text,                       5,          0         UNION ALL
-    SELECT '_TT_Translate'::text,                    6,          0
+    SELECT 'TT_LowerArr'::text,                      5,          3         UNION ALL
+    SELECT 'TT_FctExists'::text,                     6,          6         UNION ALL
+    SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
+    SELECT '_TT_Translate'::text,                    8,          0
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -260,7 +262,90 @@ SELECT '4.4'::text number,
 '{"(CROWN_CLOSURE_UPPER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,int,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copy,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 ---------------------------------------------------------
+-- Test 5 - TT_LowerArr
+--------------------------------------------------------
+UNION ALL
+SELECT '5.1'::text number,
+       'TT_LowerArr'::text function_tested,
+       'Basic test'::text description,
+        TT_LowerArr(ARRAY['Name', 'TEXT[]']) = ARRAY['name', 'text[]']::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '5.2'::text number,
+       'TT_LowerArr'::text function_tested,
+       'Test NULL'::text description,
+        TT_LowerArr(NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '5.3'::text number,
+       'TT_LowerArr'::text function_tested,
+       'Test empty array'::text description,
+        TT_LowerArr(ARRAY[]::text[])  = ARRAY[]::text[] passed
 ---------------------------------------------------------
+-- Test 6 - TT_FctExists
+--------------------------------------------------------
+UNION ALL
+SELECT '6.1'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test one NULL'::text description,
+        TT_FctExists(NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.2'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test two NULLs'::text description,
+        TT_FctExists(NULL, NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.3'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test NULLs'::text description,
+        TT_FctExists(NULL, NULL, NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.4'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test one empty'::text description,
+        TT_FctExists('') = FALSE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.5'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test two emptys'::text description,
+        TT_FctExists('', '') = FALSE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.6'::text number,
+       'TT_FctExists'::text function_tested,
+       'Test three emptys'::text description,
+        TT_FctExists('', '', ARRAY[]::text[]) = FALSE passed
+--------------------------------------------------------
+-- Test 7 - TT_Prepare
+--------------------------------------------------------
+UNION ALL
+SELECT '7.1'::text number,
+       'TT_Prepare'::text function_tested,
+       'Basic test, check if created function exists'::text description,
+        TT_FctExists('public', 'TT_Translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.2'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without schema name'::text description,
+        TT_FctExists('TT_Translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.3'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without parameters'::text description,
+        TT_FctExists('TT_Translate') passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.4'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test upper and lower case caracters'::text description,
+        TT_FctExists('Public', 'Tt_translate', ARRAY['Name', 'name', 'name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) passed
+--------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
 ORDER BY maj_num::int, min_num::int

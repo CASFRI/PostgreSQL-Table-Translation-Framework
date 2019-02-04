@@ -37,7 +37,8 @@ CREATE OR REPLACE FUNCTION TT_FullTableName(
   tableName name
 )
 RETURNS text AS $$
-  DECLARE newSchemaName text = '';
+  DECLARE
+    newSchemaName text = '';
   BEGIN
     IF length(schemaName) > 0 THEN
       newSchemaName = schemaName;
@@ -45,6 +46,134 @@ RETURNS text AS $$
       newSchemaName = 'public';
     END IF;
     RETURN quote_ident(newSchemaName) || '.' || quote_ident(tableName);
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LowerArr
+--
+--   arr text[]   - An array of text value.
+--
+-- RETURNS text[] - The input array lower cased.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
+CREATE OR REPLACE FUNCTION TT_LowerArr(
+  arr text[] DEFAULT NULL
+)
+RETURNS text[] AS $$
+  DECLARE
+    newArr text[] = ARRAY[]::text[];
+  BEGIN
+    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN
+      RETURN ARRAY[]::text[];
+    END IF;
+    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr;
+    RETURN newArr;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_TypeGuess
+-- Guess the best type for a string. Used by TT_FctCallValid()
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FctExist
+--
+--   fctString text
+--   argTypes  text[]
+--
+-- RETURNS boolean
+--
+-- Return TRUE if fctString exists as a function having the specified parameter types
+------------------------------------------------------------
+-- Self contained example:
+-- 
+-- SELECT TT_FctExists('TT_Evaluate', {'text', 'text[]', 'jsonb', 'anyelement'})
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text[]);
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  schemaName name,
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  DECLARE
+    cnt int = 0;
+  BEGIN
+--RAISE NOTICE 'TT_FctExists 11';
+    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    IF fctName = '' OR fctName = '.' THEN
+      RETURN FALSE;
+    END IF;
+    fctName = lower(fctName);
+--RAISE NOTICE 'TT_FctExists 22 fctName=%', fctName;
+    SELECT count(*)
+    FROM pg_proc
+    WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    INTO cnt;
+--RAISE NOTICE 'TT_FctExists 33';
+    IF cnt > 0 THEN 
+      RETURN TRUE;
+    END IF;
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  SELECT TT_FctExists(''::name, fctName, argTypes)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FctCallValid
+-- Determine if a function having the specified parameter values. Use TT_TypeGuess
+-- to determine the type and then TT_FctExist()
+------------------------------------------------------------
+-- Code
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_ColumnNames
+--
+--   tableSchema name - Name of the schema containing the table.
+--   table name       - Name of the table.
+--
+--   RETURNS text[]   - ARRAY of column names.
+--
+-- Return the column names for the speficied table.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_ColumnNames(name, name);
+CREATE OR REPLACE FUNCTION TT_ColumnNames(
+  schemaName name,
+  tableName name
+)
+RETURNS text[] AS $$
+  DECLARE
+    colNames text[];
+  BEGIN
+    SELECT array_agg(column_name::text)
+    FROM information_schema.columns
+    WHERE table_schema = schemaName AND table_name = tableName
+    INTO STRICT colNames;
+    
+    RETURN colNames;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -188,68 +317,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_TypeGuess
--- Guess the best type for a string. Used by TT_FctCallValid()
-------------------------------------------------------------
--- Code
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_FctExist
---
---   fctString text
---
--- RETURNS boolean
---
--- Return TRUE if fctString exists as a function having the specified parameter types
-------------------------------------------------------------
---
--- Self contained example:
--- 
--- SELECT TT_FctExist('TT_TypeGuess(text)')
-------------------------------------------------------------
--- Code
--- See https://stackoverflow.com/questions/24773603/how-to-find-if-a-function-exists-in-postgresql
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_FctCallValid
--- Determine if a function having the specified parameter values. Use TT_TypeGuess
--- to determine the type and then TT_FctExist()
-------------------------------------------------------------
--- Code
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_ColumnNames
---
---   tableSchema name - Name of the schema containing the table.
---   table name       - Name of the table.
---
---   RETURNS text[]   - ARRAY of column names.
---
--- Return the column names for the speficied table.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ColumnNames(name, name);
-CREATE OR REPLACE FUNCTION TT_ColumnNames(
-  schemaName name,
-  tableName name
-)
-RETURNS text[] AS $$
-  DECLARE
-    colNames text[];
-  BEGIN
-    SELECT array_agg(column_name::text)
-    FROM information_schema.columns
-    WHERE table_schema = schemaName AND table_name = tableName
-    INTO STRICT colNames;
-    
-    RETURN colNames;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
 -- TT_ParseTTable
 --
 --   translationTableSchema name - Name of the schema containing the translation 
@@ -332,7 +399,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
-  translationTable name,
+  translationTable name DEFAULT NULL,
   fctNameSuf name DEFAULT ''
 )
 RETURNS text AS $f$
@@ -340,6 +407,13 @@ RETURNS text AS $f$
     query text;
     paramlist text;
   BEGIN
+    IF translationTable IS NULL THEN
+      translationTable = translationTableSchema;
+      translationTableSchema = 'public';
+    END IF;
+    IF translationTable IS NULL or translationTable = '' THEN
+      RETURN NULL;
+    END IF;
     -- Validate the translation table
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
