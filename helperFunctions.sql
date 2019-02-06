@@ -56,6 +56,29 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NotEmpty
+--
+--  var any  - Variable to test for empty string.
+--
+-- Return TRUE if var is not empty.
+-- Return FALSE if var is empty string or padded spaces (e.g. '' or '  ').
+-- Doesn't work for numeric types.
+------------------------------------------------------------
+-- Marc Edwards (medwards219@gmail.com)
+-- 4/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_NotEmpty(
+   var anyelement
+)
+RETURNS boolean AS $$
+  BEGIN
+    RETURN TRIM(var) = '' IS FALSE; -- trim removes any spaces before evaluating string.
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+------------------------------------------------------------
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
 -------------------------------------------------------------------------------
