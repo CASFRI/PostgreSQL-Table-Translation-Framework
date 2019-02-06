@@ -10,17 +10,21 @@
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
-SELECT TT_DropAllTranslate();
+SELECT TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
-DROP FUNCTION IF EXISTS TT_ColumnNames(name, name);
-DROP FUNCTION IF EXISTS TT_Evaluate(text, text[], jsonb, anyelement);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);
-DROP FUNCTION IF EXISTS TT_DropAllTranslate();
-DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
-DROP FUNCTION IF EXISTS TT_FctExists(name, name, text[]);
+DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
+DROP FUNCTION IF EXISTS TT_TableColumnNames(name, name);
+DROP FUNCTION IF EXISTS TT_FctEval(text, text[], jsonb, anyelement);
+DROP FUNCTION IF EXISTS TT_FctSignature(text[], jsonb);
+DROP FUNCTION IF EXISTS TT_FctReturnType(name, text[]);
+DROP FUNCTION IF EXISTS TT_FctReturnType(name, name, text[]);
 DROP FUNCTION IF EXISTS TT_FctExists(name, text[]);
+DROP FUNCTION IF EXISTS TT_FctExists(name, name, text[]);
+DROP FUNCTION IF EXISTS TT_TypeGuess(text);
+DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
 DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 DROP TYPE IF EXISTS TT_RuleDef;
