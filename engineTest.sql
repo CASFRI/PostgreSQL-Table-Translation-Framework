@@ -57,7 +57,9 @@ WITH test_nb AS (
     SELECT 'TT_LowerArr'::text,                      5,          3         UNION ALL
     SELECT 'TT_FctExists'::text,                     6,          6         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
-    SELECT '_TT_Translate'::text,                    8,          0
+    SELECT 'TT_FctReturnType'::text,                 8,          1         UNION ALL
+    SELECT 'TT_FctEval'::text,                       9,          7         UNION ALL
+    SELECT '_TT_Translate'::text,                   10,          0
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -326,25 +328,77 @@ UNION ALL
 SELECT '7.1'::text number,
        'TT_Prepare'::text function_tested,
        'Basic test, check if created function exists'::text description,
-        TT_FctExists('public', 'TT_Translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_FctExists('TT_Translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+        TT_FctExists('translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
        'TT_Prepare'::text function_tested,
        'Test without parameters'::text description,
-        TT_FctExists('TT_Translate') passed
+        TT_FctExists('translate') passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.4'::text number,
        'TT_Prepare'::text function_tested,
        'Test upper and lower case caracters'::text description,
-        TT_FctExists('Public', 'Tt_translate', ARRAY['Name', 'name', 'name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) passed
+        TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) passed
+--------------------------------------------------------
+-- Test 8 - TT_FctReturnType
+--------------------------------------------------------
+UNION ALL
+SELECT '8.1'::text number,
+       'TT_FctReturnType'::text function_tested,
+       'Basic test'::text description,
+        TT_FctReturnType('between', '{integer,integer,integer}'::text[]) = 'boolean' passed
+--------------------------------------------------------
+-- Test 9 - TT_FctEval
+--------------------------------------------------------
+UNION ALL
+SELECT '9.1'::text number,
+       'TT_FctEval'::text function_tested,
+       'Basic test'::text description,
+        TT_FctEval('between', '{crown_closure,0,2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.2'::text number,
+       'TT_FctEval'::text function_tested,
+       'Basic NULLs'::text description,
+        TT_FctEval(NULL, NULL, NULL, NULL::boolean) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.3'::text number,
+       'TT_FctEval'::text function_tested,
+       'Wrong fonction name'::text description,
+        TT_FctEval('xbetween', '{crown_closure,0,2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.4'::text number,
+       'TT_FctEval'::text function_tested,
+       'Wrong argument number'::text description,
+        TT_FctEval('between', '{crown_closure,0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.5'::text number,
+       'TT_FctEval'::text function_tested,
+       'Wrong argument type'::text description,
+        TT_FctEval('between', '{crown_closure,0, "b"}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.6'::text number,
+       'TT_FctEval'::text function_tested,
+       'Argument not found in jsonb structure'::text description,
+        TT_FctEval('between', '{xcrown_closure,0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.7'::text number,
+       'TT_FctEval'::text function_tested,
+       'Wrong but compatible return type'::text description,
+        TT_FctEval('between', '{crown_closure,0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 

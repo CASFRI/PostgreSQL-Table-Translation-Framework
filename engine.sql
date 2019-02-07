@@ -29,7 +29,10 @@ CREATE TYPE TT_RuleDef AS (
 --   schemaName name - Name of the schema.
 --   tableName name  - Name of the table.
 --
--- RETURNS text      - Full name of the table.
+--   RETURNS text    - Full name of the table.
+--
+-- Return a well quoted, full table name, including the schema.
+-- The schema default to 'public' if not provided.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 CREATE OR REPLACE FUNCTION TT_FullTableName(
@@ -53,9 +56,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_LowerArr
 --
---   arr text[]   - An array of text value.
+--   arr text[]     - An array of text value.
 --
--- RETURNS text[] - The input array lower cased.
+--   RETURNS text[] - The input array lower cased.
+--
+-- Return the lower case version of a text array.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
 CREATE OR REPLACE FUNCTION TT_LowerArr(
@@ -78,7 +83,23 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 -- TT_TypeGuess
 -- Guess the best type for a string. Used by TT_FctCallValid()
 ------------------------------------------------------------
--- Code
+--DROP FUNCTION IF EXISTS TT_TypeGuess(text);
+CREATE OR REPLACE FUNCTION TT_TypeGuess(
+  val text
+)
+RETURNS text AS $$
+  DECLARE
+  BEGIN
+    IF val ~ '^-?\d+$' AND val::bigint >= -2147483648 AND val::bigint <= 2147483647 THEN
+      RETURN 'integer';
+    ELSIF val ~ '^-?\d+\.\d+$' THEN
+      RETURN 'double precision';
+    ELSIF lower(val) = 'false' OR lower(val) = 'true' THEN
+      RETURN 'boolean';
+    END IF;
+    RETURN 'text';
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -87,15 +108,16 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 --   fctString text
 --   argTypes  text[]
 --
--- RETURNS boolean
+--   RETURNS boolean
 --
--- Return TRUE if fctString exists as a function having the specified parameter types
+-- Returns TRUE if fctString exists as a function having the specified parameter 
+-- types.
 ------------------------------------------------------------
 -- Self contained example:
 -- 
--- SELECT TT_FctExists('TT_Evaluate', {'text', 'text[]', 'jsonb', 'anyelement'})
+-- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'})
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_FctExists(text, text[]);
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]);
 CREATE OR REPLACE FUNCTION TT_FctExists(
   schemaName name,
   fctName name,
@@ -105,7 +127,7 @@ RETURNS boolean AS $$
   DECLARE
     cnt int = 0;
   BEGIN
---RAISE NOTICE 'TT_FctExists 11';
+    fctName = 'tt_' || fctName;
     IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
       schemaName = '';
     END IF;
@@ -119,12 +141,12 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
     fctName = lower(fctName);
---RAISE NOTICE 'TT_FctExists 22 fctName=%', fctName;
+RAISE NOTICE 'TT_FctExists fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');
     SELECT count(*)
     FROM pg_proc
-    WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR 
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
     INTO cnt;
---RAISE NOTICE 'TT_FctExists 33';
     IF cnt > 0 THEN 
       RETURN TRUE;
     END IF;
@@ -142,15 +164,193 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_FctCallValid
--- Determine if a function having the specified parameter values. Use TT_TypeGuess
--- to determine the type and then TT_FctExist()
+-- TT_FctReturnType
+--
+--   fctString text
+--   argTypes  text[]
+--
+--   RETURNS text
+--
+-- Returns the return type of a PostgreSQL function.
 ------------------------------------------------------------
--- Code
+-- Self contained example:
+-- 
+-- SELECT TT_FctReturnType('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'})
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FctReturnType(text, text, text[]);
+CREATE OR REPLACE FUNCTION TT_FctReturnType(
+  schemaName name,
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS text AS $$
+  DECLARE
+    result text;
+  BEGIN
+    IF TT_FctExists(schemaName, fctName, argTypes) THEN
+      fctName = 'tt_' || fctName;
+      IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+        schemaName = '';
+      END IF;
+      IF schemaName != '' THEN
+        fctName = schemaName || '.' || fctName;
+      END IF;
+      IF fctName IS NULL THEN
+        RETURN NULL;
+      END IF;
+      IF fctName = '' OR fctName = '.' THEN
+        RETURN FALSE;
+      END IF;
+      fctName = lower(fctName);
+ --RAISE NOTICE 'TT_FctReturnType fctName = %', fctName;
+      SELECT pg_catalog.pg_get_function_result(oid) 
+      FROM pg_proc 
+      WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR 
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+      INTO result;
+      RETURN result;
+    ELSE
+      RETURN NULL;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_FctReturnType(
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS text AS $$
+  SELECT TT_FctReturnType(''::name, fctName, argTypes)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_ColumnNames
+-- TT_FctSignature
+--
+--  - arg text[]   - Array of arguments to pass to the function.
+--  - vals josnb   - Replacement values passed as a jsonb object (since  
+--                   PostgresQL does not allow passing RECORDs to functions).
+--
+--    RETURNS text[]
+--
+-- Determines the argument types of the provided function considering the .
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_FctSignature(text[], jsonb);
+CREATE OR REPLACE FUNCTION TT_FctSignature(
+  args text[],
+  vals jsonb
+)
+RETURNS text[] AS $$
+  DECLARE
+    cond text;
+    argVal text;
+    arg text;
+    result text[] = '{}';
+  BEGIN
+    -- There are two ways to determine the signature from the function name 
+    -- and an imprecise array of values (some might be reference to column 
+    -- names in the vals argument):
+    --  1) We can compare only the precise arguments (which are not column 
+    --     names) with the arguments of the function in the catalog. The 
+    --     risk is that two functions exist with different first argument. 
+    --     e.g. Can't find an example...
+    --  2) Try to guess the types of the given column names. (we can't use 
+    --     their own types since they could be esoteric types like float6 
+    --     or varchar(18). We could map those type to simple types or we 
+    --     can guess from the value.
+    --     See http://www.postgresqltutorial.com/postgresql-data-types/
+    
+    --cond = 'tt_' || lower(fctName) || '(';
+    -- Search for any argument names in the provided value jsonb object
+    FOREACH arg IN ARRAY args LOOP
+      argVal = vals->arg;
+      IF argVal IS NULL THEN
+        result = array_append(result, TT_TypeGuess(arg));
+        --cond = cond || TT_TypeGuess(arg) || ', ';
+      ELSE
+        result = array_append(result, TT_TypeGuess(argVal));
+        --cond = cond || TT_TypeGuess(argVal) || ', ';
+      END IF;
+    END LOOP;
+    -- Remove the last comma.
+    --cond = left(cond, char_length(cond) - 2) || ')';
+--RAISE NOTICE 'result 11 %', result::text;
+
+    --SELECT 'a'::text FROM pg_proc WHERE lower(oid::regprocedure::text) LIKE cond INTO arg;
+    --EXECUTE ruleQuery INTO STRICT result;
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FctEval
+--
+--  - fctName text - Name of the function to evaluate. Will always be prefixed 
+--                   with "TT_".
+--  - arg text[]   - Array of argument values to pass to the function. 
+--                   Generally includes one or two column names to get replaced 
+--                   with values from the vals argument.
+--  - vals jsonb   - Replacement values passed as a jsonb object (since  
+--                   PostgresQL does not allow passing RECORDs to functions).
+--  - returnType anyelement - Determines the type of the returned value 
+--                            (declared generically as anyelement).
+--
+--    RETURNS anyelement
+--
+-- Evaluate a function given its name, some arguments and replacement values. 
+-- All arguments matching the name of a value found in the jsonb vals structure
+-- are replaced with this value. returnType determines the return type of this 
+-- pseudo-type function.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_FctEval(text, text[], jsonb, anyelement);
+CREATE OR REPLACE FUNCTION TT_FctEval(
+  fctName text,
+  args text[],
+  vals jsonb,
+  returnType anyelement
+)
+RETURNS anyelement AS $$
+  DECLARE
+    ruleQuery text;
+    argVal text;
+    arg text;
+    result ALIAS FOR $0;
+  BEGIN
+--RAISE NOTICE 'TT_FctEval 00 ruleQuery = %', ruleQuery;
+    IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
+--RAISE NOTICE 'TT_FctEval 11 returning NULL';
+      RETURN NULL;
+    END IF;
+    ruleQuery = 'SELECT TT_' || fctName || '(';
+    -- Search for any argument names in the provided value jsonb object
+    FOREACH arg IN ARRAY args LOOP
+      argVal = vals->arg;
+      IF argVal IS NULL THEN
+        IF TT_TypeGuess('''' || arg || '''') = 'text' THEN
+          ruleQuery = ruleQuery || '''' || arg || ''', ';
+        ELSE
+          ruleQuery = ruleQuery || arg || ', ';
+        END IF;
+      ELSE
+        IF TT_TypeGuess('''' || arg || '''') = 'text' THEN
+          ruleQuery = ruleQuery || '''' || argVal || ''', ';
+        ELSE
+          ruleQuery = ruleQuery || argVal || ', ';
+        END IF;
+      END IF;
+    END LOOP;
+    -- Remove the last comma.
+    ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')::' || pg_typeof(result);
+--RAISE NOTICE 'TT_FctEval 11 ruleQuery = %', ruleQuery;
+    EXECUTE ruleQuery INTO STRICT result;
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_TableColumnNames
 --
 --   tableSchema name - Name of the schema containing the table.
 --   table name       - Name of the table.
@@ -160,7 +360,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Return the column names for the speficied table.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ColumnNames(name, name);
-CREATE OR REPLACE FUNCTION TT_ColumnNames(
+CREATE OR REPLACE FUNCTION TT_TableColumnNames(
   schemaName name,
   tableName name
 )
@@ -179,12 +379,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_DropAllTranslate
+-- TT_DropAllTranslateFct
 --
--- RETURNS SETOF text      - All DROP query executed.
+--   RETURNS SETOF text     - All DROPed query executed.
+--
+-- DROP all functions starting with 'TT_Translate' (case insensitive).
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_DropAllTranslate();
-CREATE OR REPLACE FUNCTION TT_DropAllTranslate(
+--DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
+CREATE OR REPLACE FUNCTION TT_DropAllTranslateFct(
 )
 RETURNS SETOF text AS $$
   DECLARE
@@ -207,7 +409,8 @@ $$ LANGUAGE plpgsql;
 --
 --  RETURNS text[]
 --
--- Parse an argument string into its separate components.
+-- Parse an argument string into its separate components. A normal argument 
+-- string has arguments separated with commas: 'aa, bb, 99'
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
@@ -231,10 +434,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 --  ruleStr text - Rule string to parse into its different components.
 --
---  RETURNS TT_HelperFctDef[]
+--  RETURNS TT_RuleDef[]
 --
--- Parse a rule string into function name, arguments, error code and stop on 
--- invalid flag.
+-- Parse a rule string into function name, arguments, error code and 
+-- stopOnInvalid flag.
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseRules(
@@ -268,56 +471,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Evaluate
---
---  - fctName    - Name of the founction to evaluate. Will always be prefixed 
---                 with "TT_"
---  - arg        - Array of arguments to passs to the function
---  - vals       - Replacement values passed as a jsonb object (since PostgresQL 
---                 does not allow passing RECORD to functions).
---  - returnType - Determine the type of the returned value (declared 
---                 generically as anyelement).
---
---  RETURNS anyelement
---
--- Evaluate a function given its name, some arguments and replacement values. 
--- returnType determines the return type.
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_Evaluate(text, text[], jsonb, anyelement);
-CREATE OR REPLACE FUNCTION TT_Evaluate(
-  fctName text,
-  args text[],
-  vals jsonb,
-  returnType anyelement
-)
-RETURNS anyelement AS $$
-  DECLARE
-    ruleQuery text;
-    argVal text;
-    arg text;
-    result ALIAS FOR $0;
-  BEGIN
-    ruleQuery = 'SELECT TT_' || fctName || '(';
-    -- Search for any argument names in the provided value jsonb object
-    FOREACH arg IN ARRAY args LOOP
-      argVal = vals->arg;
-      IF argVal IS NULL THEN
-        ruleQuery = ruleQuery || arg || ', ';
-      ELSE
-        ruleQuery = ruleQuery || argVal || ', ';
-      END IF;
-    END LOOP;
-    -- Remove the last comma.
-    ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')';
-
-    EXECUTE ruleQuery INTO STRICT result;
-    RETURN result;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_ParseTTable
+-- TT_ValidateTTable
 --
 --   translationTableSchema name - Name of the schema containing the translation 
 --                                 table.
@@ -342,8 +496,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   - the return type of translation rules and the type of the error code should 
 --     both match the attribute type,
 --
---  Return an error and 
---  Stop the process if any invalid value is found in the
+--  Return an error and stop the process if any invalid value is found in the
 --  translation table.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
@@ -384,7 +537,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   translationTableSchema name - Name of the schema containing the translation 
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   fctName name                - Name iof the function to create. Default to 
+--   fctName name                - Name of the function to create. Default to 
 --                                 'TT_Translate'.
 --
 --   RETURNS text                - Name of the function created.
@@ -504,7 +657,7 @@ RETURNS SETOF RECORD AS $$
     -- Create the log table. TODO
     -- FOR each row of the source table
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
-       -- Convert the row to a json object so we can pass it to TT_Evaluate() (PostgreSQL does not allow passing RECORD to functions)
+       -- Convert the row to a json object so we can pass it to TT_FctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourcerow);
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
@@ -512,7 +665,7 @@ RETURNS SETOF RECORD AS $$
          -- Iterate over each invalid rule
          FOREACH rule IN ARRAY translationrow.validationRules LOOP
            -- Evaluate the rule
-           isValid = TT_Evaluate(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+           isValid = TT_FctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
            -- initialize the final value
            finalVal = rule.errorCode;
            -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
@@ -522,7 +675,8 @@ RETURNS SETOF RECORD AS $$
          END LOOP ;
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
-           EXECUTE 'SELECT TT_Evaluate($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
+           -- EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
+           EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType($1, $2) || ');' 
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
          END IF;
          -- Built the return query while computing values
