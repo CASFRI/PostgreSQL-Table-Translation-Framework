@@ -41,10 +41,10 @@ SELECT 'c'::text, 5 height;
 -- It is required to list tests which would not appear because they failed
 -- by returning nothing.
 WITH test_nb AS (										-- me - WITH creates temp tables for use in the query
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  4 nb_test UNION ALL			--      in this case two tables, test_nb and test_series
+    SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  5 nb_test UNION ALL			--      in this case two tables, test_nb and test_series
     SELECT 'TT_Between'::text,                 2,          3         UNION ALL
-    SELECT 'TT_HelperFunction3'::text,         3,          0         UNION ALL
-    SELECT 'TT_HelperFunction4'::text,         4,          0
+    SELECT 'TT_NotEmpty'::text,                3,          8         UNION ALL
+    SELECT 'TT_GreaterThan'::text,             4,          6
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -88,6 +88,13 @@ SELECT '1.4'::text number,
        'TT_NotNull'::text function_tested,
        'Test if null'::text description,
        TT_NotNull(NULL::text) IS FALSE passed
+       
+---------------------------------------------------------
+UNION ALL
+SELECT '1.5'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test if empty string'::text description,
+       TT_NotNull(''::text) passed
 
 ---------------------------------------------------------
 -- Test 2 - TT_Between
@@ -111,7 +118,99 @@ SELECT '2.3'::text number,
        'TT_Between'::text function_tested,
        'Test NULL'::text description,
        TT_Between(NULL,0,100) IS NULL passed
-       
+
+---------------------------------------------------------
+-- Test 3 - TT_NotEmpty
+-- Should test for empty strings with spaces (e.g.'   ')
+-- Should work with both char(n) and text(). In outdated char(n) type, '' is considered same as '  '. Not so for other types.
+---------------------------------------------------------
+UNION ALL
+SELECT '3.1'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Empty text()'::text description,
+       TT_NotEmpty(''::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.2'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Not empty text()'::text description,
+       TT_NotEmpty('test test'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.3'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Empty spaces text()'::text description,
+       TT_NotEmpty('  '::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.4'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'NULL text()'::text description,
+       TT_NotEmpty(NULL::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.5'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Empty char()'::text description,
+       TT_NotEmpty(''::char(3)) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.6'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Not empty char()'::text description,
+       TT_NotEmpty('test test'::char(4)) passed       
+---------------------------------------------------------
+UNION ALL
+SELECT '3.7'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'Empty spaces char()'::text description,
+       TT_NotEmpty('   '::char(3)) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.8'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'NULL char()'::text description,
+       TT_NotEmpty(NULL::char(3)) IS FALSE passed       
+
+---------------------------------------------------------
+-- Test 4 - TT_GreaterThan
+---------------------------------------------------------
+UNION ALL
+SELECT '4.1'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Integer, good value'::text description,
+       TT_GreaterThan(10, 10, TRUE) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.2'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Integer, bad value'::text description,
+       TT_GreaterThan(9, 10, TRUE) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.3'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Decimal'::text description,
+       TT_GreaterThan(10.1, 10.1, TRUE) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.4'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Default applied'::text description,
+       TT_GreaterThan(10.1, 10.1) passed       
+---------------------------------------------------------
+UNION ALL
+SELECT '4.5'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Inclusive false'::text description,
+       TT_GreaterThan(10.1, 10.1, FALSE) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.6'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'NULL'::text description,
+       TT_GreaterThan(NULL::decimal, 10.1, TRUE) IS NULL passed
+
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) -- me ON is the join condition for joining the two FROM tables together.

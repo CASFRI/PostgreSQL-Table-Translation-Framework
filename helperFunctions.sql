@@ -78,6 +78,70 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_GreaterThan
+--
+--  var any - Variable to test.
+--  lowerBound decimal - lower bound to test against
+--  inclusive boolean - is lower bound inclusive? Default True
+--
+-- Return TRUE if var >= lowerBound and inclusive = TRUE.
+-- Return TRUE if var > lowerBound and inclusive = FALSE.
+-- Return FALSE otherwise.
+------------------------------------------------------------
+-- Marc Edwards (medwards219@gmail.com)
+-- 6/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GreaterThan(
+   var anyelement,
+   lowerBound decimal,
+   inclusive boolean DEFAULT TRUE
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF inclusive = TRUE
+    THEN
+      RETURN var >= lowerBound;
+    ELSE
+      RETURN var > lowerBound;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LessThan
+--
+--  var any - Variable to test.
+--  upperBound decimal - upper bound to test against
+--  inclusive boolean - is upper bound inclusive? Default True
+--
+-- Return TRUE if var <= lowerBound and inclusive = TRUE.
+-- Return TRUE if var < lowerBound and inclusive = FALSE.
+-- Return FALSE otherwise.
+------------------------------------------------------------
+-- Marc Edwards (medwards219@gmail.com)
+-- 6/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LessThan(
+   var anyelement,
+   upperBound decimal,
+   inclusive boolean DEFAULT TRUE
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF inclusive = TRUE
+    THEN
+      RETURN var <= upperBound;
+    ELSE
+      RETURN var < upperBound;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
 ------------------------------------------------------------
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
@@ -100,4 +164,3 @@ RETURNS anyelement AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
-
