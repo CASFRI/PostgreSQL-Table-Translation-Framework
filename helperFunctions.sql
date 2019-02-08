@@ -20,7 +20,7 @@
 --
 -- Return TRUE if var is not NULL.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- Pierre Racine
 -- 29/01/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNull(
@@ -42,7 +42,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return TRUE if var is between min and max.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- Pierre Racine
 -- 29/01/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
@@ -60,21 +60,28 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  var any  - Variable to test for empty string.
+--  var text  - Variable to test for empty string.
 --
 -- Return TRUE if var is not empty.
 -- Return FALSE if var is empty string or padded spaces (e.g. '' or '  ').
--- Doesn't work for numeric types.
 ------------------------------------------------------------
--- Marc Edwards (medwards219@gmail.com)
+-- Marc Edwards
 -- 4/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
-   var anyelement
+   var text
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN TRIM(var) = '' IS FALSE; -- trim removes any spaces before evaluating string.
+    IF TRIM(var) = '' IS FALSE THEN -- trim removes any spaces before evaluating string.
+      RETURN TRUE;
+    END IF;
+    IF TRIM(var) = '' IS TRUE THEN
+      RETURN FALSE;
+    END IF;
+    IF TRIM(var) = '' IS NULL THEN
+      RETURN NULL;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -83,7 +90,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_GreaterThan
 --
---  var any - Variable to test.
+--  var decimal - Variable to test.
 --  lowerBound decimal - lower bound to test against
 --  inclusive boolean - is lower bound inclusive? Default True
 --
@@ -91,7 +98,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Return TRUE if var > lowerBound and inclusive = FALSE.
 -- Return FALSE otherwise.
 ------------------------------------------------------------
--- Marc Edwards (medwards219@gmail.com)
+-- Marc Edwards
 -- 6/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
@@ -101,8 +108,7 @@ CREATE OR REPLACE FUNCTION TT_GreaterThan(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF inclusive = TRUE
-    THEN
+    IF inclusive = TRUE THEN
       RETURN var >= lowerBound;
     ELSE
       RETURN var > lowerBound;
@@ -115,7 +121,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_LessThan
 --
---  var any - Variable to test.
+--  var decimal - Variable to test.
 --  upperBound decimal - upper bound to test against
 --  inclusive boolean - is upper bound inclusive? Default True
 --
@@ -123,7 +129,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Return TRUE if var < lowerBound and inclusive = FALSE.
 -- Return FALSE otherwise.
 ------------------------------------------------------------
--- Marc Edwards (medwards219@gmail.com)
+-- Marc Edwards
 -- 6/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
@@ -133,14 +139,66 @@ CREATE OR REPLACE FUNCTION TT_LessThan(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF inclusive = TRUE
-    THEN
+    IF inclusive = TRUE THEN
       RETURN var <= upperBound;
     ELSE
       RETURN var < upperBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsInt
+--
+--  var numeric - Variable to test.
+--  Must be numeric but cannot be decimal.
+--  Note NULL can pass this test. Use IsNull to catch null values.
+------------------------------------------------------------
+-- Marc Edwards
+-- 7/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsInt(
+   var numeric
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = 'integer'::regtype THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsNumeric
+--
+--  var numeric - Variable to test.
+--  Must be numeric, can be decimal, can be integer.
+--  Note NULL can pass this test. Use IsNull to catch null values.
+------------------------------------------------------------
+-- Marc Edwards
+-- 7/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+   var numeric
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = 'integer'::regtype THEN
+      RETURN TRUE;
+    ELSIF pg_typeof(var) = 'numeric'::regtype THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
 
 ------------------------------------------------------------
 -- Begin Translation Function Definitions...
@@ -152,7 +210,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return the value.
 ------------------------------------------------------------
--- Pierre Racine (pierre.racine@sbf.ulaval.ca)
+-- Pierre Racine
 -- 31/01/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Copy(
