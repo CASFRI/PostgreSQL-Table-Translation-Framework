@@ -36,19 +36,33 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Between
 --
---  var int  - Variable to test.
---  min int  - Minimum.
---  max int  - Maximum.
+-- var double precision/int  - Variable to test.
+-- min double precision  - Minimum.
+-- max double precision  - Maximum.
+--
+-- Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
 --
 -- Return TRUE if var is between min and max.
 ------------------------------------------------------------
 -- Pierre Racine
 -- 29/01/2019 added in v0.1
+-- Edited by Marc Edwards - 11/2/2019
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
   var int,
-  min int,
-  max int
+  min double precision,
+  max double precision
+)
+RETURNS boolean AS $$
+  BEGIN
+    RETURN var > min and var < max;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  var double precision,
+  min double precision,
+  max double precision
 )
 RETURNS boolean AS $$
   BEGIN
@@ -85,25 +99,44 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-- should functions return null?
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_GreaterThan
 --
---  var decimal - Variable to test.
---  lowerBound decimal - lower bound to test against
---  inclusive boolean - is lower bound inclusive? Default True
+--  var double precision/int - Variable to test.
+--  lowerBound double precision - upper bound to test against
+--  inclusive boolean - is upper bound inclusive? Default True
+--  
+--  Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
 --
--- Return TRUE if var >= lowerBound and inclusive = TRUE.
--- Return TRUE if var > lowerBound and inclusive = FALSE.
--- Return FALSE otherwise.
+--  Return TRUE if var >= lowerBound and inclusive = TRUE.
+--  Return TRUE if var > lowerBound and inclusive = FALSE.
+--  Return FALSE otherwise.
 ------------------------------------------------------------
 -- Marc Edwards
 -- 6/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
-   var anyelement,
-   lowerBound decimal,
+   var double precision,
+   lowerBound double precision,
+   inclusive boolean DEFAULT TRUE
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF inclusive = TRUE THEN
+      RETURN var >= lowerBound;
+    ELSE
+      RETURN var > lowerBound;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_GreaterThan(
+   var int,
+   lowerBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
@@ -121,20 +154,22 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_LessThan
 --
---  var decimal - Variable to test.
---  upperBound decimal - upper bound to test against
+--  var double precision/int - Variable to test.
+--  upperBound double precision - upper bound to test against
 --  inclusive boolean - is upper bound inclusive? Default True
+--  
+--  Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
 --
--- Return TRUE if var <= lowerBound and inclusive = TRUE.
--- Return TRUE if var < lowerBound and inclusive = FALSE.
--- Return FALSE otherwise.
+--  Return TRUE if var <= lowerBound and inclusive = TRUE.
+--  Return TRUE if var < lowerBound and inclusive = FALSE.
+--  Return FALSE otherwise.
 ------------------------------------------------------------
 -- Marc Edwards
 -- 6/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
-   var anyelement,
-   upperBound decimal,
+   var double precision,
+   upperBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
@@ -147,6 +182,20 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_LessThan(
+   var int,
+   upperBound double precision,
+   inclusive boolean DEFAULT TRUE
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF inclusive = TRUE THEN
+      RETURN var <= upperBound;
+    ELSE
+      RETURN var < upperBound;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -154,13 +203,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 --  var numeric - Variable to test.
 --  Must be numeric but cannot be decimal.
+--  Does not currently deal with bigint or smallint.
 --  Note NULL can pass this test. Use IsNull to catch null values.
+--  Uses funciton overloading (https://www.postgresql.org/docs/9.6/xfunc-overload.html) to create two versions of the function with the same name. Postgres will select whichever matches the provided type.
 ------------------------------------------------------------
 -- Marc Edwards
 -- 7/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   var numeric
+   var double precision
 )
 RETURNS boolean AS $$
   BEGIN
@@ -172,6 +223,18 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_IsInt(
+   var int
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = 'integer'::regtype THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -185,13 +248,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- 7/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   var numeric
+   var double precision
 )
 RETURNS boolean AS $$
   BEGIN
-    IF pg_typeof(var) = 'integer'::regtype THEN
-      RETURN TRUE;
-    ELSIF pg_typeof(var) = 'numeric'::regtype THEN
+    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
       RETURN TRUE;
     ELSE
       RETURN FALSE;
@@ -199,6 +260,50 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+   var int
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MatchStr  --  ***FIX***
+--
+-- var text - column to test.
+-- lookup_col text - lookup column in species table
+-- lookup_tab name - table name of species table
+-- lookup_sch name - schema name holding species table
+------------------------------------------------------------
+-- Marc Edwards
+-- 11/02/2019 added in v0.1
+------------------------------------------------------------
+DROP FUNCTION IF EXISTS TT_MatchStr(text,text,name,name);
+CREATE OR REPLACE FUNCTION TT_MatchStr(
+  var text,
+  lookup_col text,
+  lookup_tab name,
+  lookup_sch name
+)
+RETURNS boolean AS $$
+  DECLARE
+    query text;
+    return boolean;
+  BEGIN
+    query = 'SELECT ' || var || ' IN (SELECT ' || lookup_col || ' FROM ' || TT_FullTableName(lookup_sch, lookup_tab) || ')';
+    RAISE NOTICE '11 query = %',query;
+    EXECUTE query INTO return;
+    RETURN return;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 ------------------------------------------------------------
 -- Begin Translation Function Definitions...

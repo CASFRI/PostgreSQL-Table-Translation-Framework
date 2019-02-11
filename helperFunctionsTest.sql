@@ -42,21 +42,21 @@ SELECT 'c'::text, 5 height;
 -- by returning nothing.
 WITH test_nb AS (										-- me - WITH creates temp tables for use in the query
     SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  5 nb_test UNION ALL			--      in this case two tables, test_nb and test_series
-    SELECT 'TT_Between'::text,                 2,          6         UNION ALL
+    SELECT 'TT_Between'::text,                 2,          12         UNION ALL
     SELECT 'TT_NotEmpty'::text,                3,          8         UNION ALL
-    SELECT 'TT_GreaterThan'::text,             4,          7         UNION ALL
-    SELECT 'TT_LessThan'::text,                5,          7         UNION ALL
-    SELECT 'TT_IsInt'::text,                   6,          3         UNION ALL
-    SELECT 'TT_IsNumeric'::text,               7,          3    
+    SELECT 'TT_GreaterThan'::text,             4,          9         UNION ALL
+    SELECT 'TT_LessThan'::text,                5,          9         UNION ALL
+    SELECT 'TT_IsInt'::text,                   6,          8         UNION ALL
+    SELECT 'TT_IsNumeric'::text,               7,          8    
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
 SELECT function_tested, maj_num, generate_series(1, nb_test)::text min_num 			-- me - generate_series() adds rows for with values 1:nb_test
 FROM test_nb
 )
-SELECT coalesce(maj_num || '.' || min_num, b.number) number,					-- COALESCE returns first argument that is not null. If null, moves on to next argument.
+SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,					-- COALESCE returns first argument that is not null. If null, moves on to next argument.
        coalesce(a.function_tested, 'ERROR: Insufficient number of test for ' || 
-                b.function_tested || ' in the initial table...') function_tested,
+                b.function_tested || ' in the initial table...') AS function_tested,
        description, 
        NOT passed IS NULL AND (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed -- me - returns true if 'passed' not null, numbers match, and passed is true
 FROM test_series AS a FULL OUTER JOIN (								-- me - this combines the test_series tables with the result of the outer join
@@ -69,21 +69,21 @@ FROM test_series AS a FULL OUTER JOIN (								-- me - this combines the test_se
 SELECT '1.1'::text number,
        'TT_NotNull'::text function_tested,
        'Test if text'::text description,
-       TT_NotNull('test'::text) passed
+       TT_NotNull('test'::text) IS TRUE passed
 
 ---------------------------------------------------------
 UNION ALL
 SELECT '1.2'::text number,
        'TT_NotNull'::text function_tested,
        'Test if numeric'::text description,
-       TT_NotNull(9.99) passed
+       TT_NotNull(9.99) IS TRUE passed
 
 ---------------------------------------------------------
 UNION ALL
 SELECT '1.3'::text number,
        'TT_NotNull'::text function_tested,
        'Test if integer'::text description,
-       TT_NotNull(999) passed
+       TT_NotNull(999) IS TRUE passed
 
 ---------------------------------------------------------
 UNION ALL
@@ -97,7 +97,7 @@ UNION ALL
 SELECT '1.5'::text number,
        'TT_NotNull'::text function_tested,
        'Test if empty string'::text description,
-       TT_NotNull(''::text) passed
+       TT_NotNull(''::text) IS TRUE passed
 
 ---------------------------------------------------------
 -- Test 2 - TT_Between
@@ -105,44 +105,74 @@ SELECT '1.5'::text number,
 UNION ALL
 SELECT '2.1'::text number,
        'TT_Between'::text function_tested,
-       'Basic test'::text description,
-       TT_Between(50,0,100) passed
-
+       'Integer, good value'::text description,
+       TT_Between(50::int,0,100) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.2'::text number,
        'TT_Between'::text function_tested,
-       'Failed test higher'::text description,
-       TT_Between(150,0,100) IS FALSE passed
-
+       'Integer, failed higher'::text description,
+       TT_Between(150::int,0,100) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.3'::text number,
        'TT_Between'::text function_tested,
-       'Failed test lower'::text description,
-       TT_Between(5,10,100) IS FALSE passed
-
+       'Integer, failed lower'::text description,
+       TT_Between(5::int,10,100) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.4'::text number,
        'TT_Between'::text function_tested,
-       'Test NULL var'::text description,
-       TT_Between(NULL,0,100) IS NULL passed
-
+       'Integer, NULL var'::text description,
+       TT_Between(NULL::int,0,100) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.5'::text number,
        'TT_Between'::text function_tested,
-       'Test NULL min'::text description,
-       TT_Between(10,NULL,100) IS NULL passed
-
+       'Integer NULL min'::text description,
+       TT_Between(10::int,NULL,100) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.6'::text number,
        'TT_Between'::text function_tested,
-       'Test NULL max'::text description,
-       TT_Between(10,1,NULL) IS NULL passed
-
+       'Integer, NULL max'::text description,
+       TT_Between(10::int,1,NULL) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.7'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, good value'::text description,
+       TT_Between(50::double precision,0,100) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.8'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, failed higher'::text description,
+       TT_Between(150::double precision,0,100) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.9'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, failed lower'::text description,
+       TT_Between(5::double precision,10,100) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.10'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, NULL var'::text description,
+       TT_Between(NULL::double precision,0,100) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.11'::text number,
+       'TT_Between'::text function_tested,
+       'double precision NULL min'::text description,
+       TT_Between(10::double precision,NULL,100) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.12'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, NULL max'::text description,
+       TT_Between(10::double precision,1,NULL) IS NULL passed
 ---------------------------------------------------------
 -- Test 3 - TT_NotEmpty
 -- Should test for empty strings with spaces (e.g.'   ')
@@ -158,7 +188,7 @@ UNION ALL
 SELECT '3.2'::text number,
        'TT_NotEmpty'::text function_tested,
        'Not empty text()'::text description,
-       TT_NotEmpty('test test'::text) passed
+       TT_NotEmpty('test test'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.3'::text number,
@@ -182,7 +212,7 @@ UNION ALL
 SELECT '3.6'::text number,
        'TT_NotEmpty'::text function_tested,
        'Not empty char()'::text description,
-       TT_NotEmpty('test test'::char(10)) passed       
+       TT_NotEmpty('test test'::char(10)) IS TRUE passed       
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.7'::text number,
@@ -203,43 +233,55 @@ UNION ALL
 SELECT '4.1'::text number,
        'TT_GreaterThan'::text function_tested,
        'Integer, good value'::text description,
-       TT_GreaterThan(11, 10, TRUE) passed
+       TT_GreaterThan(11::int, 10, TRUE) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.2'::text number,
        'TT_GreaterThan'::text function_tested,
        'Integer, bad value'::text description,
-       TT_GreaterThan(9, 10, TRUE) IS FALSE passed
+       TT_GreaterThan(9::int, 10::double precision, TRUE) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.3'::text number,
        'TT_GreaterThan'::text function_tested,
-       'Decimal'::text description,
-       TT_GreaterThan(10.1, 10.1, TRUE) passed
+       'Double precision, good value'::text description,
+       TT_GreaterThan(10.3::double precision, 10.2, TRUE) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.4'::text number,
        'TT_GreaterThan'::text function_tested,
-       'Default applied'::text description,
-       TT_GreaterThan(10.1, 10.1) passed       
----------------------------------------------------------
+       'Double precision, bad value'::text description,
+       TT_GreaterThan(10.1::double precision, 10.0, TRUE) IS TRUE passed
+---------------------------------------------------------       
 UNION ALL
 SELECT '4.5'::text number,
        'TT_GreaterThan'::text function_tested,
-       'Inclusive false'::text description,
-       TT_GreaterThan(10.1, 10.1, FALSE) IS FALSE passed
+       'Default applied'::text description,
+       TT_GreaterThan(10.1::double precision, 10.1) IS TRUE passed       
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
        'TT_GreaterThan'::text function_tested,
-       'NULL var'::text description,
-       TT_GreaterThan(NULL::decimal, 10.1, TRUE) IS NULL passed
+       'Inclusive false'::text description,
+       TT_GreaterThan(10::int, 10.0, FALSE) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.7'::text number,
        'TT_GreaterThan'::text function_tested,
+       'NULL int'::text description,
+       TT_GreaterThan(NULL::int, 10.1, TRUE) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.8'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'NULL double precision'::text description,
+       TT_GreaterThan(NULL::double precision, 10.1, TRUE) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.9'::text number,
+       'TT_GreaterThan'::text function_tested,
        'NULL lowerBound'::text description,
-       TT_GreaterThan(10.1, NULL::decimal, TRUE) IS NULL passed
+       TT_GreaterThan(10::int, NULL, TRUE) IS NULL passed
 
 ---------------------------------------------------------
 -- Test 5 - TT_LessThan
@@ -248,63 +290,105 @@ UNION ALL
 SELECT '5.1'::text number,
        'TT_LessThan'::text function_tested,
        'Integer, good value'::text description,
-       TT_LessThan(9, 10, TRUE) passed
+       TT_LessThan(9::int, 10, TRUE) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.2'::text number,
        'TT_LessThan'::text function_tested,
        'Integer, bad value'::text description,
-       TT_LessThan(11, 10, TRUE) IS FALSE passed
+       TT_LessThan(11::int, 10, TRUE) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.3'::text number,
        'TT_LessThan'::text function_tested,
-       'Decimal'::text description,
-       TT_LessThan(10.1, 10.1, TRUE) passed
+       'Double precision, good value'::text description,
+       TT_LessThan(10.1::double precision, 10.1, TRUE) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.4'::text number,
        'TT_LessThan'::text function_tested,
-       'Default applied'::text description,
-       TT_LessThan(10.1, 10.1) passed       
+       'Double precision, bad value'::text description,
+       TT_LessThan(9.9::double precision, 10.1, TRUE) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.5'::text number,
        'TT_LessThan'::text function_tested,
-       'Inclusive false'::text description,
-       TT_LessThan(10.1, 10.1, FALSE) IS FALSE passed
+       'Default applied'::text description,
+       TT_LessThan(10.1::double precision, 10.1) passed       
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_LessThan'::text function_tested,
-       'NULL var'::text description,
-       TT_LessThan(NULL::decimal, 10.1, TRUE) IS NULL passed
+       'Inclusive false'::text description,
+       TT_LessThan(10.1::double precision, 10.1, FALSE) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,
        'TT_LessThan'::text function_tested,
+       'NULL double precision'::text description,
+       TT_LessThan(NULL::double precision, 10.1, TRUE) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.8'::text number,
+       'TT_LessThan'::text function_tested,
+       'NULL integer'::text description,
+       TT_LessThan(NULL::int, 10.1, TRUE) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.9'::text number,
+       'TT_LessThan'::text function_tested,
        'NULL upperBound'::text description,
-       TT_LessThan(10.1, NULL::decimal, TRUE) IS NULL passed
+       TT_LessThan(10.1::double precision, NULL::double precision, TRUE) IS NULL passed
 ---------------------------------------------------------
 -- Test 6 - TT_IsInt
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.1'::text number,
        'TT_IsInt'::text function_tested,
-       'Integer'::text description,
-       TT_IsInt(1::integer) passed
+       'Small int'::text description,
+       TT_IsInt(1::smallint) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.2'::text number,
+       'TT_IsInt'::text function_tested,
+       'Integer'::text description,
+       TT_IsInt(1::integer) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.3'::text number,
+       'TT_IsInt'::text function_tested,
+       'Big int'::text description,
+       TT_IsInt(1::bigint) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.4'::text number,
        'TT_IsInt'::text function_tested,
        'Decimal'::text description,
        TT_IsInt(1.1::decimal) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '6.3'::text number,
+SELECT '6.5'::text number,
+       'TT_IsInt'::text function_tested,
+       'numeric'::text description,
+       TT_IsInt(1.1::numeric) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.6'::text number,
+       'TT_IsInt'::text function_tested,
+       'real'::text description,
+       TT_IsInt(1.1::real) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.7'::text number,
+       'TT_IsInt'::text function_tested,
+       'Decimal'::text description,
+       TT_IsInt(1::decimal) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.8'::text number,
        'TT_IsInt'::text function_tested,
        'NULL'::text description,
-       TT_IsInt(NULL::integer) passed
+       TT_IsInt(NULL::integer) IS TRUE passed
 
 ---------------------------------------------------------
 -- Test 7 - TT_IsNumeric
@@ -312,20 +396,52 @@ SELECT '6.3'::text number,
 UNION ALL
 SELECT '7.1'::text number,
        'TT_IsNumeric'::text function_tested,
-       'Integer'::text description,
-       TT_IsNumeric(1::integer) passed
+       'Small Int'::text description,
+       TT_IsNumeric(1::smallint) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
        'TT_IsNumeric'::text function_tested,
-       'Decimal'::text description,
-       TT_IsNumeric(1.1::decimal) passed
+       'Int'::text description,
+       TT_IsNumeric(1::integer) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
        'TT_IsNumeric'::text function_tested,
+       'Big Int'::text description,
+       TT_IsNumeric(1::bigint) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.4'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'decimal'::text description,
+       TT_IsNumeric(1.1::decimal) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.5'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'numeric'::text description,
+       TT_IsNumeric(1.1::numeric) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.6'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'real'::text description,
+       TT_IsNumeric(1.1::real) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.7'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'double precision'::text description,
+       TT_IsNumeric(1.1::double precision) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.8'::text number,
+       'TT_IsNumeric'::text function_tested,
        'NULL'::text description,
-       TT_IsNumeric(NULL::numeric) passed
+       TT_IsNumeric(NULL::double precision) IS TRUE passed
+---------------------------------------------------------
+
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) -- me ON is the join condition for joining the two FROM tables together.
