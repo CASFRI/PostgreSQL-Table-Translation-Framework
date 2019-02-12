@@ -204,7 +204,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  var numeric - Variable to test.
 --  Must be numeric but cannot be decimal.
 --  Does not currently deal with bigint or smallint.
---  Note NULL can pass this test. Use IsNull to catch null values.
+--  STRICT return Null is any inputs null
 --  Uses funciton overloading (https://www.postgresql.org/docs/9.6/xfunc-overload.html) to create two versions of the function with the same name. Postgres will select whichever matches the provided type.
 ------------------------------------------------------------
 -- Marc Edwards
@@ -221,7 +221,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 CREATE OR REPLACE FUNCTION TT_IsInt(
    var int
@@ -234,7 +234,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 --  var numeric - Variable to test.
 --  Must be numeric, can be decimal, can be integer.
---  Note NULL can pass this test. Use IsNull to catch null values.
+--  STRICT return Null is any inputs null
 ------------------------------------------------------------
 -- Marc Edwards
 -- 7/02/2019 added in v0.1
@@ -258,7 +258,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
    var int
@@ -271,13 +271,14 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_MatchStr  --  ***FIX***
 --
+-- looks up string in table column
 -- var text - column to test.
 -- lookup_col text - lookup column in species table
 -- lookup_tab name - table name of species table
@@ -302,6 +303,26 @@ RETURNS boolean AS $$
     RAISE NOTICE '11 query = %',query;
     EXECUTE query INTO return;
     RETURN return;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+-- TT_MatchStr
+--
+-- looks up string array
+-- var text - string to test.
+-- vat text[] - array.
+------------------------------------------------------------
+-- Marc Edwards
+-- 11/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MatchStr(
+  var text,
+  lst text[]
+)
+RETURNS boolean AS $$
+  BEGIN
+    RETURN var = ANY(lst);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 

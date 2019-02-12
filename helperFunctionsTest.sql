@@ -47,7 +47,8 @@ WITH test_nb AS (										-- me - WITH creates temp tables for use in the query
     SELECT 'TT_GreaterThan'::text,             4,          9         UNION ALL
     SELECT 'TT_LessThan'::text,                5,          9         UNION ALL
     SELECT 'TT_IsInt'::text,                   6,          8         UNION ALL
-    SELECT 'TT_IsNumeric'::text,               7,          8    
+    SELECT 'TT_IsNumeric'::text,               7,          8         UNION ALL
+    SELECT 'TT_MatchStr'::text,                8,          7         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -388,7 +389,7 @@ UNION ALL
 SELECT '6.8'::text number,
        'TT_IsInt'::text function_tested,
        'NULL'::text description,
-       TT_IsInt(NULL::integer) IS TRUE passed
+       TT_IsInt(NULL::integer) IS NULL passed
 
 ---------------------------------------------------------
 -- Test 7 - TT_IsNumeric
@@ -439,7 +440,51 @@ UNION ALL
 SELECT '7.8'::text number,
        'TT_IsNumeric'::text function_tested,
        'NULL'::text description,
-       TT_IsNumeric(NULL::double precision) IS TRUE passed
+       TT_IsNumeric(NULL::double precision) IS NULL passed
+---------------------------------------------------------
+-- Test 8 - TT_MatchStr
+---------------------------------------------------------
+UNION ALL
+SELECT '8.1'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - string in array'::text description,
+       TT_MatchStr('1', ARRAY['1','2','3']) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.2'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - string not in array'::text description,
+       TT_MatchStr('4', ARRAY['1','2','3']) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.3'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - string null'::text description,
+       TT_MatchStr(NULL, ARRAY['1','2','3']) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.4'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - array contains null'::text description,
+       TT_MatchStr('1', ARRAY[NULL,'2','3']) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.5'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - string empty'::text description,
+       TT_MatchStr('', ARRAY['1','2','3']) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.6'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - string empty matches'::text description,
+       TT_MatchStr('', ARRAY['1','','3']) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.7'::text number,
+       'TT_MatchStr'::text function_tested,
+       'Array - array contains empty string'::text description,
+       TT_MatchStr('1', ARRAY['1','2','']) IS TRUE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
