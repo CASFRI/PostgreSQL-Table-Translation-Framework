@@ -25,4 +25,5 @@ DROP FUNCTION IF EXISTS TT_IsInt(double precision);
 DROP FUNCTION IF EXISTS TT_IsInt(int);
 DROP FUNCTION IF EXISTS TT_IsNumeric(double precision);
 DROP FUNCTION IF EXISTS TT_IsNumeric(int);
+DROP FUNCTION IF EXISTS TT_MatchStr(text,text[]);
 
