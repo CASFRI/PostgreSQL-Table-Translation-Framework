@@ -11,20 +11,19 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS TT_NotNull(anyelement);
-DROP FUNCTION IF EXISTS TT_Between(int, double precision, double precision);
+DROP FUNCTION IF EXISTS TT_Between(integer, double precision, double precision);
 DROP FUNCTION IF EXISTS TT_Between(double precision, double precision, double precision);
-DROP FUNCTION IF EXISTS TT_Between(int, int, int);
 DROP FUNCTION IF EXISTS TT_Copy(anyelement);
 DROP FUNCTION IF EXISTS TT_NotEmpty(text);
-DROP FUNCTION IF EXISTS TT_GreaterThan(decimal, decimal, boolean);
-DROP FUNCTION IF EXISTS TT_GreaterThan(int, int, boolean);
+DROP FUNCTION IF EXISTS TT_GreaterThan(double precision, double precision, boolean);
+DROP FUNCTION IF EXISTS TT_GreaterThan(integer, double precision, boolean);
 DROP FUNCTION IF EXISTS TT_LessThan(double precision, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_LessThan(int, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_LessThan(anyelement, decimal, boolean);
+DROP FUNCTION IF EXISTS TT_LessThan(integer, double precision, boolean);
 DROP FUNCTION IF EXISTS TT_IsInt(double precision);
-DROP FUNCTION IF EXISTS TT_IsInt(int);
+DROP FUNCTION IF EXISTS TT_IsInt(integer);
 DROP FUNCTION IF EXISTS TT_IsNumeric(double precision);
-DROP FUNCTION IF EXISTS TT_IsNumeric(int);
+DROP FUNCTION IF EXISTS TT_IsNumeric(integer);
 DROP FUNCTION IF EXISTS TT_MatchStr(text,text[]);
+DROP FUNCTION IF EXISTS TT_MatchStr(text, text, name, name);
 DROP FUNCTION IF EXISTS TT_Concat(text,text[]);
 

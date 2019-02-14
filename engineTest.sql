@@ -354,7 +354,7 @@ UNION ALL
 SELECT '8.1'::text number,
        'TT_FctReturnType'::text function_tested,
        'Basic test'::text description,
-        TT_FctReturnType('between', '{integer,integer,integer}'::text[]) = 'boolean' passed
+        TT_FctReturnType('between', '{double precision,double precision,double precision}'::text[]) = 'boolean' passed
 --------------------------------------------------------
 -- Test 9 - TT_FctEval
 --------------------------------------------------------
@@ -362,7 +362,7 @@ UNION ALL
 SELECT '9.1'::text number,
        'TT_FctEval'::text function_tested,
        'Basic test'::text description,
-        TT_FctEval('between', '{crown_closure,0,2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) passed
+        TT_FctEval('between', '{crown_closure,0.0,2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.2'::text number,
@@ -398,7 +398,7 @@ UNION ALL
 SELECT '9.7'::text number,
        'TT_FctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
-        TT_FctEval('between', '{crown_closure,0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
+        TT_FctEval('between', '{crown_closure,0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 

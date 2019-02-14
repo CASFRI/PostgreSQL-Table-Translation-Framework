@@ -13,14 +13,14 @@
 -------------------------------------------------------------------------------
 SET lc_messages TO 'en_US.UTF-8'; 								-- me - this sets the language of messages
 
--- Create some test table
-DROP TABLE IF EXISTS test_sourcetable1; 							-- me - delete the table if it already exists
-CREATE TABLE test_sourcetable1 AS 								-- me - create a new table, AS fills the table with the result of the following query
-SELECT 'a'::text id, 1 height 									-- me - this is the same as >>SELECT 'a'::text AS id, 1 AS height<<. The AS is optional. '::' ia the cast to convert data to a given type.
+-- Create some test lookup table
+DROP TABLE IF EXISTS test_lookuptable1; 							-- me - delete the table if it already exists
+CREATE TABLE test_lookuptable1 AS 								-- me - create a new table, AS fills the table with the result of the following query
+SELECT 'ACB'::text source_val, 'Popu balb'::text target_val								-- me - this is the same as >>SELECT 'a'::text AS id, 1 AS height<<. The AS is optional. '::' ia the cast to convert data to a given type.
 UNION ALL											-- me - UNION ALL appends results of multiple queries. Does not remove duplicate rows (UNION does).
-SELECT 'b'::text, 3 height
+SELECT '*AX'::text, 'Popu delx'::text	
 UNION ALL
-SELECT 'c'::text, 5 height;
+SELECT 'RA'::text, 'Arbu menz'::text;
 
 -- me --
 -- structure of test query:
@@ -42,15 +42,16 @@ SELECT 'c'::text, 5 height;
 -- by returning nothing.
 WITH test_nb AS (										-- me - WITH creates temp tables for use in the query
     SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  5 nb_test UNION ALL			--      in this case two tables, test_nb and test_series
-    SELECT 'TT_Between'::text,                 2,          12         UNION ALL
+    SELECT 'TT_Between'::text,                 2,         12         UNION ALL
     SELECT 'TT_NotEmpty'::text,                3,          8         UNION ALL
     SELECT 'TT_GreaterThan'::text,             4,          9         UNION ALL
     SELECT 'TT_LessThan'::text,                5,          9         UNION ALL
     SELECT 'TT_IsInt'::text,                   6,          8         UNION ALL
     SELECT 'TT_IsNumeric'::text,               7,          8         UNION ALL
-    SELECT 'TT_MatchStr'::text,                8,          7         UNION ALL
-    SELECT 'TT_Concat'::text,                  9,          5         UNION ALL
-    SELECT 'TT_Copy'::text,                   10,          5         
+    SELECT 'TT_MatchStr1'::text,               8,          7         UNION ALL
+    SELECT 'TT_MatchStr2'::text,               9,          1         UNION ALL   
+    SELECT 'TT_Concat'::text,                 10,          5         UNION ALL
+    SELECT 'TT_Copy'::text,                   11,          5         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -385,7 +386,7 @@ UNION ALL
 SELECT '6.7'::text number,
        'TT_IsInt'::text function_tested,
        'Decimal'::text description,
-       TT_IsInt(1::decimal) IS FALSE passed
+       TT_IsInt(1::decimal) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.8'::text number,
@@ -444,111 +445,119 @@ SELECT '7.8'::text number,
        'NULL'::text description,
        TT_IsNumeric(NULL::double precision) IS NULL passed
 ---------------------------------------------------------
--- Test 8 - TT_MatchStr
+-- Test 8 - TT_MatchStr (array variant)
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.1'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - string in array'::text description,
        TT_MatchStr('1', ARRAY['1','2','3']) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.2'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - string not in array'::text description,
        TT_MatchStr('4', ARRAY['1','2','3']) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.3'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - string null'::text description,
        TT_MatchStr(NULL, ARRAY['1','2','3']) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.4'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - array contains null'::text description,
        TT_MatchStr('1', ARRAY[NULL,'2','3']) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.5'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - string empty'::text description,
        TT_MatchStr('', ARRAY['1','2','3']) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.6'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - string empty matches'::text description,
        TT_MatchStr('', ARRAY['1','','3']) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.7'::text number,
-       'TT_MatchStr'::text function_tested,
+       'TT_MatchStr1'::text function_tested,
        'Array - array contains empty string'::text description,
        TT_MatchStr('1', ARRAY['1','2','']) IS TRUE passed
 ---------------------------------------------------------
--- Test 9 - TT_Concat
+-- Test 9 - TT_MatchStr (lookup table variant)
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.1'::text number,
+       'TT_MatchStr2'::text function_tested,
+       'Simple test'::text description,
+       TT_MatchStr('RA', 'source_val', 'public', 'test_lookuptable1') Is TRUE passed
+---------------------------------------------------------
+-- Test 10- TT_Concat
+---------------------------------------------------------
+UNION ALL
+SELECT '10.1'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage with sep'::text description,
        TT_Concat('-', 'cas', 'id', 'test') = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.2'::text number,
+SELECT '10.2'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage without sep'::text description,
        TT_Concat('', 'cas', 'id', 'test') = 'casidtest' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.3'::text number,
+SELECT '10.3'::text number,
        'TT_Concat'::text function_tested,
        'Null sep'::text description,
        TT_Concat(NULL, 'cas', 'id', 'test') IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.4'::text number,
+SELECT '10.4'::text number,
        'TT_Concat'::text function_tested,
        'Null string'::text description,
        TT_Concat('-', NULL, 'id', 'test') IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.5'::text number,
+SELECT '10.5'::text number,
        'TT_Concat'::text function_tested,
        'Empty string'::text description,
        TT_Concat('-', 'cas', '', 'test') = 'cas--test' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 10 - TT_Copy
+-- Test 11 - TT_Copy
 ---------------------------------------------------------
 UNION ALL
-SELECT '10.1'::text number,
+SELECT '11.1'::text number,
        'TT_Copy'::text function_tested,
        'Text usage'::text description,
        TT_Copy('copytest'::text) = 'copytest'::text passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '10.2'::text number,
+SELECT '11.2'::text number,
        'TT_Copy'::text function_tested,
        'Int usage'::text description,
        TT_Copy(111::int) = 111::int passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '10.3'::text number,
+SELECT '11.3'::text number,
        'TT_Copy'::text function_tested,
        'Double precision usage'::text description,
        TT_Copy(111.4::double precision) = 111.4::double precision passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '10.4'::text number,
+SELECT '11.4'::text number,
        'TT_Copy'::text function_tested,
        'Empty string usage'::text description,
        TT_Copy(''::text) = ''::text passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '10.5'::text number,
+SELECT '11.5'::text number,
        'TT_Copy'::text function_tested,
        'Null'::text description,
        TT_Copy(NULL::text) IS NULL passed

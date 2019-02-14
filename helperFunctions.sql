@@ -88,10 +88,9 @@ CREATE OR REPLACE FUNCTION TT_NotEmpty(
 )
 RETURNS boolean AS $$
   DECLARE
-    x text
   BEGIN
-    x := TRIM(var); -- trim removes any spaces before evaluating string.
-    IF x = '' IS FALSE THEN 
+    var := TRIM(var); -- trim removes any spaces before evaluating string.
+    IF var = '' IS FALSE THEN 
       RETURN TRUE;
     ELSE
       RETURN FALSE;
@@ -213,11 +212,7 @@ CREATE OR REPLACE FUNCTION TT_IsInt(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF pg_typeof(var) = 'integer'::regtype THEN
-      RETURN TRUE;
-    ELSE
-      RETURN FALSE;
-    END IF;
+    RETURN var - var::int = 0;
   END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
@@ -225,14 +220,8 @@ CREATE OR REPLACE FUNCTION TT_IsInt(
    var int
 )
 RETURNS boolean AS $$
-  BEGIN
-    IF pg_typeof(var) = 'integer'::regtype THEN
-      RETURN TRUE;
-    ELSE
-      RETURN FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+  SELECT TT_IsInt(var::double precision);
+$$ LANGUAGE sql VOLATILE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -285,20 +274,19 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 -- Marc Edwards
 -- 11/02/2019 added in v0.1
 ------------------------------------------------------------
-DROP FUNCTION IF EXISTS TT_MatchStr(text,text,name,name);
+--DROP FUNCTION IF EXISTS TT_MatchStr(text,name,name);
 CREATE OR REPLACE FUNCTION TT_MatchStr(
   var text,
-  lookup_col text,
-  lookup_tab name,
-  lookup_sch name
+  lookupCol text,
+  lookupSchemaName name,
+  lookupTableName name
 )
 RETURNS boolean AS $$
   DECLARE
     query text;
     return boolean;
   BEGIN
-    query = 'SELECT ' || var || ' IN (SELECT ' || lookup_col || ' FROM ' || TT_FullTableName(lookup_sch, lookup_tab) || ')';
-    RAISE NOTICE '11 query = %',query;
+    query = 'SELECT ''' || var || ''' IN (SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
     EXECUTE query INTO return;
     RETURN return;
   END;
