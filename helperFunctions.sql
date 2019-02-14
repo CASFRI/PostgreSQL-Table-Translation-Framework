@@ -78,6 +78,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return TRUE if var is not empty.
 -- Return FALSE if var is empty string or padded spaces (e.g. '' or '  ').
+-- Return NULL if input NULL
 ------------------------------------------------------------
 -- Marc Edwards
 -- 4/02/2019 added in v0.1
@@ -86,20 +87,17 @@ CREATE OR REPLACE FUNCTION TT_NotEmpty(
    var text
 )
 RETURNS boolean AS $$
+  DECLARE
+    x text
   BEGIN
-    IF TRIM(var) = '' IS FALSE THEN -- trim removes any spaces before evaluating string.
+    x := TRIM(var); -- trim removes any spaces before evaluating string.
+    IF x = '' IS FALSE THEN 
       RETURN TRUE;
-    END IF;
-    IF TRIM(var) = '' IS TRUE THEN
+    ELSE
       RETURN FALSE;
     END IF;
-    IF TRIM(var) = '' IS NULL THEN
-      RETURN NULL;
-    END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
-
--- should functions return null?
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -------------------------------------------------------------------------------
 
@@ -204,8 +202,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  var numeric - Variable to test.
 --  Must be numeric but cannot be decimal.
 --  Does not currently deal with bigint or smallint.
---  STRICT return Null is any inputs null
---  Uses funciton overloading (https://www.postgresql.org/docs/9.6/xfunc-overload.html) to create two versions of the function with the same name. Postgres will select whichever matches the provided type.
+--  Returns NULL if any argument NULL
+--  Uses function overloading (https://www.postgresql.org/docs/9.6/xfunc-overload.html) to create two versions of the function with the same name. Postgres will select whichever matches the provided type.
 ------------------------------------------------------------
 -- Marc Edwards
 -- 7/02/2019 added in v0.1
@@ -242,7 +240,7 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 --
 --  var numeric - Variable to test.
 --  Must be numeric, can be decimal, can be integer.
---  STRICT return Null is any inputs null
+--  Returns NULL if any argument NULL
 ------------------------------------------------------------
 -- Marc Edwards
 -- 7/02/2019 added in v0.1
@@ -347,4 +345,31 @@ RETURNS anyelement AS $$
     RETURN var;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Concat
+--
+--  sep text  - Separator (e.g. '_'). If no sep required use '' as first argument.
+--  var text[] - list of strings to concat
+--
+-- Return the value.
+-- Returns NULL if any argument NULL
+------------------------------------------------------------
+-- Marc Edwards
+-- 14/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Concat(
+  sep text,
+  VARIADIC var text[]
+)
+RETURNS text AS $$
+  BEGIN
+    IF coalesce(array_position(var, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
+      RETURN NULL;
+    ELSE
+      RETURN array_to_string(var, sep);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 -------------------------------------------------------------------------------

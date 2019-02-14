@@ -48,7 +48,9 @@ WITH test_nb AS (										-- me - WITH creates temp tables for use in the query
     SELECT 'TT_LessThan'::text,                5,          9         UNION ALL
     SELECT 'TT_IsInt'::text,                   6,          8         UNION ALL
     SELECT 'TT_IsNumeric'::text,               7,          8         UNION ALL
-    SELECT 'TT_MatchStr'::text,                8,          7         
+    SELECT 'TT_MatchStr'::text,                8,          7         UNION ALL
+    SELECT 'TT_Concat'::text,                  9,          5         UNION ALL
+    SELECT 'TT_Copy'::text,                   10,          5         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -486,7 +488,70 @@ SELECT '8.7'::text number,
        'Array - array contains empty string'::text description,
        TT_MatchStr('1', ARRAY['1','2','']) IS TRUE passed
 ---------------------------------------------------------
-
+-- Test 9 - TT_Concat
+---------------------------------------------------------
+UNION ALL
+SELECT '9.1'::text number,
+       'TT_Concat'::text function_tested,
+       'Basic usage with sep'::text description,
+       TT_Concat('-', 'cas', 'id', 'test') = 'cas-id-test' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.2'::text number,
+       'TT_Concat'::text function_tested,
+       'Basic usage without sep'::text description,
+       TT_Concat('', 'cas', 'id', 'test') = 'casidtest' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.3'::text number,
+       'TT_Concat'::text function_tested,
+       'Null sep'::text description,
+       TT_Concat(NULL, 'cas', 'id', 'test') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.4'::text number,
+       'TT_Concat'::text function_tested,
+       'Null string'::text description,
+       TT_Concat('-', NULL, 'id', 'test') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.5'::text number,
+       'TT_Concat'::text function_tested,
+       'Empty string'::text description,
+       TT_Concat('-', 'cas', '', 'test') = 'cas--test' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 10 - TT_Copy
+---------------------------------------------------------
+UNION ALL
+SELECT '10.1'::text number,
+       'TT_Copy'::text function_tested,
+       'Text usage'::text description,
+       TT_Copy('copytest'::text) = 'copytest'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.2'::text number,
+       'TT_Copy'::text function_tested,
+       'Int usage'::text description,
+       TT_Copy(111::int) = 111::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.3'::text number,
+       'TT_Copy'::text function_tested,
+       'Double precision usage'::text description,
+       TT_Copy(111.4::double precision) = 111.4::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.4'::text number,
+       'TT_Copy'::text function_tested,
+       'Empty string usage'::text description,
+       TT_Copy(''::text) = ''::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.5'::text number,
+       'TT_Copy'::text function_tested,
+       'Null'::text description,
+       TT_Copy(NULL::text) IS NULL passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) -- me ON is the join condition for joining the two FROM tables together.
