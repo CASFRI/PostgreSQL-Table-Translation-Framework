@@ -1,5 +1,5 @@
 ﻿------------------------------------------------------------------------------
--- PostgreSQL Table Tranlation Engine - Helper functions uninstallation file
+-- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
 --
@@ -10,87 +10,136 @@
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 --
+--
+--
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
 -------------------------------------------------------------------------------
 -- TT_NotNull
 --
---  var any  - Variable to test for NOT NULL.
+--  var text/boolean/double precision/int  - Value to test for NOT NULL.
 --
--- Return TRUE if var is not NULL.
-------------------------------------------------------------
--- Pierre Racine
--- 29/01/2019 added in v0.1
+-- Return TRUE if val is not NULL.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  var anyelement
+  val text
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN var IS NOT NULL;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Between
---
--- var double precision/int  - Variable to test.
--- min double precision  - Minimum.
--- max double precision  - Maximum.
---
--- Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
---
--- Return TRUE if var is between min and max.
-------------------------------------------------------------
--- Pierre Racine
--- 29/01/2019 added in v0.1
--- Edited by Marc Edwards - 11/2/2019
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Between(
-  var int,
-  min double precision,
-  max double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    RETURN var > min and var < max;
+    RETURN val IS NOT NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Between(
-  var double precision,
-  min double precision,
-  max double precision
+CREATE OR REPLACE FUNCTION TT_NotNull(
+  val double precision
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN var > min and var < max;
+    RETURN val IS NOT NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotNull(
+  val boolean
+)
+RETURNS boolean AS $$
+  SELECT TT_NotNull(val::text);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotNull(
+  val int
+)
+RETURNS boolean AS $$
+  SELECT TT_NotNull(val::double precision);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  var text  - Variable to test for empty string.
+--  val text  - Value to test for empty string.
 --
--- Return TRUE if var is not empty.
--- Return FALSE if var is empty string or padded spaces (e.g. '' or '  ').
--- Return NULL if input NULL
-------------------------------------------------------------
--- Marc Edwards
--- 4/02/2019 added in v0.1
+-- Return TRUE if val is not empty or if val is Null.
+-- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ').
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
-   var text
+   val text
 )
 RETURNS boolean AS $$
   DECLARE
   BEGIN
-    var := TRIM(var); -- trim removes any spaces before evaluating string.
-    IF var = '' IS FALSE THEN 
+    val = TRIM(val); -- trim removes any spaces before evaluating string.
+    IF val IS NULL THEN
+      RETURN TRUE;
+    ELSEIF val != '' THEN 
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE; 
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsInt
+--
+--  val double precision/int/text - Value to test
+--  Must be numeric but cannot be decimal
+--  Null values return FALSE
+--  Strings with numeric characters and '.' will be passed to IsInt
+--  Strings with anything else (e.g. letter characters) return FALSE.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsInt(
+   val double precision
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NOT NULL THEN
+      RETURN val - val::int = 0;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsInt(
+   val int
+)
+RETURNS boolean AS $$
+  SELECT TT_IsInt(val::double precision);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsInt(
+   val text
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val ~ '^[0-9\.]+$' THEN
+      RETURN TT_IsInt(val::double precision);
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsNumeric
+--
+--  var numeric - Variable to test.
+--  Must be numeric, can be decimal, can be integer.
+--  Returns NULL if any argument NULL
+------------------------------------------------------------
+-- Marc Edwards
+-- 7/02/2019 added in v0.1
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+   var double precision
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
       RETURN TRUE;
     ELSE
       RETURN FALSE;
@@ -98,6 +147,53 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+   var int
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Between
+--
+-- val double precision/int  - Value to test.
+-- min double precision  - Minimum.
+-- max double precision  - Maximum.
+--
+-- Return TRUE if var is between min and max.
+-- Return FALSE otherwise.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Between(
+  val double precision,
+  min double precision,
+  max double precision
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NOT NULL AND min IS NOT NULL AND max IS NOT NULL THEN
+      RETURN val > min and val < max;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val int,
+  min double precision,
+  max double precision
+)
+RETURNS boolean AS $$
+  SELECT TT_Between(val::double precision,min,max);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -112,9 +208,6 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 --  Return TRUE if var >= lowerBound and inclusive = TRUE.
 --  Return TRUE if var > lowerBound and inclusive = FALSE.
 --  Return FALSE otherwise.
-------------------------------------------------------------
--- Marc Edwards
--- 6/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
    var double precision,
@@ -161,9 +254,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  Return TRUE if var < lowerBound and inclusive = FALSE.
 --  Return FALSE otherwise.
 ------------------------------------------------------------
--- Marc Edwards
--- 6/02/2019 added in v0.1
-------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
    var double precision,
    upperBound double precision,
@@ -196,74 +286,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_IsInt
---
---  var numeric - Variable to test.
---  Must be numeric but cannot be decimal.
---  Does not currently deal with bigint or smallint.
---  Returns NULL if any argument NULL
---  Uses function overloading (https://www.postgresql.org/docs/9.6/xfunc-overload.html) to create two versions of the function with the same name. Postgres will select whichever matches the provided type.
-------------------------------------------------------------
--- Marc Edwards
--- 7/02/2019 added in v0.1
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsInt(
-   var double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    RETURN var - var::int = 0;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
-
-CREATE OR REPLACE FUNCTION TT_IsInt(
-   var int
-)
-RETURNS boolean AS $$
-  SELECT TT_IsInt(var::double precision);
-$$ LANGUAGE sql VOLATILE STRICT;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_IsNumeric
---
---  var numeric - Variable to test.
---  Must be numeric, can be decimal, can be integer.
---  Returns NULL if any argument NULL
-------------------------------------------------------------
--- Marc Edwards
--- 7/02/2019 added in v0.1
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   var double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
-      RETURN TRUE;
-    ELSE
-      RETURN FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
-
-CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   var int
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
-      RETURN TRUE;
-    ELSE
-      RETURN FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
-
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_MatchStr  --  ***FIX***
+-- TT_MatchStr -- change to TT_Match
 --
 -- looks up string in table column
 -- var text - column to test.
@@ -277,7 +300,7 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 --DROP FUNCTION IF EXISTS TT_MatchStr(text,name,name);
 CREATE OR REPLACE FUNCTION TT_MatchStr(
   var text,
-  lookupCol text,
+  lookupCol text, -- drop
   lookupSchemaName name,
   lookupTableName name
 )
@@ -286,7 +309,7 @@ RETURNS boolean AS $$
     query text;
     return boolean;
   BEGIN
-    query = 'SELECT ''' || var || ''' IN (SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+    query = 'SELECT ' || quote_literal(var) || ' IN (SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
     EXECUTE query INTO return;
     RETURN return;
   END;
@@ -298,9 +321,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- looks up string array
 -- var text - string to test.
 -- vat text[] - array.
-------------------------------------------------------------
--- Marc Edwards
--- 11/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MatchStr(
   var text,
@@ -322,9 +342,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return the value.
 ------------------------------------------------------------
--- Pierre Racine
--- 31/01/2019 added in v0.1
-------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Copy(
   var anyelement
 )
@@ -343,9 +360,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return the value.
 -- Returns NULL if any argument NULL
-------------------------------------------------------------
--- Marc Edwards
--- 14/02/2019 added in v0.1
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   sep text,

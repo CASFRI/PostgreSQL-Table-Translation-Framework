@@ -10,7 +10,10 @@
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS TT_NotNull(anyelement);
+DROP FUNCTION IF EXISTS TT_NotNull(text);
+DROP FUNCTION IF EXISTS TT_NotNull(boolean);
+DROP FUNCTION IF EXISTS TT_NotNull(double precision);
+DROP FUNCTION IF EXISTS TT_NotNull(int);
 DROP FUNCTION IF EXISTS TT_Between(integer, double precision, double precision);
 DROP FUNCTION IF EXISTS TT_Between(double precision, double precision, double precision);
 DROP FUNCTION IF EXISTS TT_Copy(anyelement);
@@ -21,6 +24,7 @@ DROP FUNCTION IF EXISTS TT_LessThan(double precision, double precision, boolean)
 DROP FUNCTION IF EXISTS TT_LessThan(integer, double precision, boolean);
 DROP FUNCTION IF EXISTS TT_IsInt(double precision);
 DROP FUNCTION IF EXISTS TT_IsInt(integer);
+DROP FUNCTION IF EXISTS TT_IsInt(text);
 DROP FUNCTION IF EXISTS TT_IsNumeric(double precision);
 DROP FUNCTION IF EXISTS TT_IsNumeric(integer);
 DROP FUNCTION IF EXISTS TT_MatchStr(text,text[]);
