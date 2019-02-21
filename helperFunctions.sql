@@ -60,8 +60,8 @@ $$ LANGUAGE sql VOLATILE;
 --
 --  val text  - Value to test for empty string.
 --
--- Return TRUE if val is not empty or if val is Null.
--- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ').
+-- Return TRUE if val is not empty.
+-- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or Null.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
    val text
@@ -70,12 +70,10 @@ RETURNS boolean AS $$
   DECLARE
   BEGIN
     val = TRIM(val); -- trim removes any spaces before evaluating string.
-    IF val IS NULL THEN
-      RETURN TRUE;
-    ELSEIF val != '' THEN 
-      RETURN TRUE;
-    ELSE
+    IF val IS NULL OR val = '' THEN
       RETURN FALSE;
+    ELSE
+      RETURN TRUE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE; 
@@ -114,12 +112,13 @@ CREATE OR REPLACE FUNCTION TT_IsInt(
    val text
 )
 RETURNS boolean AS $$
+  DECLARE
+    x double precision;
   BEGIN
-    IF val ~ '^[0-9\.]+$' THEN
-      RETURN TT_IsInt(val::double precision);
-    ELSE
+    x = val::double precision;
+    RETURN TT_IsInt(val::double precision);
+  EXCEPTION WHEN OTHERS THEN
       RETURN FALSE;
-    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -127,38 +126,43 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsNumeric
 --
---  var numeric - Variable to test.
+--  val double precision/int/text - Value to test.
 --  Must be numeric, can be decimal, can be integer.
---  Returns NULL if any argument NULL
-------------------------------------------------------------
--- Marc Edwards
--- 7/02/2019 added in v0.1
+--  Null values return FALSE
+--  Strings with numeric characters and '.' will be passed to IsNumeric
+--  Strings with anything else (e.g. letter characters) return FALSE.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   var double precision
+   val text
 )
-RETURNS boolean AS $$
-  BEGIN
-    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
-      RETURN TRUE;
-    ELSE
+  RETURNS boolean AS $$
+    DECLARE
+      x double precision;
+    BEGIN
+      IF val IS NOT NULL THEN
+        x = val::double precision;
+        RETURN TRUE;
+      ELSE
+        RETURN FALSE;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
       RETURN FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+    END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   var int
+   val int
 )
 RETURNS boolean AS $$
-  BEGIN
-    IF pg_typeof(var) = ANY ('{smallint, bigint, integer, double precision, real, numeric, decimal}'::regtype[]) THEN
-      RETURN TRUE;
-    ELSE
-      RETURN FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+  SELECT TT_IsNumeric(val::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+   val double precision
+)
+RETURNS boolean AS $$
+  SELECT TT_IsNumeric(val::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -170,6 +174,8 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 --
 -- Return TRUE if var is between min and max.
 -- Return FALSE otherwise.
+-- Return FALSE if val is NULL.
+-- Return error if min or max are null.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
   val double precision,
@@ -178,10 +184,12 @@ CREATE OR REPLACE FUNCTION TT_Between(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NOT NULL AND min IS NOT NULL AND max IS NOT NULL THEN
-      RETURN val > min and val < max;
-    ELSE
+    IF min IS NULL OR max IS NULL THEN
+      RAISE EXCEPTION 'min or max is null';
+    ELSIF val IS NULL THEN
       RETURN FALSE;
+    ELSE
+      RETURN val > min and val < max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -199,108 +207,99 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_GreaterThan
 --
---  var double precision/int - Variable to test.
---  lowerBound double precision - upper bound to test against
---  inclusive boolean - is upper bound inclusive? Default True
---  
---  Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
+--  val double precision/int - Value to test.
+--  lowerBound double precision - lower bound to test against
+--  inclusive boolean - is lower bound inclusive? Default True
 --
---  Return TRUE if var >= lowerBound and inclusive = TRUE.
---  Return TRUE if var > lowerBound and inclusive = FALSE.
+--  Return TRUE if val >= lowerBound and inclusive = TRUE.
+--  Return TRUE if val > lowerBound and inclusive = FALSE.
 --  Return FALSE otherwise.
+--  Return FALSE if val is NULL.
+--  Return error if lowerBound or inclusive are null.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
-   var double precision,
+   val double precision,
    lowerBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
   BEGIN
-    IF inclusive = TRUE THEN
-      RETURN var >= lowerBound;
+    IF lowerBound IS NULL OR inclusive IS NULL THEN
+      RAISE EXCEPTION 'lowerBound or inclusive is null';
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF inclusive = TRUE THEN
+      RETURN val >= lowerBound;
     ELSE
-      RETURN var > lowerBound;
+      RETURN val > lowerBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
-   var int,
+   val int,
    lowerBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
-  BEGIN
-    IF inclusive = TRUE THEN
-      RETURN var >= lowerBound;
-    ELSE
-      RETURN var > lowerBound;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_GreaterThan(val::double precision,lowerBound,inclusive);
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LessThan
 --
---  var double precision/int - Variable to test.
+--  val double precision/int - Value to test.
 --  upperBound double precision - upper bound to test against
 --  inclusive boolean - is upper bound inclusive? Default True
---  
---  Function overloading - make two versions named the same, one for int one for double precision. Postgres will choose the version based on input values.
 --
---  Return TRUE if var <= lowerBound and inclusive = TRUE.
---  Return TRUE if var < lowerBound and inclusive = FALSE.
+--  Return TRUE if val <= upperBound and inclusive = TRUE.
+--  Return TRUE if val < upperBound and inclusive = FALSE.
 --  Return FALSE otherwise.
+--  Return FALSE if val is NULL.
+--  Return error if upperBound or inclusive are null.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
-   var double precision,
+   val double precision,
    upperBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
   BEGIN
-    IF inclusive = TRUE THEN
-      RETURN var <= upperBound;
+    IF upperBound IS NULL OR inclusive IS NULL THEN
+      RAISE EXCEPTION 'upperBound or inclusive is null';
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF inclusive = TRUE THEN
+      RETURN val <= upperBound;
     ELSE
-      RETURN var < upperBound;
+      RETURN val < upperBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LessThan(
-   var int,
+   val int,
    upperBound double precision,
    inclusive boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
-  BEGIN
-    IF inclusive = TRUE THEN
-      RETURN var <= upperBound;
-    ELSE
-      RETURN var < upperBound;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_LessThan(val::double precision,upperBound,inclusive);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MatchStr -- change to TT_Match
+-- TT_Match
 --
--- looks up string in table column
--- var text - column to test.
--- lookup_col text - lookup column in species table
--- lookup_tab name - table name of species table
--- lookup_sch name - schema name holding species table
+-- val text - column to test.
+-- lookupSchemaName name - schema name holding lookup table
+-- lookupTableName name - lookup table
+-- if val is present in first column of lookup table, returns TRUE.
 ------------------------------------------------------------
--- Marc Edwards
--- 11/02/2019 added in v0.1
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_MatchStr(text,name,name);
-CREATE OR REPLACE FUNCTION TT_MatchStr(
-  var text,
-  lookupCol text, -- drop
+DROP FUNCTION IF EXISTS TT_Match(text,name,name);
+CREATE OR REPLACE FUNCTION TT_Match(
+  val text,
   lookupSchemaName name,
   lookupTableName name
 )
@@ -309,26 +308,50 @@ RETURNS boolean AS $$
     query text;
     return boolean;
   BEGIN
-    query = 'SELECT ' || quote_literal(var) || ' IN (SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
-    EXECUTE query INTO return;
-    RETURN return;
+    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
+    ELSIF val IS NOT NULL THEN
+      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      RETURN FALSE;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_Match( -- val::text shouldn't work, not sure why it does here. Because searching for a text type in an int type col in the lookup table should fail.
+  val double precision,
+  lookupSchemaName name,
+  lookupTableName name
+)
+RETURNS boolean AS $$
+  SELECT TT_Match(val::text,lookupSchemaName,lookupTableName)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Match(
+  val int,
+  lookupSchemaName name,
+  lookupTableName name
+)
+RETURNS boolean AS $$
+  SELECT TT_Match(val::text,lookupSchemaName,lookupTableName)
+$$ LANGUAGE sql VOLATILE;
+
 -------------------------------------------------------------------------------
--- TT_MatchStr
+-- TT_Match - MAKE VARIADIC. Make dbl and int versions.
 --
 -- looks up string array
 -- var text - string to test.
 -- vat text[] - array.
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_MatchStr(
-  var text,
+CREATE OR REPLACE FUNCTION TT_Match(
+  val text,
   lst text[]
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN var = ANY(lst);
+    RETURN val = ANY(lst);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -336,7 +359,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
 -------------------------------------------------------------------------------
--- TT_Copy
+-- TT_Copy -- REMOVE anyelement.
 --
 --  var any  - Variable to return.
 --
