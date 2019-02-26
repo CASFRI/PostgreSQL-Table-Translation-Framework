@@ -290,14 +290,16 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Match
+-- TT_Match (table version)                     -    why does this return true? Would expect it to fail due to incompatable types... SELECT TT_Match('1.1'::text, 'public'::name, 'test_lookuptable3'::name);
 --
--- val text - column to test.
+-- val text/double precision/int - column to test.
 -- lookupSchemaName name - schema name holding lookup table
 -- lookupTableName name - lookup table
 -- if val is present in first column of lookup table, returns TRUE.
 ------------------------------------------------------------
-DROP FUNCTION IF EXISTS TT_Match(text,name,name);
+-- DROP FUNCTION IF EXISTS TT_Match(text,name,name);
+-- DROP FUNCTION IF EXISTS TT_Match(double precision,name,name);
+-- DROP FUNCTION IF EXISTS TT_Match(integer,name,name);
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
   lookupSchemaName name,
@@ -320,14 +322,27 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Match( -- val::text shouldn't work, not sure why it does here. Because searching for a text type in an int type col in the lookup table should fail.
+CREATE OR REPLACE FUNCTION TT_Match(
   val double precision,
   lookupSchemaName name,
   lookupTableName name
 )
 RETURNS boolean AS $$
-  SELECT TT_Match(val::text,lookupSchemaName,lookupTableName)
-$$ LANGUAGE sql VOLATILE;
+  DECLARE
+    query text;
+    return boolean;
+  BEGIN
+    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
+    ELSIF val IS NOT NULL THEN
+      query = 'SELECT ' || val || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Match(
   val int,
@@ -335,44 +350,93 @@ CREATE OR REPLACE FUNCTION TT_Match(
   lookupTableName name
 )
 RETURNS boolean AS $$
-  SELECT TT_Match(val::text,lookupSchemaName,lookupTableName)
+  SELECT TT_Match(val::double precision,lookupSchemaName,lookupTableName)
 $$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
--- TT_Match - MAKE VARIADIC. Make dbl and int versions.
+-- TT_Match (list version) - does first argument match any of the following arguments?
+
 --
--- looks up string array
--- var text - string to test.
--- vat text[] - array.
+-- var text/double precision/int - value to test.
+-- lst text/double precision/int - list to test against
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
-  lst text[]
+  VARIADIC lst text[]
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN val = ANY(lst);
+    IF val IS NOT NULL THEN
+      RETURN val = ANY(array_remove(lst, NULL));
+    ELSE
+      RETURN FALSE;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Match(
+  val double precision,
+  VARIADIC lst double precision[]
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NOT NULL THEN
+      RETURN val = ANY(array_remove(lst, NULL));
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Match(
+  val integer,
+  VARIADIC lst integer[]
+)
+RETURNS boolean AS $$
+  SELECT TT_Match(val::double precision, VARIADIC lst::double precision[])
+$$ LANGUAGE sql VOLATILE;
 
 ------------------------------------------------------------
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
 -------------------------------------------------------------------------------
--- TT_Copy -- REMOVE anyelement.
+-- TT_Copy
 --
---  var any  - Variable to return.
+--  val text/boolean/double precision/int  - Value to return.
 --
 -- Return the value.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Copy(
-  var anyelement
+  val text
 )
-RETURNS anyelement AS $$
+RETURNS text AS $$
   BEGIN
-    RETURN var;
+    RETURN val;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Copy(
+  val double precision
+)
+RETURNS double precision AS $$
+  BEGIN
+    RETURN val;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Copy(
+  val int
+)
+RETURNS int AS $$
+  SELECT TT_Copy(val::double precision)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Copy(
+  val boolean
+)
+RETURNS boolean AS $$
+  SELECT TT_Copy(val::text)::boolean
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -390,11 +454,11 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 )
 RETURNS text AS $$
   BEGIN
-    IF coalesce(array_position(var, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
-      RETURN NULL;
+    IF sep is NULL OR coalesce(array_position(var, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
+      RAISE EXCEPTION 'null values present';
     ELSE
       RETURN array_to_string(var, sep);
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
