@@ -21,6 +21,9 @@ CREATE TYPE TT_RuleDef AS (
   stopOnInvalid boolean
 );
 
+-- Debug configuration variable. Set tt.debug to TRUE to display all RAISE NOTICE
+SET tt.debug TO FALSE;
+
 -------------------------------------------------------------------------------
 -- Function Definitions...
 -------------------------------------------------------------------------------
@@ -126,7 +129,9 @@ CREATE OR REPLACE FUNCTION TT_FctExists(
 RETURNS boolean AS $$
   DECLARE
     cnt int = 0;
+    debug boolean = current_setting('tt.debug');
   BEGIN
+    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
     fctName = 'tt_' || fctName;
     IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
       schemaName = '';
@@ -141,12 +146,13 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
     fctName = lower(fctName);
-RAISE NOTICE 'TT_FctExists fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');
+    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF;
     SELECT count(*)
     FROM pg_proc
     WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR 
           oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
     INTO cnt;
+    IF debug THEN RAISE NOTICE 'TT_FctExists END';END IF;
     IF cnt > 0 THEN 
       RETURN TRUE;
     END IF;
@@ -316,10 +322,11 @@ RETURNS anyelement AS $$
     argVal text;
     arg text;
     result ALIAS FOR $0;
+    debug boolean = current_setting('tt.debug');
   BEGIN
---RAISE NOTICE 'TT_FctEval 00 ruleQuery = %', ruleQuery;
+    IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN';END IF;
     IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
---RAISE NOTICE 'TT_FctEval 11 returning NULL';
+      IF debug THEN RAISE NOTICE 'TT_FctEval 11 fctName=%, signature=%', fctName, TT_FctSignature(args, vals);END IF;
       RETURN NULL;
     END IF;
     ruleQuery = 'SELECT TT_' || fctName || '(';
@@ -342,8 +349,9 @@ RETURNS anyelement AS $$
     END LOOP;
     -- Remove the last comma.
     ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')::' || pg_typeof(result);
---RAISE NOTICE 'TT_FctEval 11 ruleQuery = %', ruleQuery;
+    IF debug THEN RAISE NOTICE 'TT_FctEval 22 ruleQuery=%', ruleQuery;END IF;
     EXECUTE ruleQuery INTO STRICT result;
+    IF debug THEN RAISE NOTICE 'TT_FctEval END';END IF;
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -647,27 +655,39 @@ RETURNS SETOF RECORD AS $$
     translationrow RECORD;
     translatedrow RECORD;
     rule TT_RuleDef;
+    query text;
     finalQuery text;
     finalVal text;
     isValid boolean;
     jsonbRow jsonb;
+    debug boolean = current_setting('tt.debug');
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
     -- FOR each row of the source table
+    IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
        -- Convert the row to a json object so we can pass it to TT_FctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourcerow);
+       IF debug THEN RAISE NOTICE '_TT_Translate 11 sourcerow=%', jsonbRow;END IF;
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
        FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
+         IF debug THEN RAISE NOTICE '_TT_Translate 22 translationrow=%', translationrow;END IF;
          -- Iterate over each invalid rule
          FOREACH rule IN ARRAY translationrow.validationRules LOOP
+           IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
            -- Evaluate the rule
            isValid = TT_FctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+           IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
            -- initialize the final value
            finalVal = rule.errorCode;
+           IF debug AND isValid THEN 
+             RAISE NOTICE '_TT_Translate 55 rule is VALID %', rule;
+           ELSIF debug THEN
+             RAISE NOTICE '_TT_Translate 66 rule is INVALID %', rule;
+           END IF;
            -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
            IF NOT isValid AND rule.stopOnInvalid THEN
                RAISE EXCEPTION 'Invalid rule found...';
@@ -675,18 +695,26 @@ RETURNS SETOF RECORD AS $$
          END LOOP ;
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
+           query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType($1, $2) || ');';
+           IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            -- EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
-           EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType($1, $2) || ');' 
+           EXECUTE query
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
+           IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
+         ELSE
+           IF debug THEN RAISE NOTICE '_TT_Translate 99 INVALID';END IF;
          END IF;
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
+         IF debug THEN RAISE NOTICE '_TT_Translate AA finalQuery=%', finalQuery;END IF;
        END LOOP;
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);
+       IF debug THEN RAISE NOTICE '_TT_Translate BB finalQuery=%', finalQuery;END IF;
        EXECUTE finalQuery INTO translatedrow;
        RETURN NEXT translatedrow;
     END LOOP;
+    IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
