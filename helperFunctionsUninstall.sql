@@ -47,5 +47,17 @@ DROP FUNCTION IF EXISTS TT_False();
 DROP FUNCTION IF EXISTS TT_IsString(text);
 DROP FUNCTION IF EXISTS TT_IsString(double precision);
 DROP FUNCTION IF EXISTS TT_IsString(int);
+DROP FUNCTION IF EXISTS TT_Length(text);
+DROP FUNCTION IF EXISTS TT_Length(double precision);
+DROP FUNCTION IF EXISTS TT_Length(int);
+DROP FUNCTION IF EXISTS TT_Pad(text,int,text);
+DROP FUNCTION IF EXISTS TT_Pad(double precision,int,text);
+DROP FUNCTION IF EXISTS TT_Pad(int,int,text);
+DROP FUNCTION IF EXISTS TT_IsOccurence(text,name,name,int);
+DROP FUNCTION IF EXISTS TT_IsOccurence(double precision,name,name,int);
+DROP FUNCTION IF EXISTS TT_IsOccurence(int,name,name,int);
+DROP FUNCTION IF EXISTS TT_IsOccurence(text,int,text);
+DROP FUNCTION IF EXISTS TT_IsOccurence(double precision,int,double precision);
+DROP FUNCTION IF EXISTS TT_IsOccurence(int,int,int);
 
 

@@ -93,10 +93,10 @@ CREATE OR REPLACE FUNCTION TT_IsInt(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NOT NULL THEN
-      RETURN val - val::int = 0;
-    ELSE
+    IF val IS NULL THEN
       RETURN FALSE;
+    ELSE
+      RETURN val - val::int = 0;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -139,11 +139,11 @@ CREATE OR REPLACE FUNCTION TT_IsNumeric(
     DECLARE
       x double precision;
     BEGIN
-      IF val IS NOT NULL THEN
+      IF val IS NULL THEN
+        RETURN FALSE;
+      ELSE
         x = val::double precision;
         RETURN TRUE;
-      ELSE
-        RETURN FALSE;
       END IF;
     EXCEPTION WHEN OTHERS THEN
       RETURN FALSE;
@@ -290,6 +290,133 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsOccurence (table version)
+--
+-- val text/double precision/int - column to test.
+-- lookupSchemaName name - schema name holding lookup table
+-- lookupTableName name - lookup table
+-- occurences - int
+--
+-- if number of occurences of val in first column of schema.table equals occurences, return true.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val text,
+  lookupSchemaName name,
+  lookupTableName name,
+  occurences int
+)
+RETURNS boolean AS $$
+  DECLARE
+    query text;
+    return boolean;
+  BEGIN
+    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
+    ELSIF occurences IS NULL THEN
+      RAISE EXCEPTION 'occurences is null';
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ') = ' || occurences || ';';
+      EXECUTE query INTO return;
+      RETURN return;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val double precision,
+  lookupSchemaName name,
+  lookupTableName name,
+  occurences int
+)
+RETURNS boolean AS $$
+  DECLARE
+    query text;
+    return boolean;
+  BEGIN
+    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
+    ELSIF occurences IS NULL THEN
+      RAISE EXCEPTION 'occurences is null';
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ') = ' || occurences || ';';
+      EXECUTE query INTO return;
+      RETURN return;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val int,
+  lookupSchemaName name,
+  lookupTableName name,
+  occurences int
+)
+RETURNS boolean AS $$
+  SELECT TT_IsOccurence(val::double precision,lookupSchemaName,lookupTableName,occurences)
+$$ LANGUAGE sql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsOccurence (list version)
+--
+-- val text/double precision/int - column to test.
+-- occurences - int
+-- lst text/double precision/int[]
+--
+-- if number of occurences of val in list equals occurences, return true.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val text,
+  occurences int,
+  VARIADIC lst text[]
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF occurences IS NULL THEN
+      RAISE EXCEPTION 'occurences is null';
+    ELSE
+      RETURN coalesce(array_length(array_positions(lst,val),1),0) = occurences;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val double precision,
+  occurences int,
+  VARIADIC lst double precision[]
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF occurences IS NULL THEN
+      RAISE EXCEPTION 'occurences is null';
+    ELSE
+      RETURN coalesce(array_length(array_positions(lst,val),1),0) = occurences;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsOccurence(
+  val int,
+  occurences int,
+  VARIADIC lst int[]
+)
+RETURNS boolean AS $$
+  SELECT TT_IsOccurence(val::double precision,occurences,VARIADIC lst::double precision[])
+$$ LANGUAGE sql VOLATILE;
+
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_Match (table version)
 --
 -- val text/double precision/int - column to test.
@@ -312,12 +439,12 @@ RETURNS boolean AS $$
   BEGIN
     IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF val IS NOT NULL THEN
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
       query = 'SELECT ' || quote_literal(val) || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
-    ELSE
-      RETURN FALSE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -334,12 +461,12 @@ RETURNS boolean AS $$
   BEGIN
     IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF val IS NOT NULL THEN
+    ELSIF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
       query = 'SELECT ' || val || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
-    ELSE
-      RETURN FALSE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -367,10 +494,10 @@ CREATE OR REPLACE FUNCTION TT_Match(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NOT NULL THEN
-      RETURN val = ANY(array_remove(lst, NULL));
-    ELSE
+    IF val IS NULL THEN
       RETURN FALSE;
+    ELSE
+      RETURN val = ANY(array_remove(lst, NULL));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -381,10 +508,10 @@ CREATE OR REPLACE FUNCTION TT_Match(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NOT NULL THEN
-      RETURN val = ANY(array_remove(lst, NULL));
-    ELSE
+    IF val IS NULL THEN
       RETURN FALSE;
+    ELSE
+      RETURN val = ANY(array_remove(lst, NULL));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -423,10 +550,10 @@ CREATE OR REPLACE FUNCTION TT_IsString(
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NOT NULL THEN
-      RETURN TT_IsNumeric(val) IS FALSE;
-    ELSE
+    IF val IS NULL THEN
       RETURN FALSE;
+    ELSE
+      RETURN TT_IsNumeric(val) IS FALSE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -444,9 +571,18 @@ CREATE OR REPLACE FUNCTION TT_IsString(
 RETURNS boolean AS $$
   SELECT TT_IsString(val::text)
 $$ LANGUAGE sql VOLATILE;
-------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_Copy
 --
@@ -501,8 +637,10 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 )
 RETURNS text AS $$
   BEGIN
-    IF sep is NULL OR coalesce(array_position(val, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
-      RAISE EXCEPTION 'null values present';
+    IF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF coalesce(array_position(val, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
+      RAISE EXCEPTION 'val contains null';
     ELSE
       RETURN array_to_string(val, sep);
     END IF;
@@ -538,7 +676,7 @@ RETURNS text AS $$
     IF val IS NULL THEN
       RAISE EXCEPTION 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'schema, table, or column is NULL';
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSE
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
@@ -561,7 +699,7 @@ RETURNS text AS $$
     IF val IS NULL THEN
       RAISE EXCEPTION 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'schema, table, or column is NULL';
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSE
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
@@ -578,6 +716,95 @@ CREATE OR REPLACE FUNCTION TT_Lookup(
 )
 RETURNS text AS $$
   SELECT TT_Lookup(val::double precision, lookupSchemaName, lookupTableName, lookupCol)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Length
+--
+-- val - values to test.
+-- Count characters in string
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Length(
+  val text
+)
+RETURNS int AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSE
+      RETURN char_length(val);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Length(
+  val double precision
+)
+RETURNS int AS $$
+  SELECT TT_Length(val::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Length(
+  val int
+)
+RETURNS int AS $$
+  SELECT TT_Length(val::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Pad
+--
+-- val - string to pad.
+-- target_length - total characters of output string
+-- pad_char - character to pad with
+--
+-- pads if val shorter than target, trims if val longer than target
+-- pad_char should always be a single character
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Pad(
+  val text,
+  target_length int,
+  pad_char text DEFAULT 'x'
+)
+RETURNS text AS $$
+  DECLARE
+    val_length int;
+    pad_length int;
+  BEGIN
+    IF val IS NULL OR target_length IS NULL OR pad_char IS NULL THEN
+      RAISE EXCEPTION 'val or target_length or pad_char is NULL';
+    ELSIF TT_Length(pad_char) != 1 THEN
+      RAISE EXCEPTION 'pad_char length is not 1';
+    ELSE
+      val_length = TT_Length(val);
+      pad_length = target_length - val_length;
+      IF pad_length > 0 THEN
+        RETURN TT_Concat('', repeat(pad_char,pad_length), val);
+      ELSE
+        RETURN substring(val from 1 for target_length);
+      END IF;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Pad(
+  val double precision,
+  target_length int,
+  pad_char text DEFAULT 'x'
+)
+RETURNS text AS $$
+  SELECT TT_Pad(val::text, target_length, pad_char);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Pad(
+  val int,
+  target_length int,
+  pad_char text DEFAULT 'x'
+)
+RETURNS text AS $$
+  SELECT TT_Pad(val::text, target_length, pad_char);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

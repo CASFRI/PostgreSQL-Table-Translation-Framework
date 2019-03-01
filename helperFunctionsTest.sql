@@ -20,7 +20,9 @@ SELECT 'ACB'::text source_val, 'Popu balb'::text target_val
 UNION ALL
 SELECT '*AX'::text, 'Popu delx'::text	
 UNION ALL
-SELECT 'RA'::text, 'Arbu menz'::text;
+SELECT 'RA'::text, 'Arbu menz'::text
+UNION ALL
+SELECT ''::text, ''::text;
 
 DROP TABLE IF EXISTS test_lookuptable2;
 CREATE TABLE test_lookuptable2 AS
@@ -77,8 +79,11 @@ WITH test_nb AS (
     SELECT 'TT_Copy'::text,                   11,          5         UNION ALL
     SELECT 'TT_Lookup'::text,                 12,         15         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
-    SELECT 'TT_IsString'::text,               14,          7         
-
+    SELECT 'TT_IsString'::text,               14,         10         UNION ALL
+    SELECT 'TT_Length'::text,                 15,          7         UNION ALL
+    SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
+    SELECT 'TT_IsOccurence1'::text,           17,         12         UNION ALL
+    SELECT 'TT_IsOccurence2'::text,           18,         18         
 
 
 ),
@@ -945,39 +950,390 @@ SELECT '14.1'::text number,
 UNION ALL
 SELECT '14.2'::text number,
        'TT_IsString'::text function_tested,
+       'Test, double as string'::text description,
+       TT_IsString('5.55555'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.3'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, int as string'::text description,
+       TT_IsString('4'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.4'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, mixed double and letters as string'::text description,
+       TT_IsString('4D.008'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.5'::text number,
+       'TT_IsString'::text function_tested,
        'Test, double precision'::text description,
        TT_IsString(1.1::double precision) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '14.3'::text number,
+SELECT '14.6'::text number,
        'TT_IsString'::text function_tested,
        'Test, int'::text description,
        TT_IsString(1::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '14.4'::text number,
+SELECT '14.7'::text number,
        'TT_IsString'::text function_tested,
        'Test, empty string'::text description,
        TT_IsString(''::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '14.5'::text number,
+SELECT '14.8'::text number,
        'TT_IsString'::text function_tested,
        'Test, NULL double precision'::text description,
        TT_IsString(NULL::double precision) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '14.6'::text number,
+SELECT '14.9'::text number,
        'TT_IsString'::text function_tested,
        'Test, NULL int'::text description,
        TT_IsString(NULL::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '14.7'::text number,
+SELECT '14.10'::text number,
        'TT_IsString'::text function_tested,
        'Test, NULL text'::text description,
        TT_IsString(NULL::text) IS FALSE passed
 ---------------------------------------------------------
+---------------------------------------------------------
+-- Test 15 - TT_Length
+---------------------------------------------------------
+UNION ALL
+SELECT '15.1'::text number,
+       'TT_Length'::text function_tested,
+       'Test, text'::text description,
+       TT_Length('text'::text) = 4 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.2'::text number,
+       'TT_Length'::text function_tested,
+       'Test empty string'::text description,
+       TT_Length(''::text) = 0 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.3'::text number,
+       'TT_Length'::text function_tested,
+       'Test double precision'::text description,
+       TT_Length(5.5555::double precision) = 6 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.4'::text number,
+       'TT_Length'::text function_tested,
+       'Test int'::text description,
+       TT_Length(1234::int) = 4 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.5'::text number,
+       'TT_Length'::text function_tested,
+       'Test NULL text'::text description,
+       IsError('SELECT TT_Length(NULL::text);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.6'::text number,
+       'TT_Length'::text function_tested,
+       'Test NULL double precision'::text description,
+       IsError('SELECT TT_Length(NULL::double precision);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.7'::text number,
+       'TT_Length'::text function_tested,
+       'Test NULL int'::text description,
+       IsError('SELECT TT_Length(NULL::int);') passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 16 - TT_Pad
+---------------------------------------------------------
+UNION ALL
+SELECT '16.1'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, text, pad'::text description,
+       TT_Pad('species1',10,'X') = 'XXspecies1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.2'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, int, pad'::text description,
+       TT_Pad(12345::int,10,'0') = '0000012345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.3'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, double precision, pad'::text description,
+       TT_Pad(1.234::double precision,10,'0') = '000001.234' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.4'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, empty string, pad'::text description,
+       TT_Pad(''::text,10,'x') = 'xxxxxxxxxx' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.5'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, text, trim'::text description,
+       TT_Pad('123456',5,'0') = '12345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.6'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, int, trim'::text description,
+       TT_Pad(123456789::int,5,'x') = '12345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.7'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, double precision, trim'::text description,
+       TT_Pad(1.3456789::double precision,5,'x') = '1.345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.8'::text number,
+       'TT_Pad'::text function_tested,
+       'Test default, text'::text description,
+       TT_Pad('sp1'::text,10) = 'xxxxxxxsp1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.9'::text number,
+       'TT_Pad'::text function_tested,
+       'Test default, int'::text description,
+       TT_Pad(12345678::int,10) = 'xx12345678' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.10'::text number,
+       'TT_Pad'::text function_tested,
+       'Test default, double precision'::text description,
+       TT_Pad(1.345678::double precision,5) = '1.345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.11'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, pad_char < 1'::text description,
+       IsError('SELECT TT_Pad(''sp1''::text,10,'''');') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.12'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, pad_char > 1'::text description,
+       IsError('SELECT TT_Pad(1::int,10,''22'');') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.13'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, null val'::text description,
+       IsError('SELECT TT_Pad(NULL::text,10);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.14'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, null target_length'::text description,
+       IsError('SELECT TT_Pad(1::int,NULL,''2'');') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.15'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, null pad_char'::text description,
+       IsError('SELECT TT_Pad(1.234::double precision,10,NULL);') passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 17 - TT_IsOccurence (Table variant)
+---------------------------------------------------------
+UNION ALL
+SELECT '17.1'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, text, good value'::text description,
+       TT_IsOccurence('*AX', 'public', 'test_lookuptable1', 1) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.2'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, double precision, good value'::text description,
+       TT_IsOccurence(1.2::double precision, 'public', 'test_lookuptable3', 1) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.3'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, integer, good value'::text description,
+       TT_IsOccurence(3::int, 'public', 'test_lookuptable2', 1) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.4'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, text, bad value'::text description,
+       TT_IsOccurence('*AX', 'public', 'test_lookuptable1', 2) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.5'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, double precision, bad value'::text description,
+       TT_IsOccurence(1.2::double precision, 'public', 'test_lookuptable3', 2) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.6'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, integer, bad value'::text description,
+       TT_IsOccurence(3::int, 'public', 'test_lookuptable2', 2) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.7'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Test, empty string, good value'::text description,
+       TT_IsOccurence('', 'public', 'test_lookuptable1', 1) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.8'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null val, text'::text description,
+       TT_IsOccurence('', 'public', 'test_lookuptable1', 1) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.9'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null val, double precision'::text description,
+       TT_IsOccurence(NULL::double precision, 'public', 'test_lookuptable3', 1) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.10'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null val, int'::text description,
+       TT_IsOccurence(NULL::int, 'public', 'test_lookuptable2', 1) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.11'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null schema'::text description,
+       IsError('SELECT TT_IsOccurence(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.12'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null table'::text description,
+       IsError('SELECT TT_IsOccurence(1.1::double precision, ''public'', NULL, 1);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.12'::text number,
+       'TT_IsOccurence1'::text function_tested,
+       'Null occureces'::text description,
+       IsError('SELECT TT_IsOccurence(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 18 - TT_IsOccurence (list variant)
+---------------------------------------------------------
+UNION ALL
+SELECT '18.1'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, good value'::text description,
+       TT_IsOccurence('RA',1,'RA','RB','RC','RD','RE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.2'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, occurences too low'::text description,
+       TT_IsOccurence('RA',1,'RA','RB','RC','RD','RA') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.3'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, occurences too high'::text description,
+       TT_IsOccurence('RA',2,'RA','RB','RC','RD','RE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.4'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, null in list'::text description,
+       TT_IsOccurence('RA',1,'RA','RB','RC','RD',NULL) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.5'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, good value'::text description,
+       TT_IsOccurence(1.2,1,1.1,1.2,1.3,1.4,1.5) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.6'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, occurences too low'::text description,
+       TT_IsOccurence(1.1,1,1.1,1.2,1.3,1.4,1.1) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.7'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, occurences too high'::text description,
+       TT_IsOccurence(1.2,2,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.8'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, null in list'::text description,
+       TT_IsOccurence(1.2,1,1.1,1.2,1.3,1.4,NULL::double precision) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.9'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, good value'::text description,
+       TT_IsOccurence(1::int,1,1::int,2::int,3::int,4::int,5::int) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.10'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, occurences too low'::text description,
+       TT_IsOccurence(1::int,1,1::int,2::int,3::int,4::int,1::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.11'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, occurences too high'::text description,
+       TT_IsOccurence(1::int,2,1::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.12'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, null in list'::text description,
+       TT_IsOccurence(1::int,1,1::int,1,1::int,2::int,3::int,4::int,NULL::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.13'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, null val FALSE'::text description,
+       TT_IsOccurence(NULL,1,'RA','RB','RC','RD','RA') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.14'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'text, null occurence'::text description,
+       IsError('SELECT TT_IsOccurence(''RA'',NULL,''RA'',''RB'',''RC'',''RD'',''RA'');') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.15'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, null val'::text description,
+       TT_IsOccurence(NULL::double precision,1,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.16'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'double precision, null occurence'::text description,
+       IsError('SELECT TT_IsOccurence(1.2,NULL::double precision,1.1,1.2,1.3,1.4,1.1);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.17'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, null val'::text description,
+       TT_IsOccurence(NULL::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.18'::text number,
+       'TT_IsOccurence2'::text function_tested,
+       'int, null occurences'::text description,
+       IsError('SELECT TT_IsOccurence(1::int,NULL,1::int,2::int,3::int,4::int,5::int);') passed
+---------------------------------------------------------
+---------------------------------------------------------
+---------------------------------------------------------
+              
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
