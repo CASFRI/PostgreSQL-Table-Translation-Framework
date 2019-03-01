@@ -74,7 +74,13 @@ WITH test_nb AS (
     SELECT 'TT_Match1'::text,                  8,         17         UNION ALL
     SELECT 'TT_Match2'::text,                  9,         15         UNION ALL   
     SELECT 'TT_Concat'::text,                 10,          5         UNION ALL
-    SELECT 'TT_Copy'::text,                   11,          5         
+    SELECT 'TT_Copy'::text,                   11,          5         UNION ALL
+    SELECT 'TT_Lookup'::text,                 12,         15         UNION ALL
+    SELECT 'TT_False'::text,                  13,          1         UNION ALL
+    SELECT 'TT_IsString'::text,               14,          7         
+
+
+
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -824,6 +830,153 @@ SELECT '11.5'::text number,
        'TT_Copy'::text function_tested,
        'Null'::text description,
        TT_Copy(NULL::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 12 - TT_Lookup
+---------------------------------------------------------
+UNION ALL
+SELECT '12.1'::text number,
+       'TT_Lookup'::text function_tested,
+       'Text usage'::text description,
+       TT_Lookup('RA', 'public'::name, 'test_lookuptable1'::name, 'target_val') = 'Arbu menz'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.2'::text number,
+       'TT_Lookup'::text function_tested,
+       'Double precision usage'::text description,
+       TT_Lookup(1.1::double precision, 'public'::name, 'test_lookuptable3'::name, 'intcol') = '1'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.3'::text number,
+       'TT_Lookup'::text function_tested,
+       'Integer usage'::text description,
+       TT_Lookup(2::int, 'public'::name, 'test_lookuptable2'::name, 'dblcol') = '1.2'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.4'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL val, text'::text description,
+       IsError('SELECT TT_Lookup(NULL::text, "public"::name, "test_lookuptable1"::name, "target_val");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.5'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL val, double precision'::text description,
+       IsError('SELECT TT_Lookup(NULL::double precision, "public"::name, "test_lookuptable3"::name, "intcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.6'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL val, int'::text description,
+       IsError('SELECT TT_Lookup(NULL::int, "public"::name, "test_lookuptable2"::name, "dblcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.7'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL schema, text'::text description,
+       IsError('SELECT TT_Lookup("RA"::text, NULL::name, "test_lookuptable1"::name, "target_val");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.8'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL schema, double precision'::text description,
+       IsError('SELECT TT_Lookup(1.1::double precision, NULL::name, "test_lookuptable3"::name, "intcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.9'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL schema, int'::text description,
+       IsError('SELECT TT_Lookup(1::int, NULL::name, "test_lookuptable2"::name, "dblcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.10'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL table, text'::text description,
+       IsError('SELECT TT_Lookup("RA"::text, "public"::name, NULL::name, "target_val");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.11'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL table, double precision'::text description,
+       IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, NULL::name, "intcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.12'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL table, int'::text description,
+       IsError('SELECT TT_Lookup(1::int, "public"::name, NULL::name, "dblcol");') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.13'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL column, text'::text description,
+       IsError('SELECT TT_Lookup("RA"::text, "public"::name, "test_lookuptable1"::name, NULL);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.14'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL column, double precision'::text description,
+       IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, "test_lookuptable3"::name, NULL);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.15'::text number,
+       'TT_Lookup'::text function_tested,
+       'NULL column, int'::text description,
+       IsError('SELECT TT_Lookup(1::int, "public"::name, "test_lookuptable2"::name, NULL);') passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 13 - TT_False
+---------------------------------------------------------
+UNION ALL
+SELECT '13.1'::text number,
+       'TT_False'::text function_tested,
+       'Test'::text description,
+       TT_False() IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 14 - TT_IsString
+---------------------------------------------------------
+UNION ALL
+SELECT '14.1'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, text'::text description,
+       TT_IsString('text'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.2'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, double precision'::text description,
+       TT_IsString(1.1::double precision) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.3'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, int'::text description,
+       TT_IsString(1::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.4'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, empty string'::text description,
+       TT_IsString(''::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.5'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, NULL double precision'::text description,
+       TT_IsString(NULL::double precision) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.6'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, NULL int'::text description,
+       TT_IsString(NULL::int) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '14.7'::text number,
+       'TT_IsString'::text function_tested,
+       'Test, NULL text'::text description,
+       TT_IsString(NULL::text) IS FALSE passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

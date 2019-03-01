@@ -39,3 +39,13 @@ DROP FUNCTION IF EXISTS TT_Copy(text);
 DROP FUNCTION IF EXISTS TT_Copy(double precision);
 DROP FUNCTION IF EXISTS TT_Copy(int);
 DROP FUNCTION IF EXISTS TT_Copy(boolean);
+DROP FUNCTION IF EXISTS TT_Lookup(text,name,name,text);
+DROP FUNCTION IF EXISTS TT_Lookup(double precision,name,name,text);
+DROP FUNCTION IF EXISTS TT_Lookup(int,name,name,text);
+DROP FUNCTION IF EXISTS TT_Map(text,text[],text[]);
+DROP FUNCTION IF EXISTS TT_False();
+DROP FUNCTION IF EXISTS TT_IsString(text);
+DROP FUNCTION IF EXISTS TT_IsString(double precision);
+DROP FUNCTION IF EXISTS TT_IsString(int);
+
+
