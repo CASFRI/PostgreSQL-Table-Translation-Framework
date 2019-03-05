@@ -66,7 +66,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- It is required to list tests which would not appear because they failed
 -- by returning nothing.
 WITH test_nb AS (
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  9 nb_test UNION ALL
+    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 17 nb_test UNION ALL
     SELECT 'TT_NotEmpty'::text,                2,          8         UNION ALL
     SELECT 'TT_IsInt'::text,                   3,         13         UNION ALL
     SELECT 'TT_IsNumeric'::text,               4,         13         UNION ALL
@@ -75,15 +75,15 @@ WITH test_nb AS (
     SELECT 'TT_LessThan'::text,                7,         10         UNION ALL
     SELECT 'TT_Match1'::text,                  8,         17         UNION ALL
     SELECT 'TT_Match2'::text,                  9,         15         UNION ALL   
-    SELECT 'TT_Concat'::text,                 10,          5         UNION ALL
+    SELECT 'TT_Concat'::text,                 10,         10         UNION ALL
     SELECT 'TT_Copy'::text,                   11,          5         UNION ALL
     SELECT 'TT_Lookup'::text,                 12,         15         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_IsString'::text,               14,         10         UNION ALL
     SELECT 'TT_Length'::text,                 15,          7         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
-    SELECT 'TT_IsOccurence1'::text,           17,         12         UNION ALL
-    SELECT 'TT_IsOccurence2'::text,           18,         18         
+    SELECT 'TT_HasUniqueValues1'::text,       17,         16         UNION ALL
+    SELECT 'TT_HasUniqueValues2'::text,       18,         18         
 
 
 ),
@@ -156,6 +156,55 @@ SELECT '1.9'::text number,
        'Test if empty string'::text description,
        TT_NotNull(''::text) IS TRUE passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '1.10'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test text list, good'::text description,
+       TT_NotNull('a','b','b','c') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.11'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test text list, bad'::text description,
+       TT_NotNull('a','b',NULL::text,'c') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.12'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test double precision list, good'::text description,
+       TT_NotNull(1.1,1.2,3.3,6.7) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.13'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test double precision list, bad'::text description,
+       TT_NotNull(1.1,1.2,3.3,NULL::double precision) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.14'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test int list, good'::text description,
+       TT_NotNull(12,5,8,2,6,3) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.15'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test int list, bad'::text description,
+       TT_NotNull(2,2,7,4,NULL::int,11,111,14253) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.16'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test boolean list, good'::text description,
+       TT_NotNull(TRUE, true, false) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.17'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test boolean list, bad'::text description,
+       TT_NotNull(TRUE, True, FALSE, NULL::boolean) IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 2 - TT_NotEmpty
 -- Should test for empty strings with spaces (e.g.'   ')
@@ -165,13 +214,13 @@ UNION ALL
 SELECT '2.1'::text number,
        'TT_NotEmpty'::text function_tested,
        'Empty text string'::text description,
-       TT_NotEmpty(''::text) IS FALSE passed
+       TT_NotEmpty('a','b','c','') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.2'::text number,
        'TT_NotEmpty'::text function_tested,
        'Not empty text string'::text description,
-       TT_NotEmpty('test test'::text) IS TRUE passed
+       TT_NotEmpty('test test','a','b','n n n') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.3'::text number,
@@ -183,7 +232,7 @@ UNION ALL
 SELECT '2.4'::text number,
        'TT_NotEmpty'::text function_tested,
        'NULL text'::text description,
-       TT_NotEmpty(NULL::text) IS FALSE passed
+       TT_NotEmpty(NULL::text,'d','t','gg') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.5'::text number,
@@ -216,25 +265,25 @@ UNION ALL
 SELECT '3.1'::text number,
        'TT_IsInt'::text function_tested,
        'Integer'::text description,
-       TT_IsInt(1::int) IS TRUE passed
+       TT_IsInt(1::int,2::int,3::int) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.2'::text number,
        'TT_IsInt'::text function_tested,
        'Double precision, good value'::text description,
-       TT_IsInt(1.0::double precision) IS TRUE passed
+       TT_IsInt(1.0::double precision,2.0::double precision,3.0::double precision) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.3'::text number,
        'TT_IsInt'::text function_tested,
        'Double precision, bad value'::text description,
-       TT_IsInt(1.1::double precision) IS FALSE passed
+       TT_IsInt(1.1::double precision,2.0::double precision,3.0::double precision) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.4'::text number,
        'TT_IsInt'::text function_tested,
        'Text, good value'::text description,
-       TT_IsInt('1'::text) IS TRUE passed
+       TT_IsInt('1','2','3') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.5'::text number,
@@ -276,13 +325,13 @@ UNION ALL
 SELECT '3.11'::text number,
        'TT_IsInt'::text function_tested,
        'NULL integer'::text description,
-       TT_IsInt(NULL::integer) IS FALSE passed
+       TT_IsInt(NULL::integer,2,3) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.12'::text number,
        'TT_IsInt'::text function_tested,
        'NULL double precision'::text description,
-       TT_IsInt(NULL::double precision) IS FALSE passed
+       TT_IsInt(NULL::double precision,2.2,4.5) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.13'::text number,
@@ -297,37 +346,37 @@ UNION ALL
 SELECT '4.1'::text number,
        'TT_IsNumeric'::text function_tested,
        'Small Int'::text description,
-       TT_IsNumeric(1::smallint) IS TRUE passed
+       TT_IsNumeric(1::smallint,2::smallint) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.2'::text number,
        'TT_IsNumeric'::text function_tested,
        'Int'::text description,
-       TT_IsNumeric(1::integer) IS TRUE passed
+       TT_IsNumeric(1::int,2::int,10::int) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.3'::text number,
        'TT_IsNumeric'::text function_tested,
        'Big Int'::text description,
-       TT_IsNumeric(1::bigint) IS TRUE passed
+       TT_IsNumeric(1::bigint, 5::bigint) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.4'::text number,
        'TT_IsNumeric'::text function_tested,
        'decimal'::text description,
-       TT_IsNumeric(1.1::decimal) IS TRUE passed
+       TT_IsNumeric(1.1::decimal,2.3::decimal) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.5'::text number,
        'TT_IsNumeric'::text function_tested,
        'numeric'::text description,
-       TT_IsNumeric(1.1::numeric) IS TRUE passed
+       TT_IsNumeric(1.1::numeric,10.9::numeric,0.2::numeric) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
        'TT_IsNumeric'::text function_tested,
        'real'::text description,
-       TT_IsNumeric(1.1::real) IS TRUE passed
+       TT_IsNumeric(1.1::real,6.99::real) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.7'::text number,
@@ -339,13 +388,13 @@ UNION ALL
 SELECT '4.8'::text number,
        'TT_IsNumeric'::text function_tested,
        'text, good value'::text description,
-       TT_IsNumeric('1.1'::text) IS TRUE passed
+       TT_IsNumeric('1.1'::text,'1.2'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.9'::text number,
        'TT_IsNumeric'::text function_tested,
        'text, leading decimal'::text description,
-       TT_IsNumeric('.1'::text) IS TRUE passed
+       TT_IsNumeric('.1'::text, '.9'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.10'::text number,
@@ -357,7 +406,7 @@ UNION ALL
 SELECT '4.11'::text number,
        'TT_IsNumeric'::text function_tested,
        'text, invalid decimals'::text description,
-       TT_IsNumeric('1.1.1'::text) IS FALSE passed
+       TT_IsNumeric('1.1.1'::text, '3'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.12'::text number,
@@ -369,7 +418,7 @@ UNION ALL
 SELECT '4.13'::text number,
        'TT_IsNumeric'::text function_tested,
        'NULL'::text description,
-       TT_IsNumeric(NULL::double precision) IS FALSE passed
+       TT_IsNumeric(1.1,2.2,NULL::double precision) IS FALSE passed
 ---------------------------------------------------------
 -- Test 5 - TT_Between
 ---------------------------------------------------------
@@ -776,32 +825,62 @@ SELECT '9.15'::text number,
 UNION ALL
 SELECT '10.1'::text number,
        'TT_Concat'::text function_tested,
-       'Basic usage with sep'::text description,
-       TT_Concat('-', 'cas', 'id', 'test') = 'cas-id-test' passed
+       'Basic usage with sep and processNulls=FALSE'::text description,
+       TT_Concat('-', FALSE, 'cas', 'id', 'test') = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.2'::text number,
        'TT_Concat'::text function_tested,
-       'Basic usage without sep'::text description,
-       TT_Concat('', 'cas', 'id', 'test') = 'casidtest' passed
+       'Basic usage with sep and processNulls=TRUE'::text description,
+       TT_Concat('-', TRUE, 'cas', 'id', 'test') = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.3'::text number,
        'TT_Concat'::text function_tested,
-       'Null sep'::text description,
-       IsError('SELECT TT_Concat(NULL, "cas", "id", "test");') IS TRUE passed
+       'Basic usage without sep'::text description,
+       TT_Concat('', FALSE, 'cas', 'id', 'test') = 'casidtest' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.4'::text number,
        'TT_Concat'::text function_tested,
-       'Null string'::text description,
-       IsError('SELECT TT_Concat("-", NULL, "id", "test");') IS TRUE passed
+       'Null sep gives error'::text description,
+       IsError('SELECT TT_Concat(NULL, FALSE, "cas", "id", "test");') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.5'::text number,
        'TT_Concat'::text function_tested,
-       'Empty string'::text description,
-       TT_Concat('-', 'cas', '', 'test') = 'cas--test' passed
+       'Null string, processNulls=FALSE gives error'::text description,
+       IsError('SELECT TT_Concat("-", FALSE, NULL, "id", "test");') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.6'::text number,
+       'TT_Concat'::text function_tested,
+       'Null string, processNulls=TRUE test1'::text description,
+       TT_Concat('-', TRUE, NULL, 'id', 'test') = 'id-test' IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.7'::text number,
+       'TT_Concat'::text function_tested,
+       'Null string, processNulls=TRUE test2'::text description,
+       TT_Concat('-', TRUE, 'id', 'test', NULL, '001') = 'id-test-001' IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.8'::text number,
+       'TT_Concat'::text function_tested,
+       'Null string, processNulls=TRUE test3'::text description,
+       TT_Concat('', TRUE, 'id', 'test', NULL, '001') = 'idtest001' IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.9'::text number,
+       'TT_Concat'::text function_tested,
+       'Empty string, processNulls=FALSE'::text description,
+       TT_Concat('-', FALSE, 'cas', '', 'test') = 'cas--test' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '10.10'::text number,
+       'TT_Concat'::text function_tested,
+       'Empty string, processNulls=TRUE'::text description,
+       TT_Concat('-', TRUE, 'cas', '', 'test') = 'cas--test' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 11 - TT_Copy
@@ -945,25 +1024,25 @@ UNION ALL
 SELECT '14.1'::text number,
        'TT_IsString'::text function_tested,
        'Test, text'::text description,
-       TT_IsString('text'::text) passed
+       TT_IsString('a','b','c') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '14.2'::text number,
        'TT_IsString'::text function_tested,
        'Test, double as string'::text description,
-       TT_IsString('5.55555'::text) IS FALSE passed
+       TT_IsString('5.55555','6.6','4.0') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '14.3'::text number,
        'TT_IsString'::text function_tested,
        'Test, int as string'::text description,
-       TT_IsString('4'::text) IS FALSE passed
+       TT_IsString('4','5','8','111') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '14.4'::text number,
        'TT_IsString'::text function_tested,
        'Test, mixed double and letters as string'::text description,
-       TT_IsString('4D.008'::text) passed
+       TT_IsString('4D.008','6','8') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '14.5'::text number,
@@ -975,7 +1054,7 @@ UNION ALL
 SELECT '14.6'::text number,
        'TT_IsString'::text function_tested,
        'Test, int'::text description,
-       TT_IsString(1::int) IS FALSE passed
+       TT_IsString(1::int,2::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '14.7'::text number,
@@ -1140,196 +1219,214 @@ SELECT '16.15'::text number,
        IsError('SELECT TT_Pad(1.234::double precision,10,NULL);') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 17 - TT_IsOccurence (Table variant)
+-- Test 17 - TT_HasUniqueValues (Table variant)
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.1'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, text, good value'::text description,
-       TT_IsOccurence('*AX', 'public', 'test_lookuptable1', 1) passed
+       TT_HasUniqueValues('*AX', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.2'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, double precision, good value'::text description,
-       TT_IsOccurence(1.2::double precision, 'public', 'test_lookuptable3', 1) passed
+       TT_HasUniqueValues(1.2::double precision, 'public', 'test_lookuptable3', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.3'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, integer, good value'::text description,
-       TT_IsOccurence(3::int, 'public', 'test_lookuptable2', 1) passed
+       TT_HasUniqueValues(3::int, 'public', 'test_lookuptable2', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.4'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, text, bad value'::text description,
-       TT_IsOccurence('*AX', 'public', 'test_lookuptable1', 2) IS FALSE passed
+       TT_HasUniqueValues('*AX', 'public', 'test_lookuptable1', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.5'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, double precision, bad value'::text description,
-       TT_IsOccurence(1.2::double precision, 'public', 'test_lookuptable3', 2) IS FALSE passed
+       TT_HasUniqueValues(1.2::double precision, 'public', 'test_lookuptable3', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.6'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, integer, bad value'::text description,
-       TT_IsOccurence(3::int, 'public', 'test_lookuptable2', 2) IS FALSE passed
+       TT_HasUniqueValues(3::int, 'public', 'test_lookuptable2', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.7'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Test, empty string, good value'::text description,
-       TT_IsOccurence('', 'public', 'test_lookuptable1', 1) passed
+       TT_HasUniqueValues('', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.8'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null val, text'::text description,
-       TT_IsOccurence('', 'public', 'test_lookuptable1', 1) passed
+       TT_HasUniqueValues('', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.9'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null val, double precision'::text description,
-       TT_IsOccurence(NULL::double precision, 'public', 'test_lookuptable3', 1) IS FALSE passed
+       TT_HasUniqueValues(NULL::double precision, 'public', 'test_lookuptable3', 1) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.10'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null val, int'::text description,
-       TT_IsOccurence(NULL::int, 'public', 'test_lookuptable2', 1) IS FALSE passed
+       TT_HasUniqueValues(NULL::int, 'public', 'test_lookuptable2', 1) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.11'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null schema'::text description,
-       IsError('SELECT TT_IsOccurence(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
+       IsError('SELECT TT_HasUniqueValues(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.12'::text number,
-       'TT_IsOccurence1'::text function_tested,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null table'::text description,
-       IsError('SELECT TT_IsOccurence(1.1::double precision, ''public'', NULL, 1);') passed
+       IsError('SELECT TT_HasUniqueValues(1.1::double precision, ''public'', NULL, 1);') passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.12'::text number,
-       'TT_IsOccurence1'::text function_tested,
+SELECT '17.13'::text number,
+       'TT_HasUniqueValues1'::text function_tested,
        'Null occureces'::text description,
-       IsError('SELECT TT_IsOccurence(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
+       IsError('SELECT TT_HasUniqueValues(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.14'::text number,
+       'TT_HasUniqueValues1'::text function_tested,
+       'Test default, text'::text description,
+       TT_HasUniqueValues('RA'::text, 'public'::name, 'test_lookuptable1'::name) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.15'::text number,
+       'TT_HasUniqueValues1'::text function_tested,
+       'Test default, double precision'::text description,
+       TT_HasUniqueValues(1.3::double precision, 'public'::name, 'test_lookuptable3'::name) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.16'::text number,
+       'TT_HasUniqueValues1'::text function_tested,
+       'Test default, int'::text description,
+       TT_HasUniqueValues(3::int, 'public'::name, 'test_lookuptable2'::name) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 18 - TT_IsOccurence (list variant)
+-- Test 18 - TT_HasUniqueValues (list variant)
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.1'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, good value'::text description,
-       TT_IsOccurence('RA',1,'RA','RB','RC','RD','RE') passed
+       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD','RE') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.2'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, occurences too low'::text description,
-       TT_IsOccurence('RA',1,'RA','RB','RC','RD','RA') IS FALSE passed
+       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD','RA') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.3'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, occurences too high'::text description,
-       TT_IsOccurence('RA',2,'RA','RB','RC','RD','RE') IS FALSE passed
+       TT_HasUniqueValues('RA',2,'RA','RB','RC','RD','RE') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.4'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, null in list'::text description,
-       TT_IsOccurence('RA',1,'RA','RB','RC','RD',NULL) passed
+       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD',NULL) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.5'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, good value'::text description,
-       TT_IsOccurence(1.2,1,1.1,1.2,1.3,1.4,1.5) passed
+       TT_HasUniqueValues(1.2,1,1.1,1.2,1.3,1.4,1.5) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.6'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, occurences too low'::text description,
-       TT_IsOccurence(1.1,1,1.1,1.2,1.3,1.4,1.1) IS FALSE passed
+       TT_HasUniqueValues(1.1,1,1.1,1.2,1.3,1.4,1.1) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.7'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, occurences too high'::text description,
-       TT_IsOccurence(1.2,2,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
+       TT_HasUniqueValues(1.2,2,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.8'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, null in list'::text description,
-       TT_IsOccurence(1.2,1,1.1,1.2,1.3,1.4,NULL::double precision) passed
+       TT_HasUniqueValues(1.2,1,1.1,1.2,1.3,1.4,NULL::double precision) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.9'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, good value'::text description,
-       TT_IsOccurence(1::int,1,1::int,2::int,3::int,4::int,5::int) passed
+       TT_HasUniqueValues(1::int,1,1::int,2::int,3::int,4::int,5::int) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.10'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, occurences too low'::text description,
-       TT_IsOccurence(1::int,1,1::int,2::int,3::int,4::int,1::int) IS FALSE passed
+       TT_HasUniqueValues(1::int,1,1::int,2::int,3::int,4::int,1::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.11'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, occurences too high'::text description,
-       TT_IsOccurence(1::int,2,1::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
+       TT_HasUniqueValues(1::int,2,1::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.12'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, null in list'::text description,
-       TT_IsOccurence(1::int,1,1::int,1,1::int,2::int,3::int,4::int,NULL::int) IS FALSE passed
+       TT_HasUniqueValues(1::int,1,1::int,1,1::int,2::int,3::int,4::int,NULL::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.13'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, null val FALSE'::text description,
-       TT_IsOccurence(NULL,1,'RA','RB','RC','RD','RA') IS FALSE passed
+       TT_HasUniqueValues(NULL,1,'RA','RB','RC','RD','RA') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.14'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'text, null occurence'::text description,
-       IsError('SELECT TT_IsOccurence(''RA'',NULL,''RA'',''RB'',''RC'',''RD'',''RA'');') passed
+       IsError('SELECT TT_HasUniqueValues(''RA'',NULL,''RA'',''RB'',''RC'',''RD'',''RA'');') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.15'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, null val'::text description,
-       TT_IsOccurence(NULL::double precision,1,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
+       TT_HasUniqueValues(NULL::double precision,1,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.16'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'double precision, null occurence'::text description,
-       IsError('SELECT TT_IsOccurence(1.2,NULL::double precision,1.1,1.2,1.3,1.4,1.1);') passed
+       IsError('SELECT TT_HasUniqueValues(1.2,NULL::double precision,1.1,1.2,1.3,1.4,1.1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.17'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, null val'::text description,
-       TT_IsOccurence(NULL::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
+       TT_HasUniqueValues(NULL::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.18'::text number,
-       'TT_IsOccurence2'::text function_tested,
+       'TT_HasUniqueValues2'::text function_tested,
        'int, null occurences'::text description,
-       IsError('SELECT TT_IsOccurence(1::int,NULL,1::int,2::int,3::int,4::int,5::int);') passed
+       IsError('SELECT TT_HasUniqueValues(1::int,NULL,1::int,2::int,3::int,4::int,5::int);') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 ---------------------------------------------------------

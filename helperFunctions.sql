@@ -13,67 +13,75 @@
 --
 --
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- TT_NotNull
 --
---  var text/boolean/double precision/int  - Value to test for NOT NULL.
+--  var[] text/boolean/double precision/int  - List of values to test.
 --
--- Return TRUE if val is not NULL.
+-- Return TRUE if vals are not NULL.
+-- Return FALSE if any vals are NULL.
+-- e.g. TT_NotNull('a', 'b', 'c')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  val text
+  VARIADIC val text[]
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN val IS NOT NULL;
+    RETURN coalesce(array_position(val, NULL::text), 0) = 0;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  val double precision
+  VARIADIC val double precision[]
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN val IS NOT NULL;
+    RETURN coalesce(array_position(val, NULL::double precision), 0) = 0;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  val boolean
+  VARIADIC val boolean[]
 )
 RETURNS boolean AS $$
-  SELECT TT_NotNull(val::text);
+  SELECT TT_NotNull(VARIADIC val::text[]);
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  val int
+  VARIADIC val int[]
 )
 RETURNS boolean AS $$
-  SELECT TT_NotNull(val::double precision);
+  SELECT TT_NotNull(VARIADIC val::double precision[]);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  val text  - Value to test for empty string.
+--  val text  - List of values to test.
 --
--- Return TRUE if val is not empty.
--- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or Null.
+-- Return TRUE if vals are not an empty string.
+-- Return FALSE if any val is empty string or padded spaces (e.g. '' or '  ') or Null.
+-- e.g. TT_NotEmpty('a', 'b', 'c')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
-   val text
+   VARIADIC val text[]
 )
 RETURNS boolean AS $$
   DECLARE
   BEGIN
-    val = TRIM(val); -- trim removes any spaces before evaluating string.
-    IF val IS NULL OR val = '' THEN
+    IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
       RETURN FALSE;
     ELSE
-      RETURN TRUE;
+      RETURN bool_and(TRIM(x) != '') FROM unnest(val) AS x;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE; 
@@ -83,40 +91,42 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_IsInt
 --
 --  val double precision/int/text - Value to test
---  Must be numeric but cannot be decimal
+--
+--  Do all values represent integers? Can be of type int, double precision or text (e.g. 1, 1.0, '1', '1.0')
 --  Null values return FALSE
 --  Strings with numeric characters and '.' will be passed to IsInt
 --  Strings with anything else (e.g. letter characters) return FALSE.
+--  e.g. TT_IsInt(1,2,3,4,5)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   val double precision
+   VARIADIC val double precision[]
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NULL THEN
+    IF coalesce(array_position(val, NULL::double precision), 0) > 0 THEN
       RETURN FALSE;
     ELSE
-      RETURN val - val::int = 0;
+      RETURN bool_and(x - x::int = 0) FROM unnest(val) AS x;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   val int
+   VARIADIC val int[]
 )
 RETURNS boolean AS $$
-  SELECT TT_IsInt(val::double precision);
+  SELECT TT_IsInt(VARIADIC val::double precision[]);
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   val text
+   VARIADIC val text[]
 )
 RETURNS boolean AS $$
   DECLARE
-    x double precision;
+    x double precision[];
   BEGIN
-    x = val::double precision;
-    RETURN TT_IsInt(val::double precision);
+    x = val::double precision[];
+    RETURN TT_IsInt(VARIADIC val::double precision[]);
   EXCEPTION WHEN OTHERS THEN
       RETURN FALSE;
   END;
@@ -127,22 +137,22 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_IsNumeric
 --
 --  val double precision/int/text - Value to test.
---  Must be numeric, can be decimal, can be integer.
+--
+--  Can all values be cast to double precision? (e.g. 1.1, 1, '1.5')
 --  Null values return FALSE
---  Strings with numeric characters and '.' will be passed to IsNumeric
---  Strings with anything else (e.g. letter characters) return FALSE.
+--  e.g. TT_IsNumeric('1.1', '1.2', '1.3')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   val text
+   VARIADIC val text[]
 )
   RETURNS boolean AS $$
     DECLARE
-      x double precision;
+      x double precision[];
     BEGIN
-      IF val IS NULL THEN
+      IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
         RETURN FALSE;
       ELSE
-        x = val::double precision;
+        x = val::double precision[];
         RETURN TRUE;
       END IF;
     EXCEPTION WHEN OTHERS THEN
@@ -151,17 +161,17 @@ CREATE OR REPLACE FUNCTION TT_IsNumeric(
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   val int
+   VARIADIC val int[]
 )
 RETURNS boolean AS $$
-  SELECT TT_IsNumeric(val::text)
+  SELECT TT_IsNumeric(VARIADIC val::text[])
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   val double precision
+   VARIADIC val double precision[]
 )
 RETURNS boolean AS $$
-  SELECT TT_IsNumeric(val::text)
+  SELECT TT_IsNumeric(VARIADIC val::text[])
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -208,8 +218,8 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_GreaterThan
 --
 --  val double precision/int - Value to test.
---  lowerBound double precision - lower bound to test against
---  inclusive boolean - is lower bound inclusive? Default True
+--  lowerBound double precision - lower bound to test against.
+--  inclusive boolean - is lower bound inclusive? Default True.
 --
 --  Return TRUE if val >= lowerBound and inclusive = TRUE.
 --  Return TRUE if val > lowerBound and inclusive = FALSE.
@@ -251,8 +261,8 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_LessThan
 --
 --  val double precision/int - Value to test.
---  upperBound double precision - upper bound to test against
---  inclusive boolean - is upper bound inclusive? Default True
+--  upperBound double precision - upper bound to test against.
+--  inclusive boolean - is upper bound inclusive? Default True.
 --
 --  Return TRUE if val <= upperBound and inclusive = TRUE.
 --  Return TRUE if val < upperBound and inclusive = FALSE.
@@ -290,20 +300,20 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_IsOccurence (table version)
+-- TT_HasUniqueValues (table version)
 --
--- val text/double precision/int - column to test.
--- lookupSchemaName name - schema name holding lookup table
--- lookupTableName name - lookup table
--- occurences - int
+-- val text/double precision/int - val to test.
+-- lookupSchemaName name - schema name holding lookup table.
+-- lookupTableName name - lookup table.
+-- occurences - int defaults to 1
 --
 -- if number of occurences of val in first column of schema.table equals occurences, return true.
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
+CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val text,
   lookupSchemaName name,
   lookupTableName name,
-  occurences int
+  occurences int DEFAULT 1
 )
 RETURNS boolean AS $$
   DECLARE
@@ -324,11 +334,11 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
+CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val double precision,
   lookupSchemaName name,
   lookupTableName name,
-  occurences int
+  occurences int DEFAULT 1
 )
 RETURNS boolean AS $$
   DECLARE
@@ -349,84 +359,26 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
+CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val int,
   lookupSchemaName name,
   lookupTableName name,
   occurences int
 )
 RETURNS boolean AS $$
-  SELECT TT_IsOccurence(val::double precision,lookupSchemaName,lookupTableName,occurences)
+  SELECT TT_HasUniqueValues(val::double precision,lookupSchemaName,lookupTableName,occurences)
 $$ LANGUAGE sql VOLATILE;
-
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_IsOccurence (list version)
---
--- val text/double precision/int - column to test.
--- occurences - int
--- lst text/double precision/int[]
---
--- if number of occurences of val in list equals occurences, return true.
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
-  val text,
-  occurences int,
-  VARIADIC lst text[]
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    ELSIF occurences IS NULL THEN
-      RAISE EXCEPTION 'occurences is null';
-    ELSE
-      RETURN coalesce(array_length(array_positions(lst,val),1),0) = occurences;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
-  val double precision,
-  occurences int,
-  VARIADIC lst double precision[]
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    ELSIF occurences IS NULL THEN
-      RAISE EXCEPTION 'occurences is null';
-    ELSE
-      RETURN coalesce(array_length(array_positions(lst,val),1),0) = occurences;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsOccurence(
-  val int,
-  occurences int,
-  VARIADIC lst int[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsOccurence(val::double precision,occurences,VARIADIC lst::double precision[])
-$$ LANGUAGE sql VOLATILE;
-
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_Match (table version)
 --
 -- val text/double precision/int - column to test.
--- lookupSchemaName name - schema name holding lookup table
--- lookupTableName name - lookup table
+-- lookupSchemaName name - schema name holding lookup table.
+-- lookupTableName name - lookup table.
+--
 -- if val is present in first column of lookup table, returns TRUE.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_Match(text,name,name);
--- DROP FUNCTION IF EXISTS TT_Match(double precision,name,name);
--- DROP FUNCTION IF EXISTS TT_Match(integer,name,name);
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
   lookupSchemaName name,
@@ -482,11 +434,13 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Match (list version) - does first argument match any of the following arguments?
-
+-- TT_Match (list version)
 --
 -- val text/double precision/int - value to test.
--- lst text/double precision/int - list to test against
+-- lst text/double precision/int - list to test against.
+--
+-- Is val in lst?
+-- val followed by any number of test values (e.g. TT_Match('a', 'a', 'b', 'c'))
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
@@ -543,33 +497,34 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsString
 --
--- Return TRUE if string (i.e. not numerics)
+-- Return TRUE if all vals are strings (i.e. not numeric)
+-- e.g. TT_IsString('a', 'b', 'c')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsString(
-  val text
+  VARIADIC val text[]
 )
 RETURNS boolean AS $$
   BEGIN
-    IF val IS NULL THEN
+    IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
       RETURN FALSE;
     ELSE
-      RETURN TT_IsNumeric(val) IS FALSE;
+      RETURN TT_IsNumeric(VARIADIC val) IS FALSE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsString(
-  val double precision
+  VARIADIC val double precision[]
 )
 RETURNS boolean AS $$
-  SELECT TT_IsString(val::text)
+  SELECT TT_IsString(VARIADIC val::text[])
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsString(
-  val int
+  VARIADIC val int[]
 )
 RETURNS boolean AS $$
-  SELECT TT_IsString(val::text)
+  SELECT TT_IsString(VARIADIC val::text[])
 $$ LANGUAGE sql VOLATILE;
 
 
@@ -627,20 +582,23 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Concat
 --
 --  sep text  - Separator (e.g. '_'). If no sep required use '' as first argument.
+--  processNulls - if true, concat is run and nulls ignored. If false, nulls raise error.
 --  var text[] - list of strings to concat
 --
 -- Return the value.
+-- sep followed by any number of strings (e.g. TT_Concat('_', 'a', 'b', 'c'))
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   sep text,
+  processNulls boolean,
   VARIADIC val text[]
 )
 RETURNS text AS $$
   BEGIN
     IF sep is NULL THEN
       RAISE EXCEPTION 'sep is null';
-    ELSIF coalesce(array_position(val, NULL::text), 0) > 0 THEN -- with VARIADIC, STRICT only returns NULL if entire array returns NULL. So need to manually return NULL if a single array element is NULL.
-      RAISE EXCEPTION 'val contains null';
+    ELSIF coalesce(array_position(val, NULL::text), 0) > 0 AND processNulls = FALSE THEN -- test if any list elements are null
+      RAISE EXCEPTION 'val contains null'; 
     ELSE
       RETURN array_to_string(val, sep);
     END IF;
@@ -651,15 +609,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Lookup
 --
--- val text/double precision/int
--- lookupSchemaName
--- lookupTableName
--- lookupColumn
+-- val text/double precision/int - val to lookup
+-- lookupSchemaName - schema name containing lookup table
+-- lookupTableName - lookup table name
+-- lookupColumn - column to return
 --
 -- Return value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in first column
--- If multiple val's, first row is returned
--- Error if any arguments are NULL
+-- that matches val in first column.
+-- If multiple val's, first row is returned.
+-- Error if any arguments are NULL.
 -- *Return value currently always text*
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Lookup(
@@ -723,6 +681,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Length
 --
 -- val - values to test.
+--
 -- Count characters in string
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Length(
@@ -757,11 +716,11 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Pad
 --
 -- val - string to pad.
--- target_length - total characters of output string
--- pad_char - character to pad with
+-- target_length - total characters of output string.
+-- pad_char - character to pad with - Defaults to 'x'.
 --
--- pads if val shorter than target, trims if val longer than target
--- pad_char should always be a single character
+-- Pads if val shorter than target, trims if val longer than target.
+-- pad_char should always be a single character.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
@@ -781,7 +740,7 @@ RETURNS text AS $$
       val_length = TT_Length(val);
       pad_length = target_length - val_length;
       IF pad_length > 0 THEN
-        RETURN TT_Concat('', repeat(pad_char,pad_length), val);
+        RETURN TT_Concat('', FALSE, repeat(pad_char,pad_length), val);
       ELSE
         RETURN substring(val from 1 for target_length);
       END IF;
