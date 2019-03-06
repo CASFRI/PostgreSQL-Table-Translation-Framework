@@ -186,6 +186,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Return FALSE otherwise.
 -- Return FALSE if val is NULL.
 -- Return error if min or max are null.
+-- e.g. TT_Between(5, 0, 100)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
   val double precision,
@@ -226,6 +227,7 @@ $$ LANGUAGE sql VOLATILE;
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
 --  Return error if lowerBound or inclusive are null.
+--  e.g. TT_GreaterThan(5, 0, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
    val double precision,
@@ -269,6 +271,7 @@ $$ LANGUAGE sql VOLATILE;
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
 --  Return error if upperBound or inclusive are null.
+--  e.g. TT_LessThan(1, 5, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
    val double precision,
@@ -308,6 +311,7 @@ $$ LANGUAGE sql VOLATILE;
 -- occurences - int defaults to 1
 --
 -- if number of occurences of val in first column of schema.table equals occurences, return true.
+-- e.g. TT_HasUniqueValues('BS', 'public', 'bc08', 1)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val text,
@@ -378,6 +382,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupTableName name - lookup table.
 --
 -- if val is present in first column of lookup table, returns TRUE.
+-- e.g. TT_Match('BS', 'public', 'bc08')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
@@ -440,7 +445,8 @@ $$ LANGUAGE sql VOLATILE;
 -- lst text/double precision/int - list to test against.
 --
 -- Is val in lst?
--- val followed by any number of test values (e.g. TT_Match('a', 'a', 'b', 'c'))
+-- val followed by any number of test values
+-- e.g. TT_Match('a', 'a', 'b', 'c')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
@@ -484,6 +490,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_False
 --
 -- Return false
+-- e.g. TT_False()
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_False()
 RETURNS boolean AS $$
@@ -586,7 +593,7 @@ $$ LANGUAGE sql VOLATILE;
 --  var text[] - list of strings to concat
 --
 -- Return the value.
--- sep followed by any number of strings (e.g. TT_Concat('_', 'a', 'b', 'c'))
+-- e.g. TT_Concat('_', FALSE, 'a', 'b', 'c'))
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   sep text,
@@ -619,6 +626,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- If multiple val's, first row is returned.
 -- Error if any arguments are NULL.
 -- *Return value currently always text*
+-- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Lookup(
   val text,
@@ -683,6 +691,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val - values to test.
 --
 -- Count characters in string
+-- e.g. TT_Length('12345')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Length(
   val text
@@ -721,6 +730,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Pads if val shorter than target, trims if val longer than target.
 -- pad_char should always be a single character.
+-- e.g. TT_Pad('tab1', 10, 'x')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
