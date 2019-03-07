@@ -66,7 +66,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  val text  - List of values to test.
+--  val text  - c
 --
 -- Return TRUE if vals are not an empty string.
 -- Return FALSE if any val is empty string or padded spaces (e.g. '' or '  ') or Null.
@@ -90,7 +90,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsInt
 --
---  val double precision/int/text - Value to test
+--  val double precision/int/text - List of values to test.
 --
 --  Do all values represent integers? Can be of type int, double precision or text (e.g. 1, 1.0, '1', '1.0')
 --  Null values return FALSE
@@ -136,7 +136,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsNumeric
 --
---  val double precision/int/text - Value to test.
+--  val double precision/int/text - List of values to test.
 --
 --  Can all values be cast to double precision? (e.g. 1.1, 1, '1.5')
 --  Null values return FALSE
@@ -381,7 +381,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupSchemaName name - schema name holding lookup table.
 -- lookupTableName name - lookup table.
 --
--- if val is present in first column of lookup table, returns TRUE.
+-- if val is present in first column of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
@@ -442,46 +442,43 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Match (list version)
 --
 -- val text/double precision/int - value to test.
--- lst text/double precision/int - list to test against.
+-- lst text - string containing comma separated vals.
 --
 -- Is val in lst?
--- val followed by any number of test values
--- e.g. TT_Match('a', 'a', 'b', 'c')
+-- val followed by string of test values
+-- e.g. TT_Match('a', 'a,b,c')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
-  VARIADIC lst text[]
+  lst text
 )
 RETURNS boolean AS $$
+  DECLARE
+    var1 text[];
   BEGIN
     IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN val = ANY(array_remove(lst, NULL));
+      var1 = string_to_array(lst, ',');
+      RETURN val = ANY(array_remove(var1, NULL));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Match(
   val double precision,
-  VARIADIC lst double precision[]
+  lst text
 )
 RETURNS boolean AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    ELSE
-      RETURN val = ANY(array_remove(lst, NULL));
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_Match(val::text, lst)
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Match(
   val integer,
-  VARIADIC lst integer[]
+  lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_Match(val::double precision, VARIADIC lst::double precision[])
+  SELECT TT_Match(val::text, lst)
 $$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------

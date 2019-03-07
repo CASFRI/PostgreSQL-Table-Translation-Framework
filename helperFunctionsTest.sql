@@ -623,109 +623,111 @@ SELECT '7.10'::text number,
 ---------------------------------------------------------
 
 ---------------------------------------------------------
--- Test 8 - TT_Match (array variant)
+-- Test 8 - TT_Match (list variant)
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.1'::text number,
        'TT_Match1'::text function_tested,
        'String good value'::text description,
-       TT_Match('1'::text,'1'::text,'2'::text,'3'::text) IS TRUE passed
+       TT_Match('1','1,2,3') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.2'::text number,
        'TT_Match1'::text function_tested,
        'String bad value'::text description,
-       TT_Match('1'::text,'4'::text,'2'::text,'3'::text) IS FALSE passed
+       TT_Match('1','4,5,6') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.3'::text number,
        'TT_Match1'::text function_tested,
        'String Null val'::text description,
-       TT_Match(NULL::text, '1'::text,'2'::text,'3'::text) IS FALSE passed
+       TT_Match(NULL::text, '1,2,3') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.4'::text number,
        'TT_Match1'::text function_tested,
-       'String Null in list, good value'::text description,
-       TT_Match('1'::text, NULL::text,'1'::text,'3'::text) IS TRUE passed
+       'String, empty string in list, good value'::text description,
+       TT_Match('1', ',2,3,1') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.5'::text number,
        'TT_Match1'::text function_tested,
-       'String Null in list, bad value'::text description,
-       TT_Match('1'::text, NULL::text,'2'::text,'3'::text) IS FALSE passed
+       'String, empty string in list, bad value'::text description,
+       TT_Match('4', ',2,3,1') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.6'::text number,
        'TT_Match1'::text function_tested,
-       'String, empty string in list, good value'::text description,
-       TT_Match('1'::text, ''::text,'1'::text,'3'::text) IS TRUE passed
+       'String, val is empty string, good value'::text description,
+       TT_Match('', ',1,2,3') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.7'::text number,
        'TT_Match1'::text function_tested,
-       'String, val is empty string'::text description,
-       TT_Match(''::text, ''::text,'1'::text,'3'::text) IS TRUE passed
+       'String, val is empty string, bad value'::text description,
+       TT_Match('', '1,2,3') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.8'::text number,
        'TT_Match1'::text function_tested,
        'Double precision good value'::text description,
-       TT_Match(1.5::Double precision,1.5::Double precision,1.6::Double precision,1.7::Double precision) IS TRUE passed
+       TT_Match(1.5, '1.5,1.4,1.6') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.9'::text number,
        'TT_Match1'::text function_tested,
        'Double precision bad value'::text description,
-       TT_Match(1.2::Double precision,1.5::Double precision,1.6::Double precision,1.7::Double precision) IS FALSE passed
+       TT_Match(1.1, '1.5,1.4,1.6') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.10'::text number,
        'TT_Match1'::text function_tested,
        'Double precision NULL val'::text description,
-       TT_Match(NULL::Double precision,1.5::Double precision,1.6::Double precision,1.7::Double precision) IS FALSE passed
+       TT_Match(NULL::Double precision,'1.1,1.2') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.11'::text number,
        'TT_Match1'::text function_tested,
-       'Double precision Null in list, good value'::text description,
-       TT_Match(1.5::Double precision,1.5::Double precision,NULL::Double precision,1.7::Double precision) IS TRUE passed
+       'Double precision empty string in list, good value'::text description,
+       TT_Match(1.5::Double precision,',1.5,1.6') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.12'::text number,
        'TT_Match1'::text function_tested,
-       'Double precision Null in list, bad value'::text description,
-       TT_Match(1.3::Double precision,1.5::Double precision,NULL::Double precision,1.7::Double precision) IS FALSE passed
-------------------------------------------------------------------------------------------------------------------
+       'Double precision empty string in list, bad value'::text description,
+       TT_Match(1.5::Double precision,',1.7,1.6') IS FALSE passed
+---------------------------------------------------------
 UNION ALL
 SELECT '8.13'::text number,
        'TT_Match1'::text function_tested,
        'Integer good value'::text description,
-       TT_Match(2::integer,2::integer,3::integer,4::integer) IS TRUE passed
+       TT_Match(5, '5,4,6') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.14'::text number,
        'TT_Match1'::text function_tested,
        'Integer bad value'::text description,
-       TT_Match(1::integer,2::integer,3::integer,4::integer) IS FALSE passed
+       TT_Match(1, '5,4,6') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.15'::text number,
        'TT_Match1'::text function_tested,
-       'Integer Null val'::text description,
-       TT_Match(NULL::integer,2::integer,3::integer,4::integer) IS FALSE passed
+       'Integer NULL val'::text description,
+       TT_Match(NULL::int,'1,2') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.16'::text number,
        'TT_Match1'::text function_tested,
-       'Integer Null in list, good value'::text description,
-       TT_Match(1::integer,NULL::integer,3::integer,4::integer,1::integer) IS TRUE passed
+       'Integer empty string in list, good value'::text description,
+       TT_Match(5::int,',5,6') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.17'::text number,
        'TT_Match1'::text function_tested,
-       'Integer Null in list, bad value'::text description,
-       TT_Match(12::integer,NULL::integer,3::integer,4::integer,1::integer) IS FALSE passed
+       'Integer empty string in list, bad value'::text description,
+       TT_Match(1::int,',2,6') IS FALSE passed
+------------------------------------------------------------------------------------------------------------------
+
 ------------------------------------------------------------------------------------------------------------------
 -- Test 9 - TT_Match (lookup table variant)
 ---------------------------------------------------------
