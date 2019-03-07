@@ -778,40 +778,51 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Map   --   NOT WORKING
+-- TT_Map
 --
--- val text/double precision/int - values to test.
--- lst1 text/double precision/int - list containing vals
--- lst2 text/double precision/int - return values from this list that match vals
+-- val text/double precision/int - value to test.
+-- lst1 text/double precision/int - string containing comma seperated vals
+-- lst2 text/double precision/int - string containing comma seperated vals
 --
--- Return value from list in lookupSchemaName.lookupTableName
--- that matches val in first column
--- If multiple val's, first row is returned
+-- Return value from lst2 that matches value index in lst1
 -- Error if val is NULL
-
--- Can't convert this query into dynamic function:
--- SELECT (ARRAY['TA','TB','TC','TD'])[array_position(ARRAY['RA','RB','RC','RD'],'RD')];
+-- e.g. TT_Map('A','A,B,C','1,2,3')
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Map(
   val text,
-  lst1 text[],
-  lst2 text[]
+  lst1 text,
+  lst2 text
 )
 RETURNS text AS $$
   DECLARE
-    query text;
-    return text;
+    var1 text[];
+    var2 text[];
   BEGIN
     IF val IS NULL THEN
       RAISE EXCEPTION 'val is NULL';
-    ELSIF coalesce(array_position(lst1, NULL::text), 0) > 0 OR coalesce(array_position(lst2, NULL::text), 0) > 0 THEN
-      RAISE EXCEPTION 'lst1 or lst2 contain NULLs';
     ELSE
-      query = 'SELECT (' || quote_literal(lst1) || ')[array_position(' || quote_literal(lst2) || ', ' || quote_literal(val) || ')];';
-      RAISE NOTICE '11 query = %',query;
-      EXECUTE query INTO  return;
-      RETURN return;
+      var1 = string_to_array(lst1, ',');
+      var2 = string_to_array(lst2, ',');
+      RETURN (var2)[array_position(var1,val)];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Map(
+  val double precision,
+  lst1 text,
+  lst2 text
+)
+RETURNS text AS $$
+  SELECT TT_Map(val::text,lst1,lst2)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Map(
+  val int,
+  lst1 text,
+  lst2 text
+)
+RETURNS text AS $$
+  SELECT TT_Map(val::text,lst1,lst2)
+$$ LANGUAGE sql VOLATILE;

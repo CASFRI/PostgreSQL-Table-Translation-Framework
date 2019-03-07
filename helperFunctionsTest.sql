@@ -82,8 +82,8 @@ WITH test_nb AS (
     SELECT 'TT_IsString'::text,               14,         10         UNION ALL
     SELECT 'TT_Length'::text,                 15,          7         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
-    SELECT 'TT_HasUniqueValues1'::text,       17,         16         UNION ALL
-    SELECT 'TT_HasUniqueValues2'::text,       18,         18         
+    SELECT 'TT_HasUniqueValues'::text,        17,         16         UNION ALL
+    SELECT 'TT_Map'::text,                    18,          4         
 
 
 ),
@@ -1223,210 +1223,126 @@ SELECT '16.15'::text number,
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.1'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, text, good value'::text description,
        TT_HasUniqueValues('*AX', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.2'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, double precision, good value'::text description,
        TT_HasUniqueValues(1.2::double precision, 'public', 'test_lookuptable3', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.3'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, integer, good value'::text description,
        TT_HasUniqueValues(3::int, 'public', 'test_lookuptable2', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.4'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, text, bad value'::text description,
        TT_HasUniqueValues('*AX', 'public', 'test_lookuptable1', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.5'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, double precision, bad value'::text description,
        TT_HasUniqueValues(1.2::double precision, 'public', 'test_lookuptable3', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.6'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, integer, bad value'::text description,
        TT_HasUniqueValues(3::int, 'public', 'test_lookuptable2', 2) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.7'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test, empty string, good value'::text description,
        TT_HasUniqueValues('', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.8'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null val, text'::text description,
        TT_HasUniqueValues('', 'public', 'test_lookuptable1', 1) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.9'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null val, double precision'::text description,
        TT_HasUniqueValues(NULL::double precision, 'public', 'test_lookuptable3', 1) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.10'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null val, int'::text description,
        TT_HasUniqueValues(NULL::int, 'public', 'test_lookuptable2', 1) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.11'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null schema'::text description,
        IsError('SELECT TT_HasUniqueValues(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.12'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null table'::text description,
        IsError('SELECT TT_HasUniqueValues(1.1::double precision, ''public'', NULL, 1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.13'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Null occureces'::text description,
        IsError('SELECT TT_HasUniqueValues(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.14'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test default, text'::text description,
        TT_HasUniqueValues('RA'::text, 'public'::name, 'test_lookuptable1'::name) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.15'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test default, double precision'::text description,
        TT_HasUniqueValues(1.3::double precision, 'public'::name, 'test_lookuptable3'::name) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.16'::text number,
-       'TT_HasUniqueValues1'::text function_tested,
+       'TT_HasUniqueValues'::text function_tested,
        'Test default, int'::text description,
        TT_HasUniqueValues(3::int, 'public'::name, 'test_lookuptable2'::name) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 18 - TT_HasUniqueValues (list variant)
+-- Test 18 - TT_Map
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.1'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, good value'::text description,
-       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD','RE') passed
+       'TT_Map'::text function_tested,
+       'Test text'::text description,
+       TT_Map('A','A,B,C,D','1,2,3,4') = '1' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.2'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, occurences too low'::text description,
-       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD','RA') IS FALSE passed
+       'TT_Map'::text function_tested,
+       'Test double precision'::text description,
+       TT_Map(1.1::double precision,'1.1,1.2,1.3,1.4','A,B,C,D') = 'A' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.3'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, occurences too high'::text description,
-       TT_HasUniqueValues('RA',2,'RA','RB','RC','RD','RE') IS FALSE passed
+       'TT_Map'::text function_tested,
+       'Test int'::text description,
+       TT_Map(2::double precision,'1,2,3,4','A,B,C,D') = 'B' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.4'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, null in list'::text description,
-       TT_HasUniqueValues('RA',1,'RA','RB','RC','RD',NULL) passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.5'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, good value'::text description,
-       TT_HasUniqueValues(1.2,1,1.1,1.2,1.3,1.4,1.5) passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.6'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, occurences too low'::text description,
-       TT_HasUniqueValues(1.1,1,1.1,1.2,1.3,1.4,1.1) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.7'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, occurences too high'::text description,
-       TT_HasUniqueValues(1.2,2,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.8'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, null in list'::text description,
-       TT_HasUniqueValues(1.2,1,1.1,1.2,1.3,1.4,NULL::double precision) passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.9'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, good value'::text description,
-       TT_HasUniqueValues(1::int,1,1::int,2::int,3::int,4::int,5::int) passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.10'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, occurences too low'::text description,
-       TT_HasUniqueValues(1::int,1,1::int,2::int,3::int,4::int,1::int) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.11'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, occurences too high'::text description,
-       TT_HasUniqueValues(1::int,2,1::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.12'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, null in list'::text description,
-       TT_HasUniqueValues(1::int,1,1::int,1,1::int,2::int,3::int,4::int,NULL::int) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.13'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, null val FALSE'::text description,
-       TT_HasUniqueValues(NULL,1,'RA','RB','RC','RD','RA') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.14'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'text, null occurence'::text description,
-       IsError('SELECT TT_HasUniqueValues(''RA'',NULL,''RA'',''RB'',''RC'',''RD'',''RA'');') passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.15'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, null val'::text description,
-       TT_HasUniqueValues(NULL::double precision,1,1.1,1.2,1.3,1.4,1.5) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.16'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'double precision, null occurence'::text description,
-       IsError('SELECT TT_HasUniqueValues(1.2,NULL::double precision,1.1,1.2,1.3,1.4,1.1);') passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.17'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, null val'::text description,
-       TT_HasUniqueValues(NULL::int,1,1::int,2::int,3::int,4::int,5::int) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '18.18'::text number,
-       'TT_HasUniqueValues2'::text function_tested,
-       'int, null occurences'::text description,
-       IsError('SELECT TT_HasUniqueValues(1::int,NULL,1::int,2::int,3::int,4::int,5::int);') passed
+       'TT_Map'::text function_tested,
+       'Test Null val'::text description,
+       IsError('SELECT TT_Map(NULL::text,''A,B,C,D'',''1,2,3,4'');') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 ---------------------------------------------------------
@@ -1437,4 +1353,3 @@ ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
 -- to display only failing tests...
 --) foo WHERE NOT passed;
-
