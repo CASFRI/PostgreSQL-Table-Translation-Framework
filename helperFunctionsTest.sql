@@ -73,17 +73,17 @@ WITH test_nb AS (
     SELECT 'TT_Between'::text,                 5,         12         UNION ALL
     SELECT 'TT_GreaterThan'::text,             6,         10         UNION ALL
     SELECT 'TT_LessThan'::text,                7,         10         UNION ALL
-    SELECT 'TT_Match1'::text,                  8,         17         UNION ALL
-    SELECT 'TT_Match2'::text,                  9,         15         UNION ALL   
+    SELECT 'TT_Match1'::text,                  8,         21         UNION ALL
+    SELECT 'TT_Match2'::text,                  9,         17         UNION ALL   
     SELECT 'TT_Concat'::text,                 10,         10         UNION ALL
     SELECT 'TT_Copy'::text,                   11,          5         UNION ALL
-    SELECT 'TT_Lookup'::text,                 12,         15         UNION ALL
+    SELECT 'TT_Lookup'::text,                 12,         17         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_IsString'::text,               14,         10         UNION ALL
     SELECT 'TT_Length'::text,                 15,          7         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
     SELECT 'TT_HasUniqueValues'::text,        17,         16         UNION ALL
-    SELECT 'TT_Map'::text,                    18,          4         
+    SELECT 'TT_Map'::text,                    18,          6         
 
 
 ),
@@ -726,6 +726,30 @@ SELECT '8.17'::text number,
        'TT_Match1'::text function_tested,
        'Integer empty string in list, bad value'::text description,
        TT_Match(1::int,',2,6') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.18'::text number,
+       'TT_Match1'::text function_tested,
+       'Test ignoreCase, true, val lower'::text description,
+       TT_Match('a','A,B,C',TRUE) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.19'::text number,
+       'TT_Match1'::text function_tested,
+       'Test ignoreCase, true, list lower'::text description,
+       TT_Match('A','a,b,c',TRUE) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.20'::text number,
+       'TT_Match1'::text function_tested,
+       'Test ignoreCase, false, val lower'::text description,
+       TT_Match('a','A,B,C',FALSE) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.21'::text number,
+       'TT_Match1'::text function_tested,
+       'Test ignoreCase, false, list lower'::text description,
+       TT_Match('A','a,b,c',FALSE) IS FALSE passed
 ------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------------------------------
@@ -820,6 +844,18 @@ SELECT '9.15'::text number,
        'TT_Match2'::text function_tested,
        'table null fail, int'::text description,
        IsError('SELECT TT_Match(1::int, public::name, NULL::name);') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.16'::text number,
+       'TT_Match2'::text function_tested,
+       'Test ignoreCase when false'::text description,
+       TT_Match('ra'::text, 'public'::name, 'test_lookuptable1'::name, FALSE) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.17'::text number,
+       'TT_Match2'::text function_tested,
+       'Test ignoreCase when true'::text description,
+       TT_Match('ra'::text, 'public'::name, 'test_lookuptable1'::name, TRUE) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 10- TT_Concat
@@ -1009,6 +1045,18 @@ SELECT '12.15'::text number,
        'TT_Lookup'::text function_tested,
        'NULL column, int'::text description,
        IsError('SELECT TT_Lookup(1::int, "public"::name, "test_lookuptable2"::name, NULL);') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.16'::text number,
+       'TT_Lookup'::text function_tested,
+       'Test ignore case, true'::text description,
+       TT_Lookup('ra', 'public'::name, 'test_lookuptable1'::name, 'target_val', TRUE) = 'Arbu menz'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.17'::text number,
+       'TT_Lookup'::text function_tested,
+       'Test ignore case, false'::text description,
+       TT_Lookup('ra', 'public'::name, 'test_lookuptable1'::name, 'target_val', FALSE) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 13 - TT_False
@@ -1345,6 +1393,18 @@ SELECT '18.4'::text number,
        'TT_Map'::text function_tested,
        'Test Null val'::text description,
        IsError('SELECT TT_Map(NULL::text,''A,B,C,D'',''1,2,3,4'');') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.5'::text number,
+       'TT_Map'::text function_tested,
+       'Test caseIgnore, true'::text description,
+       TT_Map('a','A,B,C,D','1,2,3,4',TRUE) = '1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.6'::text number,
+       'TT_Map'::text function_tested,
+       'Test caseIgnore, false'::text description,
+       TT_Map('a','A,B,C,D','1,2,3,4',FALSE) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 ---------------------------------------------------------

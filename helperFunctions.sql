@@ -380,14 +380,16 @@ $$ LANGUAGE sql VOLATILE;
 -- val text/double precision/int - column to test.
 -- lookupSchemaName name - schema name holding lookup table.
 -- lookupTableName name - lookup table.
+-- ignoreCase - default TRUE. Should upper/lower case be ignored?
 --
 -- if val is present in first column of schema.lookup table, returns TRUE.
--- e.g. TT_Match('BS', 'public', 'bc08')
+-- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
   lookupSchemaName name,
-  lookupTableName name
+  lookupTableName name,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
   DECLARE
@@ -398,8 +400,12 @@ RETURNS boolean AS $$
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSE
+    ELSIF ignoreCase = FALSE THEN
       query = 'SELECT ' || quote_literal(val) || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ') FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -409,7 +415,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_Match(
   val double precision,
   lookupSchemaName name,
-  lookupTableName name
+  lookupTableName name,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
   DECLARE
@@ -431,10 +438,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_Match(
   val int,
   lookupSchemaName name,
-  lookupTableName name
+  lookupTableName name,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
-  SELECT TT_Match(val::double precision,lookupSchemaName,lookupTableName)
+  SELECT TT_Match(val::double precision,lookupSchemaName,lookupTableName,ignoreCase)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -450,7 +458,8 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
   val text,
-  lst text
+  lst text,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS boolean AS $$
   DECLARE
@@ -458,9 +467,12 @@ RETURNS boolean AS $$
   BEGIN
     IF val IS NULL THEN
       RETURN FALSE;
-    ELSE
+    ELSIF ignoreCase = FALSE THEN
       var1 = string_to_array(lst, ',');
       RETURN val = ANY(array_remove(var1, NULL));
+    ELSE
+      var1 = string_to_array(upper(lst), ',');
+      RETURN upper(val) = ANY(array_remove(var1, NULL));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -629,7 +641,8 @@ CREATE OR REPLACE FUNCTION TT_Lookup(
   val text,
   lookupSchemaName name,
   lookupTableName name,
-  lookupCol text
+  lookupCol text,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS text AS $$
   DECLARE
@@ -640,8 +653,12 @@ RETURNS text AS $$
       RAISE EXCEPTION 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSE
+    ELSIF ignoreCase = FALSE THEN
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ';';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ') = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -652,7 +669,8 @@ CREATE OR REPLACE FUNCTION TT_Lookup(
   val double precision,
   lookupSchemaName name,
   lookupTableName name,
-  lookupCol text
+  lookupCol text,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS text AS $$
   DECLARE
@@ -675,10 +693,11 @@ CREATE OR REPLACE FUNCTION TT_Lookup(
   val int,
   lookupSchemaName name,
   lookupTableName name,
-  lookupCol text
+  lookupCol text,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS text AS $$
-  SELECT TT_Lookup(val::double precision, lookupSchemaName, lookupTableName, lookupCol)
+  SELECT TT_Lookup(val::double precision, lookupSchemaName, lookupTableName, lookupCol, ignoreCase)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -789,7 +808,8 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_Map(
   val text,
   lst1 text,
-  lst2 text
+  lst2 text,
+  ignoreCase boolean DEFAULT TRUE
 )
 RETURNS text AS $$
   DECLARE
@@ -798,10 +818,14 @@ RETURNS text AS $$
   BEGIN
     IF val IS NULL THEN
       RAISE EXCEPTION 'val is NULL';
-    ELSE
+    ELSIF ignoreCase = FALSE THEN
       var1 = string_to_array(lst1, ',');
       var2 = string_to_array(lst2, ',');
       RETURN (var2)[array_position(var1,val)];
+    ELSE
+      var1 = string_to_array(upper(lst1), ',');
+      var2 = string_to_array(upper(lst2), ',');
+      RETURN (var2)[array_position(var1,upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
