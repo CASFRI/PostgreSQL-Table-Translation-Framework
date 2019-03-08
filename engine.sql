@@ -92,14 +92,20 @@ CREATE OR REPLACE FUNCTION TT_TypeGuess(
 )
 RETURNS text AS $$
   DECLARE
+    debug boolean = current_setting('tt.debug');
   BEGIN
+    IF debug THEN RAISE NOTICE 'TT_TypeGuess BEGIN val=%', val;END IF;
     IF val ~ '^-?\d+$' AND val::bigint >= -2147483648 AND val::bigint <= 2147483647 THEN
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 11 INTEGER';END IF;
       RETURN 'integer';
     ELSIF val ~ '^-?\d+\.\d+$' THEN
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 22 DOUBLE PRECISION';END IF;
       RETURN 'double precision';
     ELSIF lower(val) = 'false' OR lower(val) = 'true' THEN
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 BOOLEAN';END IF;
       RETURN 'boolean';
     END IF;
+    IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 TEXT';END IF;
     RETURN 'text';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -149,13 +155,16 @@ RETURNS boolean AS $$
     IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF;
     SELECT count(*)
     FROM pg_proc
-    WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR 
-          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    --WHERE schemaName = '' AND argTypes IS NULL AND proname = fctName OR 
+    --      oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    WHERE proname = fctName    
     INTO cnt;
-    IF debug THEN RAISE NOTICE 'TT_FctExists END';END IF;
-    IF cnt > 0 THEN 
+    
+    IF cnt > 0 THEN
+      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF;
       RETURN TRUE;
     END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF;
     RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -192,7 +201,9 @@ CREATE OR REPLACE FUNCTION TT_FctReturnType(
 RETURNS text AS $$
   DECLARE
     result text;
+    debug boolean = current_setting('tt.debug');
   BEGIN
+    IF debug THEN RAISE NOTICE 'TT_FctReturnType BEGIN';END IF;
     IF TT_FctExists(schemaName, fctName, argTypes) THEN
       fctName = 'tt_' || fctName;
       IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
@@ -214,8 +225,10 @@ RETURNS text AS $$
       WHERE (schemaName = '') AND argTypes IS NULL AND proname = fctName OR 
           oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
       INTO result;
+      IF debug THEN RAISE NOTICE 'TT_FctReturnType END result=%', result;END IF;
       RETURN result;
     ELSE
+      IF debug THEN RAISE NOTICE 'TT_FctReturnType END NULL';END IF;
       RETURN NULL;
     END IF;
   END;
@@ -324,7 +337,7 @@ RETURNS anyelement AS $$
     result ALIAS FOR $0;
     debug boolean = current_setting('tt.debug');
   BEGIN
-    IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN';END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
     IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
       IF debug THEN RAISE NOTICE 'TT_FctEval 11 fctName=%, signature=%', fctName, TT_FctSignature(args, vals);END IF;
       RETURN NULL;
@@ -332,15 +345,18 @@ RETURNS anyelement AS $$
     ruleQuery = 'SELECT TT_' || fctName || '(';
     -- Search for any argument names in the provided value jsonb object
     FOREACH arg IN ARRAY args LOOP
-      argVal = vals->arg;
+      argVal = vals->>arg;
+      IF debug THEN RAISE NOTICE 'TT_FctEval 22 argVal=%, typeGuess=%', argVal, TT_TypeGuess('''' || arg || '''');END IF;
       IF argVal IS NULL THEN
-        IF TT_TypeGuess('''' || arg || '''') = 'text' THEN
+        --IF TT_TypeGuess('''' || arg || '''') = 'text' THEN
+        IF TT_TypeGuess(arg) = 'text' THEN
           ruleQuery = ruleQuery || '''' || arg || ''', ';
         ELSE
           ruleQuery = ruleQuery || arg || ', ';
         END IF;
       ELSE
-        IF TT_TypeGuess('''' || arg || '''') = 'text' THEN
+        --IF TT_TypeGuess('''' || argVal || '''') = 'text' THEN
+        IF TT_TypeGuess(arg) = 'text' THEN
           ruleQuery = ruleQuery || '''' || argVal || ''', ';
         ELSE
           ruleQuery = ruleQuery || argVal || ', ';
@@ -349,9 +365,9 @@ RETURNS anyelement AS $$
     END LOOP;
     -- Remove the last comma.
     ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')::' || pg_typeof(result);
-    IF debug THEN RAISE NOTICE 'TT_FctEval 22 ruleQuery=%', ruleQuery;END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctEval 33 ruleQuery=%', ruleQuery;END IF;
     EXECUTE ruleQuery INTO STRICT result;
-    IF debug THEN RAISE NOTICE 'TT_FctEval END';END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctEval END result=%', result;END IF;
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -516,15 +532,20 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
   DECLARE
     row RECORD;
     query text;
+    debug boolean = current_setting('tt.debug');
   BEGIN
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF translationTable IS NULL THEN
       translationTable = translationTableSchema;
       translationTableSchema = 'public';
     END IF;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 11';END IF;
     IF translationTable IS NULL or translationTable = '' THEN
       RETURN;
     END IF;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
     query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable);
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
       targetAttribute = row.targetAttribute;
       targetAttributeType = row.targetAttributeType;
@@ -607,7 +628,7 @@ RETURNS text AS $f$
                                                         stopOnInvalid, 
                                                         logFrequency, 
                                                         resume, 
-                                                        ignoreDescUpToDateWithRules) AS t(id int, col2 int);
+                                                        ignoreDescUpToDateWithRules) AS t(' || paramlist || ');
                RETURN;
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
@@ -695,7 +716,8 @@ RETURNS SETOF RECORD AS $$
          END LOOP ;
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
-           query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType($1, $2) || ');';
+           --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
+           query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            -- EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
            EXECUTE query
