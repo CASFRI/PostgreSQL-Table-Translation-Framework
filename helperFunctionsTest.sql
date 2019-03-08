@@ -450,13 +450,13 @@ UNION ALL
 SELECT '5.5'::text number,
        'TT_Between'::text function_tested,
        'Integer, NULL min'::text description,
-       IsError('SELECT TT_Between(10::int,NULL,100);'::text) IS TRUE passed
+       IsError('SELECT TT_Between(10::int,NULL::int,100::double precision);'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_Between'::text function_tested,
        'Integer, NULL max'::text description,
-       IsError('SELECT TT_Between(10::int,0,NULL);'::text) IS TRUE passed
+       IsError('SELECT TT_Between(10::int,0::int,NULL::double precision);'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,

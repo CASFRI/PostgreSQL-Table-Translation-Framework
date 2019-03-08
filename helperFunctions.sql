@@ -222,7 +222,7 @@ CREATE OR REPLACE FUNCTION TT_Between(
 RETURNS boolean AS $$
   BEGIN
     IF TT_TypeGuess(val) = 'text' THEN
-     RETURN FALSE;
+     RAISE EXCEPTION 'val is type text';
     END IF;
     RETURN TT_Between(val::double precision, min, max);
     END;
@@ -234,8 +234,12 @@ CREATE OR REPLACE FUNCTION TT_Between(
   max text
 )
 RETURNS boolean AS $$
-  SELECT FALSE;
-$$ LANGUAGE sql VOLATILE;
+  BEGIN
+    IF TT_TypeGuess(max) = 'text' THEN
+      RAISE EXCEPTION 'max is type text';
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Between(
   val int,
@@ -243,8 +247,12 @@ CREATE OR REPLACE FUNCTION TT_Between(
   max double precision
 )
 RETURNS boolean AS $$
-  SELECT FALSE;
-$$ LANGUAGE sql VOLATILE;
+  BEGIN
+    IF TT_TypeGuess(min) = 'text' THEN
+      RAISE EXCEPTION 'min is type text';
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Between(
   val text,
@@ -252,8 +260,12 @@ CREATE OR REPLACE FUNCTION TT_Between(
   max text
 )
 RETURNS boolean AS $$
-  SELECT FALSE;
-$$ LANGUAGE sql VOLATILE;
+  BEGIN
+    IF TT_TypeGuess(val) = 'text' OR TT_TypeGuess(max) = 'text' THEN
+      RAISE EXCEPTION 'val and max is type text';
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Between(
   val text,
@@ -261,8 +273,12 @@ CREATE OR REPLACE FUNCTION TT_Between(
   max double precision
 )
 RETURNS boolean AS $$
-  SELECT FALSE;
-$$ LANGUAGE sql VOLATILE;
+  BEGIN
+    IF TT_TypeGuess(val) = 'text' OR TT_TypeGuess(min)= 'text' THEN
+      RAISE EXCEPTION 'val and min is type text';
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
