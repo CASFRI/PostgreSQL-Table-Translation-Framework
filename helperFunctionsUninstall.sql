@@ -63,5 +63,3 @@ DROP FUNCTION IF EXISTS TT_Pad(int,int,text);
 DROP FUNCTION IF EXISTS TT_HasUniqueValues(text,name,name,int);
 DROP FUNCTION IF EXISTS TT_HasUniqueValues(double precision,name,name,int);
 DROP FUNCTION IF EXISTS TT_HasUniqueValues(int,name,name,int);
-
-
