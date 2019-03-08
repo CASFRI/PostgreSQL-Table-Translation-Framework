@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -212,6 +212,56 @@ CREATE OR REPLACE FUNCTION TT_Between(
 )
 RETURNS boolean AS $$
   SELECT TT_Between(val::double precision,min,max);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val text,
+  min double precision,
+  max double precision
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF TT_TypeGuess(val) = 'text' THEN
+     RETURN FALSE;
+    END IF;
+    RETURN TT_Between(val::double precision, min, max);
+    END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val int,
+  min double precision,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT FALSE;
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val int,
+  min text,
+  max double precision
+)
+RETURNS boolean AS $$
+  SELECT FALSE;
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val text,
+  min double precision,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT FALSE;
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val text,
+  min text,
+  max double precision
+)
+RETURNS boolean AS $$
+  SELECT FALSE;
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

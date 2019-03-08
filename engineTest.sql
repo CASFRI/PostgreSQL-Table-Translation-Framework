@@ -12,6 +12,8 @@
 -------------------------------------------------------------------------------
 SET lc_messages TO 'en_US.UTF-8';
 
+SET tt.debug TO TRUE;
+
 -- Create a test source table
 DROP TABLE IF EXISTS test_sourcetable1;
 CREATE TABLE test_sourcetable1 AS
@@ -58,7 +60,7 @@ WITH test_nb AS (
     SELECT 'TT_FctExists'::text,                     6,          6         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
     SELECT 'TT_FctReturnType'::text,                 8,          1         UNION ALL
-    SELECT 'TT_FctEval'::text,                       9,          7         UNION ALL
+    SELECT 'TT_FctEval'::text,                       9,          6         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0
 ),
 test_series AS (
@@ -374,31 +376,25 @@ UNION ALL
 SELECT '9.3'::text number,
        'TT_FctEval'::text function_tested,
        'Wrong fonction name'::text description,
-        TT_FctEval('xbetween', '{crown_closure,0,2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+        TT_FctEval('xbetween', '{crown_closure, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,
        'TT_FctEval'::text function_tested,
-       'Wrong argument number'::text description,
-        TT_FctEval('between', '{crown_closure,0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+       'Wrong argument type'::text description,
+        TT_FctEval('between', '{crown_closure, 0, "b"}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS FALSE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_FctEval'::text function_tested,
-       'Wrong argument type'::text description,
-        TT_FctEval('between', '{crown_closure,0, "b"}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+       'Argument not found in jsonb structure'::text description,
+        TT_FctEval('between', '{xcrown_closure, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS FALSE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
        'TT_FctEval'::text function_tested,
-       'Argument not found in jsonb structure'::text description,
-        TT_FctEval('between', '{xcrown_closure,0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
---------------------------------------------------------
-UNION ALL
-SELECT '9.7'::text number,
-       'TT_FctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
-        TT_FctEval('between', '{crown_closure,0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
+        TT_FctEval('between', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
