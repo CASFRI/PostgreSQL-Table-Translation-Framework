@@ -340,7 +340,7 @@ RETURNS anyelement AS $$
     IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
     IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
       IF debug THEN RAISE NOTICE 'TT_FctEval 11 fctName=%, signature=%', fctName, TT_FctSignature(args, vals);END IF;
-      RETURN NULL;
+      RAISE EXCEPTION 'TT_FctEval FUNCTION % DOES NOT EXIST', fctName;
     END IF;
     ruleQuery = 'SELECT TT_' || fctName || '(';
     -- Search for any argument names in the provided value jsonb object
