@@ -42,7 +42,7 @@ SELECT 1.3::double precision, 3::int;
 
 -- IsError(text)
 -- function to test if helper functions return errors
-CREATE OR REPLACE FUNCTION IsError(
+CREATE OR REPLACE FUNCTION TT_IsError(
   functionString text
 )
 RETURNS boolean AS $$
@@ -450,13 +450,13 @@ UNION ALL
 SELECT '5.5'::text number,
        'TT_Between'::text function_tested,
        'Integer, NULL min'::text description,
-       IsError('SELECT TT_Between(10::int,NULL::int,100::double precision);'::text) IS TRUE passed
+       TT_IsError('SELECT TT_Between(10::int,NULL::int,100::double precision);'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_Between'::text function_tested,
        'Integer, NULL max'::text description,
-       IsError('SELECT TT_Between(10::int,0::int,NULL::double precision);'::text) IS TRUE passed
+       TT_IsError('SELECT TT_Between(10::int,0::int,NULL::double precision);'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,
@@ -486,13 +486,13 @@ UNION ALL
 SELECT '5.11'::text number,
        'TT_Between'::text function_tested,
        'double precision, NULL min'::text description,
-       IsError('SELECT TT_Between(10::double precision,NULL,100);'::text) IS TRUE passed
+       TT_IsError('SELECT TT_Between(10::double precision,NULL,100);'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '5.12'::text number,
        'TT_Between'::text function_tested,
        'double precision, NULL max'::text description,
-       IsError('SELECT TT_Between(10::double precision,0,NULL);'::text) IS TRUE passed
+       TT_IsError('SELECT TT_Between(10::double precision,0,NULL);'::text) IS TRUE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -550,13 +550,13 @@ UNION ALL
 SELECT '6.9'::text number,
        'TT_GreaterThan'::text function_tested,
        'NULL lowerBound'::text description,
-       IsError('SELECT TT_GreaterThan(10::int, NULL, TRUE);') IS TRUE passed
+       TT_IsError('SELECT TT_GreaterThan(10::int, NULL, TRUE);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.10'::text number,
        'TT_GreaterThan'::text function_tested,
        'NULL inclusive'::text description,
-       IsError('SELECT TT_GreaterThan(10::int, 8, NULL);') IS TRUE passed
+       TT_IsError('SELECT TT_GreaterThan(10::int, 8, NULL);') IS TRUE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 7 - TT_LessThan
@@ -613,13 +613,13 @@ UNION ALL
 SELECT '7.9'::text number,
        'TT_LessThan'::text function_tested,
        'NULL upperBound'::text description,
-       IsError('SELECT TT_LessThan(10::int, NULL, TRUE);') IS TRUE passed
+       TT_IsError('SELECT TT_LessThan(10::int, NULL, TRUE);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.10'::text number,
        'TT_LessThan'::text function_tested,
        'NULL inclusive'::text description,
-       IsError('SELECT TT_LessThan(10::int, 8, NULL);') IS TRUE passed
+       TT_IsError('SELECT TT_LessThan(10::int, 8, NULL);') IS TRUE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -777,13 +777,13 @@ UNION ALL
 SELECT '9.4'::text number,
        'TT_Match2'::text function_tested,
        'schema NULL fail, text'::text description,
-       IsError('SELECT TT_Match(RA::text, NULL::name, test_lookuptable1::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(RA::text, NULL::name, test_lookuptable1::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_Match2'::text function_tested,
        'table NULL fail, text'::text description,
-       IsError('SELECT TT_Match(RA::text, public::name, NULL::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(RA::text, public::name, NULL::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
@@ -807,13 +807,13 @@ UNION ALL
 SELECT '9.9'::text number,
        'TT_Match2'::text function_tested,
        'schema null fail, double precision'::text description,
-       IsError('SELECT TT_Match(1.1::double precision, NULL::name, test_lookuptable3::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(1.1::double precision, NULL::name, test_lookuptable3::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.10'::text number,
        'TT_Match2'::text function_tested,
        'table null fail, double precision'::text description,
-       IsError('SELECT TT_Match(1.1::double precision, public::name, NULL::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(1.1::double precision, public::name, NULL::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.11'::text number,
@@ -837,13 +837,13 @@ UNION ALL
 SELECT '9.14'::text number,
        'TT_Match2'::text function_tested,
        'schema null fail, int'::text description,
-       IsError('SELECT TT_Match(1::int, NULL::name, test_lookuptable2::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(1::int, NULL::name, test_lookuptable2::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.15'::text number,
        'TT_Match2'::text function_tested,
        'table null fail, int'::text description,
-       IsError('SELECT TT_Match(1::int, public::name, NULL::name);') IS TRUE passed
+       TT_IsError('SELECT TT_Match(1::int, public::name, NULL::name);') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.16'::text number,
@@ -882,13 +882,13 @@ UNION ALL
 SELECT '10.4'::text number,
        'TT_Concat'::text function_tested,
        'Null sep gives error'::text description,
-       IsError('SELECT TT_Concat(NULL, FALSE, "cas", "id", "test");') IS TRUE passed
+       TT_IsError('SELECT TT_Concat(NULL, FALSE, "cas", "id", "test");') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.5'::text number,
        'TT_Concat'::text function_tested,
        'Null string, processNulls=FALSE gives error'::text description,
-       IsError('SELECT TT_Concat("-", FALSE, NULL, "id", "test");') IS TRUE passed
+       TT_IsError('SELECT TT_Concat("-", FALSE, NULL, "id", "test");') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '10.6'::text number,
@@ -978,73 +978,73 @@ UNION ALL
 SELECT '12.4'::text number,
        'TT_Lookup'::text function_tested,
        'NULL val, text'::text description,
-       IsError('SELECT TT_Lookup(NULL::text, "public"::name, "test_lookuptable1"::name, "target_val");') passed
+       TT_IsError('SELECT TT_Lookup(NULL::text, "public"::name, "test_lookuptable1"::name, "target_val");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.5'::text number,
        'TT_Lookup'::text function_tested,
        'NULL val, double precision'::text description,
-       IsError('SELECT TT_Lookup(NULL::double precision, "public"::name, "test_lookuptable3"::name, "intcol");') passed
+       TT_IsError('SELECT TT_Lookup(NULL::double precision, "public"::name, "test_lookuptable3"::name, "intcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.6'::text number,
        'TT_Lookup'::text function_tested,
        'NULL val, int'::text description,
-       IsError('SELECT TT_Lookup(NULL::int, "public"::name, "test_lookuptable2"::name, "dblcol");') passed
+       TT_IsError('SELECT TT_Lookup(NULL::int, "public"::name, "test_lookuptable2"::name, "dblcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.7'::text number,
        'TT_Lookup'::text function_tested,
        'NULL schema, text'::text description,
-       IsError('SELECT TT_Lookup("RA"::text, NULL::name, "test_lookuptable1"::name, "target_val");') passed
+       TT_IsError('SELECT TT_Lookup("RA"::text, NULL::name, "test_lookuptable1"::name, "target_val");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.8'::text number,
        'TT_Lookup'::text function_tested,
        'NULL schema, double precision'::text description,
-       IsError('SELECT TT_Lookup(1.1::double precision, NULL::name, "test_lookuptable3"::name, "intcol");') passed
+       TT_IsError('SELECT TT_Lookup(1.1::double precision, NULL::name, "test_lookuptable3"::name, "intcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.9'::text number,
        'TT_Lookup'::text function_tested,
        'NULL schema, int'::text description,
-       IsError('SELECT TT_Lookup(1::int, NULL::name, "test_lookuptable2"::name, "dblcol");') passed
+       TT_IsError('SELECT TT_Lookup(1::int, NULL::name, "test_lookuptable2"::name, "dblcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.10'::text number,
        'TT_Lookup'::text function_tested,
        'NULL table, text'::text description,
-       IsError('SELECT TT_Lookup("RA"::text, "public"::name, NULL::name, "target_val");') passed
+       TT_IsError('SELECT TT_Lookup("RA"::text, "public"::name, NULL::name, "target_val");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.11'::text number,
        'TT_Lookup'::text function_tested,
        'NULL table, double precision'::text description,
-       IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, NULL::name, "intcol");') passed
+       TT_IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, NULL::name, "intcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.12'::text number,
        'TT_Lookup'::text function_tested,
        'NULL table, int'::text description,
-       IsError('SELECT TT_Lookup(1::int, "public"::name, NULL::name, "dblcol");') passed
+       TT_IsError('SELECT TT_Lookup(1::int, "public"::name, NULL::name, "dblcol");') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.13'::text number,
        'TT_Lookup'::text function_tested,
        'NULL column, text'::text description,
-       IsError('SELECT TT_Lookup("RA"::text, "public"::name, "test_lookuptable1"::name, NULL);') passed
+       TT_IsError('SELECT TT_Lookup("RA"::text, "public"::name, "test_lookuptable1"::name, NULL);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.14'::text number,
        'TT_Lookup'::text function_tested,
        'NULL column, double precision'::text description,
-       IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, "test_lookuptable3"::name, NULL);') passed
+       TT_IsError('SELECT TT_Lookup(1.1::double precision, "public"::name, "test_lookuptable3"::name, NULL);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.15'::text number,
        'TT_Lookup'::text function_tested,
        'NULL column, int'::text description,
-       IsError('SELECT TT_Lookup(1::int, "public"::name, "test_lookuptable2"::name, NULL);') passed
+       TT_IsError('SELECT TT_Lookup(1::int, "public"::name, "test_lookuptable2"::name, NULL);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.16'::text number,
@@ -1161,19 +1161,19 @@ UNION ALL
 SELECT '15.5'::text number,
        'TT_Length'::text function_tested,
        'Test NULL text'::text description,
-       IsError('SELECT TT_Length(NULL::text);') passed
+       TT_IsError('SELECT TT_Length(NULL::text);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.6'::text number,
        'TT_Length'::text function_tested,
        'Test NULL double precision'::text description,
-       IsError('SELECT TT_Length(NULL::double precision);') passed
+       TT_IsError('SELECT TT_Length(NULL::double precision);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.7'::text number,
        'TT_Length'::text function_tested,
        'Test NULL int'::text description,
-       IsError('SELECT TT_Length(NULL::int);') passed
+       TT_IsError('SELECT TT_Length(NULL::int);') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 16 - TT_Pad
@@ -1242,31 +1242,31 @@ UNION ALL
 SELECT '16.11'::text number,
        'TT_Pad'::text function_tested,
        'Test error, pad_char < 1'::text description,
-       IsError('SELECT TT_Pad(''sp1''::text,10,'''');') passed
+       TT_IsError('SELECT TT_Pad(''sp1''::text,10,'''');') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '16.12'::text number,
        'TT_Pad'::text function_tested,
        'Test error, pad_char > 1'::text description,
-       IsError('SELECT TT_Pad(1::int,10,''22'');') passed
+       TT_IsError('SELECT TT_Pad(1::int,10,''22'');') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '16.13'::text number,
        'TT_Pad'::text function_tested,
        'Test error, null val'::text description,
-       IsError('SELECT TT_Pad(NULL::text,10);') passed
+       TT_IsError('SELECT TT_Pad(NULL::text,10);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '16.14'::text number,
        'TT_Pad'::text function_tested,
        'Test error, null target_length'::text description,
-       IsError('SELECT TT_Pad(1::int,NULL,''2'');') passed
+       TT_IsError('SELECT TT_Pad(1::int,NULL,''2'');') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '16.15'::text number,
        'TT_Pad'::text function_tested,
        'Test error, null pad_char'::text description,
-       IsError('SELECT TT_Pad(1.234::double precision,10,NULL);') passed
+       TT_IsError('SELECT TT_Pad(1.234::double precision,10,NULL);') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 17 - TT_HasUniqueValues (Table variant)
@@ -1335,19 +1335,19 @@ UNION ALL
 SELECT '17.11'::text number,
        'TT_HasUniqueValues'::text function_tested,
        'Null schema'::text description,
-       IsError('SELECT TT_HasUniqueValues(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
+       TT_IsError('SELECT TT_HasUniqueValues(''RA''::text, NULL, ''test_lookuptable1'', 1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.12'::text number,
        'TT_HasUniqueValues'::text function_tested,
        'Null table'::text description,
-       IsError('SELECT TT_HasUniqueValues(1.1::double precision, ''public'', NULL, 1);') passed
+       TT_IsError('SELECT TT_HasUniqueValues(1.1::double precision, ''public'', NULL, 1);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.13'::text number,
        'TT_HasUniqueValues'::text function_tested,
        'Null occureces'::text description,
-       IsError('SELECT TT_HasUniqueValues(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
+       TT_IsError('SELECT TT_HasUniqueValues(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.14'::text number,
@@ -1392,7 +1392,7 @@ UNION ALL
 SELECT '18.4'::text number,
        'TT_Map'::text function_tested,
        'Test Null val'::text description,
-       IsError('SELECT TT_Map(NULL::text,''A,B,C,D'',''1,2,3,4'');') passed
+       TT_IsError('SELECT TT_Map(NULL::text,''A,B,C,D'',''1,2,3,4'');') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.5'::text number,

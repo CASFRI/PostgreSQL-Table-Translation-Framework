@@ -27,14 +27,16 @@ SELECT 'c'::text, 101;
 -- Create a test translation table
 DROP TABLE IF EXISTS test_translationTable;
 CREATE TABLE test_translationTable AS
-SELECT 'CROWN_CLOSURE_UPPER'::text targetAttribute,
+SELECT 1 ogc_fid,
+       'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'int'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copy(crown_closure)'::text translationRules,
        'Test'::text description,
        TRUE descUpToDateWithRules
 UNION ALL
-SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
+SELECT 2 ogc_fid,
+       'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'int'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copy(crown_closure)'::text translationRules,
@@ -43,9 +45,9 @@ SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
 
 SELECT TT_Prepare('test_translationtable');
 
--- IsError(text)
+-- TT_IsError(text)
 -- function to test if helper functions return errors
-CREATE OR REPLACE FUNCTION IsError(
+CREATE OR REPLACE FUNCTION TT_IsError(
   functionString text
 )
 RETURNS boolean AS $$
@@ -387,25 +389,25 @@ UNION ALL
 SELECT '9.2'::text number,
        'TT_FctEval'::text function_tested,
        'Basic NULLs'::text description,
-        TT_FctEval(NULL, NULL, NULL, NULL::boolean) IS NULL passed
+        TT_Iserror('TT_FctEval(NULL, NULL, NULL, NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.3'::text number,
        'TT_FctEval'::text function_tested,
        'Wrong fonction name'::text description,
-        TT_FctEval('xbetween', '{crown_closure, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS NULL passed
+        TT_Iserror('TT_FctEval(''xbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,
        'TT_FctEval'::text function_tested,
        'Wrong argument type'::text description,
-        IsError('TT_FctEval(''between'', ''{crown_closure, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
+        TT_IsError('TT_FctEval(''between'', ''{crown_closure, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_FctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        IsError('TT_FctEval(''between'', ''{xcrown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
+        TT_IsError('TT_FctEval(''between'', ''{xcrown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
