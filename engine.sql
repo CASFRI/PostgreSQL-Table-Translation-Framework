@@ -544,15 +544,21 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
-    query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable);
+    query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable)::text;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
       targetAttribute = row.targetAttribute::text;
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44';END IF;
       targetAttributeType = row.targetAttributeType::text;
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
       validationRules = TT_ParseRules(row.validationRules::text);
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
       translationRule = (TT_ParseRules(row.translationRules::text))[1];
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
       description = coalesce(row.description::text, '');
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       RETURN NEXT;
     END LOOP;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
