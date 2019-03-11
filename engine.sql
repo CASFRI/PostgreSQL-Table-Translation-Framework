@@ -547,14 +547,15 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable);
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
-      targetAttribute = row.targetAttribute;
-      targetAttributeType = row.targetAttributeType;
-      validationRules = TT_ParseRules(row.validationRules);
-      translationRule = (TT_ParseRules(row.translationRules))[1];
-      description = coalesce(row.description, '');
+      targetAttribute = row.targetAttribute::text;
+      targetAttributeType = row.targetAttributeType::text;
+      validationRules = TT_ParseRules(row.validationRules::text);
+      translationRule = (TT_ParseRules(row.translationRules::text))[1];
+      description = coalesce(row.description::text, '');
       descUpToDateWithRules = row.descUpToDateWithRules;
       RETURN NEXT;
     END LOOP;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
