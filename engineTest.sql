@@ -13,6 +13,7 @@
 SET lc_messages TO 'en_US.UTF-8';
 
 SET tt.debug TO TRUE;
+SET tt.debug TO FALSE;
 
 -- Create a test source table
 DROP TABLE IF EXISTS test_sourcetable1;
@@ -41,6 +42,22 @@ SELECT 'CROWN_CLOSURE_LOWER'::text targetAttribute,
        TRUE descUpToDateWithRules;
 
 SELECT TT_Prepare('test_translationtable');
+
+-- IsError(text)
+-- function to test if helper functions return errors
+CREATE OR REPLACE FUNCTION IsError(
+  functionString text
+)
+RETURNS boolean AS $$
+  DECLARE
+    result boolean;
+  BEGIN
+    EXECUTE functionString INTO result;
+    RETURN FALSE;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -----------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
@@ -382,13 +399,13 @@ UNION ALL
 SELECT '9.4'::text number,
        'TT_FctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_FctEval('between', '{crown_closure, 0, "b"}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS FALSE passed
+        IsError('TT_FctEval(''between'', ''{crown_closure, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_FctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_FctEval('between', '{xcrown_closure, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean) IS FALSE passed
+        IsError('TT_FctEval(''between'', ''{xcrown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
