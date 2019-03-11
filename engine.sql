@@ -604,7 +604,7 @@ RETURNS text AS $f$
       RETURN NULL;
     END IF;
     -- Validate the translation table
-    PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
+    --PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
     -- Drop any existing TT_Translate function
     query = 'DROP FUNCTION IF EXISTS TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);';
