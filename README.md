@@ -1,5 +1,5 @@
 # Intro
-The Post Translation Engine allows PostgreSQL users to translate tables into new specifications using translation rules. The primary components are:
+The PostgreSQL Translation Engine allows PostgreSQL users to translate tables into new specifications using translation rules. The primary components are:
 * The engine, implemented as a set of pl/pgsql scripts.
 * A set of helper functions to facilitate translation.
 * A translation table that uses helper functions to validate the source data and define the translation rules.
@@ -13,7 +13,7 @@ The Post Translation Engine allows PostgreSQL users to translate tables into new
 </pre>
 
 # Requirements - software versions
-The Post Translation Engine uses PostgreSQL 9.6 and PostGIS v2.3.7.
+The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
 
 # Version releases
 * PostTranslationEngine v0.1beta
@@ -27,7 +27,7 @@ The Post Translation Engine uses PostgreSQL 9.6 and PostGIS v2.3.7.
 * You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The [Post Translation Engine](https://github.com/edwardsmarc/postTranslationEngine).
+*Translation engine* - The [PostgreSQL Translation Engine](https://github.com/edwardsmarc/postTranslationEngine).
 
 *Helper function* - A set of functions used in the translation table to facilitate translation.
 
