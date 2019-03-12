@@ -169,19 +169,19 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
       * Map(double precision, text, text, boolean)
       * Map(int, text, text, boolean)
  
-# How to write a lookup table
+# How to write a lookup table?
 * Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
-* An example is a list of species source attributes and a corresponding list of target attributes.
-* Helper functions using lookup tables will always look for the source values in the first column of the table.
+* An example is a list of species source values and a corresponding list of target values.
+* Helper functions using lookup tables will always look for the source values in the first column of the table. This column must always be named "source_val".
 
 Example lookup table. Source values for species codes in the sourceSp column are matched to their target values in the targetSp column.
 
-|sourceSp|targetSp|
-|:-------|:-------|
-|TA      |PopuTrem|
-|LP      |PinuCont|
+|source_val|targetSp|
+|:---------|:-------|
+|TA        |PopuTrem|
+|LP        |PinuCont|
 
-# How to write a translation table
+# How to write a translation table?
 * Translation tables must contain these six columns:
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The PostgreSQL type of the target attribute.
