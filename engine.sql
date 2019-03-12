@@ -559,9 +559,9 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
       targetAttributeType = row.targetAttributeType::text;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      validationRules = TT_ParseRules(row.validationRules::text);
+      validationRules = (TT_ParseRules(row.validationRules::text))::TT_RuleDef[];
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      translationRule = (TT_ParseRules(row.translationRules::text))[1];
+      translationRule = ((TT_ParseRules(row.translationRules::text))[1])::TT_RuleDef;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
       description = coalesce(row.description::text, '');
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
