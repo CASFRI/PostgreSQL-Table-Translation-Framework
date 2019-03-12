@@ -95,14 +95,14 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
       * LessThan(double precision, double precision, boolean)
       * LessThan(int, double precision, boolean)
 8. **HasUniqueValues**(val, lookupSchemaName, lookupTableName, occurences\[default 1\]) - validation function
-    * Returns TRUE if number of occurences of source value in first column of schema.table equals occurences.
+    * Returns TRUE if number of occurences of source value in source_val column of schema.table equals occurences.
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
     * Signatures:
       * HasUniqueValues(text, name, name, int)
       * HasUniqueValues(double precision, name, name, int)
       * HasUniqueValues(int, name, name, int)
 9. **Match**(val, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\]) - table version - validation function
-    * Returns TRUE if source value is present in first column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
+    * Returns TRUE if source value is present in source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_Match(sp1,public,species_lookup, TRUE)
     * Signatures:
       * Match(text, name, name, boolean)
@@ -141,7 +141,7 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
     * Signatures:
       * Concat(text, boolean, text[])
 15. **Lookup**(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
-    * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches source value in first column. If multiple matches, first row is returned.
+    * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches source value in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(sp1, public, species_lookup, targetSp)
     * Signatures:
       * Lookup(text, name, name, text, boolean)
@@ -172,7 +172,7 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
 # How to write a lookup table?
 * Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
 * An example is a list of species source values and a corresponding list of target values.
-* Helper functions using lookup tables will always look for the source values in the first column of the table. This column must always be named "source_val".
+* Helper functions using lookup tables will always look for the source values in the column named "source_val".
 
 Example lookup table. Source values for species codes in the sourceSp column are matched to their target values in the targetSp column.
 
