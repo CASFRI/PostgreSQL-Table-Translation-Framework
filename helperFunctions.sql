@@ -221,6 +221,9 @@ CREATE OR REPLACE FUNCTION TT_Between(
 )
 RETURNS boolean AS $$
   BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    END IF;
     IF TT_TypeGuess(val) = 'text' THEN
      RAISE EXCEPTION 'val is type text';
     END IF;

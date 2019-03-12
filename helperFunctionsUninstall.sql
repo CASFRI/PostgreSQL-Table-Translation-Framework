@@ -39,7 +39,7 @@ DROP FUNCTION IF EXISTS TT_Match(text, name, name, boolean);
 DROP FUNCTION IF EXISTS TT_Match(double precision, name, name, boolean);
 DROP FUNCTION IF EXISTS TT_Match(integer, name, name, boolean);
 DROP FUNCTION IF EXISTS TT_Concat(text,boolean,text[]);
-DROP FUNCTION IF EXISTS IsError(text);
+DROP FUNCTION IF EXISTS TT_IsError(text);
 DROP FUNCTION IF EXISTS TT_Copy(text);
 DROP FUNCTION IF EXISTS TT_Copy(double precision);
 DROP FUNCTION IF EXISTS TT_Copy(int);
