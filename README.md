@@ -7,9 +7,9 @@ The Post Translation Engine allows PostgreSQL users to translate tables into new
 
 # Directory structure
 <pre>
-./                    .sql files for loading, testing, and uninstalling the engine and helper functions
+./             .sql files for loading, testing, and uninstalling the engine and helper functions
 
-./docs                Documentation including engine specifications
+./docs         Documentation including engine specifications
 </pre>
 
 # Requirements - software versions
@@ -201,7 +201,7 @@ Example translation table. Source attribute sp1 is validated by checking it is n
 |SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
 
 # Code example
-Create an example lookup table
+Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
 SELECT 'TA' AS sourceSp, 'PopuTrem' AS targetSp
@@ -209,7 +209,7 @@ UNION ALL
 SELECT 'LP', 'PinuCont';
 ```
 
-Create an example translation table
+Create an example translation table:
 ```sql
 -- DROP TABLE IF EXISTS translate;
 CREATE TABLE translate AS
@@ -218,7 +218,7 @@ UNION ALL
 SELECT 2, 'SPECIES_1_PER', 'integer', 'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 'copy(sp1_per)', 'Copies source value to SPECIES_PER_1', 'TRUE';
 ```
 
-Create an example source table
+Create an example source table:
 ```sql
 CREATE TABLE sourceExample AS
 SELECT 1 AS ID, 'TA' AS sp1, 10 AS sp1_per
@@ -232,8 +232,13 @@ SELECT TT_Prepare('public', 'translate');
 SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
 ```
 
-
 # Adding custom helper functions
+* Additional helper functions can be written in PL/PGSQL and must obey the following conventions:
+  * Validation functions must return boolean.
+  * All helper functions should raise an exception when any parameter (other than the source value) is null or of an invalid type.
+  * All helper functions should have a variant minimally accepting a text source value.
+  * All helper functions should test for NULL and return FALSE when the the source value is NULL.
+  * No helper function should be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as list of value passed as a text value separated by a comma or a semicolon.
 
 # Known issues
 1. Single quotes in the translation file are not allowed
