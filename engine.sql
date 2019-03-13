@@ -352,7 +352,7 @@ RETURNS anyelement AS $$
       IF NOT vals ? arg THEN
         IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
         IF TT_TypeGuess(arg) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || arg || ''', ';
+          ruleQuery = ruleQuery || '''' || arg || '''::text, ';
         ELSE
           ruleQuery = ruleQuery || arg || ', ';
         END IF;
@@ -363,7 +363,7 @@ RETURNS anyelement AS $$
         IF argVal IS NULL THEN
           ruleQuery = ruleQuery || 'NULL' || ', ';
         ELSIF TT_TypeGuess(arg) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || argVal || ''', ';
+          ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
         ELSE
           ruleQuery = ruleQuery || argVal || ', ';
         END IF;
