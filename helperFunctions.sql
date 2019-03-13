@@ -66,7 +66,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  val text  - c
+--  val text  - list of values to test
 --
 -- Return TRUE if vals are not an empty string.
 -- Return FALSE if any val is empty string or padded spaces (e.g. '' or '  ') or Null.
@@ -372,14 +372,14 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_HasUniqueValues (table version)
+-- TT_HasUniqueValues
 --
 -- val text/double precision/int - val to test.
 -- lookupSchemaName name - schema name holding lookup table.
 -- lookupTableName name - lookup table.
 -- occurences - int defaults to 1
 --
--- if number of occurences of val in first column of schema.table equals occurences, return true.
+-- if number of occurences of val in source_val of schema.table equals occurences, return true.
 -- e.g. TT_HasUniqueValues('BS', 'public', 'bc08', 1)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
@@ -400,7 +400,7 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ') = ' || occurences || ';';
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || occurences || ';';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -425,7 +425,7 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ') = ' || occurences || ';';
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || occurences || ';';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -451,7 +451,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupTableName name - lookup table.
 -- ignoreCase - default TRUE. Should upper/lower case be ignored?
 --
--- if val is present in first column of schema.lookup table, returns TRUE.
+-- if val is present in source_val of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Match(
@@ -470,11 +470,11 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSIF ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ') FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(source_val) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -698,13 +698,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- lookupSchemaName - schema name containing lookup table
 -- lookupTableName - lookup table name
 -- lookupColumn - column to return
+-- ignoreCase - default TRUE. Should upper/lower case be ignored?
 --
 -- Return value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in first column.
--- If multiple val's, first row is returned.
+-- that matches val in source_val column.
+-- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
 -- *Return value currently always text*
--- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1')
+-- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Lookup(
   val text,
@@ -723,11 +724,11 @@ RETURNS text AS $$
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF ignoreCase = FALSE THEN
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ';';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ') = upper(' || quote_literal(val) || ');';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val) = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -751,7 +752,7 @@ RETURNS text AS $$
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' = ' || quote_literal(val) || ';';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -810,34 +811,34 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Pad
 --
 -- val - string to pad.
--- target_length - total characters of output string.
--- pad_char - character to pad with - Defaults to 'x'.
+-- targetLength - total characters of output string.
+-- padChar - character to pad with - Defaults to 'x'.
 --
 -- Pads if val shorter than target, trims if val longer than target.
--- pad_char should always be a single character.
+-- padChar should always be a single character.
 -- e.g. TT_Pad('tab1', 10, 'x')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
-  target_length int,
-  pad_char text DEFAULT 'x'
+  targetLength int,
+  padChar text DEFAULT 'x'
 )
 RETURNS text AS $$
   DECLARE
     val_length int;
     pad_length int;
   BEGIN
-    IF val IS NULL OR target_length IS NULL OR pad_char IS NULL THEN
-      RAISE EXCEPTION 'val or target_length or pad_char is NULL';
-    ELSIF TT_Length(pad_char) != 1 THEN
-      RAISE EXCEPTION 'pad_char length is not 1';
+    IF val IS NULL OR targetLength IS NULL OR padChar IS NULL THEN
+      RAISE EXCEPTION 'val or targetLength or padChar is NULL';
+    ELSIF TT_Length(padChar) != 1 THEN
+      RAISE EXCEPTION 'padChar length is not 1';
     ELSE
       val_length = TT_Length(val);
-      pad_length = target_length - val_length;
+      pad_length = targetLength - val_length;
       IF pad_length > 0 THEN
-        RETURN TT_Concat('', FALSE, repeat(pad_char,pad_length), val);
+        RETURN TT_Concat('', FALSE, repeat(padChar,pad_length), val);
       ELSE
-        RETURN substring(val from 1 for target_length);
+        RETURN substring(val from 1 for targetLength);
       END IF;
     END IF;
   END;
@@ -845,20 +846,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Pad(
   val double precision,
-  target_length int,
-  pad_char text DEFAULT 'x'
+  targetLength int,
+  padChar text DEFAULT 'x'
 )
 RETURNS text AS $$
-  SELECT TT_Pad(val::text, target_length, pad_char);
+  SELECT TT_Pad(val::text, targetLength, padChar);
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Pad(
   val int,
-  target_length int,
-  pad_char text DEFAULT 'x'
+  targetLength int,
+  padChar text DEFAULT 'x'
 )
 RETURNS text AS $$
-  SELECT TT_Pad(val::text, target_length, pad_char);
+  SELECT TT_Pad(val::text, targetLength, padChar);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -868,10 +869,11 @@ $$ LANGUAGE sql VOLATILE;
 -- val text/double precision/int - value to test.
 -- lst1 text/double precision/int - string containing comma seperated vals
 -- lst2 text/double precision/int - string containing comma seperated vals
+-- ignoreCase - default TRUE. Should upper/lower case be ignored?
 --
 -- Return value from lst2 that matches value index in lst1
 -- Error if val is NULL
--- e.g. TT_Map('A','A,B,C','1,2,3')
+-- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Map(
