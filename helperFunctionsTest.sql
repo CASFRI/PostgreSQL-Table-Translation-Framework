@@ -26,7 +26,7 @@ SELECT ''::text, ''::text;
 
 DROP TABLE IF EXISTS test_lookuptable2;
 CREATE TABLE test_lookuptable2 AS
-SELECT 1::int intCol, 1.1::double precision dblCol
+SELECT 1::int source_val, 1.1::double precision dblCol
 UNION ALL
 SELECT 2::int, 1.2::double precision	
 UNION ALL
@@ -34,7 +34,7 @@ SELECT 3::int, 1.3::double precision;
 
 DROP TABLE IF EXISTS test_lookuptable3;
 CREATE TABLE test_lookuptable3 AS
-SELECT 1.1::double precision dblCol, 1::int intCol
+SELECT 1.1::double precision source_val, 1::int intCol
 UNION ALL
 SELECT 1.2::double precision, 2::int	
 UNION ALL
