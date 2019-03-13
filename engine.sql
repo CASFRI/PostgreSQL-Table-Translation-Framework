@@ -619,7 +619,7 @@ RETURNS text AS $f$
     EXECUTE query;
 
     -- Build the list of attribute types
-    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '') FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
+    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '') (ORDER BY ogc_fid) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
       
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
