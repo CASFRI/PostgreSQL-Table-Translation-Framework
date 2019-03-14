@@ -99,16 +99,16 @@ RETURNS text AS $$
       IF debug THEN RAISE NOTICE 'TT_TypeGuess 11 NULL';END IF;
       RETURN 'null';
     ELSIF val ~ '^-?\d+$' AND val::bigint >= -2147483648 AND val::bigint <= 2147483647 THEN
-      IF debug THEN RAISE NOTICE 'TT_TypeGuess 22 INTEGER';END IF;
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 22 INTEGER val=%', val;END IF;
       RETURN 'integer';
     ELSIF val ~ '^-?\d+\.\d+$' THEN
-      IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 DOUBLE PRECISION';END IF;
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 DOUBLE PRECISION val=%', val;END IF;
       RETURN 'double precision';
     ELSIF lower(val) = 'false' OR lower(val) = 'true' THEN
       IF debug THEN RAISE NOTICE 'TT_TypeGuess 44 BOOLEAN';END IF;
       RETURN 'boolean';
     END IF;
-    IF debug THEN RAISE NOTICE 'TT_TypeGuess 55 TEXT';END IF;
+    IF debug THEN RAISE NOTICE 'TT_TypeGuess 55 TEXT val=%', val;END IF;
     RETURN 'text';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -353,17 +353,18 @@ RETURNS anyelement AS $$
         IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
         IF TT_TypeGuess(arg) = 'text' THEN
           ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+          --ruleQuery = ruleQuery || '''' || arg || ''', ';
         ELSE
           ruleQuery = ruleQuery || arg || ', ';
         END IF;
       ELSE
         argVal = vals->>arg;
         IF debug THEN RAISE NOTICE 'TT_FctEval 33 argVal=%', argVal;END IF;
-        --IF TT_TypeGuess('''' || argVal || '''') = 'text' THEN
         IF argVal IS NULL THEN
           ruleQuery = ruleQuery || 'NULL' || ', ';
-        ELSIF TT_TypeGuess(arg) = 'text' THEN
+        ELSIF TT_TypeGuess(argVal) = 'text' THEN
           ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
+          --ruleQuery = ruleQuery || '''' || argVal || ''', ';
         ELSE
           ruleQuery = ruleQuery || argVal || ', ';
         END IF;
