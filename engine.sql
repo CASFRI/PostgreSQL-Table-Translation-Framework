@@ -341,38 +341,41 @@ RETURNS anyelement AS $$
     debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
-    IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
+    IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR vals IS NULL THEN
       IF debug THEN RAISE NOTICE 'TT_FctEval 11 fctName=%, signature=%', fctName, TT_FctSignature(args, vals);END IF;
       RAISE EXCEPTION 'TT_FctEval FUNCTION % DOES NOT EXIST', fctName;
     END IF;
     ruleQuery = 'SELECT TT_' || fctName || '(';
-    -- Search for any argument names in the provided value jsonb object
-    FOREACH arg IN ARRAY args LOOP
-      -- arg does not exist, treat it as a value
-      IF NOT vals ? arg THEN
-        IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
-        IF TT_TypeGuess(arg) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || arg || '''::text, ';
-          --ruleQuery = ruleQuery || '''' || arg || ''', ';
+    IF NOT args IS NULL THEN
+      -- Search for any argument names in the provided value jsonb object
+      FOREACH arg IN ARRAY args LOOP
+        -- arg does not exist, treat it as a value
+        IF NOT vals ? arg THEN
+          IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
+          IF TT_TypeGuess(arg) = 'text' THEN
+            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+            --ruleQuery = ruleQuery || '''' || arg || ''', ';
+          ELSE
+            ruleQuery = ruleQuery || arg || ', ';
+          END IF;
         ELSE
-          ruleQuery = ruleQuery || arg || ', ';
+          argVal = vals->>arg;
+          IF debug THEN RAISE NOTICE 'TT_FctEval 33 argVal=%', argVal;END IF;
+          IF argVal IS NULL THEN
+            ruleQuery = ruleQuery || 'NULL' || ', ';
+          ELSIF TT_TypeGuess(argVal) = 'text' THEN
+            ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
+            --ruleQuery = ruleQuery || '''' || argVal || ''', ';
+          ELSE
+            ruleQuery = ruleQuery || argVal || ', ';
+          END IF;
         END IF;
-      ELSE
-        argVal = vals->>arg;
-        IF debug THEN RAISE NOTICE 'TT_FctEval 33 argVal=%', argVal;END IF;
-        IF argVal IS NULL THEN
-          ruleQuery = ruleQuery || 'NULL' || ', ';
-        ELSIF TT_TypeGuess(argVal) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
-          --ruleQuery = ruleQuery || '''' || argVal || ''', ';
-        ELSE
-          ruleQuery = ruleQuery || argVal || ', ';
-        END IF;
-      END IF;
-      IF debug THEN RAISE NOTICE 'TT_FctEval 44 ruleQuery=%', ruleQuery;END IF;
-    END LOOP;
-    -- Remove the last comma.
-    ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')::' || pg_typeof(result);
+        IF debug THEN RAISE NOTICE 'TT_FctEval 44 ruleQuery=%', ruleQuery;END IF;
+      END LOOP;
+      -- Remove the last comma.
+      ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2);
+    END IF;
+    ruleQuery = ruleQuery || ')::' || pg_typeof(result);
     IF debug THEN RAISE NOTICE 'TT_FctEval 55 ruleQuery=%', ruleQuery;END IF;
     EXECUTE ruleQuery INTO STRICT result;
     IF debug THEN RAISE NOTICE 'TT_FctEval END result=%', result;END IF;
