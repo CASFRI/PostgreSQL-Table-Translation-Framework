@@ -70,7 +70,7 @@ WITH test_nb AS (
     SELECT 'TT_NotEmpty'::text,                2,          8         UNION ALL
     SELECT 'TT_IsInt'::text,                   3,         13         UNION ALL
     SELECT 'TT_IsNumeric'::text,               4,         13         UNION ALL
-    SELECT 'TT_Between'::text,                 5,         12         UNION ALL
+    SELECT 'TT_Between'::text,                 5,         14         UNION ALL
     SELECT 'TT_GreaterThan'::text,             6,         10         UNION ALL
     SELECT 'TT_LessThan'::text,                7,         10         UNION ALL
     SELECT 'TT_Match1'::text,                  8,         21         UNION ALL
@@ -493,6 +493,18 @@ SELECT '5.12'::text number,
        'TT_Between'::text function_tested,
        'double precision, NULL max'::text description,
        TT_IsError('SELECT TT_Between(10::double precision,0,NULL);'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.13'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive lower'::text description,
+       TT_Between(0::int,0,100) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.14'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive higher'::text description,
+       TT_Between(100::int,0,100) IS TRUE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------

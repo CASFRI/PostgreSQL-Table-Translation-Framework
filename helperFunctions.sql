@@ -200,7 +200,7 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN val > min and val < max;
+      RETURN val >= min and val <= max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
