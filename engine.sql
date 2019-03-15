@@ -99,16 +99,16 @@ RETURNS text AS $$
       IF debug THEN RAISE NOTICE 'TT_TypeGuess 11 NULL';END IF;
       RETURN 'null';
     ELSIF val ~ '^-?\d+$' AND val::bigint >= -2147483648 AND val::bigint <= 2147483647 THEN
-      IF debug THEN RAISE NOTICE 'TT_TypeGuess 22 INTEGER';END IF;
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 22 INTEGER val=%', val;END IF;
       RETURN 'integer';
     ELSIF val ~ '^-?\d+\.\d+$' THEN
-      IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 DOUBLE PRECISION';END IF;
+      IF debug THEN RAISE NOTICE 'TT_TypeGuess 33 DOUBLE PRECISION val=%', val;END IF;
       RETURN 'double precision';
     ELSIF lower(val) = 'false' OR lower(val) = 'true' THEN
       IF debug THEN RAISE NOTICE 'TT_TypeGuess 44 BOOLEAN';END IF;
       RETURN 'boolean';
     END IF;
-    IF debug THEN RAISE NOTICE 'TT_TypeGuess 55 TEXT';END IF;
+    IF debug THEN RAISE NOTICE 'TT_TypeGuess 55 TEXT val=%', val;END IF;
     RETURN 'text';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -341,37 +341,41 @@ RETURNS anyelement AS $$
     debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
-    IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR args IS NULL OR vals IS NULL THEN
+    IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR vals IS NULL THEN
       IF debug THEN RAISE NOTICE 'TT_FctEval 11 fctName=%, signature=%', fctName, TT_FctSignature(args, vals);END IF;
       RAISE EXCEPTION 'TT_FctEval FUNCTION % DOES NOT EXIST', fctName;
     END IF;
     ruleQuery = 'SELECT TT_' || fctName || '(';
-    -- Search for any argument names in the provided value jsonb object
-    FOREACH arg IN ARRAY args LOOP
-      -- arg does not exist, treat it as a value
-      IF NOT vals ? arg THEN
-        IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
-        IF TT_TypeGuess(arg) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || arg || ''', ';
+    IF NOT args IS NULL THEN
+      -- Search for any argument names in the provided value jsonb object
+      FOREACH arg IN ARRAY args LOOP
+        -- arg does not exist, treat it as a value
+        IF NOT vals ? arg THEN
+          IF debug THEN RAISE NOTICE 'TT_FctEval 22';END IF;
+          IF TT_TypeGuess(arg) = 'text' THEN
+            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+            --ruleQuery = ruleQuery || '''' || arg || ''', ';
+          ELSE
+            ruleQuery = ruleQuery || arg || ', ';
+          END IF;
         ELSE
-          ruleQuery = ruleQuery || arg || ', ';
+          argVal = vals->>arg;
+          IF debug THEN RAISE NOTICE 'TT_FctEval 33 argVal=%', argVal;END IF;
+          IF argVal IS NULL THEN
+            ruleQuery = ruleQuery || 'NULL' || ', ';
+          ELSIF TT_TypeGuess(argVal) = 'text' THEN
+            ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
+            --ruleQuery = ruleQuery || '''' || argVal || ''', ';
+          ELSE
+            ruleQuery = ruleQuery || argVal || ', ';
+          END IF;
         END IF;
-      ELSE
-        argVal = vals->>arg;
-        IF debug THEN RAISE NOTICE 'TT_FctEval 33 argVal=%', argVal;END IF;
-        --IF TT_TypeGuess('''' || argVal || '''') = 'text' THEN
-        IF argVal IS NULL THEN
-          ruleQuery = ruleQuery || 'NULL' || ', ';
-        ELSIF TT_TypeGuess(arg) = 'text' THEN
-          ruleQuery = ruleQuery || '''' || argVal || ''', ';
-        ELSE
-          ruleQuery = ruleQuery || argVal || ', ';
-        END IF;
-      END IF;
-      IF debug THEN RAISE NOTICE 'TT_FctEval 44 ruleQuery=%', ruleQuery;END IF;
-    END LOOP;
-    -- Remove the last comma.
-    ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2) || ')::' || pg_typeof(result);
+        IF debug THEN RAISE NOTICE 'TT_FctEval 44 ruleQuery=%', ruleQuery;END IF;
+      END LOOP;
+      -- Remove the last comma.
+      ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2);
+    END IF;
+    ruleQuery = ruleQuery || ')::' || pg_typeof(result);
     IF debug THEN RAISE NOTICE 'TT_FctEval 55 ruleQuery=%', ruleQuery;END IF;
     EXECUTE ruleQuery INTO STRICT result;
     IF debug THEN RAISE NOTICE 'TT_FctEval END result=%', result;END IF;
@@ -619,7 +623,7 @@ RETURNS text AS $f$
     EXECUTE query;
 
     -- Build the list of attribute types
-    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '') FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
+    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY ogc_fid) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
       
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
