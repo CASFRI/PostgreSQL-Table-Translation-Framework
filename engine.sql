@@ -716,21 +716,24 @@ RETURNS SETOF RECORD AS $$
        FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationrow=%', translationrow;END IF;
          -- Iterate over each invalid rule
+         isValid = TRUE;
          FOREACH rule IN ARRAY translationrow.validationRules LOOP
-           IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
-           -- Evaluate the rule
-           isValid = TT_FctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
-           IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
-           -- initialize the final value
-           finalVal = rule.errorCode;
-           IF debug AND isValid THEN 
-             RAISE NOTICE '_TT_Translate 55 rule is VALID %', rule;
-           ELSIF debug THEN
-             RAISE NOTICE '_TT_Translate 66 rule is INVALID %', rule;
-           END IF;
-           -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
-           IF NOT isValid AND rule.stopOnInvalid THEN
-               RAISE EXCEPTION 'Invalid rule found...';
+           IF isValid THEN
+             IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
+             -- Evaluate the rule
+             isValid = TT_FctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+             IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
+             -- initialize the final value
+             finalVal = rule.errorCode;
+             IF debug AND isValid THEN 
+               RAISE NOTICE '_TT_Translate 55 rule is VALID %', rule;
+             ELSIF debug THEN
+               RAISE NOTICE '_TT_Translate 66 rule is INVALID %', rule;
+             END IF;
+             -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
+             IF NOT isValid AND rule.stopOnInvalid THEN
+                 RAISE EXCEPTION 'Invalid rule found...';
+             END IF;
            END IF;
          END LOOP ;
          -- If all validation rule passed, execute the translation rule
@@ -738,7 +741,6 @@ RETURNS SETOF RECORD AS $$
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
            query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
-           -- EXECUTE 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');' 
            EXECUTE query
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
@@ -747,7 +749,7 @@ RETURNS SETOF RECORD AS $$
          END IF;
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
-         IF debug THEN RAISE NOTICE '_TT_Translate AA finalQuery=%', finalQuery;END IF;
+         IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, finalQuery, translationrow.targetAttributeType;END IF;
        END LOOP;
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);
