@@ -559,15 +559,15 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44';END IF;
-      targetAttribute = row.targetAttribute::text;
+      targetAttribute = (row.targetAttribute)::text;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      targetAttributeType = row.targetAttributeType::text;
+      targetAttributeType = (row.targetAttributeType)::text;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      validationRules = (TT_ParseRules(row.validationRules::text))::TT_RuleDef[];
+      validationRules = (TT_ParseRules((row.validationRules)::text))::TT_RuleDef[];
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      translationRule = ((TT_ParseRules(row.translationRules::text))[1])::TT_RuleDef;
+      translationRule = ((TT_ParseRules((row.translationRules)::text))[1])::TT_RuleDef;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      description = coalesce(row.description::text, '');
+      description = coalesce(((row.description)::text), '');
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
