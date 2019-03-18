@@ -43,7 +43,71 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
 
 *Target attribute/value* - The attribute or value in the translated target table.
 
+# How to write a translation table?
+* Translation tables must contain these six columns:
+ 1. **targetAttribute** - The name of the target attribute to be created in the target table.
+ 2. **targetAttributeType** - The PostgreSQL type of the target attribute.
+ 3. **validationRules** - Any validation rules needed to validate the source values before translating.
+ 4. **translationRules** - The translation rule to convert source values to target values.
+ 5. **description** - A text description of the translation taking place.
+ 6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
+* Multiple validation rules can be seperated with a semi-colon.
+* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters.
+
+Example translation table. Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
+
+| targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
+|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
+|SPECIES_1        |text                 |notNull(sp1\|NULL); match(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
+|SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+
+# How to write a lookup table?
+* Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
+* An example is a list of species source values and a corresponding list of target values.
+* Helper functions using lookup tables will always look for the source values in the column named "source_val".
+
+Example lookup table. Source values for species codes in the sourceSp column are matched to their target values in the targetSp column.
+
+|source_val|targetSp|
+|:---------|:-------|
+|TA        |PopuTrem|
+|LP        |PinuCont|
+
+# Code example
+Create an example lookup table:
+```sql
+CREATE TABLE species_lookup AS
+SELECT 'TA' AS sourceSp, 'PopuTrem' AS targetSp
+UNION ALL
+SELECT 'LP', 'PinuCont';
+```
+
+Create an example translation table:
+```sql
+-- DROP TABLE IF EXISTS translate;
+CREATE TABLE translate AS
+SELECT 1 AS ogc_fid, 'SPECIES_1' AS targetAttribute, 'text' AS targetAttributeType, 'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 'Maps source value to SPECIES_1 using lookup table' AS description, 'TRUE' AS descUpToDateWithRules
+UNION ALL
+SELECT 2, 'SPECIES_1_PER', 'integer', 'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 'copy(sp1_per)', 'Copies source value to SPECIES_PER_1', 'TRUE';
+```
+
+Create an example source table:
+```sql
+CREATE TABLE sourceExample AS
+SELECT 1 AS ID, 'TA' AS sp1, 10 AS sp1_per
+UNION ALL
+SELECT 2, 'LP', 60;
+```
+
+Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name, translation table schema and translation table name to TT_Translate.
+```sql
+SELECT TT_Prepare('public', 'translate');
+SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
+```
+
 # Helper Functions
+Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters. Helper functions can be of two types: validation helper functions are used in the **validationRules** column of the translation table, they validate the source values and return true or false. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
+
 1. **NotNull**(val[]) - validation function
     * Returns TRUE if source values are not NULL. Returns FALSE if any vals are NULL.
     * e.g. NotNull('a', 'b', 'c')
@@ -168,68 +232,6 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
       * Map(text, text, text, boolean)
       * Map(double precision, text, text, boolean)
       * Map(int, text, text, boolean)
- 
-# How to write a lookup table?
-* Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
-* An example is a list of species source values and a corresponding list of target values.
-* Helper functions using lookup tables will always look for the source values in the column named "source_val".
-
-Example lookup table. Source values for species codes in the sourceSp column are matched to their target values in the targetSp column.
-
-|source_val|targetSp|
-|:---------|:-------|
-|TA        |PopuTrem|
-|LP        |PinuCont|
-
-# How to write a translation table?
-* Translation tables must contain these six columns:
- 1. **targetAttribute** - The name of the target attribute to be created in the target table.
- 2. **targetAttributeType** - The PostgreSQL type of the target attribute.
- 3. **validationRules** - Any validation rules needed to validate the source values before translating.
- 4. **translationRules** - The translation rule to convert source values to target values.
- 5. **description** - A text description of the translation taking place.
- 6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
-* Multiple validation rules can be seperated with a semi-colon.
-* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters.
-
-Example translation table. Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
-
-| targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
-|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|SPECIES_1        |text                 |notNull(sp1\|NULL); match(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
-|SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
-
-# Code example
-Create an example lookup table:
-```sql
-CREATE TABLE species_lookup AS
-SELECT 'TA' AS sourceSp, 'PopuTrem' AS targetSp
-UNION ALL
-SELECT 'LP', 'PinuCont';
-```
-
-Create an example translation table:
-```sql
--- DROP TABLE IF EXISTS translate;
-CREATE TABLE translate AS
-SELECT 1 AS ogc_fid, 'SPECIES_1' AS targetAttribute, 'text' AS targetAttributeType, 'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 'Maps source value to SPECIES_1 using lookup table' AS description, 'TRUE' AS descUpToDateWithRules
-UNION ALL
-SELECT 2, 'SPECIES_1_PER', 'integer', 'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 'copy(sp1_per)', 'Copies source value to SPECIES_PER_1', 'TRUE';
-```
-
-Create an example source table:
-```sql
-CREATE TABLE sourceExample AS
-SELECT 1 AS ID, 'TA' AS sp1, 10 AS sp1_per
-UNION ALL
-SELECT 2, 'LP', 60;
-```
-
-Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name, translation table schema and translation table name to TT_Translate.
-```sql
-SELECT TT_Prepare('public', 'translate');
-SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
-```
 
 # Adding custom helper functions
 * Additional helper functions can be written in PL/PGSQL and must obey the following conventions:
@@ -245,3 +247,6 @@ SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
 3. Helper functions contain VARIADIC parameters.
 
 # Credit
+Pierre Racine
+Pierre Vernier
+Marc Edwards
