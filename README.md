@@ -64,7 +64,7 @@ Example translation table. Source attribute sp1 is validated by checking it is n
 # How to write a lookup table?
 * Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
 * An example is a list of species source values and a corresponding list of target values.
-* Helper functions using lookup tables will always look for the source values in the column named "source_val".
+* Helper functions using lookup tables will always look for the source values in the column named 'source_val'.
 
 Example lookup table. Source values for species codes in the source_val column are matched to their target values in the targetSp column.
 
@@ -84,7 +84,6 @@ SELECT 'LP', 'PinuCont';
 
 Create an example translation table:
 ```sql
--- DROP TABLE IF EXISTS translate;
 CREATE TABLE translate AS
 SELECT 1 AS ogc_fid, 'SPECIES_1' AS targetAttribute, 'text' AS targetAttributeType, 'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 'Maps source value to SPECIES_1 using lookup table' AS description, 'TRUE' AS descUpToDateWithRules
 UNION ALL
@@ -159,7 +158,7 @@ Helper functions are used in translation tables to validate and translate source
       * LessThan(double precision, double precision, boolean)
       * LessThan(int, double precision, boolean)
 8. **HasUniqueValues**(val, lookupSchemaName, lookupTableName, occurences\[default 1\]) - validation function
-    * Returns TRUE if number of occurences of source value in source_val column of schema.table equals occurences.
+    * Returns TRUE if number of occurences of source value in source_val column of lookupSchemaName.lookupTableName equals occurences.
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
     * Signatures:
       * HasUniqueValues(text, name, name, int)
@@ -199,33 +198,33 @@ Helper functions are used in translation tables to validate and translate source
       * Copy(double precision)
       * Copy(int)
       * Copy(boolean)
-14. **Concat**(sep, processNulls, val[])
+14. **Concat**(sep, processNulls, val[]) - translation function
     * Returns the concatenated source values separated by sep. Nulls are ignored if processNulls = TRUE. An error is raised if processNulls = FALSE and source values contain Null.
     * e.g. Concat('_', FALSE, 'a', 'b', 'c')
     * Signatures:
       * Concat(text, boolean, text[])
-15. **Lookup**(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+15. **Lookup**(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\]) - translation function
     * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches source value in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(sp1, public, species_lookup, targetSp)
     * Signatures:
       * Lookup(text, name, name, text, boolean)
       * Lookup(double precision, name, name, text, boolean)
       * Lookup(int, name, name, text, boolean)
-16. **Length**(val)
+16. **Length**(val) - translation function
     * Returns length of source value string
     * e.g. Length('12345')
     * Signatures:
       * Length(text)
       * Length(double precision)
       * Length(int)
-17. **Pad**(val, targetLength, padChar\[default x\])
+17. **Pad**(val, targetLength, padChar\[default x\]) - translation function
     * Returns a string of length targetLength made up of source value preceeded with padChar if source value length < targetLength. Returns source value trimmed to targetLength if source value length > targetLength.
     * e.g. Pad(tab1, 10, x)
     * Signatures:
       * Pad(text, int, text)
       * Pad(double precision, int, text)
       * Pad(int, int, text)
-18. **Map**(val, lst1, lst2, ignoreCase\[default TRUE\])
+18. **Map**(val, lst1, lst2, ignoreCase\[default TRUE\]) - translation function
     * Return value in lst2 that matches index of source value in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','1,2,3', TRUE)
     * Signatures:
@@ -242,8 +241,8 @@ Helper functions are used in translation tables to validate and translate source
   * No helper function should be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as list of value passed as a text value separated by a comma or a semicolon.
 
 # Known issues
-1. Single quotes in the translation file are not allowed
-2. tt.debug must be set to TRUE of FALSE in the SQL session before using the engine API
+1. Single quotes in the translation file are not allowed.
+2. tt.debug must be set to TRUE of FALSE in the SQL session before using the engine API.
 3. Helper functions contain VARIADIC parameters.
 4. An issue (#45) still prevents the TT_ValidateTTable() from working properly. It must be redefined after installation to avoid TT_Translate() functions from crashing.
 
