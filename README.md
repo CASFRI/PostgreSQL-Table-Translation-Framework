@@ -248,5 +248,7 @@ Helper functions are used in translation tables to validate and translate source
 
 # Credit
 Pierre Racine
+
 Pierre Vernier
+
 Marc Edwards
