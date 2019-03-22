@@ -1,5 +1,5 @@
 # Intro
-The PostgreSQL Translation Engine allows PostgreSQL users to translate tables into new specifications using translation rules. The primary components are:
+The PostgreSQL Table Translation Framework allows PostgreSQL users to translate tables into new specifications using translation rules. The primary components are:
 * The engine, implemented as a set of pl/pgsql scripts.
 * A set of helper functions to facilitate translation.
 * A translation table that uses helper functions to validate the source data and define the translation rules.
@@ -13,10 +13,10 @@ The PostgreSQL Translation Engine allows PostgreSQL users to translate tables in
 </pre>
 
 # Requirements - software versions
-The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
+The PostgreSQL Table Translation Framework requires PostgreSQL 9.6 and PostGIS v2.3.7.
 
 # Version releases
-* PostTranslationEngine v0.1beta
+* [PostgreSQL Table Translation Framework 0.1 beta](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.1-beta)
 
 # Installation/uninstallation
 * In a PostgreSQL query window, run, in this order:
@@ -27,7 +27,7 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
 * You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The [PostgreSQL Translation Engine](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
+*Translation engine* - The [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
 
 *Helper function* - A set of functions used in the translation table to facilitate translation.
 
@@ -48,13 +48,13 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The PostgreSQL type of the target attribute.
  3. **validationRules** - Any validation rules needed to validate the source values before translating.
- 4. **translationRules** - The translation rule to convert source values to target values.
+ 4. **translationRules** - The translation rules to convert source values to target values.
  5. **description** - A text description of the translation taking place.
  6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
 * Multiple validation rules can be seperated with a semi-colon.
 * Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters.
 
-Example translation table. Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
+Example translation table. Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. This is done using the [helper functions](#helper-functions) described below. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
@@ -66,7 +66,7 @@ Example translation table. Source attribute sp1 is validated by checking it is n
 * An example is a list of species source values and a corresponding list of target values.
 * Helper functions using lookup tables will always look for the source values in the column named "source_val".
 
-Example lookup table. Source values for species codes in the sourceSp column are matched to their target values in the targetSp column.
+Example lookup table. Source values for species codes in the source_val column are matched to their target values in the targetSp column.
 
 |source_val|targetSp|
 |:---------|:-------|
