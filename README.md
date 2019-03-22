@@ -27,7 +27,7 @@ The PostgreSQL Translation Engine requires PostgreSQL 9.6 and PostGIS v2.3.7.
 * You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The [PostgreSQL Translation Engine](https://github.com/edwardsmarc/postTranslationEngine).
+*Translation engine* - The [PostgreSQL Translation Engine](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
 
 *Helper function* - A set of functions used in the translation table to facilitate translation.
 
