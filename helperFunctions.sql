@@ -18,70 +18,50 @@
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
+-- Consist of a source value to be validated, and any parameters associated
+-- with validation.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_NotNull
 --
---  var[] text/boolean/double precision/int  - List of values to test.
+--  val text - Value to test.
 --
--- Return TRUE if vals are not NULL.
--- Return FALSE if any vals are NULL.
--- e.g. TT_NotNull('a', 'b', 'c')
+-- Return TRUE if val is not NULL.
+-- Return FALSE if val is NULL.
+-- e.g. TT_NotNull('a')
 ------------------------------------------------------------
+DROP FUNCTION IF EXISTS TT_NotNull(text);
 CREATE OR REPLACE FUNCTION TT_NotNull(
-  VARIADIC val text[]
+  val text
 )
 RETURNS boolean AS $$
   BEGIN
-    RETURN coalesce(array_position(val, NULL::text), 0) = 0;
+    RETURN val IS NOT NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NotNull(
-  VARIADIC val double precision[]
-)
-RETURNS boolean AS $$
-  BEGIN
-    RETURN coalesce(array_position(val, NULL::double precision), 0) = 0;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_NotNull(
-  VARIADIC val boolean[]
-)
-RETURNS boolean AS $$
-  SELECT TT_NotNull(VARIADIC val::text[]);
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_NotNull(
-  VARIADIC val int[]
-)
-RETURNS boolean AS $$
-  SELECT TT_NotNull(VARIADIC val::double precision[]);
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  val text  - list of values to test
+--  val text - value to test
 --
--- Return TRUE if vals are not an empty string.
--- Return FALSE if any val is empty string or padded spaces (e.g. '' or '  ') or Null.
--- e.g. TT_NotEmpty('a', 'b', 'c')
+-- Return TRUE if val is not an empty string.
+-- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or Null.
+-- e.g. TT_NotEmpty('a')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
-   VARIADIC val text[]
+   val text
 )
 RETURNS boolean AS $$
-  DECLARE
   BEGIN
-    IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
+    IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN bool_and(TRIM(x) != '') FROM unnest(val) AS x;
+      RETURN TRIM(val) != '';
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE; 
@@ -90,106 +70,82 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsInt
 --
---  val double precision/int/text - List of values to test.
+--  val text - value to test.
 --
---  Do all values represent integers? Can be of type int, double precision or text (e.g. 1, 1.0, '1', '1.0')
+--  Does value represent integer? (e.g. 1 or 1.0)
 --  Null values return FALSE
---  Strings with numeric characters and '.' will be passed to IsInt
+--  Strings with numeric characters and '.' will be evaluated
 --  Strings with anything else (e.g. letter characters) return FALSE.
---  e.g. TT_IsInt(1,2,3,4,5)
+--  e.g. TT_IsInt('1.0')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   VARIADIC val double precision[]
+   val text
 )
 RETURNS boolean AS $$
+  DECLARE
+    x double precision;
   BEGIN
-    IF coalesce(array_position(val, NULL::double precision), 0) > 0 THEN
+    IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN bool_and(x - x::int = 0) FROM unnest(val) AS x;
+      BEGIN
+        x = val::double precision;
+        RETURN x - x::int = 0;
+      EXCEPTION WHEN OTHERS THEN
+        RETURN FALSE;
+      END;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IsInt(
-   VARIADIC val int[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsInt(VARIADIC val::double precision[]);
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsInt(
-   VARIADIC val text[]
-)
-RETURNS boolean AS $$
-  DECLARE
-    x double precision[];
-  BEGIN
-    x = val::double precision[];
-    RETURN TT_IsInt(VARIADIC val::double precision[]);
-  EXCEPTION WHEN OTHERS THEN
-      RETURN FALSE;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_IsNumeric
 --
---  val double precision/int/text - List of values to test.
+--  val text - Value to test.
 --
---  Can all values be cast to double precision? (e.g. 1.1, 1, '1.5')
+--  Can value be cast to double precision? (e.g. 1.1, 1, '1.5')
 --  Null values return FALSE
---  e.g. TT_IsNumeric('1.1', '1.2', '1.3')
+--  e.g. TT_IsNumeric('1.1')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   VARIADIC val text[]
+   val text
 )
   RETURNS boolean AS $$
     DECLARE
-      x double precision[];
+      x double precision;
     BEGIN
-      IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
+      IF val IS NULL THEN
         RETURN FALSE;
       ELSE
-        x = val::double precision[];
-        RETURN TRUE;
+        BEGIN
+          x = val::double precision[];
+          RETURN TRUE;
+        EXCEPTION WHEN OTHERS THEN
+          RETURN FALSE;
+        END;
       END IF;
-    EXCEPTION WHEN OTHERS THEN
-      RETURN FALSE;
     END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   VARIADIC val int[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsNumeric(VARIADIC val::text[])
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   VARIADIC val double precision[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsNumeric(VARIADIC val::text[])
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_Between
 --
--- val double precision/int  - Value to test.
--- min double precision  - Minimum.
--- max double precision  - Maximum.
+-- val text - Value to test.
+-- min text - Minimum.
+-- max text - Maximum.
 --
--- Return TRUE if var is between min and max.
+-- Return TRUE if val is between min and max.
 -- Return FALSE otherwise.
 -- Return FALSE if val is NULL.
 -- Return error if min or max are null.
 -- e.g. TT_Between(5, 0, 100)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
-  val double precision,
+  val text,
   min double precision,
   max double precision
 )
@@ -200,85 +156,7 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN val >= min and val <= max;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val int,
-  min double precision,
-  max double precision
-)
-RETURNS boolean AS $$
-  SELECT TT_Between(val::double precision,min,max);
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val text,
-  min double precision,
-  max double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    END IF;
-    IF TT_TypeGuess(val) = 'text' THEN
-     RAISE EXCEPTION 'val is type text';
-    END IF;
-    RETURN TT_Between(val::double precision, min, max);
-    END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val int,
-  min double precision,
-  max text
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF TT_TypeGuess(max) = 'text' THEN
-      RAISE EXCEPTION 'max is type text';
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val int,
-  min text,
-  max double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF TT_TypeGuess(min) = 'text' THEN
-      RAISE EXCEPTION 'min is type text';
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val text,
-  min double precision,
-  max text
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF TT_TypeGuess(val) = 'text' OR TT_TypeGuess(max) = 'text' THEN
-      RAISE EXCEPTION 'val and max is type text';
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Between(
-  val text,
-  min text,
-  max double precision
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF TT_TypeGuess(val) = 'text' OR TT_TypeGuess(min)= 'text' THEN
-      RAISE EXCEPTION 'val and min is type text';
+      RETURN val::double precision >= min and val::double precision <= max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -287,7 +165,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_GreaterThan
 --
---  val double precision/int - Value to test.
+--  val text - Value to test.
 --  lowerBound double precision - lower bound to test against.
 --  inclusive boolean - is lower bound inclusive? Default True.
 --
@@ -299,7 +177,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  e.g. TT_GreaterThan(5, 0, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
-   val double precision,
+   val text,
    lowerBound double precision,
    inclusive boolean DEFAULT TRUE
 )
@@ -310,28 +188,19 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSIF inclusive = TRUE THEN
-      RETURN val >= lowerBound;
+      RETURN val::double precision >= lowerBound;
     ELSE
-      RETURN val > lowerBound;
+      RETURN val::double precision > lowerBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_GreaterThan(
-   val int,
-   lowerBound double precision,
-   inclusive boolean DEFAULT TRUE
-)
-RETURNS boolean AS $$
-  SELECT TT_GreaterThan(val::double precision,lowerBound,inclusive);
-$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LessThan
 --
---  val double precision/int - Value to test.
+--  val text - Value to test.
 --  upperBound double precision - upper bound to test against.
 --  inclusive boolean - is upper bound inclusive? Default True.
 --
@@ -343,7 +212,7 @@ $$ LANGUAGE sql VOLATILE;
 --  e.g. TT_LessThan(1, 5, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
-   val double precision,
+   val text,
    upperBound double precision,
    inclusive boolean DEFAULT TRUE
 )
@@ -354,21 +223,12 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSIF inclusive = TRUE THEN
-      RETURN val <= upperBound;
+      RETURN val::double precision <= upperBound;
     ELSE
-      RETURN val < upperBound;
+      RETURN val::double precision < upperBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_LessThan(
-   val int,
-   upperBound double precision,
-   inclusive boolean DEFAULT TRUE
-)
-RETURNS boolean AS $$
-  SELECT TT_LessThan(val::double precision,upperBound,inclusive);
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -620,6 +480,8 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- Begin Translation Function Definitions...
 -- Translation functions return any kind of value (not only boolean).
+-- Consist of a source value to be translated, and any parameters associated
+-- with translation.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

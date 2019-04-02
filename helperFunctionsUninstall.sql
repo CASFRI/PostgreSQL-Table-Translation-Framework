@@ -10,28 +10,14 @@
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS TT_NotNull(text[]);
-DROP FUNCTION IF EXISTS TT_NotNull(boolean[]);
-DROP FUNCTION IF EXISTS TT_NotNull(double precision[]);
-DROP FUNCTION IF EXISTS TT_NotNull(int[]);
-DROP FUNCTION IF EXISTS TT_Between(integer, double precision, double precision);
-DROP FUNCTION IF EXISTS TT_Between(double precision, double precision, double precision);
-DROP FUNCTION IF EXISTS TT_Between(text, double precision, text);
-DROP FUNCTION IF EXISTS TT_Between(integer, double precision, text);
-DROP FUNCTION IF EXISTS TT_Between(text, text, double precision);
-DROP FUNCTION IF EXISTS TT_Between(integer, text, double precision);
+DROP FUNCTION IF EXISTS TT_NotNull(text);
 DROP FUNCTION IF EXISTS TT_Between(text, double precision, double precision);
-DROP FUNCTION IF EXISTS TT_NotEmpty(text[]);
-DROP FUNCTION IF EXISTS TT_GreaterThan(double precision, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_GreaterThan(integer, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_LessThan(double precision, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_LessThan(integer, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_IsInt(double precision[]);
-DROP FUNCTION IF EXISTS TT_IsInt(integer[]);
+DROP FUNCTION IF EXISTS TT_NotEmpty(text);
+DROP FUNCTION IF EXISTS TT_GreaterThan(text, double precision, boolean);
+DROP FUNCTION IF EXISTS TT_LessThan(text, double precision, boolean);
 DROP FUNCTION IF EXISTS TT_IsInt(text[]);
-DROP FUNCTION IF EXISTS TT_IsNumeric(double precision[]);
-DROP FUNCTION IF EXISTS TT_IsNumeric(integer[]);
 DROP FUNCTION IF EXISTS TT_IsNumeric(text[]);
+
 DROP FUNCTION IF EXISTS TT_Match(text,text,boolean);
 DROP FUNCTION IF EXISTS TT_Match(int,text);
 DROP FUNCTION IF EXISTS TT_Match(double precision,text);
