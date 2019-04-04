@@ -60,7 +60,7 @@ RETURNS boolean AS $$
     IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN TRIM(val) != '';
+      RETURN replace(val, ' ', '') != '';
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE; 
@@ -82,14 +82,14 @@ CREATE OR REPLACE FUNCTION TT_IsInt(
 )
 RETURNS boolean AS $$
   DECLARE
-    x double precision;
+    _val double precision;
   BEGIN
     IF val IS NULL THEN
       RETURN FALSE;
     ELSE
       BEGIN
-        x = val::double precision;
-        RETURN x - x::int = 0;
+        _val = val::double precision;
+        RETURN _val - _val::int = 0;
       EXCEPTION WHEN OTHERS THEN
         RETURN FALSE;
       END;
@@ -407,9 +407,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Copy
 --
---  val text/boolean/double precision/int  - Value to return.
+--  val text  - Value to return.
 --
--- Return the value.
+-- Return the value as text. Engine will cast output to the correct type.
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Copy(
   val text
@@ -419,54 +419,237 @@ RETURNS text AS $$
     RETURN val;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Copy(
-  val double precision
-)
-RETURNS double precision AS $$
-  BEGIN
-    RETURN val;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Copy(
-  val int
-)
-RETURNS int AS $$
-  SELECT TT_Copy(val::double precision)::int
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Copy(
-  val boolean
-)
-RETURNS boolean AS $$
-  SELECT TT_Copy(val::text)::boolean
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_Concat
 --
---  sep text  - Separator (e.g. '_'). If no sep required use '' as first argument.
+--  vals text - comma separated list of vals to concat.
+--  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
 --  processNulls - if true, concat is run and nulls ignored. If false, nulls raise error.
---  var text[] - list of strings to concat
---
+--               - Defaults to FALSE.
 -- Return the value.
--- e.g. TT_Concat('_', FALSE, 'a', 'b', 'c'))
+-- e.g. TT_Concat('a,b,c', '_', FALSE))
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
+  vals text,
   sep text,
-  processNulls boolean,
-  VARIADIC val text[]
+  processNulls text DEFAULT FALSE
 )
 RETURNS text AS $$
+  DECLARE
+    _vals text[];
+    _processNulls boolean := processNulls::boolean;
   BEGIN
     IF sep is NULL THEN
       RAISE EXCEPTION 'sep is null';
-    ELSIF coalesce(array_position(val, NULL::text), 0) > 0 AND processNulls = FALSE THEN -- test if any list elements are null
-      RAISE EXCEPTION 'val contains null'; 
+    ELSIF vals IS NOT NULL THEN
+      _vals = string_to_array(replace(vals, ' ', ''), ','); -- removes any spaces and converts to array.
+      IF coalesce(array_position(_vals, NULL), 0) > 0 AND _processNulls = FALSE THEN -- test if any list elements are null
+        RAISE EXCEPTION 'vals contains null'; 
+      ELSE
+        RETURN array_to_string(_vals, sep);
+      END IF;
     ELSE
-      RETURN array_to_string(val, sep);
+      RAISE EXCEPTION 'vals is null';
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Concat_two
+--
+--  val1 text - first val to concat
+--  val2 - text - second val to concat
+--  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
+--  processNulls - if true, concat is run and nulls ignored. If false, nulls raise error.
+--               - Defaults to FALSE.
+-- Return the value.
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Concat2(
+  val1 text,
+  val2 text,
+  pad1 text,
+  pad2 text,
+  sep text,
+  processNulls text DEFAULT FALSE
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+  BEGIN
+    IF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF val1 IS NULL AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'val1 is null';
+    ELSIF val2 IS NULL AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'val2 is null';  
+    ELSE
+      --RETURN val1 || sep || val2;
+      RETURN concat_ws(sep, val1, val2);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_PadConcat
+--
+--  val1...val5 text - vals to concat
+--  length1...length5 text - length of padding for each val
+--  pad1...pad5 - pad character for each val
+--  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
+--  processNulls text - if true, concat is run and nulls ignored. If false, nulls raise error.
+--               - Defaults to FALSE.
+--  upperCase text - should vals be uppercase
+--
+--  Return the concatenated values with the padding.
+--  Different signatures for up to 5 val, length and pad values.
+--  Must be equal number of val, length and pad values.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val1 text,
+  length1 text,
+  pad1 text,
+  sep text,
+  processNulls text,
+  upperCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+    _upperCase boolean := upperCase::boolean;
+  BEGIN
+    IF length1 IS NULL THEN
+      RAISE EXCEPTION 'length is null';
+    ELSIF pad1 IS NULL THEN
+      RAISE EXCEPTION 'pad is null';
+    ELSIF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF val1 IS NULL AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'val is null';  
+    ELSIF _upperCase = TRUE THEN
+      RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1));
+    ELSE
+      RETURN concat_ws(sep, TT_Pad(val1, length1, pad1));
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val1 text, val2 text,
+  length1 text, length2 text,
+  pad1 text, pad2 text,
+  sep text,
+  processNulls text,
+  upperCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+    _upperCase boolean := upperCase::boolean;
+  BEGIN
+    IF length1 IS NULL OR length2 IS NULL THEN
+      RAISE EXCEPTION 'a length is null';
+    ELSIF pad1 IS NULL OR pad2 IS NULL THEN
+      RAISE EXCEPTION 'a pad is null';
+    ELSIF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF (val1 IS NULL OR val2 IS NULL) AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'a val is null';  
+    ELSIF _upperCase = TRUE THEN
+      RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1), TT_Pad(upper(val2), length2, pad2));
+    ELSE
+      RETURN concat_ws(sep, TT_Pad(val1, length1, pad1), TT_Pad(val2, length2, pad2));
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val1 text, val2 text, val3 text,
+  length1 text, length2 text, length3 text,
+  pad1 text, pad2 text, pad3 text,
+  sep text,
+  processNulls text,
+  upperCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+    _upperCase boolean := upperCase::boolean;
+  BEGIN
+    IF length1 IS NULL OR length2 IS NULL OR length3 IS NULL THEN
+      RAISE EXCEPTION 'a length is null';
+    ELSIF pad1 IS NULL OR pad2 IS NULL OR pad3 IS NULL THEN
+      RAISE EXCEPTION 'a pad is null';
+    ELSIF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF (val1 IS NULL OR val2 IS NULL OR val3 IS NULL) AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'a val is null';  
+    ELSIF _upperCase = TRUE THEN
+      RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1), TT_Pad(upper(val2), length2, pad2), TT_Pad(upper(val3), length3, pad3));
+    ELSE
+      RETURN concat_ws(sep, TT_Pad(val1, length1, pad1), TT_Pad(val2, length2, pad2), TT_Pad(val3, length3, pad3));
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val1 text, val2 text, val3 text, val4 text,
+  length1 text, length2 text, length3 text, length4 text,
+  pad1 text, pad2 text, pad3 text, pad4 text,
+  sep text,
+  processNulls text,
+  upperCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+    _upperCase boolean := upperCase::boolean;
+  BEGIN
+    IF length1 IS NULL OR length2 IS NULL OR length3 IS NULL OR length4 IS NULL THEN
+      RAISE EXCEPTION 'a length is null';
+    ELSIF pad1 IS NULL OR pad2 IS NULL OR pad3 IS NULL OR pad4 IS NULL THEN
+      RAISE EXCEPTION 'a pad is null';
+    ELSIF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF (val1 IS NULL OR val2 IS NULL OR val3 IS NULL OR val4 IS NULL) AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'a val is null';  
+    ELSIF _upperCase = TRUE THEN
+      RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1), TT_Pad(upper(val2), length2, pad2), TT_Pad(upper(val3), length3, pad3), TT_Pad(upper(val4), length4, pad4));
+    ELSE
+      RETURN concat_ws(sep, TT_Pad(val1, length1, pad1), TT_Pad(val2, length2, pad2), TT_Pad(val3, length3, pad3), TT_Pad(val4, length4, pad4));
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val1 text, val2 text, val3 text, val4 text, val5 text,
+  length1 text, length2 text, length3 text, length4 text, length5 text,
+  pad1 text, pad2 text, pad3 text, pad4 text, pad5 text,
+  sep text,
+  processNulls text,
+  upperCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _processNulls boolean := processNulls::boolean;
+    _upperCase boolean := upperCase::boolean;
+  BEGIN
+    IF length1 IS NULL OR length2 IS NULL OR length3 IS NULL OR length4 IS NULL OR length5 IS NULL THEN
+      RAISE EXCEPTION 'a length is null';
+    ELSIF pad1 IS NULL OR pad2 IS NULL OR pad3 IS NULL OR pad4 IS NULL OR pad5 IS NULL THEN
+      RAISE EXCEPTION 'a pad is null';
+    ELSIF sep is NULL THEN
+      RAISE EXCEPTION 'sep is null';
+    ELSIF (val1 IS NULL OR val2 IS NULL OR val3 IS NULL OR val4 IS NULL OR val5 IS NULL) AND _processNulls = FALSE THEN
+      RAISE EXCEPTION 'a val is null';  
+    ELSIF _upperCase = TRUE THEN
+      RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1), TT_Pad(upper(val2), length2, pad2), TT_Pad(upper(val3), length3, pad3), TT_Pad(upper(val4), length4, pad4), TT_Pad(upper(val5), length5, pad5));
+    ELSE
+      RETURN concat_ws(sep, TT_Pad(val1, length1, pad1), TT_Pad(val2, length2, pad2), TT_Pad(val3, length3, pad3), TT_Pad(val4, length4, pad4), TT_Pad(val5, length5, pad5));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -555,7 +738,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Length
 --
--- val - values to test.
+-- val text - values to test.
 --
 -- Count characters in string
 -- e.g. TT_Length('12345')
@@ -566,34 +749,20 @@ CREATE OR REPLACE FUNCTION TT_Length(
 RETURNS int AS $$
   BEGIN
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      RETURN 0;
     ELSE
       RETURN char_length(val);
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Length(
-  val double precision
-)
-RETURNS int AS $$
-  SELECT TT_Length(val::text)
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Length(
-  val int
-)
-RETURNS int AS $$
-  SELECT TT_Length(val::text)
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_Pad
 --
--- val - string to pad.
--- targetLength - total characters of output string.
--- padChar - character to pad with - Defaults to 'x'.
+-- val text - string to pad.
+-- targetLength text - total characters of output string.
+-- padChar text - character to pad with - Defaults to 'x'.
 --
 -- Pads if val shorter than target, trims if val longer than target.
 -- padChar should always be a single character.
@@ -601,47 +770,31 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
-  targetLength int,
+  targetLength text,
   padChar text DEFAULT 'x'
 )
 RETURNS text AS $$
   DECLARE
+    _targetLength int := targetLength::int;
     val_length int;
     pad_length int;
   BEGIN
-    IF val IS NULL OR targetLength IS NULL OR padChar IS NULL THEN
-      RAISE EXCEPTION 'val or targetLength or padChar is NULL';
+    IF targetLength IS NULL OR padChar IS NULL THEN
+      RAISE EXCEPTION 'targetLength or padChar is NULL';
     ELSIF TT_Length(padChar) != 1 THEN
       RAISE EXCEPTION 'padChar length is not 1';
     ELSE
       val_length = TT_Length(val);
-      pad_length = targetLength - val_length;
+      pad_length = _targetLength - val_length;
       IF pad_length > 0 THEN
-        RETURN TT_Concat('', FALSE, repeat(padChar,pad_length), val);
+        RETURN concat_ws('', repeat(padChar,pad_length), val);
       ELSE
-        RETURN substring(val from 1 for targetLength);
+        RETURN substring(val from 1 for _targetLength);
       END IF;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Pad(
-  val double precision,
-  targetLength int,
-  padChar text DEFAULT 'x'
-)
-RETURNS text AS $$
-  SELECT TT_Pad(val::text, targetLength, padChar);
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Pad(
-  val int,
-  targetLength int,
-  padChar text DEFAULT 'x'
-)
-RETURNS text AS $$
-  SELECT TT_Pad(val::text, targetLength, padChar);
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

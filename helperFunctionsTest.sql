@@ -48,7 +48,9 @@ SELECT 'AAA'::text, 2::int, 1.2::double precision, TRUE::boolean
 UNION ALL
 SELECT 'BBB'::text, 3::int, 1.3::double precision, FALSE::boolean
 UNION ALL
-SELECT NULL::text, NULL::int, NULL::double precision, NULL::boolean;
+SELECT NULL::text, NULL::int, NULL::double precision, NULL::boolean
+UNION ALL
+SELECT 'CCC'::text, NULL::int, 5.5::double precision, NULL::boolean;
 
 -- IsError(text)
 -- function to test if helper functions return errors
@@ -817,25 +819,25 @@ UNION ALL
 SELECT '11.1'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage with sep and processNulls=FALSE'::text description,
-       TT_Concat('-', FALSE, 'cas', 'id', 'test') = 'cas-id-test' passed
+       TT_Concat('cas,id,test'::text, '-'::text, FALSE::text) = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '11.2'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage with sep and processNulls=TRUE'::text description,
-       TT_Concat('-', TRUE, 'cas', 'id', 'test') = 'cas-id-test' passed
+       TT_Concat('cas,id,test'::text, '-'::text, TRUE::text) = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '11.3'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage without sep'::text description,
-       TT_Concat('', FALSE, 'cas', 'id', 'test') = 'casidtest' passed
+       TT_Concat('cas,id,test'::text, ''::text, FALSE::text) = 'casidtest' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '11.4'::text number,
        'TT_Concat'::text function_tested,
        'Null sep gives error'::text description,
-       TT_IsError('SELECT TT_Concat(NULL, FALSE, "cas", "id", "test");') IS TRUE passed
+       TT_IsError('SELECT TT_Concat(''cas,id,test''::text, NULL::text, FALSE::text);') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '11.5'::text number,
@@ -886,13 +888,13 @@ UNION ALL
 SELECT '12.2'::text number,
        'TT_Copy'::text function_tested,
        'Int usage'::text description,
-       TT_Copy(111::int) = 111::int passed
+       TT_Copy(111::text) = 111::text passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.3'::text number,
        'TT_Copy'::text function_tested,
        'Double precision usage'::text description,
-       TT_Copy(111.4::double precision) = 111.4::double precision passed
+       TT_Copy(111.4::text) = 111.4::text passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.4'::text number,
