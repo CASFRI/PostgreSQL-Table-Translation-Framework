@@ -11,19 +11,18 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS TT_NotNull(text);
-DROP FUNCTION IF EXISTS TT_Between(text, double precision, double precision);
+DROP FUNCTION IF EXISTS TT_Between(text, text, text);
 DROP FUNCTION IF EXISTS TT_NotEmpty(text);
-DROP FUNCTION IF EXISTS TT_GreaterThan(text, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_LessThan(text, double precision, boolean);
-DROP FUNCTION IF EXISTS TT_IsInt(text[]);
-DROP FUNCTION IF EXISTS TT_IsNumeric(text[]);
+DROP FUNCTION IF EXISTS TT_GreaterThan(text, text, text);
+DROP FUNCTION IF EXISTS TT_LessThan(text, text, text);
+DROP FUNCTION IF EXISTS TT_IsInt(text);
+DROP FUNCTION IF EXISTS TT_IsNumeric(text);
+DROP FUNCTION IF EXISTS TT_IsString(text);
+DROP FUNCTION IF EXISTS TT_HasUniqueValues(text,text,text,text);
+DROP FUNCTION IF EXISTS TT_MatchTab(text,text,text,text);
+DROP FUNCTION IF EXISTS TT_MatchList(text,text,text);
 
-DROP FUNCTION IF EXISTS TT_Match(text,text,boolean);
-DROP FUNCTION IF EXISTS TT_Match(int,text);
-DROP FUNCTION IF EXISTS TT_Match(double precision,text);
-DROP FUNCTION IF EXISTS TT_Match(text, name, name, boolean);
-DROP FUNCTION IF EXISTS TT_Match(double precision, name, name, boolean);
-DROP FUNCTION IF EXISTS TT_Match(integer, name, name, boolean);
+
 DROP FUNCTION IF EXISTS TT_Concat(text,boolean,text[]);
 DROP FUNCTION IF EXISTS TT_IsError(text);
 DROP FUNCTION IF EXISTS TT_Copy(text);
@@ -37,15 +36,9 @@ DROP FUNCTION IF EXISTS TT_Map(text,text,text,boolean);
 DROP FUNCTION IF EXISTS TT_Map(double precision,text,text);
 DROP FUNCTION IF EXISTS TT_Map(int,text,text);
 DROP FUNCTION IF EXISTS TT_False();
-DROP FUNCTION IF EXISTS TT_IsString(text[]);
-DROP FUNCTION IF EXISTS TT_IsString(double precision[]);
-DROP FUNCTION IF EXISTS TT_IsString(int[]);
 DROP FUNCTION IF EXISTS TT_Length(text);
 DROP FUNCTION IF EXISTS TT_Length(double precision);
 DROP FUNCTION IF EXISTS TT_Length(int);
 DROP FUNCTION IF EXISTS TT_Pad(text,int,text);
 DROP FUNCTION IF EXISTS TT_Pad(double precision,int,text);
 DROP FUNCTION IF EXISTS TT_Pad(int,int,text);
-DROP FUNCTION IF EXISTS TT_HasUniqueValues(text,name,name,int);
-DROP FUNCTION IF EXISTS TT_HasUniqueValues(double precision,name,name,int);
-DROP FUNCTION IF EXISTS TT_HasUniqueValues(int,name,name,int);

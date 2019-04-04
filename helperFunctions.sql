@@ -32,7 +32,6 @@
 -- Return FALSE if val is NULL.
 -- e.g. TT_NotNull('a')
 ------------------------------------------------------------
-DROP FUNCTION IF EXISTS TT_NotNull(text);
 CREATE OR REPLACE FUNCTION TT_NotNull(
   val text
 )
@@ -114,13 +113,13 @@ CREATE OR REPLACE FUNCTION TT_IsNumeric(
 )
   RETURNS boolean AS $$
     DECLARE
-      x double precision;
+      _val double precision;
     BEGIN
       IF val IS NULL THEN
         RETURN FALSE;
       ELSE
         BEGIN
-          x = val::double precision[];
+          _val = val::double precision;
           RETURN TRUE;
         EXCEPTION WHEN OTHERS THEN
           RETURN FALSE;
@@ -128,7 +127,26 @@ CREATE OR REPLACE FUNCTION TT_IsNumeric(
       END IF;
     END;
 $$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_IsString
+--
+-- Return TRUE if val is string (i.e. not numeric)
+-- e.g. TT_IsString('a')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsString(
+  val text
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TT_IsNumeric(val) IS FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -146,17 +164,21 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
   val text,
-  min double precision,
-  max double precision
+  min text,
+  max text
 )
 RETURNS boolean AS $$
+  DECLARE
+    _val double precision := val::double precision;
+    _min double precision := min::double precision;
+    _max double precision := max::double precision;
   BEGIN
     IF min IS NULL OR max IS NULL THEN
       RAISE EXCEPTION 'min or max is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN val::double precision >= min and val::double precision <= max;
+      RETURN _val >= _min and _val <= _max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -166,8 +188,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_GreaterThan
 --
 --  val text - Value to test.
---  lowerBound double precision - lower bound to test against.
---  inclusive boolean - is lower bound inclusive? Default True.
+--  lowerBound text - lower bound to test against.
+--  inclusive text - is lower bound inclusive? Default TRUE.
 --
 --  Return TRUE if val >= lowerBound and inclusive = TRUE.
 --  Return TRUE if val > lowerBound and inclusive = FALSE.
@@ -178,19 +200,23 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
    val text,
-   lowerBound double precision,
-   inclusive boolean DEFAULT TRUE
+   lowerBound text,
+   inclusive text DEFAULT TRUE
 )
 RETURNS boolean AS $$
+  DECLARE
+    _val double precision := val::double precision;
+    _lowerBound double precision := lowerBound::double precision;
+    _inclusive boolean := inclusive::boolean;
   BEGIN
     IF lowerBound IS NULL OR inclusive IS NULL THEN
       RAISE EXCEPTION 'lowerBound or inclusive is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSIF inclusive = TRUE THEN
-      RETURN val::double precision >= lowerBound;
+    ELSIF _inclusive = TRUE THEN
+      RETURN _val >= _lowerBound;
     ELSE
-      RETURN val::double precision > lowerBound;
+      RETURN _val > _lowerBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -201,8 +227,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_LessThan
 --
 --  val text - Value to test.
---  upperBound double precision - upper bound to test against.
---  inclusive boolean - is upper bound inclusive? Default True.
+--  upperBound text - upper bound to test against.
+--  inclusive text - is upper bound inclusive? Default True.
 --
 --  Return TRUE if val <= upperBound and inclusive = TRUE.
 --  Return TRUE if val < upperBound and inclusive = FALSE.
@@ -213,19 +239,23 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
    val text,
-   upperBound double precision,
-   inclusive boolean DEFAULT TRUE
+   upperBound text,
+   inclusive text DEFAULT TRUE
 )
 RETURNS boolean AS $$
+  DECLARE
+    _val double precision := val::double precision;
+    _upperBound double precision := upperBound::double precision;
+    _inclusive boolean := inclusive::boolean;
   BEGIN
     IF upperBound IS NULL OR inclusive IS NULL THEN
       RAISE EXCEPTION 'upperBound or inclusive is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSIF inclusive = TRUE THEN
-      RETURN val::double precision <= upperBound;
+    ELSIF _inclusive = TRUE THEN
+      RETURN _val <= _upperBound;
     ELSE
-      RETURN val::double precision < upperBound;
+      RETURN _val < _upperBound;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -234,22 +264,25 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_HasUniqueValues
 --
--- val text/double precision/int - val to test.
--- lookupSchemaName name - schema name holding lookup table.
--- lookupTableName name - lookup table.
--- occurences - int defaults to 1
+-- val text - value to test.
+-- lookupSchemaName text - schema name holding lookup table.
+-- lookupTableName text - lookup table name.
+-- occurences - text defaults to 1
 --
 -- if number of occurences of val in source_val of schema.table equals occurences, return true.
 -- e.g. TT_HasUniqueValues('BS', 'public', 'bc08', 1)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val text,
-  lookupSchemaName name,
-  lookupTableName name,
-  occurences int DEFAULT 1
+  lookupSchemaName text,
+  lookupTableName text,
+  occurences text DEFAULT 1
 )
 RETURNS boolean AS $$
   DECLARE
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    _occurences int := occurences::int;
     query text;
     return boolean;
   BEGIN
@@ -260,68 +293,37 @@ RETURNS boolean AS $$
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || occurences || ';';
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurences || ';';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
-  val double precision,
-  lookupSchemaName name,
-  lookupTableName name,
-  occurences int DEFAULT 1
-)
-RETURNS boolean AS $$
-  DECLARE
-    query text;
-    return boolean;
-  BEGIN
-    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF occurences IS NULL THEN
-      RAISE EXCEPTION 'occurences is null';
-    ELSIF val IS NULL THEN
-      RETURN FALSE;
-    ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || occurences || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
-  val int,
-  lookupSchemaName name,
-  lookupTableName name,
-  occurences int
-)
-RETURNS boolean AS $$
-  SELECT TT_HasUniqueValues(val::double precision,lookupSchemaName,lookupTableName,occurences)
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Match (table version)
+-- TT_MatchTab (table version)
 --
--- val text/double precision/int - column to test.
--- lookupSchemaName name - schema name holding lookup table.
--- lookupTableName name - lookup table.
--- ignoreCase - default TRUE. Should upper/lower case be ignored?
+-- val text - value to test.
+-- lookupSchemaName text - schema name holding lookup table.
+-- lookupTableName text - lookup table.
+-- ignoreCase - text default TRUE. Should upper/lower case be ignored?
 --
 -- if val is present in source_val of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Match(
+CREATE OR REPLACE FUNCTION TT_MatchTab(
   val text,
-  lookupSchemaName name,
-  lookupTableName name,
-  ignoreCase boolean DEFAULT TRUE
+  lookupSchemaName text,
+  lookupTableName text,
+  ignoreCase text DEFAULT TRUE
 )
 RETURNS boolean AS $$
   DECLARE
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    _ignoreCase boolean := ignoreCase::boolean;
     query text;
     return boolean;
   BEGIN
@@ -329,54 +331,21 @@ RETURNS boolean AS $$
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSIF ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+    ELSIF _ignoreCase = FALSE THEN
+      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(source_val) FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
+      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(source_val::text) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Match(
-  val double precision,
-  lookupSchemaName name,
-  lookupTableName name,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS boolean AS $$
-  DECLARE
-    query text;
-    return boolean;
-  BEGIN
-    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF val IS NULL THEN
-      RETURN FALSE;
-    ELSE
-      query = 'SELECT ' || val || ' IN (SELECT ' || (TT_TableColumnNames(lookupSchemaName, lookupTableName))[1] || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ');';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Match(
-  val int,
-  lookupSchemaName name,
-  lookupTableName name,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS boolean AS $$
-  SELECT TT_Match(val::double precision,lookupSchemaName,lookupTableName,ignoreCase)
-$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Match (list version)
+-- TT_MatchList (list version)
 --
 -- val text/double precision/int - value to test.
 -- lst text - string containing comma separated vals.
@@ -385,43 +354,27 @@ $$ LANGUAGE sql VOLATILE;
 -- val followed by string of test values
 -- e.g. TT_Match('a', 'a,b,c')
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Match(
+CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
-  ignoreCase boolean DEFAULT TRUE
+  ignoreCase text DEFAULT TRUE
 )
 RETURNS boolean AS $$
   DECLARE
-    var1 text[];
+    _lst text[];
+    _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
     IF val IS NULL THEN
       RETURN FALSE;
-    ELSIF ignoreCase = FALSE THEN
-      var1 = string_to_array(lst, ',');
-      RETURN val = ANY(array_remove(var1, NULL));
+    ELSIF _ignoreCase = FALSE THEN
+      _lst = string_to_array(lst, ',');
+      RETURN val = ANY(array_remove(_lst, NULL));
     ELSE
-      var1 = string_to_array(upper(lst), ',');
-      RETURN upper(val) = ANY(array_remove(var1, NULL));
+      _lst = string_to_array(upper(lst), ',');
+      RETURN upper(val) = ANY(array_remove(_lst, NULL));
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Match(
-  val double precision,
-  lst text
-)
-RETURNS boolean AS $$
-  SELECT TT_Match(val::text, lst)
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Match(
-  val integer,
-  lst text
-)
-RETURNS boolean AS $$
-  SELECT TT_Match(val::text, lst)
-$$ LANGUAGE sql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -438,40 +391,6 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_IsString
---
--- Return TRUE if all vals are strings (i.e. not numeric)
--- e.g. TT_IsString('a', 'b', 'c')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsString(
-  VARIADIC val text[]
-)
-RETURNS boolean AS $$
-  BEGIN
-    IF coalesce(array_position(val, NULL::text), 0) > 0 THEN
-      RETURN FALSE;
-    ELSE
-      RETURN TT_IsNumeric(VARIADIC val) IS FALSE;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsString(
-  VARIADIC val double precision[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsString(VARIADIC val::text[])
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsString(
-  VARIADIC val int[]
-)
-RETURNS boolean AS $$
-  SELECT TT_IsString(VARIADIC val::text[])
-$$ LANGUAGE sql VOLATILE;
-
 
 
 -------------------------------------------------------------------------------
