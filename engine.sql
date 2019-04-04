@@ -555,19 +555,19 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
-    query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY ogc_fid;';
+    query = 'SELECT ogc_fid, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY ogc_fid;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44';END IF;
-      targetAttribute = (row.targetAttribute)::text;
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row;END IF;
+      targetAttribute = row.targetAttribute;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      targetAttributeType = (row.targetAttributeType)::text;
+      targetAttributeType = row.targetAttributeType;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      validationRules = (TT_ParseRules((row.validationRules)::text))::TT_RuleDef[];
+      validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      translationRule = ((TT_ParseRules((row.translationRules)::text))[1])::TT_RuleDef;
+      translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      description = coalesce(((row.description)::text), '');
+      description = coalesce(row.description, '');
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
