@@ -11,34 +11,25 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS TT_NotNull(text);
-DROP FUNCTION IF EXISTS TT_Between(text, text, text);
 DROP FUNCTION IF EXISTS TT_NotEmpty(text);
-DROP FUNCTION IF EXISTS TT_GreaterThan(text, text, text);
-DROP FUNCTION IF EXISTS TT_LessThan(text, text, text);
 DROP FUNCTION IF EXISTS TT_IsInt(text);
 DROP FUNCTION IF EXISTS TT_IsNumeric(text);
 DROP FUNCTION IF EXISTS TT_IsString(text);
+DROP FUNCTION IF EXISTS TT_Between(text, text, text);
+DROP FUNCTION IF EXISTS TT_GreaterThan(text, text, text);
+DROP FUNCTION IF EXISTS TT_LessThan(text, text, text);
 DROP FUNCTION IF EXISTS TT_HasUniqueValues(text,text,text,text);
 DROP FUNCTION IF EXISTS TT_MatchTab(text,text,text,text);
 DROP FUNCTION IF EXISTS TT_MatchList(text,text,text);
-
-
-DROP FUNCTION IF EXISTS TT_Concat(text,boolean,text[]);
-DROP FUNCTION IF EXISTS TT_IsError(text);
-DROP FUNCTION IF EXISTS TT_Copy(text);
-DROP FUNCTION IF EXISTS TT_Copy(double precision);
-DROP FUNCTION IF EXISTS TT_Copy(int);
-DROP FUNCTION IF EXISTS TT_Copy(boolean);
-DROP FUNCTION IF EXISTS TT_Lookup(text,name,name,text,boolean);
-DROP FUNCTION IF EXISTS TT_Lookup(double precision,name,name,text,boolean);
-DROP FUNCTION IF EXISTS TT_Lookup(int,name,name,text,boolean);
-DROP FUNCTION IF EXISTS TT_Map(text,text,text,boolean);
-DROP FUNCTION IF EXISTS TT_Map(double precision,text,text);
-DROP FUNCTION IF EXISTS TT_Map(int,text,text);
 DROP FUNCTION IF EXISTS TT_False();
+
+DROP FUNCTION IF EXISTS TT_Copy(text);
+DROP FUNCTION IF EXISTS TT_Lookup(text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_Map(text,text,text,text);
 DROP FUNCTION IF EXISTS TT_Length(text);
-DROP FUNCTION IF EXISTS TT_Length(double precision);
-DROP FUNCTION IF EXISTS TT_Length(int);
-DROP FUNCTION IF EXISTS TT_Pad(text,int,text);
-DROP FUNCTION IF EXISTS TT_Pad(double precision,int,text);
-DROP FUNCTION IF EXISTS TT_Pad(int,int,text);
+DROP FUNCTION IF EXISTS TT_Pad(text,text,text);
+DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text);

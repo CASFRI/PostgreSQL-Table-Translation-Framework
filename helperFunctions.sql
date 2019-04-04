@@ -422,73 +422,148 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Concat
+-- TT_Lookup
 --
---  vals text - comma separated list of vals to concat.
---  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
---  processNulls - if true, concat is run and nulls ignored. If false, nulls raise error.
---               - Defaults to FALSE.
--- Return the value.
--- e.g. TT_Concat('a,b,c', '_', FALSE))
+-- val text - val to lookup
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupColumn text - column to return
+-- ignoreCase text - default TRUE. Should upper/lower case be ignored?
+--
+-- Return value from lookupColumn in lookupSchemaName.lookupTableName
+-- that matches val in source_val column.
+-- If multiple matches, first row is returned.
+-- Error if any arguments are NULL.
+-- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Concat(
-  vals text,
-  sep text,
-  processNulls text DEFAULT FALSE
+CREATE OR REPLACE FUNCTION TT_Lookup(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  ignoreCase text DEFAULT TRUE
 )
 RETURNS text AS $$
   DECLARE
-    _vals text[];
-    _processNulls boolean := processNulls::boolean;
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    _ignoreCase boolean := ignoreCase::boolean;
+    query text;
+    return text;
   BEGIN
-    IF sep is NULL THEN
-      RAISE EXCEPTION 'sep is null';
-    ELSIF vals IS NOT NULL THEN
-      _vals = string_to_array(replace(vals, ' ', ''), ','); -- removes any spaces and converts to array.
-      IF coalesce(array_position(_vals, NULL), 0) > 0 AND _processNulls = FALSE THEN -- test if any list elements are null
-        RAISE EXCEPTION 'vals contains null'; 
-      ELSE
-        RETURN array_to_string(_vals, sep);
-      END IF;
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      EXECUTE query INTO return;
+      RETURN return;
     ELSE
-      RAISE EXCEPTION 'vals is null';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Concat_two
+-- TT_Map
 --
---  val1 text - first val to concat
---  val2 - text - second val to concat
---  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
---  processNulls - if true, concat is run and nulls ignored. If false, nulls raise error.
---               - Defaults to FALSE.
--- Return the value.
+-- val text - value to test.
+-- lst1 text - string containing comma seperated vals
+-- lst2 text - string containing comma seperated vals
+-- ignoreCase - default TRUE. Should upper/lower case be ignored?
+--
+-- Return value from lst2 that matches value index in lst1
+-- Error if val is NULL
+-- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
 
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Concat2(
-  val1 text,
-  val2 text,
-  pad1 text,
-  pad2 text,
-  sep text,
-  processNulls text DEFAULT FALSE
+CREATE OR REPLACE FUNCTION TT_Map(
+  val text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text DEFAULT TRUE
 )
 RETURNS text AS $$
   DECLARE
-    _processNulls boolean := processNulls::boolean;
+    var1 text[];
+    var2 text[];
+    _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
-    IF sep is NULL THEN
-      RAISE EXCEPTION 'sep is null';
-    ELSIF val1 IS NULL AND _processNulls = FALSE THEN
-      RAISE EXCEPTION 'val1 is null';
-    ELSIF val2 IS NULL AND _processNulls = FALSE THEN
-      RAISE EXCEPTION 'val2 is null';  
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      var1 = string_to_array(lst1, ',');
+      var2 = string_to_array(lst2, ',');
+      RETURN (var2)[array_position(var1,val)];
     ELSE
-      --RETURN val1 || sep || val2;
-      RETURN concat_ws(sep, val1, val2);
+      var1 = string_to_array(upper(lst1), ',');
+      var2 = string_to_array(upper(lst2), ',');
+      RETURN (var2)[array_position(var1,upper(val))];
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Length
+--
+-- val text - values to test.
+--
+-- Count characters in string
+-- e.g. TT_Length('12345')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Length(
+  val text
+)
+RETURNS int AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RETURN 0;
+    ELSE
+      RETURN char_length(val);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Pad
+--
+-- val text - string to pad.
+-- targetLength text - total characters of output string.
+-- padChar text - character to pad with - Defaults to 'x'.
+--
+-- Pads if val shorter than target, trims if val longer than target.
+-- padChar should always be a single character.
+-- e.g. TT_Pad('tab1', 10, 'x')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Pad(
+  val text,
+  targetLength text,
+  padChar text DEFAULT 'x'
+)
+RETURNS text AS $$
+  DECLARE
+    _targetLength int := targetLength::int;
+    val_length int;
+    pad_length int;
+  BEGIN
+    IF targetLength IS NULL OR padChar IS NULL THEN
+      RAISE EXCEPTION 'targetLength or padChar is NULL';
+    ELSIF TT_Length(padChar) != 1 THEN
+      RAISE EXCEPTION 'padChar length is not 1';
+    ELSE
+      val_length = TT_Length(val);
+      pad_length = _targetLength - val_length;
+      IF pad_length > 0 THEN
+        RETURN concat_ws('', repeat(padChar,pad_length), val);
+      ELSE
+        RETURN substring(val from 1 for _targetLength);
+      END IF;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -653,202 +728,3 @@ RETURNS text AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Lookup
---
--- val text/double precision/int - val to lookup
--- lookupSchemaName - schema name containing lookup table
--- lookupTableName - lookup table name
--- lookupColumn - column to return
--- ignoreCase - default TRUE. Should upper/lower case be ignored?
---
--- Return value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in source_val column.
--- If multiple matches, first row is returned.
--- Error if any arguments are NULL.
--- *Return value currently always text*
--- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Lookup(
-  val text,
-  lookupSchemaName name,
-  lookupTableName name,
-  lookupCol text,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS text AS $$
-  DECLARE
-    query text;
-    return text;
-  BEGIN
-    IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSIF ignoreCase = FALSE THEN
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val) = upper(' || quote_literal(val) || ');';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Lookup(
-  val double precision,
-  lookupSchemaName name,
-  lookupTableName name,
-  lookupCol text,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS text AS $$
-  DECLARE
-    query text;
-    return text;
-  BEGIN
-    IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Lookup(
-  val int,
-  lookupSchemaName name,
-  lookupTableName name,
-  lookupCol text,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS text AS $$
-  SELECT TT_Lookup(val::double precision, lookupSchemaName, lookupTableName, lookupCol, ignoreCase)
-$$ LANGUAGE sql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Length
---
--- val text - values to test.
---
--- Count characters in string
--- e.g. TT_Length('12345')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Length(
-  val text
-)
-RETURNS int AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN 0;
-    ELSE
-      RETURN char_length(val);
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Pad
---
--- val text - string to pad.
--- targetLength text - total characters of output string.
--- padChar text - character to pad with - Defaults to 'x'.
---
--- Pads if val shorter than target, trims if val longer than target.
--- padChar should always be a single character.
--- e.g. TT_Pad('tab1', 10, 'x')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Pad(
-  val text,
-  targetLength text,
-  padChar text DEFAULT 'x'
-)
-RETURNS text AS $$
-  DECLARE
-    _targetLength int := targetLength::int;
-    val_length int;
-    pad_length int;
-  BEGIN
-    IF targetLength IS NULL OR padChar IS NULL THEN
-      RAISE EXCEPTION 'targetLength or padChar is NULL';
-    ELSIF TT_Length(padChar) != 1 THEN
-      RAISE EXCEPTION 'padChar length is not 1';
-    ELSE
-      val_length = TT_Length(val);
-      pad_length = _targetLength - val_length;
-      IF pad_length > 0 THEN
-        RETURN concat_ws('', repeat(padChar,pad_length), val);
-      ELSE
-        RETURN substring(val from 1 for _targetLength);
-      END IF;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Map
---
--- val text/double precision/int - value to test.
--- lst1 text/double precision/int - string containing comma seperated vals
--- lst2 text/double precision/int - string containing comma seperated vals
--- ignoreCase - default TRUE. Should upper/lower case be ignored?
---
--- Return value from lst2 that matches value index in lst1
--- Error if val is NULL
--- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
-
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Map(
-  val text,
-  lst1 text,
-  lst2 text,
-  ignoreCase boolean DEFAULT TRUE
-)
-RETURNS text AS $$
-  DECLARE
-    var1 text[];
-    var2 text[];
-  BEGIN
-    IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
-    ELSIF ignoreCase = FALSE THEN
-      var1 = string_to_array(lst1, ',');
-      var2 = string_to_array(lst2, ',');
-      RETURN (var2)[array_position(var1,val)];
-    ELSE
-      var1 = string_to_array(upper(lst1), ',');
-      var2 = string_to_array(upper(lst2), ',');
-      RETURN (var2)[array_position(var1,upper(val))];
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Map(
-  val double precision,
-  lst1 text,
-  lst2 text
-)
-RETURNS text AS $$
-  SELECT TT_Map(val::text,lst1,lst2)
-$$ LANGUAGE sql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_Map(
-  val int,
-  lst1 text,
-  lst2 text
-)
-RETURNS text AS $$
-  SELECT TT_Map(val::text,lst1,lst2)
-$$ LANGUAGE sql VOLATILE;
