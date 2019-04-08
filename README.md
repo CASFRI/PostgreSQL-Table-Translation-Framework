@@ -75,7 +75,7 @@ Translation tables are themselves validated by the translation engine while proc
 
 **Example translation table**
 
-Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. This is done using the [helper functions](#helper-functions) described below. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
+Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. This is done using the notNull and the match [helper functions](#helper-functions) described further in this document. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
