@@ -31,7 +31,7 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 # Vocabulary
 *Translation engine* - The PG/pgSQL code implementing the [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
 
-*Helper function* - A set of functions used in the translation table to facilitate validation of source values and their translation to  target values.
+*Helper function* - A set of PL/pgSQL functions used in the translation table to facilitate validation of source values and their translation to  target values.
 
 *Source table* - The table to be validated and translated.
 
@@ -47,15 +47,15 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 
 # What are translation tables and how to write them?
 
-A translation table defines the structure of the target table (the list of attributes and their types), how to validate source values to be translated and how to translate them into the target attributes. It also provide a way to document the rules and to flag rules that are not yet in synch with their documentation (in the case where rules are written as a second step or by different people).
+A translation table is a normal PostgreSQL table defining the structure of the target table (the list of attributes and their types), how to validate source values to be translated and how to translate them into the target attributes. It also provides a way to document the rules and to flag rules that are not yet in synch with their documentation (in the case where rules are written in a second step or by different people).
 
-The translation is done in two steps:
+The translation is done by the translation engine in two steps:
 
-1. Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass.
+1. Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass. a boolean flag can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
 
 2. Translation - The source values are translated to the target values by the (unique) translation rule.
 
-* Translation tables must contain these six columns:
+Translation tables must contain these six columns:
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The data type of the target attribute.
  3. **validationRules** - Any validation rules needed to validate the source values before translating.
@@ -65,12 +65,35 @@ The translation is done in two steps:
 * Multiple validation rules can be seperated with a semi-colon.
 * Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters.
 
+Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine check that:
+
+* no null values exists,
+* target attribute names do not contain invalid characters (e.g. spaces),
+* target attribute types are valid PostgreSQL types,
+* validation and translation rules helper functions exits with the propre parameter types,
+* the flag indicating if the description is in synch with the validation/translation rules.
+
 Example translation table. Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. This is done using the [helper functions](#helper-functions) described below. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
 |SPECIES_1        |text                 |notNull(sp1\|NULL); match(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
 |SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+
+# How to actually translate the source table?
+
+The translation is done by the user in two steps:
+
+1. Prepare the translation function with SELECT TT_Prepare(translationTableSchema, translationTable)
+
+2. Translate the table with the prepared TT_Translate(sourceTableSchema, sourceTable) function
+
+Many TT_Translate functions can be prepared by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function).
+
+You generally want to create a new table with the result of the translation like this:
+
+CREATE TABLE target_table AS
+SELECT * FROM TT_Translate('public', 'source_table');
 
 # How to write a lookup table?
 * Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
@@ -84,7 +107,7 @@ Example lookup table. Source values for species codes in the source_val column a
 |TA        |PopuTrem|
 |LP        |PinuCont|
 
-# Code example
+# Code Example
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
@@ -243,8 +266,8 @@ Helper functions are used in translation tables to validate and translate source
       * Map(double precision, text, text, boolean)
       * Map(int, text, text, boolean)
 
-# Adding custom helper functions
-* Additional helper functions can be written in PL/PGSQL and must obey the following conventions:
+# Adding Custom Helper Functions
+* Additional helper functions can be written in PL/pgSQL and must follow the following conventions:
   * Validation functions must return type boolean.
   * All helper functions should raise an exception when any parameter (other than the source value) is null or of an invalid type.
   * All validation helper functions should accept only text values.
