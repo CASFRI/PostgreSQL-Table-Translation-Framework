@@ -51,9 +51,9 @@ A translation table is a normal PostgreSQL table defining the structure of the t
 
 The translation is done by the translation engine in two steps:
 
-1. Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass. a boolean flag can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
+1.** Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass. a boolean flag can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
 
-2. Translation - The source values are translated to the target values by the (unique) translation rule.
+2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
 
 Translation tables must contain these six columns:
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
