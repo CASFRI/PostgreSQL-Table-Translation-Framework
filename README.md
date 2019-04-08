@@ -236,8 +236,9 @@ Helper functions are used in translation tables to validate and translate source
 * Additional helper functions can be written in PL/PGSQL and must obey the following conventions:
   * Validation functions must return type boolean.
   * All helper functions should raise an exception when any parameter (other than the source value) is null or of an invalid type.
-  * All helper functions should have a variant minimally accepting a text source value.
+  * All validation helper functions should accept only text values.
   * All helper functions should test for NULL and return FALSE when the the source value is NULL.
+  * Translation helper functions should only accept parameters of the right type.
   * No helper function should be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as list of value passed as a text value separated by a comma or a semicolon.
 
 # Known issues
