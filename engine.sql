@@ -27,6 +27,29 @@ SET tt.debug TO FALSE;
 -------------------------------------------------------------------------------
 -- Function Definitions...
 -------------------------------------------------------------------------------
+-- TT_Debug
+--
+--   schemaName name - Name of the schema.
+--   tableName name  - Name of the table.
+--
+--   RETURNS booelan  - True if tt_debug is set to true. False if set to false or not set.
+--
+-- Wrapper to catch error when tt.error is not set.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Debug();
+CREATE OR REPLACE FUNCTION TT_Debug(
+)
+RETURNS boolean AS $$
+  DECLARE
+  BEGIN
+    RETURN current_setting('tt.debug');
+    EXCEPTION WHEN OTHERS THEN
+      RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_FullTableName
 --
 --   schemaName name - Name of the schema.
@@ -92,7 +115,7 @@ CREATE OR REPLACE FUNCTION TT_TypeGuess(
 )
 RETURNS text AS $$
   DECLARE
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TypeGuess BEGIN val=%', val;END IF;
     IF val IS NULL THEN
@@ -138,7 +161,7 @@ CREATE OR REPLACE FUNCTION TT_FctExists(
 RETURNS boolean AS $$
   DECLARE
     cnt int = 0;
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
     fctName = 'tt_' || fctName;
@@ -204,7 +227,7 @@ CREATE OR REPLACE FUNCTION TT_FctReturnType(
 RETURNS text AS $$
   DECLARE
     result text;
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctReturnType BEGIN';END IF;
     IF TT_FctExists(schemaName, fctName, argTypes) THEN
@@ -338,7 +361,7 @@ RETURNS anyelement AS $$
     argVal text;
     arg text;
     result ALIAS FOR $0;
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
     IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR vals IS NULL THEN
@@ -543,7 +566,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
   DECLARE
     row RECORD;
     query text;
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF translationTable IS NULL THEN
@@ -700,7 +723,7 @@ RETURNS SETOF RECORD AS $$
     finalVal text;
     isValid boolean;
     jsonbRow jsonb;
-    debug boolean = current_setting('tt.debug');
+    debug boolean = TT_Debug();
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
