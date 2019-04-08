@@ -31,7 +31,7 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 # Vocabulary
 *Translation engine* - The PG/pgSQL code implementing the [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
 
-*Helper function* - A set of PL/pgSQL functions used in the translation table to facilitate validation of source values and their translation to  target values.
+*Helper function* - A set of PL/pgSQL functions used in the translation table to facilitate validation of source values and their translation to target values.
 
 *Source table* - The table to be validated and translated.
 
@@ -63,7 +63,7 @@ Translation tables must contain these six columns:
  5. **description** - A text description of the translation taking place.
  6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
 * Multiple validation rules can be seperated with a semi-colon.
-* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters.
+* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull(sp1_per|-8888)).
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine check that:
 
