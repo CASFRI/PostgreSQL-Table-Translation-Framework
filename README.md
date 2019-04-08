@@ -243,9 +243,7 @@ Helper functions are used in translation tables to validate and translate source
 
 # Known issues
 1. Single quotes in the translation file are not allowed.
-2. tt.debug must be set to TRUE of FALSE in the SQL session before using the engine API.
-3. Helper functions contain VARIADIC parameters.
-4. An issue (#45) still prevents the TT_ValidateTTable() from working properly. It must be redefined after installation to avoid TT_Translate() functions from crashing.
+2. Helper functions contain VARIADIC parameters.
 
 # Credit
 Pierre Racine

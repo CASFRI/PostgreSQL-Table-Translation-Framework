@@ -84,8 +84,6 @@ WITH test_nb AS (
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
     SELECT 'TT_HasUniqueValues'::text,        17,         16         UNION ALL
     SELECT 'TT_Map'::text,                    18,          6         
-
-
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
