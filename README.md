@@ -51,9 +51,9 @@ A translation table defines the structure of the target table (the list of attri
 
 The translation is done in two steps:
 
-# Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass.
+1. Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass.
 
-# Translation - The source values are translated to the target values by the (unique) translation rule.
+2. Translation - The source values are translated to the target values by the (unique) translation rule.
 
 * Translation tables must contain these six columns:
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
