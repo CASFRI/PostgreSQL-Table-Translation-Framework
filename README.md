@@ -1,52 +1,63 @@
-# Intro
-The PostgreSQL Table Translation Framework allows PostgreSQL users to translate tables into new specifications using translation rules. The primary components are:
-* The engine, implemented as a set of pl/pgsql scripts.
-* A set of helper functions to facilitate translation.
-* A translation table that uses helper functions to validate the source data and define the translation rules.
-* Optionally, a set of lookup tables that accompany the translation table.
+# Introduction
+The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplify the writing of complex SQL queries attempting to acheive the same goal. It is very much like an in-db transform engine in a Extract, Load, Transform (ELT) process. Future versions should provide logging and resuming allowing a fast edit, change, run translation table creation/edition cycle.
+
+The primary components are:
+* The engine, implemented as a set of PL/pgSQL functions.
+* A set of validation and translation helper functions implementing the most usual validation and translation processes.
+* A translation table defining the structure of the target table and the validation and the translation rules.
+* Optionally, some value lookup tables that accompany the translation table.
 
 # Directory structure
 <pre>
-./             .sql files for loading, testing, and uninstalling the engine and helper functions
+./             .sql files for loading, testing, and uninstalling the engine and helper functions.
 
-./docs         Documentation including engine specifications
+./docs         Mostly development specifications.
 </pre>
 
-# Requirements - software versions
-The PostgreSQL Table Translation Framework requires PostgreSQL 9.6 and PostGIS v2.3.7.
+# Requirements
+PostgreSQL 9.6+ and PostGIS 2.3+.
 
-# Version releases
+# Version Releases
 * [PostgreSQL Table Translation Framework 0.1 beta](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.1-beta)
 
-# Installation/uninstallation
-* In a PostgreSQL query window, run, in this order:
+# Installation/Uninstallation
+* In a PostgreSQL query window, or using the PSQL client, run, in this order:
   1. the engine.sql file,
   2. the helperFunctions.sql file,
-  3. the helperFunctionsTest.sql file. All tests should pass.
+  3. the helperFunctionsTest.sql file. All tests should pass (the "passed" column should be TRUE for all tests).
   4. the engineTest.sql file. All tests should pass.
 * You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
+*Translation engine* - The PG/pgSQL code implementing the [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
 
-*Helper function* - A set of functions used in the translation table to facilitate translation.
+*Helper function* - A set of functions used in the translation table to facilitate validation of source values and their translation to  target values.
 
-*Source table* - Raw FRI table in PostgreSQL.
+*Source table* - The table to be validated and translated.
 
-*Target table* - Translated FRI table in PostgreSQL.
+*Target table* - The table created by the translation process.
 
-*Translation table* - User created table detailing the translation rules and read by the translation engine.
+*Translation table* - User created table read by the translation engine and defining the structure of the target table, the validation rules and the translation rules.
 
-*Lookup table* - User created table used in conjunction with the translation tables.
+*Lookup table* - User created table of lookup values used by some helper functions to convert source values into target values.
 
-*Source attribute/value* - The attribute or value contained in the source table.
+*Source attribute/value* - The attribute or value stored in the source table.
 
-*Target attribute/value* - The attribute or value in the translated target table.
+*Target attribute/value* - The attribute or value to be stored in the translated target table.
 
-# How to write a translation table?
+# What are translation tables and how to write them?
+
+A translation table defines the structure of the target table (the list of attributes and their types), how to validate source values to be translated and how to translate them into the target attributes. It also provide a way to document the rules and to flag rules that are not yet in synch with their documentation (in the case where rules are written as a second step or by different people).
+
+The translation is done in two steps:
+
+# Validation - The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass.
+
+# Translation - The source values are translated to the target values by the (unique) translation rule.
+
 * Translation tables must contain these six columns:
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
- 2. **targetAttributeType** - The PostgreSQL type of the target attribute.
+ 2. **targetAttributeType** - The data type of the target attribute.
  3. **validationRules** - Any validation rules needed to validate the source values before translating.
  4. **translationRules** - The translation rules to convert source values to target values.
  5. **description** - A text description of the translation taking place.
