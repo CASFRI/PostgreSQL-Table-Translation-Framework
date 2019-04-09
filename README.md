@@ -129,7 +129,7 @@ Example lookup table. Source values for species codes in the "source_val" column
 |TA        |PopuTrem |POPTRE   |
 |LP        |PinuCont |PINCON   |
 
-# Code Example
+# Complete Example
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
@@ -176,40 +176,44 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
 ```
 
-# Helper Functions
+# Provided Helper Functions
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-1. **NotNull**(val[]) - validation function
-    * Returns TRUE if source values are not NULL. Returns FALSE if any vals are NULL.
+Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other arguments controling others aspects of the process.
+
+**Validation Functions**
+
+1. **NotNull**(srcVal[])
+    * Returns TRUE if all srcVal are not NULL. Returns FALSE if any srcVal is NULL.
     * e.g. NotNull('a', 'b', 'c')
     * Signatures:
       * NotNull(text[])
       * NotNull(boolean[])
       * NotNull(double precision[])
       * NotNull(int[])
-2. **NotEmpty**(val[]) - validation function
-    * Returns TRUE if source values are not an empty string. Returns FALSE if any source value is empty string or padded spaces (e.g. '' or '  ') or Null.
+2. **NotEmpty**(srcVal[])
+    * Returns TRUE if all srcVal are not empty strings. Returns FALSE if any srcVal is an empty string or simply padded spaces (e.g. '' or '  ') or NULL.
     * e.g. NotEmpty('a', 'b', 'c')
     * Signatures:
-      * NotEmpty(val[])
-3. **IsInt**(val[]) - validation function
-    * Returns TRUE if source values represent integers. Returns FALSE if any source values are Null. Strings with numeric characters and '.' will be passed to IsInt. Strings with anything else (e.g. letter characters) return FALSE.
+      * NotEmpty(text[])
+3. **IsInt**(srcVal[])
+    * Returns TRUE if srcVal are all integers. Returns FALSE if any srcVal are NULL. Strings with numeric characters and '.' will be passed to IsInt(). Strings with anything else (e.g. letter characters) return FALSE.
     * e.g. IsInt(1,2,3,4,5)
     * Signatures:
       * IsInt(text[])
       * IsInt(double precision[])
       * IsInt(int[])
-4. **IsNumeric**(val[]) - validation function
-    * Returns TRUE if source values can be cast to double precision. Null source values return FALSE.
+4. **IsNumeric**(srcVal[]) 
+    * Returns TRUE if srcVal can be cast to double precision. NULL srcVal return FALSE.
     * e.g. IsNumeric('1.1', '1.2', '1.3')
     * Signatures:
       * IsNumeric(text[])
       * IsNumeric(double precision[])
       * IsNumeric(int[])
-5. **Between**(val, min, max) - validation function
-    * Returns TRUE if source value is between min and max.
+5. **Between**(srcVal, min, max)
+    * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * e.g. Between(5, 0, 100)
     * Signatures
       * Between(double precision, double precision, double precision)
@@ -219,87 +223,90 @@ Helper functions are of two types: validation helper functions are used in the *
       * Between(int, text, double precision)
       * Between(text, double precision, text)
       * Between(text, text, double precision)
-6. **GreaterThan**(val, lowerBound, inclusive\[default TRUE\]) - validation function
-    * Returns TRUE if source value >= lowerBound and inclusive = TRUE. Returns TRUE if source value > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if source value is Null.
+6. **GreaterThan**(srcVal, lowerBound, inclusive\[default TRUE\])
+    * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. GreaterThan(5, 0, TRUE)
     * Signatures:
       * GreaterThan(double precision, double precision, boolean)
       * GreaterThan(int, double precision, boolean)
-7. **LessThan**(val, upperBound, inclusive\[default TRUE\]) - validation function
-    * Returns TRUE if source value <= lowerBound and inclusive = TRUE. Returns TRUE if source value < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if source value is Null.
+7. **LessThan**(srcVal, upperBound, inclusive\[default TRUE\])
+    * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. LessThan(1, 5, TRUE)
     * Signatures:
       * LessThan(double precision, double precision, boolean)
       * LessThan(int, double precision, boolean)
-8. **HasUniqueValues**(val, lookupSchemaName, lookupTableName, occurences\[default 1\]) - validation function
-    * Returns TRUE if number of occurences of source value in source_val column of lookupSchemaName.lookupTableName equals occurences.
+8. **HasUniqueValues**(srcVal, lookupSchemaName, lookupTableName, occurences\[default 1\])
+    * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences.
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
     * Signatures:
       * HasUniqueValues(text, name, name, int)
       * HasUniqueValues(double precision, name, name, int)
       * HasUniqueValues(int, name, name, int)
-9. **Match**(val, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\]) - table version - validation function
-    * Returns TRUE if source value is present in source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
+9. **Match**(srcVal, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\]) - table version
+    * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_Match(sp1,public,species_lookup, TRUE)
     * Signatures:
       * Match(text, name, name, boolean)
       * Match(double precision, name, name, boolean)
       * Match(int, name, name, boolean)
-10. **Match**(val, lst, ignoreCase\[default TRUE\]) - list version - validation function
-    * Returns TRUE if source value is in lst. Ignores letter case if ignoreCase = TRUE.
+10. **Match**(srcVal, lst, ignoreCase\[default TRUE\]) - list version
+    * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * e.g. Match('a', 'a,b,c', TRUE)
     * Signatures:
       * Match(text, text)
       * Match(double precision, text)
       * Match(int, text)
-11. **False**() - validation function
+11. **False**()
     * Returns FALSE.
     * e.g. False()
     * Signatures:
       * False()
-12. **IsString**(val[]) - validation function
-    * Returns TRUE if source values are strings.
+12. **IsString**(srcVal[])
+    * Returns TRUE if srcVal are all strings.
     * e.g. IsString('a', 'b', 'c')
     * Signatures:
       * IsString(text[])
       * IsString(double precision[])
       * IsString(int[])
-13. **Copy**(val) - translation function
-    * Returns source value.
+      
+**Translation Functions**
+
+1. **Copy**(srcVal)
+    * Returns srcVal without any transformation.
     * e.g. Copy(sp1)
     * Signatures:
       * Copy(text)
       * Copy(double precision)
       * Copy(int)
       * Copy(boolean)
-14. **Concat**(sep, processNulls, val[]) - translation function
-    * Returns the concatenated source values separated by sep. Nulls are ignored if processNulls = TRUE. An error is raised if processNulls = FALSE and source values contain Null.
+2. **Concat**(sep, processNulls, srcVal[])
+    * Returns the concatenated source values separated by sep. NULLs are ignored if processNulls = TRUE. An error is raised if processNulls = FALSE and any srcVal is NULL.
     * e.g. Concat('_', FALSE, 'a', 'b', 'c')
     * Signatures:
       * Concat(text, boolean, text[])
-15. **Lookup**(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\]) - translation function
-    * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches source value in source_val column. If multiple matches, first row is returned.
+3. **Lookup**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+    * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(sp1, public, species_lookup, targetSp)
     * Signatures:
       * Lookup(text, name, name, text, boolean)
       * Lookup(double precision, name, name, text, boolean)
       * Lookup(int, name, name, text, boolean)
-16. **Length**(val) - translation function
-    * Returns length of source value string
+4. **Length**(srcVal)
+    * Returns the length of the srcVal string.
     * e.g. Length('12345')
     * Signatures:
       * Length(text)
       * Length(double precision)
       * Length(int)
-17. **Pad**(val, targetLength, padChar\[default x\]) - translation function
-    * Returns a string of length targetLength made up of source value preceeded with padChar if source value length < targetLength. Returns source value trimmed to targetLength if source value length > targetLength.
+5. **Pad**(srcVal, targetLength, padChar\[default x\])
+    * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength.
     * e.g. Pad(tab1, 10, x)
     * Signatures:
       * Pad(text, int, text)
       * Pad(double precision, int, text)
       * Pad(int, int, text)
-18. **Map**(val, lst1, lst2, ignoreCase\[default TRUE\]) - translation function
-    * Return value in lst2 that matches index of source value in lst1. Ignore letter cases if ignoreCase = TRUE.
+6. **Map**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+    * Return value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','1,2,3', TRUE)
     * Signatures:
       * Map(text, text, text, boolean)
@@ -307,21 +314,19 @@ Helper functions are of two types: validation helper functions are used in the *
       * Map(int, text, text, boolean)
 
 # Adding Custom Helper Functions
-* Additional helper functions can be written in PL/pgSQL and must follow the following conventions:
-  * Validation functions must return type boolean.
-  * All helper functions should raise an exception when any parameter (other than the source value) is null or of an invalid type.
-  * All validation helper functions should accept only text values.
-  * All helper functions should test for NULL and return FALSE when the the source value is NULL.
-  * Translation helper functions should only accept parameters of the right type.
-  * No helper function should be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as list of value passed as a text value separated by a comma or a semicolon.
+* Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
+
+  * All helper functions (validation and translation) must accept only text values.
+  * All helper functions (validation and translation) must raise an exception when parameter other than the source value are NULL or of an invalid type.
+  * Validation functions must always return a boolean. They must handle NULL and empty values and return the appropriate boolean value.
+  * Helper function should NOT be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as lists of text values separated by a comma or a semicolon.
 
 # Known issues
-1. Single quotes in the translation file are not allowed.
-2. Helper functions contain VARIADIC parameters.
+1. Single quotes in the translation file are not yet allowed.
 
 # Credit
-Pierre Racine
+Pierre Racine, Center for forest research, University Laval
 
-Pierre Vernier
+Pierre Vernier, Center for forest research, University Laval
 
-Marc Edwards
+Marc Edwards, Center for forest research, University Laval
