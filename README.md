@@ -79,7 +79,13 @@ Translation tables are themselves validated by the translation engine while proc
 
 **Example translation table**
 
-The following translation table define a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer). The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the validation text fail, the "NULL" string is returned instead. Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER. "-8888", an integer error code, is returned otherwise.
+The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
+
+The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the validation text fail, the "NULL" string is returned instead.
+
+Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER. "-8888", an integer error code, is returned otherwise.
+
+A textual description of the rules is provided and the flag indicarting that the deacription is in synch with the rules is set to TRUE.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
@@ -90,9 +96,9 @@ The following translation table define a target table composed of two columns: "
 
 The translation is done by the user in two steps:
 
-1. Prepare the translation function with SELECT TT_Prepare(translationTableSchema, translationTable). It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is modified.
+**1. Prepare the translation function** with SELECT TT_Prepare(translationTableSchema, translationTable). It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is modified.
 
-2. Translate the table with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
+**2. **Translate the table** with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
 
