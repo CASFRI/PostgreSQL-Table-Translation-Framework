@@ -81,9 +81,9 @@ Translation tables are themselves validated by the translation engine while proc
 
 The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
 
-The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the validation text fail, the "NULL" string is returned instead.
+The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the first validation rules fails, the "NULL" string is returned instead. If the first rules pass but the second validation rules fails, the "NOT_IN_SET" string is returned.
 
-Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER. "-8888", an integer error code, is returned otherwise.
+Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECISE_1_PER". "-8888", an integer error code, is returned if the first rule fails. "-9999" is returned if the second validation rules fails.
 
 A textual description of the rules is provided and the flag indicarting that the deacription is in synch with the rules is set to TRUE.
 
