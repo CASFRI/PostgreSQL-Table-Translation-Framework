@@ -319,7 +319,7 @@ Helper functions are generally called with the name of the source value attribut
   * All helper functions (validation and translation) must accept only text values.
   * All helper functions (validation and translation) must raise an exception when parameter other than the source value are NULL or of an invalid type.
   * Validation functions must always return a boolean. They must handle NULL and empty values and return the appropriate boolean value.
-  * Helper function should NOT be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as lists of text values separated by a comma or a semicolon.
+  * Helper function should NOT be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as a list of text values separated by a comma or a semicolon.
 
 # Known issues
 1. Single quotes in the translation file are not yet allowed.
