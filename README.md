@@ -49,21 +49,23 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 
 # What are translation tables and how to write them?
 
-A translation table is a normal PostgreSQL table defining the structure of the target table (the list of attributes and their types), how to validate source values to be translated and how to translate them into the target attributes. It also provides a way to document the rules and to flag rules that are not yet in synch with their documentation (in the case where rules are written in a second step or by different people).
+A translation table is a normal PostgreSQL table defining the structure of the target table (one row per target attribute), how to validate source values to be translated and how to translate them into the target attributes. It also provides a way to document the validation and translation rules and to flag rules that are not yet in synch with their description (in the case where rules are written as a second step or by different people).
 
-The translation is done by the translation engine in two steps:
+The translation table implements two very different steps:
 
-1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happen only if all the validation rules pass. a boolean flag can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
+1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (true or false) can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
 
 2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
 
 Translation tables must contain these six columns:
+
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The data type of the target attribute.
  3. **validationRules** - Any validation rules needed to validate the source values before translating.
  4. **translationRules** - The translation rules to convert source values to target values.
  5. **description** - A text description of the translation taking place.
  6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
+ 
 * Multiple validation rules can be seperated with a semi-colon.
 * Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull(sp1_per|-8888)).
 
