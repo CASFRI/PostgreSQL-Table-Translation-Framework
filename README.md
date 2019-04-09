@@ -4,7 +4,7 @@ The PostgreSQL Table Translation Framework allows PostgreSQL users to validate a
 The primary components of the framework are:
 * The translation engine, implemented as a set of PL/pgSQL functions.
 * A set of validation and translation helper functions implementing the most usual validation and translation rules.
-* A user produced translation table defining the structure of the target table and the validation and the translation rules.
+* A user produced translation table defining the structure of the target table and all the validation and the translation rules.
 * Optionally, some user produced value lookup tables that accompany the translation table.
 
 # Directory structure
