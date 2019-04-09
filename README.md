@@ -61,7 +61,7 @@ Translation tables have one row par target attribute and they must contain these
 
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The data type of the target attribute.
- 3. **validationRules** - Any validation rules needed to validate the source values before translating.
+ 3. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
  4. **translationRules** - The translation rules to convert source values to target values.
  5. **description** - A text description of the translation taking place.
  6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
@@ -94,12 +94,14 @@ The translation is done by the user in two steps:
 
 2. Translate the table with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
 
-By default, whatever the name translation table, the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a  suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). you would normally parovide a different suffix for each of your translation table.
+By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
 
 You generally want to create a new table with the result of the translation like this:
 
+```sql
 CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_table');
+```
 
 # How to write a lookup table?
 * Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
