@@ -79,7 +79,7 @@ Translation tables are themselves validated by the translation engine while proc
 
 **Example translation table**
 
-Source attribute sp1 is validated by checking it is not null, and that it matches a value in the lookup table. This is done using the notNull and the match [helper functions](#helper-functions) described further in this document. It is then translated into a target attribute called SPECIES_1 using the lookup table named species_lookup. Source attribute sp1_per is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER.
+The following translation table define a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer). The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the validation text fail, the "NULL" string is returned instead. Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute SPECISE_1_PER. "-8888", an integer error code, is returned otherwise.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
