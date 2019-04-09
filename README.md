@@ -181,7 +181,7 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other arguments controling others aspects of the process.
+Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
 
 **Validation Functions**
 
