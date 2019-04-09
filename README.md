@@ -111,7 +111,7 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
 ```
 
-This function returns the translated target table and can be used in place of any table in a SQL statement. 
+The TT_Translate() function returns the translated target table. It is designed to be used in place of any table in a SQL statement.
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
 
@@ -126,14 +126,15 @@ Example lookup table. Source values for species codes in the "source_val" column
 
 |source_val|targetSp1|targetSp2|
 |:---------|:--------|:--------|
-|TA        |PopuTrem |PopTre   |
-|LP        |PinuCont |PinCon   |
+|TA        |PopuTrem |POPTRE   |
+|LP        |PinuCont |PINCON   |
 
 # Code Example
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
-SELECT 'TA' AS sourceSp, 'PopuTrem' AS targetSp
+SELECT 'TA' AS sourceSp, 
+       'PopuTrem' AS targetSp
 UNION ALL
 SELECT 'LP', 'PinuCont';
 ```
@@ -141,15 +142,28 @@ SELECT 'LP', 'PinuCont';
 Create an example translation table:
 ```sql
 CREATE TABLE translate AS
-SELECT 1 AS ogc_fid, 'SPECIES_1' AS targetAttribute, 'text' AS targetAttributeType, 'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 'Maps source value to SPECIES_1 using lookup table' AS description, 'TRUE' AS descUpToDateWithRules
+SELECT 1 AS ogc_fid, 
+       'SPECIES_1' AS targetAttribute, 
+       'text' AS targetAttributeType, 
+       'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
+       'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 
+       'Maps source value to SPECIES_1 using lookup table' AS description, 
+       TRUE AS descUpToDateWithRules
 UNION ALL
-SELECT 2, 'SPECIES_1_PER', 'integer', 'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 'copy(sp1_per)', 'Copies source value to SPECIES_PER_1', 'TRUE';
+SELECT 2, 'SPECIES_1_PER', 
+          'integer', 
+          'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 
+          'copy(sp1_per)', 
+          'Copies source value to SPECIES_PER_1', 
+          TRUE;
 ```
 
 Create an example source table:
 ```sql
 CREATE TABLE sourceExample AS
-SELECT 1 AS ID, 'TA' AS sp1, 10 AS sp1_per
+SELECT 1 AS ID, 
+      'TA' AS sp1, 
+      10 AS sp1_per
 UNION ALL
 SELECT 2, 'LP', 60;
 ```
