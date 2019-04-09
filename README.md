@@ -107,19 +107,13 @@ It is necessary to dynamically prepare the actual translation function because P
 **2. Translate the table with the prepared function**
 
 ```sql
+CREATE TABLE target_table AS
 SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
 ```
 
 This function returns the translated target table and can be used in place of any table in a SQL statement. 
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
-
-You generally want to create a new table with the result of the translation like this:
-
-```sql
-CREATE TABLE target_table AS
-SELECT * FROM TT_Translate('public', 'source_table');
-```
 
 If your source table is very big, we suggest that you develop and try your translation table on a random sample of it so that the process of create, edit, test, generate gets quicker. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
 
@@ -128,12 +122,12 @@ If your source table is very big, we suggest that you develop and try your trans
 * An example is a list of species codes source values and a corresponding list of species names target values.
 * Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookup() function will return the corresponding value in the specified column.
 
-Example lookup table. Source values for species codes in the source_val column are matched to their target values in the targetSp column.
+Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "targetSp1"  or the "targetSp2" column.
 
-|source_val|targetSp|
-|:---------|:-------|
-|TA        |PopuTrem|
-|LP        |PinuCont|
+|source_val|targetSp1|targetSp2|
+|:---------|:--------|:--------|
+|TA        |PopuTrem |PopTre   |
+|LP        |PinuCont |PinCon   |
 
 # Code Example
 Create an example lookup table:
@@ -163,6 +157,8 @@ SELECT 2, 'LP', 60;
 Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name, translation table schema and translation table name to TT_Translate.
 ```sql
 SELECT TT_Prepare('public', 'translate');
+
+CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
 ```
 
