@@ -96,11 +96,19 @@ A textual description of the rules is provided and the flag indicarting that the
 
 The translation is done in two steps:
 
-**1. Prepare the translation function** with SELECT TT_Prepare(translationTableSchema, translationTable).
+**1. Prepare the translation function**
+
+```sql
+SELECT TT_Prepare(translationTableSchema, translationTable);
+```
 
 It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is changed.
 
-**2. Translate the table** with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
+**2. Translate the table with the prepared function**
+
+```sql
+SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
+```
 
 This function returns the translated target table and can be used in place of any table in a SQL statement. 
 
