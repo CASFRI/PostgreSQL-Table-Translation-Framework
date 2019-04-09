@@ -1,5 +1,5 @@
 # Introduction
-The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplify the writing of complex SQL queries attempting to achieve the same goal. It is very much like an in-db transform engine in a Extract, Load, Transform (ELT) process (a variant of the popular ETL process where most of the transformation is done inside the database). Future versions should provide logging and resuming allowing a fast edit, change, run translation table creation/edition cycle.
+The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplify the writing of complex SQL queries attempting to achieve the same goal. It is very much like an in-db transform engine in a Extract, Load, Transform (ELT) process (a variant of the popular ETL process where most of the transformation is done inside the database). Future versions should provide logging and resuming allowing a fast create, edit, test, generate translation table creation/edition cycle.
 
 The primary components of the framework are:
 * The translation engine, implemented as a set of PL/pgSQL functions.
@@ -92,13 +92,17 @@ A textual description of the rules is provided and the flag indicarting that the
 |SPECIES_1        |text                 |notNull(sp1\|NULL); match(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
 |SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
 
-# How to actually translate the source table?
+# How to actually translate a source table?
 
-The translation is done by the user in two steps:
+The translation is done in two steps:
 
-**1. Prepare the translation function** with SELECT TT_Prepare(translationTableSchema, translationTable). It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is modified.
+**1. Prepare the translation function** with SELECT TT_Prepare(translationTableSchema, translationTable).
 
-**2. **Translate the table** with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
+It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is changed.
+
+**2. Translate the table** with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
+
+This function returns the translated target table and can be used in place of any table in a SQL statement. 
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
 
@@ -109,10 +113,12 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_table');
 ```
 
+If your source table is very big, we suggest that you develop and try your translation table on a random sample of it so that the process of create, edit, test, generate gets quicker. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
+
 # How to write a lookup table?
-* Some helper functions allow the use of lookup tables describing the source and target attributes for translation.
-* An example is a list of species source values and a corresponding list of target values.
-* Helper functions using lookup tables will always look for the source values in the column named 'source_val'.
+* Some helper functions (match(), lookup()) allow the use of lookup tables providing a mapping between source and target values.
+* An example is a list of species codes source values and a corresponding list of species names target values.
+* Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookup() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the source_val column are matched to their target values in the targetSp column.
 
