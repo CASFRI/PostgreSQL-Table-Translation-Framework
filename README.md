@@ -1,5 +1,5 @@
 # Introduction
-The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplify the writing of complex SQL queries attempting to achieve the same goal. It is very much like an in-db transform engine in a Extract, Load, Transform (ELT) process. Future versions should provide logging and resuming allowing a fast edit, change, run translation table creation/edition cycle.
+The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplify the writing of complex SQL queries attempting to achieve the same goal. It is very much like an in-db transform engine in a Extract, Load, Transform (ELT) process (a variant of the popular ETL process where most of the transformation is done inside the database). Future versions should provide logging and resuming allowing a fast edit, change, run translation table creation/edition cycle.
 
 The primary components are:
 * The translation engine, implemented as a set of PL/pgSQL functions.
