@@ -57,7 +57,7 @@ The translation table implements two very different steps:
 
 2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
 
-Translation tables must contain these six columns:
+Translation tables have one row par target attribute and they must contain these six columns:
 
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The data type of the target attribute.
@@ -71,11 +71,11 @@ Translation tables must contain these six columns:
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine check that:
 
-* no null values exists,
-* target attribute names do not contain invalid characters (e.g. spaces),
-* target attribute types are valid PostgreSQL types,
-* validation and translation rules helper functions exits with the propre parameter types,
-* the flag indicating if the description is in synch with the validation/translation rules.
+* no null values exists (all cell must have a value),
+* target attribute names do not contain invalid characters (e.g. spaces or accents),
+* target attribute types are valid PostgreSQL types (integer, text, boolean, etc...)
+* validation and translation rules helper functions exist and have the propre number of parameter and types,
+* the flag indicating if the description is in synch with the validation/translation rules is set to true.
 
 **Example translation table**
 
