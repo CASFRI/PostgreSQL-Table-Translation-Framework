@@ -53,7 +53,7 @@ A translation table is a normal PostgreSQL table defining the structure of the t
 
 The translation table implements two very different steps:
 
-1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (true or false) can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
+1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (TRUE or FALSE) can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
 
 2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
 
@@ -75,7 +75,7 @@ Translation tables are themselves validated by the translation engine while proc
 * target attribute names do not contain invalid characters (e.g. spaces or accents),
 * target attribute types are valid PostgreSQL types (integer, text, boolean, etc...)
 * validation and translation rules helper functions exist and have the propre number of parameter and types,
-* the flag indicating if the description is in synch with the validation/translation rules is set to true.
+* the flag indicating if the description is in synch with the validation/translation rules is set to TRUE.
 
 **Example translation table**
 
@@ -141,7 +141,7 @@ SELECT 'LP', 'PinuCont';
 
 Create an example translation table:
 ```sql
-CREATE TABLE translate AS
+CREATE TABLE translation_table AS
 SELECT 1 AS ogc_fid, 
        'SPECIES_1' AS targetAttribute, 
        'text' AS targetAttributeType, 
@@ -160,7 +160,7 @@ SELECT 2, 'SPECIES_1_PER',
 
 Create an example source table:
 ```sql
-CREATE TABLE sourceExample AS
+CREATE TABLE source_example AS
 SELECT 1 AS ID, 
       'TA' AS sp1, 
       10 AS sp1_per
@@ -173,11 +173,13 @@ Run the translation engine by providing the schema and translation table names t
 SELECT TT_Prepare('public', 'translate');
 
 CREATE TABLE target_table AS
-SELECT * FROM TT_Translate('public', 'sourceexample', 'public', 'translate');
+SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
 ```
 
 # Helper Functions
-Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters. Helper functions can be of two types: validation helper functions are used in the **validationRules** column of the translation table, they validate the source values and return true or false. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
+Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
+
+Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
 1. **NotNull**(val[]) - validation function
     * Returns TRUE if source values are not NULL. Returns FALSE if any vals are NULL.
