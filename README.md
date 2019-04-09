@@ -22,10 +22,12 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 
 # Installation/Uninstallation
 * In a PostgreSQL query window, or using the PSQL client, run, in this order:
+
   1. the engine.sql file,
   2. the helperFunctions.sql file,
   3. the helperFunctionsTest.sql file. All tests should pass (the "passed" column should be TRUE for all tests).
   4. the engineTest.sql file. All tests should pass.
+  
 * You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
@@ -86,11 +88,11 @@ Source attribute sp1 is validated by checking it is not null, and that it matche
 
 The translation is done by the user in two steps:
 
-1. Prepare the translation function with SELECT TT_Prepare(translationTableSchema, translationTable)
+1. Prepare the translation function with SELECT TT_Prepare(translationTableSchema, translationTable). It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is modified.
 
-2. Translate the table with the prepared TT_Translate(sourceTableSchema, sourceTable) function
+2. Translate the table with the prepared TT_Translate(sourceTableSchema, sourceTable) function.
 
-Many TT_Translate functions can be prepared by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function).
+By default, whatever the name translation table, the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a  suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). you would normally parovide a different suffix for each of your translation table.
 
 You generally want to create a new table with the result of the translation like this:
 
