@@ -183,7 +183,7 @@ Helper functions are of two types: validation helper functions are used in the *
 
 Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
 
-**Validation Functions**
+## H2 Validation Functions
 
 1. **NotNull**(srcVal[])
     * Returns TRUE if all srcVal are not NULL. Returns FALSE if any srcVal is NULL.
@@ -198,6 +198,7 @@ Helper functions are generally called with the name of the source value attribut
     * e.g. NotEmpty('a', 'b', 'c')
     * Signatures:
       * NotEmpty(text[])
+
 3. **IsInt**(srcVal[])
     * Returns TRUE if srcVal are all integers. Returns FALSE if any srcVal are NULL. Strings with numeric characters and '.' will be passed to IsInt(). Strings with anything else (e.g. letter characters) return FALSE.
     * e.g. IsInt(1,2,3,4,5)
@@ -205,6 +206,7 @@ Helper functions are generally called with the name of the source value attribut
       * IsInt(text[])
       * IsInt(double precision[])
       * IsInt(int[])
+
 4. **IsNumeric**(srcVal[]) 
     * Returns TRUE if srcVal can be cast to double precision. NULL srcVal return FALSE.
     * e.g. IsNumeric('1.1', '1.2', '1.3')
@@ -212,6 +214,7 @@ Helper functions are generally called with the name of the source value attribut
       * IsNumeric(text[])
       * IsNumeric(double precision[])
       * IsNumeric(int[])
+
 5. **Between**(srcVal, min, max)
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * e.g. Between(5, 0, 100)
@@ -229,12 +232,14 @@ Helper functions are generally called with the name of the source value attribut
     * Signatures:
       * GreaterThan(double precision, double precision, boolean)
       * GreaterThan(int, double precision, boolean)
+
 7. **LessThan**(srcVal, upperBound, inclusive\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. LessThan(1, 5, TRUE)
     * Signatures:
       * LessThan(double precision, double precision, boolean)
       * LessThan(int, double precision, boolean)
+
 8. **HasUniqueValues**(srcVal, lookupSchemaName, lookupTableName, occurences\[default 1\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences.
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
@@ -242,6 +247,7 @@ Helper functions are generally called with the name of the source value attribut
       * HasUniqueValues(text, name, name, int)
       * HasUniqueValues(double precision, name, name, int)
       * HasUniqueValues(int, name, name, int)
+
 9. **Match**(srcVal, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\]) - table version
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_Match(sp1,public,species_lookup, TRUE)
@@ -249,6 +255,7 @@ Helper functions are generally called with the name of the source value attribut
       * Match(text, name, name, boolean)
       * Match(double precision, name, name, boolean)
       * Match(int, name, name, boolean)
+
 10. **Match**(srcVal, lst, ignoreCase\[default TRUE\]) - list version
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * e.g. Match('a', 'a,b,c', TRUE)
@@ -256,11 +263,13 @@ Helper functions are generally called with the name of the source value attribut
       * Match(text, text)
       * Match(double precision, text)
       * Match(int, text)
+
 11. **False**()
     * Returns FALSE.
     * e.g. False()
     * Signatures:
       * False()
+
 12. **IsString**(srcVal[])
     * Returns TRUE if srcVal are all strings.
     * e.g. IsString('a', 'b', 'c')
@@ -269,7 +278,7 @@ Helper functions are generally called with the name of the source value attribut
       * IsString(double precision[])
       * IsString(int[])
       
-**Translation Functions**
+## H2 Translation Functions
 
 1. **Copy**(srcVal)
     * Returns srcVal without any transformation.
@@ -279,11 +288,13 @@ Helper functions are generally called with the name of the source value attribut
       * Copy(double precision)
       * Copy(int)
       * Copy(boolean)
+
 2. **Concat**(sep, processNulls, srcVal[])
     * Returns the concatenated source values separated by sep. NULLs are ignored if processNulls = TRUE. An error is raised if processNulls = FALSE and any srcVal is NULL.
     * e.g. Concat('_', FALSE, 'a', 'b', 'c')
     * Signatures:
       * Concat(text, boolean, text[])
+
 3. **Lookup**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
     * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(sp1, public, species_lookup, targetSp)
@@ -291,6 +302,7 @@ Helper functions are generally called with the name of the source value attribut
       * Lookup(text, name, name, text, boolean)
       * Lookup(double precision, name, name, text, boolean)
       * Lookup(int, name, name, text, boolean)
+
 4. **Length**(srcVal)
     * Returns the length of the srcVal string.
     * e.g. Length('12345')
@@ -298,6 +310,7 @@ Helper functions are generally called with the name of the source value attribut
       * Length(text)
       * Length(double precision)
       * Length(int)
+
 5. **Pad**(srcVal, targetLength, padChar\[default x\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength.
     * e.g. Pad(tab1, 10, x)
@@ -305,6 +318,7 @@ Helper functions are generally called with the name of the source value attribut
       * Pad(text, int, text)
       * Pad(double precision, int, text)
       * Pad(int, int, text)
+
 6. **Map**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
     * Return value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','1,2,3', TRUE)
