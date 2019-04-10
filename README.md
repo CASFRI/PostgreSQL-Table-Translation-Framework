@@ -183,7 +183,7 @@ Helper functions are of two types: validation helper functions are used in the *
 
 Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
 
-## H2 Validation Functions
+## Validation Functions
 
 1. **NotNull**(srcVal[])
     * Returns TRUE if all srcVal are not NULL. Returns FALSE if any srcVal is NULL.
@@ -278,7 +278,7 @@ Helper functions are generally called with the name of the source value attribut
       * IsString(double precision[])
       * IsString(int[])
       
-## H2 Translation Functions
+## Translation Functions
 
 1. **Copy**(srcVal)
     * Returns srcVal without any transformation.
