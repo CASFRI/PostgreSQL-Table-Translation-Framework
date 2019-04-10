@@ -336,7 +336,7 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
   * Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value.
   * Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
   
-If you think your custom helper function could be of general interest to the framework users, you can submit it to the project.
+If you think your custom helper function could be of general interest to other framework users, you can submit it to the project. It could be integrated.
 
 # Known issues
 1. Single quotes in the translation file are not yet allowed.
