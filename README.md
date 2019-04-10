@@ -328,12 +328,15 @@ Helper functions are generally called with the name of the source value attribut
       * Map(int, text, text, boolean)
 
 # Adding Custom Helper Functions
-* Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
+Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
-  * All helper functions (validation and translation) must accept only text values.
+  * All helper function names must be prefixed with "TT_". The prefix must not be used in the translation file. This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to these conventions) can be used.
+  * All helper functions (validation and translation) must accept only text parameters (the engine convert everything to text before calling the function).
   * All helper functions (validation and translation) must raise an exception when parameter other than the source value are NULL or of an invalid type.
-  * Validation functions must always return a boolean. They must handle NULL and empty values and return the appropriate boolean value.
-  * Helper function should NOT be implemented as VARIADIC accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be supported as a list of text values separated by a comma or a semicolon.
+  * Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value.
+  * Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
+  
+If you think your custom helper function could be of general interest to the framework users, you can submit it to the project.
 
 # Known issues
 1. Single quotes in the translation file are not yet allowed.
