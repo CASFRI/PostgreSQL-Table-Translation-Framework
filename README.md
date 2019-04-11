@@ -342,8 +342,8 @@ If you think your custom helper function could be of general interest to other f
 1. Single quotes in the translation file are not yet allowed.
 
 # Credit
-Pierre Racine, Center for forest research, University Laval
+**Pierre Racine**, Center for forest research, University Laval.
 
-Pierre Vernier, Center for forest research, University Laval
+**Pierre Vernier**, Center for forest research, University Laval.
 
-Marc Edwards, Center for forest research, University Laval
+**Marc Edwards**, Center for forest research, University Laval.
