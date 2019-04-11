@@ -19,7 +19,7 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 
 # Version Releases
 
-The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increment in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes, all not breaking backward compatibility with existing translation files. Increments in major version number are for changes breaking backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
+The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increments in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes. Minor version increments will not break backward compatibility with existing translation files. Increments in major version numbers are for changes that break backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
 
 The current version is 0.0.1-beta and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.1-beta
 
@@ -52,15 +52,15 @@ The current version is 0.0.1-beta and is available for download at https://githu
 
 # What are translation tables and how to write them?
 
-A translation table is a normal PostgreSQL table defining the structure of the target table (one row per target attribute), how to validate source values to be translated and how to translate them into the target attributes. It also provides a way to document the validation and translation rules and to flag rules that are not yet in synch with their description (in the case where rules are written as a second step or by different people).
+A translation table is a normal PostgreSQL table defining the structure of the target table (one row per target attribute), how to validate source values to be translated, and how to translate source values into target attributes. It also provides a way to document the validation and translation rules and to flag rules that are not yet in synch with their description (in the case where rules are written as a second step or by different people).
 
 The translation table implements two very different steps:
 
-1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (TRUE or FALSE) can make a failing validation rule to stop the engine. This flag is set to false by default so that the engine report errors without stopping.
+1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (TRUE or FALSE) can make a failing validation rule stop the engine. This flag is set to false by default, allowing the engine to report errors without stopping.
 
 2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
 
-Translation tables have one row par target attribute and they must contain these six columns:
+Translation tables have one row per target attribute and they must contain these six columns:
 
  1. **targetAttribute** - The name of the target attribute to be created in the target table.
  2. **targetAttributeType** - The data type of the target attribute.
@@ -74,25 +74,25 @@ Translation tables have one row par target attribute and they must contain these
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine check that:
 
-* no null values exists (all cell must have a value),
-* target attribute names do not contain invalid characters (e.g. spaces or accents),
+* no null values exists (all cells must have a value)
+* target attribute names do not contain invalid characters (e.g. spaces or accents)
 * target attribute types are valid PostgreSQL types (integer, text, boolean, etc...)
-* validation and translation rules helper functions exist and have the propre number of parameter and types,
-* the flag indicating if the description is in synch with the validation/translation rules is set to TRUE.
+* helper functions for validation and translation rules exist and have the propre number of parameters and types
+* the flag indicating if the description is in sync with the validation/translation rules is set to TRUE
 
 **Example translation table**
 
 The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
 
-The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the match() [helper functions](#helper-functions) described further in this document. If all validation test pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the first validation rules fails, the "NULL" string is returned instead. If the first rules pass but the second validation rules fails, the "NOT_IN_SET" string is returned.
+The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the first validation rules fails, the "NULL" string is returned instead. If the first rule passes but the second validation rule fails, the "NOT_IN_SET" string is returned.
 
-Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECISE_1_PER". "-8888", an integer error code, is returned if the first rule fails. "-9999" is returned if the second validation rules fails.
+Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECISE_1_PER". "-8888", an integer error code, is returned if the first rule fails. "-9999" is returned if the second validation rule fails.
 
-A textual description of the rules is provided and the flag indicarting that the deacription is in synch with the rules is set to TRUE.
+A textual description of the rules is provided and the flag indicarting that the deacription is in sync with the rules is set to TRUE.
 
 | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|SPECIES_1        |text                 |notNull(sp1\|NULL); match(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
+|SPECIES_1        |text                 |notNull(sp1\|NULL); matchTab(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
 |SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
 
 # How to actually translate a source table?
@@ -105,7 +105,7 @@ The translation is done in two steps:
 SELECT TT_Prepare(translationTableSchema, translationTable);
 ```
 
-It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of column of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new atribute is defined in the translation table or when a target attribute type is changed.
+It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of columns of arbitrary types. The translation function has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new attribute is defined in the translation table, or when a target attribute type is changed.
 
 **2. Translate the table with the prepared function**
 
@@ -114,15 +114,15 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
 ```
 
-The TT_Translate() function returns the translated target table. It is designed to be used in place of any table in a SQL statement.
+The TT_Translate() function returns the translated target table. It is designed to be used in place of any table in an SQL statement.
 
-By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') with prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation table.
+By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') will prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation tables.
 
-If your source table is very big, we suggest that you develop and try your translation table on a random sample of it so that the process of create, edit, test, generate gets quicker. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
+If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
 
 # How to write a lookup table?
-* Some helper functions (match(), lookup()) allow the use of lookup tables providing a mapping between source and target values.
-* An example is a list of species codes source values and a corresponding list of species names target values.
+* Some helper functions (matchTab(), lookup()) allow the use of lookup tables to support mapping between source and target values.
+* An example is a list of source value species codes and a corresponding list of target value species names.
 * Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookup() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "targetSp1"  or the "targetSp2" column.
@@ -148,7 +148,7 @@ CREATE TABLE translation_table AS
 SELECT 1 AS ogc_fid, 
        'SPECIES_1' AS targetAttribute, 
        'text' AS targetAttributeType, 
-       'notNull(sp1|NULL);match(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
+       'notNull(sp1|NULL);matchTab(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
        'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS descUpToDateWithRules
@@ -182,9 +182,9 @@ SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_ta
 # Provided Helper Functions
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
-Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
+Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as first argument and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
+Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
 
 ## Validation Functions
 
@@ -334,8 +334,8 @@ Helper functions are generally called with the name of the source value attribut
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
   * All helper function names must be prefixed with "TT_". The prefix must not be used in the translation file. This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to these conventions) can be used.
-  * All helper functions (validation and translation) must accept only text parameters (the engine convert everything to text before calling the function).
-  * All helper functions (validation and translation) must raise an exception when parameter other than the source value are NULL or of an invalid type.
+  * All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function).
+  * All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type.
   * Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value.
   * Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
   
@@ -347,6 +347,6 @@ If you think your custom helper function could be of general interest to other f
 # Credit
 **Pierre Racine**, Center for forest research, University Laval.
 
-**Pierre Vernier**, Center for forest research, University Laval.
+**Pierre Vernier**, database designer.
 
-**Marc Edwards**, Center for forest research, University Laval.
+**Marc Edwards**, SQL programmer.
