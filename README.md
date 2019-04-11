@@ -19,7 +19,7 @@ PostgreSQL 9.6+ and PostGIS 2.3+.
 
 # Version Releases
 
-The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme. Version numbers follows the major.minor.revision version number scheme. Increments in revision version numbers are for bug fixes. Increment in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes, all not breaking backward compatibility. Increments in  major version number are for changes breaking backward compatibility in the helper functions (meaning you have to make some changes in your translation table).
+The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increment in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes, all not breaking backward compatibility. Increments in  major version number are for changes breaking backward compatibility in the helper functions (meaning you have to make some changes in your translation table).
 
 The current version is 0.1-beta and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.1-beta
 
