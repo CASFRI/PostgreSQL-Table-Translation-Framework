@@ -155,6 +155,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- val text - Value to test.
 -- min text - Minimum.
 -- max text - Maximum.
+-- inclusive - are min and max inclusive? Default True.
 --
 -- Return TRUE if val is between min and max.
 -- Return FALSE otherwise.
@@ -165,23 +166,36 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_Between(
   val text,
   min text,
-  max text
+  max text,
+  inclusive text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision := val::double precision;
     _min double precision := min::double precision;
     _max double precision := max::double precision;
+    _inclusive boolean := inclusive::boolean;
   BEGIN
     IF min IS NULL OR max IS NULL THEN
       RAISE EXCEPTION 'min or max is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSE
+    ELSIF _inclusive = TRUE THEN
       RETURN _val >= _min and _val <= _max;
+    ELSE
+      RETURN _val > _min and _val < _max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Between(
+  val text,
+  min text,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT TT_Between(val, min, max, TRUE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -201,7 +215,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
    val text,
    lowerBound text,
-   inclusive text DEFAULT TRUE
+   inclusive text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -220,6 +234,15 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_GreaterThan(
+  val text,
+  lowerBound text
+)
+RETURNS boolean AS $$
+  SELECT TT_GreaterThan(val, lowerBound, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+  
 
 -------------------------------------------------------------------------------
 
@@ -240,7 +263,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LessThan(
    val text,
    upperBound text,
-   inclusive text DEFAULT TRUE
+   inclusive text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -259,6 +282,14 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LessThan(
+  val text,
+  upperBound text
+)
+RETURNS boolean AS $$
+  SELECT TT_LessThan(val, upperBound, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -276,7 +307,7 @@ CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  occurences text DEFAULT 1
+  occurences text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -300,6 +331,14 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasUniqueValues(val, lookupSchemaName, lookupTableName, 1::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -317,7 +356,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTab(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  ignoreCase text DEFAULT TRUE
+  ignoreCase text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -342,13 +381,23 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTab(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTab(val, lookupSchemaName, lookupTableName, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_MatchList (list version)
 --
--- val text/double precision/int - value to test.
+-- val text - value to test.
 -- lst text - string containing comma separated vals.
+-- ignoreCase - text default TRUE. Should upper/lower case be ignored?
 --
 -- Is val in lst?
 -- val followed by string of test values
@@ -357,7 +406,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
-  ignoreCase text DEFAULT TRUE
+  ignoreCase text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -375,6 +424,14 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchList(
+  val text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -441,7 +498,7 @@ CREATE OR REPLACE FUNCTION TT_Lookup(
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
-  ignoreCase text DEFAULT TRUE
+  ignoreCase text
 )
 RETURNS text AS $$
   DECLARE
@@ -466,6 +523,16 @@ RETURNS text AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Lookup(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS text AS $$
+  SELECT TT_Lookup(val, lookupSchemaName, lookupTableName, lookupCol, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -485,7 +552,7 @@ CREATE OR REPLACE FUNCTION TT_Map(
   val text,
   lst1 text,
   lst2 text,
-  ignoreCase text DEFAULT TRUE
+  ignoreCase text
 )
 RETURNS text AS $$
   DECLARE
@@ -506,6 +573,15 @@ RETURNS text AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Map(
+  val text,
+  lst1 text,
+  lst2 text
+)
+RETURNS text AS $$
+  SELECT TT_Map(val, lst1, lst2, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -544,7 +620,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
   targetLength text,
-  padChar text DEFAULT 'x'
+  padChar text
 )
 RETURNS text AS $$
   DECLARE
@@ -567,6 +643,14 @@ RETURNS text AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Pad(
+  val text,
+  targetLength text
+)
+RETURNS text AS $$
+  SELECT TT_Pad(val, targetLength, 'x'::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
