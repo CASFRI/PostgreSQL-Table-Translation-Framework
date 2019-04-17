@@ -27,29 +27,6 @@ SET tt.debug TO FALSE;
 -------------------------------------------------------------------------------
 -- Function Definitions...
 -------------------------------------------------------------------------------
--- TT_Debug
---
---   schemaName name - Name of the schema.
---   tableName name  - Name of the table.
---
---   RETURNS booelan  - True if tt_debug is set to true. False if set to false or not set.
---
--- Wrapper to catch error when tt.error is not set.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Debug();
-CREATE OR REPLACE FUNCTION TT_Debug(
-)
-RETURNS boolean AS $$
-  DECLARE
-  BEGIN
-    RETURN current_setting('tt.debug');
-    EXCEPTION WHEN OTHERS THEN
-      RETURN FALSE;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
 -- TT_FullTableName
 --
 --   schemaName name - Name of the schema.
@@ -115,7 +92,7 @@ CREATE OR REPLACE FUNCTION TT_TypeGuess(
 )
 RETURNS text AS $$
   DECLARE
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TypeGuess BEGIN val=%', val;END IF;
     IF val IS NULL THEN
@@ -161,7 +138,7 @@ CREATE OR REPLACE FUNCTION TT_FctExists(
 RETURNS boolean AS $$
   DECLARE
     cnt int = 0;
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
     fctName = 'tt_' || fctName;
@@ -205,75 +182,6 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_TextFctExist
---
---   fctString text
---   argLength  int
---
---   RETURNS boolean
---
--- Returns TRUE if fctString exists as a function in the catalog with the 
--- specified function name and number of arguments. Only works for helper
--- functions accepting all arguments as type text.
--- types.
-------------------------------------------------------------
--- Self contained example:
--- 
--- SELECT TT_TextFctExists('TT_NotNull', 1)
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_TextFctExists(text, int);
-CREATE OR REPLACE FUNCTION TT_TextFctExists(
-  schemaName name,
-  fctName name,
-  argLength int
-)
-RETURNS boolean AS $$
-  DECLARE
-    cnt int = 0;
-    debug boolean = TT_Debug();
-    args text;
-  BEGIN
-    IF debug THEN RAISE NOTICE 'TT_TextFctExists BEGIN';END IF;
-    fctName = 'tt_' || fctName;
-    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
-      schemaName = '';
-    END IF;
-    IF schemaName != '' THEN
-      fctName = schemaName || '.' || fctName;
-    END IF;
-    IF fctName IS NULL THEN
-      RETURN NULL;
-    END IF;
-    IF fctName = '' OR fctName = '.' THEN
-      RETURN FALSE;
-    END IF;
-    fctName = lower(fctName);
-    IF debug THEN RAISE NOTICE 'TT_TextFctExists 11 fctName=%, argLength=%', fctName, argLength;END IF;
-    args = repeat('text,', argLength);
-    SELECT count(*)
-    FROM pg_proc
-    WHERE oid::regprocedure::text = fctName || '(' || left(args, char_length(args) - 1) || ')'    
-    INTO cnt;
-    
-    IF cnt > 0 THEN
-      IF debug THEN RAISE NOTICE 'TT_TextFctExists END TRUE';END IF;
-      RETURN TRUE;
-    END IF;
-    IF debug THEN RAISE NOTICE 'TT_TextFctExists END FALSE';END IF;
-    RETURN FALSE;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_TextFctExists(
-  fctName name,
-  argLength int
-)
-RETURNS boolean AS $$
-  SELECT TT_TextFctExists(''::name, fctName, argLength)
-$$ LANGUAGE sql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
 -- TT_FctReturnType
 --
 --   fctString text
@@ -296,10 +204,10 @@ CREATE OR REPLACE FUNCTION TT_FctReturnType(
 RETURNS text AS $$
   DECLARE
     result text;
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctReturnType BEGIN';END IF;
-    IF TT_TextFctExists(schemaName, fctName, cardinality(argTypes)) THEN
+    IF TT_FctExists(schemaName, fctName, argTypes) THEN
       fctName = 'tt_' || fctName;
       IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
         schemaName = '';
@@ -430,7 +338,7 @@ RETURNS anyelement AS $$
     argVal text;
     arg text;
     result ALIAS FOR $0;
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_FctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
     IF fctName IS NULL OR NOT TT_FctExists(fctName, TT_FctSignature(args, vals)) OR vals IS NULL THEN
@@ -471,81 +379,6 @@ RETURNS anyelement AS $$
     IF debug THEN RAISE NOTICE 'TT_FctEval 55 ruleQuery=%', ruleQuery;END IF;
     EXECUTE ruleQuery INTO STRICT result;
     IF debug THEN RAISE NOTICE 'TT_FctEval END result=%', result;END IF;
-    RETURN result;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_TextFctEval
---
---  - fctName text - Name of the function to evaluate. Will always be prefixed 
---                   with "TT_".
---  - arg text[]   - Array of argument values to pass to the function. 
---                   Generally includes one or two column names to get replaced 
---                   with values from the vals argument.
---  - vals jsonb   - Replacement values passed as a jsonb object (since  
---                   PostgresQL does not allow passing RECORDs to functions).
---  - returnType anyelement - Determines the type of the returned value 
---                            (declared generically as anyelement).
---
---    RETURNS anyelement
---
--- Evaluate a function given its name, some arguments and replacement values. 
--- All arguments matching the name of a value found in the jsonb vals structure
--- are replaced with this value. returnType determines the return type of this 
--- pseudo-type function.
---
--- This version passes all vals as type text when running helper functions.
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement);
-CREATE OR REPLACE FUNCTION TT_TextFctEval(
-  fctName text,
-  args text[],
-  vals jsonb,
-  returnType anyelement
-)
-RETURNS anyelement AS $$
-  DECLARE
-    ruleQuery text;
-    argVal text;
-    arg text;
-    result ALIAS FOR $0;
-    debug boolean = TT_Debug();
-  BEGIN
-    IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
-    -- if function has no args, pass 0 to TT_TextFctExists using coalesce.
-    IF fctName IS NULL OR NOT TT_TextFctExists(fctName, coalesce(cardinality(args),0)) OR vals IS NULL THEN
-      IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-      RAISE EXCEPTION 'TT_TextFctEval FUNCTION % DOES NOT EXIST', fctName;
-    END IF;
-    ruleQuery = 'SELECT TT_' || fctName || '(';
-    IF NOT args IS NULL THEN
-      -- Search for any argument names in the provided value jsonb object
-      FOREACH arg IN ARRAY args LOOP
-        -- if arg does not exist as column name in jsonb row, treat it as a string
-        IF NOT vals ? arg THEN
-          IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-          ruleQuery = ruleQuery || '''' || arg || '''::text, ';
-        ELSE
-          argVal = vals->>arg;
-          IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
-          IF argVal IS NULL THEN
-            ruleQuery = ruleQuery || 'NULL::text' || ', ';
-          ELSE
-            ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
-          END IF;
-        END IF;
-        IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
-      END LOOP;
-      -- Remove the last comma.
-      ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2);
-    END IF;
-    ruleQuery = ruleQuery || ')::' || pg_typeof(result);
-    IF debug THEN RAISE NOTICE 'TT_TextFctEval 55 ruleQuery=%', ruleQuery;END IF;
-    EXECUTE ruleQuery INTO STRICT result;
-    IF debug THEN RAISE NOTICE 'TT_TextFctEval END result=%', result;END IF;
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -710,7 +543,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
   DECLARE
     row RECORD;
     query text;
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF translationTable IS NULL THEN
@@ -722,19 +555,19 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
-    query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id;';
+    query = 'SELECT * FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY ogc_fid;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row;END IF;
-      targetAttribute = row.targetAttribute;
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44';END IF;
+      targetAttribute = (row.targetAttribute)::text;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      targetAttributeType = row.targetAttributeType;
+      targetAttributeType = (row.targetAttributeType)::text;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
+      validationRules = (TT_ParseRules((row.validationRules)::text))::TT_RuleDef[];
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
+      translationRule = ((TT_ParseRules((row.translationRules)::text))[1])::TT_RuleDef;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      description = coalesce(row.description, '');
+      description = coalesce(((row.description)::text), '');
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
@@ -790,7 +623,7 @@ RETURNS text AS $f$
     EXECUTE query;
 
     -- Build the list of attribute types
-    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY rule_id) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
+    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY ogc_fid) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
       
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
@@ -867,7 +700,7 @@ RETURNS SETOF RECORD AS $$
     finalVal text;
     isValid boolean;
     jsonbRow jsonb;
-    debug boolean = TT_Debug();
+    debug boolean = current_setting('tt.debug');
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
@@ -875,7 +708,7 @@ RETURNS SETOF RECORD AS $$
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
-       -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
+       -- Convert the row to a json object so we can pass it to TT_FctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourcerow);
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourcerow=%', jsonbRow;END IF;
        finalQuery = 'SELECT';
@@ -888,7 +721,7 @@ RETURNS SETOF RECORD AS $$
            IF isValid THEN
              IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
              -- Evaluate the rule
-             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+             isValid = TT_FctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
              IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
              -- initialize the final value
              finalVal = rule.errorCode;
@@ -906,7 +739,7 @@ RETURNS SETOF RECORD AS $$
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
+           query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            EXECUTE query
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
