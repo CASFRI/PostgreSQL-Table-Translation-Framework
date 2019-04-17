@@ -27,7 +27,7 @@ SELECT 'c'::text, 101;
 -- Create a test translation table
 DROP TABLE IF EXISTS test_translationTable;
 CREATE TABLE test_translationTable AS
-SELECT 1 ogc_fid,
+SELECT 1 rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'int'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
@@ -35,7 +35,7 @@ SELECT 1 ogc_fid,
        'Test'::text description,
        TRUE descUpToDateWithRules
 UNION ALL
-SELECT 2 ogc_fid,
+SELECT 2 rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'int'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
