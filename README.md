@@ -338,6 +338,7 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
   * All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type.
   * Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value.
   * Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
+  * Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If default parameter values are required, a separate function signature should be created that calls the full function.
   
 If you think your custom helper function could be of general interest to other framework users, you can submit it to the project. It could be integrated.
 
