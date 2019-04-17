@@ -342,7 +342,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MatchTab (table version)
+-- TT_MatchTable (table version)
 --
 -- val text - value to test.
 -- lookupSchemaName text - schema name holding lookup table.
@@ -352,7 +352,7 @@ $$ LANGUAGE sql VOLATILE;
 -- if val is present in source_val of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_MatchTab(
+CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text,
@@ -382,13 +382,13 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_MatchTab(
+CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTab(val, lookupSchemaName, lookupTableName, TRUE::text)
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
