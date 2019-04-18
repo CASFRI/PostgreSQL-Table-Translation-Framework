@@ -249,10 +249,11 @@ RETURNS boolean AS $$
     END IF;
     fctName = lower(fctName);
     IF debug THEN RAISE NOTICE 'TT_TextFctExists 11 fctName=%, argLength=%', fctName, argLength;END IF;
-    args = repeat('text,', argLength);
+    -- args = repeat('text,', argLength);
     SELECT count(*)
     FROM pg_proc
-    WHERE oid::regprocedure::text = fctName || '(' || left(args, char_length(args) - 1) || ')'    
+    WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
+    -- WHERE oid::regprocedure::text = fctName || '(' || left(args, char_length(args) - 1) || ')'    
     INTO cnt;
     
     IF cnt > 0 THEN
