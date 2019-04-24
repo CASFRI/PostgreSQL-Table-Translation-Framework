@@ -29,7 +29,9 @@ DROP FUNCTION IF EXISTS TT_MatchList(text,text,text);
 DROP FUNCTION IF EXISTS TT_MatchList(text,text);
 DROP FUNCTION IF EXISTS TT_False();
 
-DROP FUNCTION IF EXISTS TT_Copy(text);
+DROP FUNCTION IF EXISTS TT_CopyText(text);
+DROP FUNCTION IF EXISTS TT_CopyDouble(text);
+DROP FUNCTION IF EXISTS TT_CopyInt(text);
 DROP FUNCTION IF EXISTS TT_Lookup(text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_Lookup(text,text,text,text);
 DROP FUNCTION IF EXISTS TT_Map(text,text,text,text);
@@ -42,3 +44,7 @@ DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,tex
 DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_Concat(text,text,text,text);
+DROP FUNCTION IF EXISTS TT_Concat(text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_Concat(text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_Concat(text,text,text,text,text,text,text);

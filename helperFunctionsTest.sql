@@ -87,16 +87,19 @@ WITH test_nb AS (
     SELECT 'TT_GreaterThan'::text,             7,          9         UNION ALL
     SELECT 'TT_LessThan'::text,                8,          9         UNION ALL
     SELECT 'TT_MatchList'::text,               9,         20         UNION ALL
-    SELECT 'TT_MatchTable'::text,               10,         19         UNION ALL   
+    SELECT 'TT_MatchTable'::text,             10,         19         UNION ALL   
     SELECT 'TT_Concat'::text,                 11,         15         UNION ALL
-    SELECT 'TT_Copy'::text,                   12,          5         UNION ALL
+    SELECT 'TT_CopyText'::text,               12,          3         UNION ALL
     SELECT 'TT_Lookup'::text,                 13,          9         UNION ALL
     SELECT 'TT_False'::text,                  14,          1         UNION ALL
     SELECT 'TT_Length'::text,                 15,          5         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
     SELECT 'TT_HasUniqueValues'::text,        17,         17         UNION ALL
     SELECT 'TT_Map'::text,                    18,          6         UNION ALL
-    SELECT 'TT_PadConcat'::text,              19,          4
+    SELECT 'TT_PadConcat'::text,              19,          4         UNION ALL
+    SELECT 'TT_CopyDouble'::text,             20,          2         UNION ALL
+    SELECT 'TT_CopyInt'::text,                21,          5         
+
 
 
 ),
@@ -907,37 +910,25 @@ SELECT '11.15'::text number,
        TT_IsError('SELECT TT_Concat(text_val::text,int_val::text,dbl_val::text, ''-''::text, FALSE::text) FROM test_table_with_null WHERE text_val = ''CCC'');') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 12 - TT_Copy
+-- Test 12 - TT_CopyText
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.1'::text number,
-       'TT_Copy'::text function_tested,
+       'TT_CopyText'::text function_tested,
        'Text usage'::text description,
-       TT_Copy('copytest'::text) = 'copytest'::text passed
+       TT_CopyText('copytest'::text) = 'copytest'::text passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.2'::text number,
-       'TT_Copy'::text function_tested,
-       'Int usage'::text description,
-       TT_Copy(111::text) = 111::text passed
+       'TT_CopyText'::text function_tested,
+       'Empty string usage'::text description,
+       TT_CopyText(''::text) = ''::text passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '12.3'::text number,
-       'TT_Copy'::text function_tested,
-       'Double precision usage'::text description,
-       TT_Copy(111.4::text) = 111.4::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '12.4'::text number,
-       'TT_Copy'::text function_tested,
-       'Empty string usage'::text description,
-       TT_Copy(''::text) = ''::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '12.5'::text number,
-       'TT_Copy'::text function_tested,
+       'TT_CopyText'::text function_tested,
        'Null'::text description,
-       TT_Copy(NULL::text) IS NULL passed
+       TT_CopyText(NULL::text) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 13 - TT_Lookup
@@ -1301,8 +1292,55 @@ SELECT '19.4'::text number,
        'TT_PadConcat'::text function_tested,
        'Test BC08'::text description,
        TT_PadConcat('bc08'::text, 'VEG_COMP_LYR_R1'::text, '83D093'::text, '2035902'::text, '1'::text,   4::text,15::text,10::text,10::text,7::text, 'x'::text,'x'::text,'x'::text,0::text,0::text,  '-'::text, TRUE::text, TRUE::text) = 'BC08-VEG_COMP_LYR_R1-xxxx83D093-0002035902-0000001' passed
+
 ---------------------------------------------------------
+-- Test 20 - TT_CopyDouble
 ---------------------------------------------------------
+UNION ALL
+SELECT '20.1'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Double usage'::text description,
+       TT_CopyDouble('1.111'::text) = 1.111::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '20.2'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Null'::text description,
+       TT_CopyDouble(NULL::text) IS NULL passed
+
+---------------------------------------------------------
+-- Test 21 - TT_CopyInt
+---------------------------------------------------------
+UNION ALL
+SELECT '21.1'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage'::text description,
+       TT_CopyInt('1'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '21.2'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with zero decimal'::text description,
+       TT_CopyInt('1.0'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '21.3'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with decimal round down'::text description,
+       TT_CopyInt('1.2'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '21.4'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with decimal round up'::text description,
+       TT_CopyInt('1.5'::text) = 2::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '21.5'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Null'::text description,
+       TT_CopyInt(NULL::text) IS NULL passed
+
               
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

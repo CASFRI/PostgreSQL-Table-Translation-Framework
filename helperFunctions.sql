@@ -462,13 +462,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- TT_Copy
+-- TT_CopyText
 --
 --  val text  - Value to return.
 --
--- Return the value as text. Engine will cast output to the correct type.
+-- Return the value as text.
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Copy(
+CREATE OR REPLACE FUNCTION TT_CopyText(
   val text
 )
 RETURNS text AS $$
@@ -478,6 +478,39 @@ RETURNS text AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_CopyDouble
+--
+--  val text  - Value to return.
+--
+-- Return the value as double precision.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CopyDouble(
+  val text
+)
+RETURNS double precision AS $$
+  BEGIN
+    RETURN val::double precision;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_CopyInt
+--
+--  val text  - Value to return.
+--
+-- Return the value as an integer.
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CopyInt(
+  val text
+)
+RETURNS int AS $$
+  BEGIN
+    RETURN round(val::numeric)::int;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_Lookup
 --
