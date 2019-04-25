@@ -1193,7 +1193,7 @@ SELECT '17.12'::text number,
 UNION ALL
 SELECT '17.13'::text number,
        'TT_HasUniqueValues'::text function_tested,
-       'Null occureces'::text description,
+       'Null occurreces'::text description,
        TT_IsError('SELECT TT_HasUniqueValues(1, ''public'', ''test_lookuptable2'', NULL::int);') passed
 ---------------------------------------------------------
 UNION ALL

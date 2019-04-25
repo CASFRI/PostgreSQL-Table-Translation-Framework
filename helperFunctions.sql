@@ -298,7 +298,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lookupSchemaName text - schema name holding lookup table.
 -- lookupTableName text - lookup table name.
--- occurences - text defaults to 1
+-- occurrences - text defaults to 1
 --
 -- if number of occurences of val in source_val of schema.table equals occurences, return true.
 -- e.g. TT_HasUniqueValues('BS', 'public', 'bc08', 1)
@@ -307,24 +307,24 @@ CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  occurences text
+  occurrences text
 )
 RETURNS boolean AS $$
   DECLARE
     _lookupSchemaName name := lookupSchemaName::name;
     _lookupTableName name := lookupTableName::name;
-    _occurences int := occurences::int;
+    _occurrences int := occurrences::int;
     query text;
     return boolean;
   BEGIN
     IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF occurences IS NULL THEN
-      RAISE EXCEPTION 'occurences is null';
+    ELSIF occurrences IS NULL THEN
+      RAISE EXCEPTION 'occurrences is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurences || ';';
+      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurrences || ';';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
