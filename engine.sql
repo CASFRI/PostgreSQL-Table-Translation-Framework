@@ -723,7 +723,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
-    query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id;';
+    query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id::int;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row;END IF;
@@ -791,7 +791,7 @@ RETURNS text AS $f$
     EXECUTE query;
 
     -- Build the list of attribute types
-    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY rule_id) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
+    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY rule_id::int) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
       
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
