@@ -83,7 +83,7 @@ WITH test_nb AS (
     SELECT 'TT_IsInt'::text,                   3,         11         UNION ALL
     SELECT 'TT_IsNumeric'::text,               4,          7         UNION ALL
     SELECT 'TT_IsString'::text,                5,          6         UNION ALL
-    SELECT 'TT_Between'::text,                 6,         12         UNION ALL
+    SELECT 'TT_Between'::text,                 6,         14         UNION ALL
     SELECT 'TT_GreaterThan'::text,             7,          9         UNION ALL
     SELECT 'TT_LessThan'::text,                8,          9         UNION ALL
     SELECT 'TT_MatchList'::text,               9,         20         UNION ALL
@@ -444,16 +444,28 @@ UNION ALL
 SELECT '6.10'::text number,
        'TT_Between'::text function_tested,
        'Integer, test inclusive lower'::text description,
-       TT_Between(0::text,0::text,100::text) passed
+       TT_Between(0::text,0::text,100::text,TRUE::text,TRUE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.11'::text number,
        'TT_Between'::text function_tested,
        'Integer, test inclusive higher'::text description,
-       TT_Between(100::text,0::text,100::text) passed
+       TT_Between(100::text,0::text,100::text,TRUE::text,TRUE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '6.12'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive lower false'::text description,
+       TT_Between(0::text,0::text,100::text,FALSE::text,TRUE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.13'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive higher false'::text description,
+       TT_Between(100::text,0::text,100::text,TRUE::text,FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.14'::text number,
        'TT_Between'::text function_tested,
        'Non-valid val'::text description,
        TT_IsError('SELECT TT_Between("1a"::text,0::text,100::text);'::text) passed

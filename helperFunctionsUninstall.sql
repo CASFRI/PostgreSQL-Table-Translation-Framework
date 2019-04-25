@@ -15,7 +15,7 @@ DROP FUNCTION IF EXISTS TT_NotEmpty(text);
 DROP FUNCTION IF EXISTS TT_IsInt(text);
 DROP FUNCTION IF EXISTS TT_IsNumeric(text);
 DROP FUNCTION IF EXISTS TT_IsString(text);
-DROP FUNCTION IF EXISTS TT_Between(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_Between(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_Between(text, text, text);
 DROP FUNCTION IF EXISTS TT_GreaterThan(text, text, text);
 DROP FUNCTION IF EXISTS TT_GreaterThan(text, text);

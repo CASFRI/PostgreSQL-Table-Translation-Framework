@@ -167,23 +167,29 @@ CREATE OR REPLACE FUNCTION TT_Between(
   val text,
   min text,
   max text,
-  inclusive text
+  includeMin text,
+  includeMax text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision := val::double precision;
     _min double precision := min::double precision;
     _max double precision := max::double precision;
-    _inclusive boolean := inclusive::boolean;
+    _includeMin boolean := includeMin::boolean;
+    _includeMax boolean := includeMax::boolean;
   BEGIN
     IF min IS NULL OR max IS NULL THEN
       RAISE EXCEPTION 'min or max is null';
     ELSIF val IS NULL THEN
       RETURN FALSE;
-    ELSIF _inclusive = TRUE THEN
-      RETURN _val >= _min and _val <= _max;
-    ELSE
+    ELSIF _includeMin = FALSE AND _includeMax = FALSE THEN
       RETURN _val > _min and _val < _max;
+    ELSIF _includeMin = TRUE AND _includeMax = FALSE THEN
+      RETURN _val >= _min and _val < _max;
+    ELSIF _includeMin = FALSE AND _includeMax = TRUE THEN
+      RETURN _val > _min and _val <= _max;
+    ELSE
+      RETURN _val >= _min and _val <= _max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -194,7 +200,7 @@ CREATE OR REPLACE FUNCTION TT_Between(
   max text
 )
 RETURNS boolean AS $$
-  SELECT TT_Between(val, min, max, TRUE::text);
+  SELECT TT_Between(val, min, max, TRUE::text, TRUE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
