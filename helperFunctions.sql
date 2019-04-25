@@ -446,7 +446,20 @@ RETURNS boolean AS $$
     RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_True
+--
+-- Return true
+-- e.g. TT_True()
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_True()
+RETURNS boolean AS $$
+  BEGIN
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 
@@ -512,7 +525,7 @@ RETURNS int AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- TT_Lookup
+-- TT_LookupText
 --
 -- val text - val to lookup
 -- lookupSchemaName text - schema name containing lookup table
@@ -520,13 +533,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- lookupColumn text - column to return
 -- ignoreCase text - default TRUE. Should upper/lower case be ignored?
 --
--- Return value from lookupColumn in lookupSchemaName.lookupTableName
+-- Return text value from lookupColumn in lookupSchemaName.lookupTableName
 -- that matches val in source_val column.
 -- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
 -- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Lookup(
+CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupSchemaName text,
   lookupTableName text,
@@ -557,31 +570,144 @@ RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Lookup(
+CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text
 )
 RETURNS text AS $$
-  SELECT TT_Lookup(val, lookupSchemaName, lookupTableName, lookupCol, TRUE::text)
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Map
+-- TT_LookupDouble
+--
+-- val text - val to lookup
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupColumn text - column to return
+--
+-- Return double precision value from lookupColumn in lookupSchemaName.lookupTableName
+-- that matches val in source_val column.
+-- If multiple matches, first row is returned.
+-- Error if any arguments are NULL.
+-- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1_per')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LookupDouble(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  ignoreCase text
+)
+RETURNS double precision AS $$
+  DECLARE
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    _ignoreCase boolean := ignoreCase::boolean;
+    query text;
+    return text;
+  BEGIN
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupDouble(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS double precision AS $$
+  SELECT TT_LookupDouble(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LookupInt
+--
+-- val text - val to lookup
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupColumn text - column to return
+--
+-- Return int value from lookupColumn in lookupSchemaName.lookupTableName
+-- that matches val in source_val column.
+-- If multiple matches, first row is returned.
+-- Error if any arguments are NULL.
+-- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1_per')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LookupInt(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  ignoreCase text
+)
+RETURNS int AS $$
+  DECLARE
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    _ignoreCase boolean := ignoreCase::boolean;
+    query text;
+    return text;
+  BEGIN
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      EXECUTE query INTO return;
+      RETURN return;
+    ELSE
+      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      EXECUTE query INTO return;
+      RETURN return;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupInt(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS int AS $$
+  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MapText
 --
 -- val text - value to test.
 -- lst1 text - string containing comma seperated vals
 -- lst2 text - string containing comma seperated vals
 -- ignoreCase - default TRUE. Should upper/lower case be ignored?
 --
--- Return value from lst2 that matches value index in lst1
+-- Return text value from lst2 that matches value index in lst1
+-- Return type is text
 -- Error if val is NULL
 -- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
 
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Map(
+CREATE OR REPLACE FUNCTION TT_MapText(
   val text,
   lst1 text,
   lst2 text,
@@ -589,31 +715,149 @@ CREATE OR REPLACE FUNCTION TT_Map(
 )
 RETURNS text AS $$
   DECLARE
-    var1 text[];
-    var2 text[];
+    _lst1 text[];
+    _lst2 text[];
     _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
+    
     IF val IS NULL THEN
       RAISE EXCEPTION 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      var1 = string_to_array(lst1, ',');
-      var2 = string_to_array(lst2, ',');
-      RETURN (var2)[array_position(var1,val)];
+      _lst1 = string_to_array(lst1, ',');
+      _lst2 = string_to_array(lst2, ',');
+      RETURN (_lst2)[array_position(_lst1,val)];
     ELSE
-      var1 = string_to_array(upper(lst1), ',');
-      var2 = string_to_array(upper(lst2), ',');
-      RETURN (var2)[array_position(var1,upper(val))];
+      _lst1 = string_to_array(upper(lst1), ',');
+      _lst2 = string_to_array(lst2, ',');
+      RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Map(
+CREATE OR REPLACE FUNCTION TT_MapText(
   val text,
   lst1 text,
   lst2 text
 )
 RETURNS text AS $$
-  SELECT TT_Map(val, lst1, lst2, TRUE::text)
+  SELECT TT_MapText(val, lst1, lst2, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MapDouble
+--
+-- val text - value to test.
+-- lst1 text - string containing comma seperated vals
+-- lst2 text - string containing comma seperated vals
+-- ignoreCase - default TRUE. Should upper/lower case be ignored?
+--
+-- Return double precision value from lst2 that matches value index in lst1
+-- Return type is double precision
+-- Error if val is NULL, or if any lst2 elements cannot be cast to double precision, or if val is not in lst1
+-- e.g. TT_Map('A','A,B,C','1.1,2.2,3.3')
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MapDouble(
+  val text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text
+)
+RETURNS double precision AS $$
+  DECLARE
+    _lst1 text[];
+    _lst2 text[];
+    _i double precision;
+    _ignoreCase boolean := ignoreCase::boolean;
+  BEGIN
+    _lst1 = string_to_array(lst1, ',');
+    _lst2 = string_to_array(lst2, ',');
+
+    BEGIN
+      FOREACH _i in ARRAY _lst2 LOOP  
+        -- no need to do anything inside loop, we just want to test if all _i's are double precision
+      END LOOP;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE EXCEPTION 'lst2 value cannot be cast to double precision';
+    END;
+
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      RETURN (_lst2)[array_position(_lst1,val)];
+    ELSE
+      _lst1 = string_to_array(upper(lst1), ',');
+      RETURN (_lst2)[array_position(_lst1,upper(val))];
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapDouble(
+  val text,
+  lst1 text,
+  lst2 text
+)
+RETURNS double precision AS $$
+  SELECT TT_MapDouble(val, lst1, lst2, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MapInt
+--
+-- val text - value to test.
+-- lst1 text - string containing comma seperated vals
+-- lst2 text - string containing comma seperated vals
+--
+-- Return int value from lst2 that matches value index in lst1
+-- Return type is int
+-- Error if val is NULL, or if any lst2 elements are not int, or if val is not in lst1
+-- e.g. TT_MapInt('A','A,B,C','1,2,3')
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MapInt(
+  val text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text
+)
+RETURNS int AS $$
+  DECLARE
+    _lst1 text[];
+    _lst2 text[];
+    _i int;
+    _ignoreCase boolean := ignoreCase::boolean;
+  BEGIN
+    _lst1 = string_to_array(lst1, ',');
+    _lst2 = string_to_array(lst2, ',');
+
+    BEGIN
+      FOREACH _i in ARRAY _lst2 LOOP  
+        -- no need to do anything inside loop, we just want to test if all _i's are int
+      END LOOP;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE EXCEPTION 'lst2 value is not int';
+    END;
+    
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is NULL';
+    ELSIF _ignoreCase = FALSE THEN
+      RETURN (_lst2)[array_position(_lst1,val)];
+    ELSE
+      _lst1 = string_to_array(upper(lst1), ',');
+      RETURN (_lst2)[array_position(_lst1,upper(val))];
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapInt(
+  val text,
+  lst1 text,
+  lst2 text
+)
+RETURNS int AS $$
+  SELECT TT_MapInt(val, lst1, lst2, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
