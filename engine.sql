@@ -234,7 +234,7 @@ RETURNS boolean AS $$
     args text;
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctExists BEGIN';END IF;
-    fctName = 'tt_' || fctName;
+    -- fctName = 'tt_' || fctName;
     IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
       schemaName = '';
     END IF;
@@ -247,7 +247,7 @@ RETURNS boolean AS $$
     IF fctName = '' OR fctName = '.' THEN
       RETURN FALSE;
     END IF;
-    fctName = lower(fctName);
+    fctName = 'tt_' || lower(fctName);
     IF debug THEN RAISE NOTICE 'TT_TextFctExists 11 fctName=%, argLength=%', fctName, argLength;END IF;
     -- args = repeat('text,', argLength);
     SELECT count(*)
@@ -272,6 +272,71 @@ CREATE OR REPLACE FUNCTION TT_TextFctExists(
 RETURNS boolean AS $$
   SELECT TT_TextFctExists(''::name, fctName, argLength)
 $$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_TextFctReturnType
+--
+--   fctString text
+--   argLength  int
+--
+--   RETURNS text
+--
+-- Returns the return type of a PostgreSQL function.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_TextFctReturnType(name, name, int);
+CREATE OR REPLACE FUNCTION TT_TextFctReturnType(
+  schemaName name,
+  fctName name,
+  argLength int
+)
+RETURNS text AS $$
+  DECLARE
+    result text;
+    debug boolean = TT_Debug();
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_TextFctReturnType BEGIN';END IF;
+    IF TT_TextFctExists(fctName, argLength) THEN
+
+      -- fctName = 'tt_' || fctName;
+      IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+        schemaName = '';
+      END IF;
+      IF schemaName != '' THEN
+        fctName = schemaName || '.' || fctName;
+      END IF;
+      IF fctName IS NULL THEN
+        RETURN NULL;
+      END IF;
+      IF fctName = '' OR fctName = '.' THEN
+        RETURN FALSE;
+      END IF;
+      fctName = 'tt_' || lower(fctName);
+      IF debug THEN RAISE NOTICE 'TT_TextFctReturnType 11 fctName=%, argLength=%', fctName, argLength;END IF;
+
+      SELECT pg_catalog.pg_get_function_result(oid)
+      FROM pg_proc
+      WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
+      INTO result;
+      
+      IF debug THEN RAISE NOTICE 'TT_TextFctReturnType END result=%', result;END IF;
+      RETURN result;
+    ELSE
+      IF debug THEN RAISE NOTICE 'TT_TextFctReturnType END NULL';END IF;
+      RETURN NULL;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+--DROP FUNCTION IF EXISTS TT_TextFctReturnType(name, int);
+CREATE OR REPLACE FUNCTION TT_TextFctReturnType(
+  fctName name,
+  argLength int
+)
+RETURNS text AS $$
+  SELECT TT_TextFctReturnType(''::name, fctName, argLength)
+$$ LANGUAGE sql VOLATILE;
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -521,6 +586,7 @@ RETURNS anyelement AS $$
       IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
       RAISE EXCEPTION 'TT_TextFctEval FUNCTION % DOES NOT EXIST', fctName;
     END IF;
+     
     ruleQuery = 'SELECT TT_' || fctName || '(';
     IF NOT args IS NULL THEN
       -- Search for any argument names in the provided value jsonb object
@@ -876,6 +942,7 @@ RETURNS SETOF RECORD AS $$
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
+
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourcerow);
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourcerow=%', jsonbRow;END IF;
@@ -883,7 +950,7 @@ RETURNS SETOF RECORD AS $$
        -- Iterate over each translation table row. One row per output attribute
        FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationrow=%', translationrow;END IF;
-         -- Iterate over each invalid rule
+         -- Iterate over each validation rule
          isValid = TRUE;
          FOREACH rule IN ARRAY translationrow.validationRules LOOP
            IF isValid THEN
@@ -906,6 +973,12 @@ RETURNS SETOF RECORD AS $$
          END LOOP ;
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
+
+           -- check return type of the translation helper function matches return type of the translation row
+           IF NOT TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0)) = translationrow.targetAttributeType THEN
+             RAISE EXCEPTION 'Translation table return type (%) does not match helper function return type (%)', translationrow.targetAttributeType, TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0));
+           END IF;
+
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;

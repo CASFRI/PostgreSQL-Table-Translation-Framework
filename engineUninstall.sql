@@ -27,6 +27,8 @@ DROP FUNCTION IF EXISTS TT_FctExists(name, text[]);
 DROP FUNCTION IF EXISTS TT_FctExists(name, name, text[]);
 DROP FUNCTION IF EXISTS TT_TextFctExists(name, int);
 DROP FUNCTION IF EXISTS TT_TextFctExists(name, name, int);
+DROP FUNCTION IF EXISTS TT_TextFctReturnType(name, name, int);
+DROP FUNCTION IF EXISTS TT_TextFctReturnType(name, int);
 DROP FUNCTION IF EXISTS TT_TypeGuess(text);
 DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
 DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
