@@ -565,11 +565,11 @@ RETURNS text AS $$
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -621,11 +621,11 @@ RETURNS double precision AS $$
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -677,11 +677,11 @@ RETURNS int AS $$
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_ident(lookupCol) || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
