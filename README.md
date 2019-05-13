@@ -94,8 +94,8 @@ A textual description of the rules is provided and the flag indicating that the 
 
 | rule_id | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTab(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
-|SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,public,species_lookup\|NOT_IN_SET)|lookupText(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
 
 # How to actually translate a source table?
 
