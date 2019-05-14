@@ -34,7 +34,7 @@ The current version is 0.0.1-beta and is available for download at https://githu
 * **Uninstallation -** You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The PL/pgSQL code implementing the [PostgreSQL Table Translation Framework](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework).
+*Translation engine* - The PL/pgSQL code implementing the PostgreSQL Table Translation Framework.
 
 *Helper function* - A set of PL/pgSQL functions used in the translation table to facilitate validation of source values and their translation to target values.
 
@@ -58,21 +58,22 @@ The translation table implements two very different steps:
 
 1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (TRUE or FALSE) can make a failing validation rule stop the engine. This flag is set to false by default, allowing the engine to report errors without stopping.
 
-2. **Translation -** The source values are translated to the target values by the (unique) translation rule.
+2. **Translation -** The source values are translated to the target values by the translation rule (one per target attribute).
 
-Translation tables have one row per target attribute and they must contain these six columns:
+Translation tables have one row per target attribute and they must contain these seven columns:
 
- 1. **targetAttribute** - The name of the target attribute to be created in the target table.
- 2. **targetAttributeType** - The data type of the target attribute.
- 3. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
- 4. **translationRules** - The translation rules to convert source values to target values.
- 5. **description** - A text description of the translation taking place.
- 6. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
+ 1. **rule_id** - Incrementing unique integer identifier used for ordering target attributes in target table.
+ 2. **targetAttribute** - The name of the target attribute to be created in the target table.
+ 3. **targetAttributeType** - The data type of the target attribute.
+ 4. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
+ 5. **translationRules** - The translation rules to convert source values to target values.
+ 6. **description** - A text description of the translation taking place.
+ 7. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
  
 * Multiple validation rules can be seperated with a semi-colon.
 * Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull(sp1_per|-8888)).
 
-Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine check that:
+Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine checks that:
 
 * no null values exists (all cells must have a value)
 * target attribute names do not contain invalid characters (e.g. spaces or accents)
@@ -89,12 +90,12 @@ The source attribute "sp1" is validated by checking it is not null, and that it 
 
 Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECISE_1_PER". "-8888", an integer error code, is returned if the first rule fails. "-9999" is returned if the second validation rule fails.
 
-A textual description of the rules is provided and the flag indicarting that the deacription is in sync with the rules is set to TRUE.
+A textual description of the rules is provided and the flag indicating that the description is in sync with the rules is set to TRUE.
 
-| targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
-|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|SPECIES_1        |text                 |notNull(sp1\|NULL); matchTab(sp1,public,species_lookup\|NOT_IN_SET)|lookup(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
-|SPECIES_1_PER|integer|notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copy(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+| rule_id | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
+|:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
+|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,public,species_lookup\|NOT_IN_SET)|lookupText(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
 
 # How to actually translate a source table?
 
@@ -117,14 +118,14 @@ SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
 
 The TT_Translate() function returns the translated target table. It is designed to be used in place of any table in an SQL statement.
 
-By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') will prepare the TT_Translate02() function). You would normally parovide a different suffix for each of your translation tables.
+By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '02') will prepare the TT_Translate02() function). You would normally provide a different suffix for each of your translation tables.
 
 If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
 
 # How to write a lookup table?
-* Some helper functions (matchTab(), lookup()) allow the use of lookup tables to support mapping between source and target values.
+* Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
-* Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookup() function will return the corresponding value in the specified column.
+* Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookupText() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "targetSp1"  or the "targetSp2" column.
 
@@ -137,7 +138,7 @@ Example lookup table. Source values for species codes in the "source_val" column
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
-SELECT 'TA' AS sourceSp, 
+SELECT 'TA' AS source_val, 
        'PopuTrem' AS targetSp
 UNION ALL
 SELECT 'LP', 'PinuCont';
@@ -146,18 +147,18 @@ SELECT 'LP', 'PinuCont';
 Create an example translation table:
 ```sql
 CREATE TABLE translation_table AS
-SELECT 1 AS ogc_fid, 
+SELECT 1 AS rule_id, 
        'SPECIES_1' AS targetAttribute, 
        'text' AS targetAttributeType, 
-       'notNull(sp1|NULL);matchTab(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
-       'lookup(sp1, public, species_lookup, targetSp)' AS translationRules, 
+       'notNull(sp1|NULL);matchTable(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
+       'lookupText(sp1, public, species_lookup, targetSp)' AS translationRules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS descUpToDateWithRules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
           'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 
-          'copy(sp1_per)', 
+          'copyInt(sp1_per)', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
 ```
@@ -174,7 +175,7 @@ SELECT 2, 'LP', 60;
 
 Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name, translation table schema and translation table name to TT_Translate.
 ```sql
-SELECT TT_Prepare('public', 'translate');
+SELECT TT_Prepare('public', 'translation_table');
 
 CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
@@ -189,147 +190,165 @@ Helper functions are generally called with the name of the source value attribut
 
 ## Validation Functions
 
-1. **NotNull**(srcVal[])
-    * Returns TRUE if all srcVal are not NULL. Returns FALSE if any srcVal is NULL.
-    * e.g. NotNull('a', 'b', 'c')
+1. **NotNull**(srcVal)
+    * Returns TRUE if srcVal is not NULL. Returns FALSE if srcVal is NULL.
+    * e.g. NotNull('a')
     * Signatures:
-      * NotNull(text[])
-      * NotNull(boolean[])
-      * NotNull(double precision[])
-      * NotNull(int[])
-2. **NotEmpty**(srcVal[])
-    * Returns TRUE if all srcVal are not empty strings. Returns FALSE if any srcVal is an empty string or simply padded spaces (e.g. '' or '  ') or NULL.
-    * e.g. NotEmpty('a', 'b', 'c')
-    * Signatures:
-      * NotEmpty(text[])
+      * NotNull(text)
 
-3. **IsInt**(srcVal[])
-    * Returns TRUE if srcVal are all integers. Returns FALSE if any srcVal are NULL. Strings with numeric characters and '.' will be passed to IsInt(). Strings with anything else (e.g. letter characters) return FALSE.
-    * e.g. IsInt(1,2,3,4,5)
+2. **NotEmpty**(srcVal)
+    * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL.
+    * e.g. NotEmpty('a')
     * Signatures:
-      * IsInt(text[])
-      * IsInt(double precision[])
-      * IsInt(int[])
+      * NotEmpty(text)
 
-4. **IsNumeric**(srcVal[]) 
-    * Returns TRUE if srcVal can be cast to double precision. NULL srcVal return FALSE.
-    * e.g. IsNumeric('1.1', '1.2', '1.3')
+3. **IsInt**(srcVal)
+    * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL.
+    * e.g. IsInt('1')
     * Signatures:
-      * IsNumeric(text[])
-      * IsNumeric(double precision[])
-      * IsNumeric(int[])
+      * IsInt(text)
 
-5. **Between**(srcVal, min, max)
+4. **IsNumeric**(srcVal) 
+    * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL.
+    * e.g. IsNumeric('1.1')
+    * Signatures:
+      * IsNumeric(text)
+
+5. **IsString**(srcVal) 
+    * Returns TRUE if srcVal cannot be cast to double precision (e.g. '1', '1.1').
+    * e.g. IsString('1a')
+    * Signatures:
+      * IsString(text)
+      
+6. **Between**(srcVal, min, max, includeMin\[default TRUE\], includeMax\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
-    * e.g. Between(5, 0, 100)
+    * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
+    * e.g. Between(5, 0, 100, TRUE, TRUE)
     * Signatures
-      * Between(double precision, double precision, double precision)
-      * Between(int, double precision, double precision)
-      * Between(text, double precision, double precision)
-      * Between(int, double precision, text)
-      * Between(int, text, double precision)
-      * Between(text, double precision, text)
-      * Between(text, text, double precision)
-6. **GreaterThan**(srcVal, lowerBound, inclusive\[default TRUE\])
+      * Between(text, text, text, text, text)
+      * Between(text, text, text)
+      
+7. **GreaterThan**(srcVal, lowerBound, inclusive\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. GreaterThan(5, 0, TRUE)
     * Signatures:
-      * GreaterThan(double precision, double precision, boolean)
-      * GreaterThan(int, double precision, boolean)
+      * GreaterThan(text, text, text)
+      * GreaterThan(text, text)
 
-7. **LessThan**(srcVal, upperBound, inclusive\[default TRUE\])
+8. **LessThan**(srcVal, upperBound, inclusive\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. LessThan(1, 5, TRUE)
     * Signatures:
-      * LessThan(double precision, double precision, boolean)
-      * LessThan(int, double precision, boolean)
+      * LessThan(text, text, text)
+      * LessThan(text, text)
 
-8. **HasUniqueValues**(srcVal, lookupSchemaName, lookupTableName, occurences\[default 1\])
+9. **HasUniqueValues**(srcVal, lookupSchemaName, lookupTableName, occurences\[default 1\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences.
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
     * Signatures:
-      * HasUniqueValues(text, name, name, int)
-      * HasUniqueValues(double precision, name, name, int)
-      * HasUniqueValues(int, name, name, int)
+      * HasUniqueValues(text, text, text, text)
+      * HasUniqueValues(text,text,text)
 
-9. **Match**(srcVal, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\]) - table version
+10. **MatchTable**(srcVal, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
-    * e.g. TT_Match(sp1,public,species_lookup, TRUE)
+    * e.g. TT_MatchTable(sp1,public,species_lookup, TRUE)
     * Signatures:
-      * Match(text, name, name, boolean)
-      * Match(double precision, name, name, boolean)
-      * Match(int, name, name, boolean)
+      * MatchTable(text, text, text, text)
+      * MatchTable(text, text, text)
 
-10. **Match**(srcVal, lst, ignoreCase\[default TRUE\]) - list version
+11. **MatchList**(srcVal, lst, ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * e.g. Match('a', 'a,b,c', TRUE)
     * Signatures:
-      * Match(text, text)
-      * Match(double precision, text)
-      * Match(int, text)
+      * MatchList(text, text)
+      * MatchList(text, text, text)
 
-11. **False**()
+12. **False**()
     * Returns FALSE.
     * e.g. False()
     * Signatures:
       * False()
 
-12. **IsString**(srcVal[])
-    * Returns TRUE if srcVal are all strings.
-    * e.g. IsString('a', 'b', 'c')
+13. **True**()
+    * Returns TRUE.
+    * e.g. True()
     * Signatures:
-      * IsString(text[])
-      * IsString(double precision[])
-      * IsString(int[])
+      * True()
       
 ## Translation Functions
 
-1. **Copy**(srcVal)
-    * Returns srcVal without any transformation.
-    * e.g. Copy(sp1)
+1. **CopyText**(srcVal)
+    * Returns srcVal as text without any transformation.
+    * e.g. Copy('sp1')
     * Signatures:
       * Copy(text)
-      * Copy(double precision)
-      * Copy(int)
-      * Copy(boolean)
-
-2. **Concat**(sep, processNulls, srcVal[])
-    * Returns the concatenated source values separated by sep. NULLs are ignored if processNulls = TRUE. An error is raised if processNulls = FALSE and any srcVal is NULL.
-    * e.g. Concat('_', FALSE, 'a', 'b', 'c')
+      
+2. **CopyDouble**(srcVal)
+    * Returns srcVal as double precision without any transformation.
+    * e.g. Copy('1.1')
     * Signatures:
-      * Concat(text, boolean, text[])
+      * Copy(text)
 
-3. **Lookup**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
-    * Returns value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
-    * e.g. Lookup(sp1, public, species_lookup, targetSp)
+3. **CopyInt**(srcVal)
+    * Returns srcVal as integer without any transformation.
+    * e.g. Copy('1')
     * Signatures:
-      * Lookup(text, name, name, text, boolean)
-      * Lookup(double precision, name, name, text, boolean)
-      * Lookup(int, name, name, text, boolean)
+      * Copy(text)
+      
+4. **LookupText**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+    * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
+    * e.g. Lookup(sp1, public, species_lookup, targetSp, TRUE)
+    * Signatures:
+      * Lookup(text, text, text, text, text)
+      * Lookup(text, text, text, text)
+      
+5. **LookupDouble**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+    * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
+    * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
+    * Signatures:
+      * Lookup(text, text, text, text, text)
+      * Lookup(text, text, text, text)
 
-4. **Length**(srcVal)
+6. **LookupText**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+    * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
+    * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
+    * Signatures:
+      * Lookup(text, text, text, text, text)
+      * Lookup(text, text, text, text)
+
+7. **MapText**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+    * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
+    * e.g. Map('A','A,B,C','D,E,F', TRUE)
+    * Signatures:
+      * MapText(text, text, text, text)
+      * MapText(text, text, text)
+      
+8. **MapDouble**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+    * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
+    * e.g. Map('A','A,B,C','1.1,1.2,1.3', TRUE)
+    * Signatures:
+      * MapDouble(text, text, text, text)
+      * MapDouble(text, text, text)
+      
+9. **MapInt**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+    * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
+    * e.g. Map('A','A,B,C','1,2,3', TRUE)
+    * Signatures:
+      * MapInt(text, text, text, text)
+      * MapInt(text, text, text)
+      
+10. **Length**(srcVal)
     * Returns the length of the srcVal string.
     * e.g. Length('12345')
     * Signatures:
       * Length(text)
-      * Length(double precision)
-      * Length(int)
 
-5. **Pad**(srcVal, targetLength, padChar\[default x\])
+11. **Pad**(srcVal, targetLength, padChar\[default x\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength.
     * e.g. Pad(tab1, 10, x)
     * Signatures:
-      * Pad(text, int, text)
-      * Pad(double precision, int, text)
-      * Pad(int, int, text)
-
-6. **Map**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
-    * Return value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
-    * e.g. Map('A','A,B,C','1,2,3', TRUE)
-    * Signatures:
-      * Map(text, text, text, boolean)
-      * Map(double precision, text, text, boolean)
-      * Map(int, text, text, boolean)
+      * Pad(text, text, text)
+      * Pad(text, text)
 
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
