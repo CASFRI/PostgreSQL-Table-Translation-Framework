@@ -574,9 +574,13 @@ CREATE OR REPLACE FUNCTION TT_TextFctEval(
 )
 RETURNS anyelement AS $$
   DECLARE
-    ruleQuery text;
-    argVal text;
     arg text;
+    argVal text;
+    ruleQuery text;
+    argsNested text[];
+    argNested text;
+    argValNested text;
+    ruleQueryNested text;
     result ALIAS FOR $0;
     debug boolean = TT_Debug();
   BEGIN
@@ -591,10 +595,40 @@ RETURNS anyelement AS $$
     IF NOT args IS NULL THEN
       -- Search for any argument names in the provided value jsonb object
       FOREACH arg IN ARRAY args LOOP
+        IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
         -- if arg does not exist as column name in jsonb row, treat it as a string
         IF NOT vals ? arg THEN
           IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-          ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+          -- The following if-loop processes comma separated strings of column names
+          -- It unpacks the string, gets the column values, and re-packages them into
+          -- a comma separated string for use by the helper function.
+          -- Only runs if comma detected in string.
+	  IF char_length(arg) - char_length(replace(arg,',','')) > 0 THEN
+            -- split string to array by comma's after removing spaces
+	    argsNested = string_to_array(replace(arg, ' ', ''), ',');
+            IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
+            -- loop through array, get values, add to new string (ruleQueryNested)
+	    ruleQueryNested = '''';
+	    FOREACH argNested in ARRAY argsNested LOOP
+	      IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
+	      IF NOT vals ? argNested THEN
+		IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+		ruleQueryNested = ruleQueryNested || argNested || ',';
+	      ELSE
+		argValNested = vals->>argNested;
+		IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
+		IF argValNested IS NULL THEN
+		  ruleQueryNested = ruleQueryNested || 'NULL' || ',';
+		ELSE
+		  ruleQueryNested = ruleQueryNested || argValNested || ',';
+		END IF;
+              END IF;
+	    END LOOP;
+	    -- remove the last comma and space, and cast string to text
+	    ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 2) || '''::text, ';
+          ELSE
+            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+	  END IF;
         ELSE
           argVal = vals->>arg;
           IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
