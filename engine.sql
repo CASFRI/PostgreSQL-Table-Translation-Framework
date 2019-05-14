@@ -625,7 +625,7 @@ RETURNS anyelement AS $$
               END IF;
 	    END LOOP;
 	    -- remove the last comma and space, and cast string to text
-	    ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 2) || '''::text, ';
+	    ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
           ELSE
             ruleQuery = ruleQuery || '''' || arg || '''::text, ';
 	  END IF;
