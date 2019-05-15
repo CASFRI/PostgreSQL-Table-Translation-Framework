@@ -994,7 +994,6 @@ RETURNS text AS $$
     _lengths text[];
     _pads text[];
     _result text;
-    i int;
     _includeEmpty boolean := includeEmpty::boolean;
   BEGIN
     IF length IS NULL THEN
