@@ -978,14 +978,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- e.g. TT_PadConcatString('a,b,c,', '5,5,5', 'x,x,x', '-', 'TRUE')
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text);
+--DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_PadConcat(
   val text,
   length text,
   pad text,
   sep text,
   upperCase text,
-  processEmpty text
+  includeEmpty text
 )
 RETURNS text AS $$
   DECLARE
@@ -1024,7 +1024,11 @@ RETURNS text AS $$
     -- for each val in array, pad and merge to comma separated string
     _result = '';
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF _vals[i] = '' AND _includeEmpty = FALSE THEN 
+      IF _lengths[i] = '' THEN
+        RAISE EXCEPTION 'length is empty';
+      ELSIF _pads[i] = '' THEN
+        RAISE EXCEPTION 'pad is empty';
+      ELSIF _vals[i] = '' AND _includeEmpty = FALSE THEN 
         -- do nothing
       ELSE
         _result = _result || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ',';
@@ -1034,3 +1038,14 @@ RETURNS text AS $$
     RETURN TT_Concat(left(_result, char_length(_result) - 1), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_PadConcat(
+  val text,
+  length text,
+  pad text,
+  sep text,
+  upperCase text
+)
+RETURNS text AS $$
+  SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
+$$ LANGUAGE sql VOLATILE;
