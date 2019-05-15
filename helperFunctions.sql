@@ -349,7 +349,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MatchTable (table version)
+-- TT_MatchTable
 --
 -- val text - value to test.
 -- lookupSchemaName text - schema name holding lookup table.
@@ -400,7 +400,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MatchList (list version)
+-- TT_MatchList
 --
 -- val text - value to test.
 -- lst text - string containing comma separated vals.
@@ -970,9 +970,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  pad text - comma separated pad character for each val
 --  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
 --  upperCase text - should vals be uppercase
+--  includeEmpty text - should empty vals be included or ignored? Default TRUE.
 --
 --  Return the concatenated values with the padding.
---  Must be equal number of val, length and pad values.
+--  Error if number of val, length and pad values not equal.
+--  Error if missing length or pad values
 --
 -- e.g. TT_PadConcatString('a,b,c,', '5,5,5', 'x,x,x', '-', 'TRUE')
 ------------------------------------------------------------
@@ -982,7 +984,8 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
   length text,
   pad text,
   sep text,
-  upperCase text
+  upperCase text,
+  processEmpty text
 )
 RETURNS text AS $$
   DECLARE
@@ -992,6 +995,7 @@ RETURNS text AS $$
     _pads text[];
     _result text;
     i int;
+    _includeEmpty boolean := includeEmpty::boolean;
   BEGIN
     IF length IS NULL THEN
       RAISE EXCEPTION 'length is null';
@@ -1017,10 +1021,16 @@ RETURNS text AS $$
       RAISE EXCEPTION 'number of val, length and pad elments do not match';
     END IF;
 
+    -- for each val in array, pad and merge to comma separated string
     _result = '';
     FOR i IN 1..array_length(_vals,1) LOOP
-      _result = _result || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ',';
+      IF _vals[i] = '' AND _includeEmpty = FALSE THEN 
+        -- do nothing
+      ELSE
+        _result = _result || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ',';
+      END IF;
     END LOOP;
+    -- run comma separated string through concat with sep
     RETURN TT_Concat(left(_result, char_length(_result) - 1), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
