@@ -823,6 +823,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     row RECORD;
     query text;
     debug boolean = TT_Debug();
+    rule TT_RuleDef;
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF translationTable IS NULL THEN
@@ -850,6 +851,21 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
+
+      -- Check validation functions exist
+      FOREACH rule IN ARRAY validationRules LOOP
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 991 function name: %, arguments: %', rule.fctName, rule.args;END IF;
+        IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
+          RAISE EXCEPTION 'TT_ValidateTTable FUNCTION %(%) DOES NOT EXIST', rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
+        END IF;
+      END LOOP;
+
+      -- Check translation function exists
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 992 function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
+      IF translationRule.fctName IS NULL OR NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
+          RAISE EXCEPTION 'TT_ValidateTTable FUNCTION %(%) DOES NOT EXIST', translationRule.fctName, left(repeat('text,',coalesce(cardinality(translationRule.args),0)), char_length(repeat('text,',coalesce(cardinality(translationRule.args),0)))-1);
+      END IF;
+
       RETURN NEXT;
     END LOOP;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
@@ -1001,7 +1017,7 @@ RETURNS SETOF RECORD AS $$
            IF isValid THEN
              IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
              -- Evaluate the rule
-             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, TRUE);
+             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, FALSE);
              IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
              -- initialize the final value
              finalVal = rule.errorCode;
@@ -1025,7 +1041,7 @@ RETURNS SETOF RECORD AS $$
            END IF;
 
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', TRUE);';
+           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            EXECUTE query
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
