@@ -546,15 +546,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_TextFctEval
 --
---  - fctName text - Name of the function to evaluate. Will always be prefixed 
---                   with "TT_".
---  - arg text[]   - Array of argument values to pass to the function. 
---                   Generally includes one or two column names to get replaced 
---                   with values from the vals argument.
---  - vals jsonb   - Replacement values passed as a jsonb object (since  
---                   PostgresQL does not allow passing RECORDs to functions).
+--  - fctName text          - Name of the function to evaluate. Will always be prefixed 
+--                            with "TT_".
+--  - arg text[]            - Array of argument values to pass to the function. 
+--                            Generally includes one or two column names to get replaced 
+--                            with values from the vals argument.
+--  - vals jsonb            - Replacement values passed as a jsonb object (since  
+--                            PostgresQL does not allow passing RECORDs to functions).
 --  - returnType anyelement - Determines the type of the returned value 
 --                            (declared generically as anyelement).
+--  - checkExistence        - Should the function check the existence of the helper
+--                            function using TT_TextFctExists. TT_ValidateTTable also
+--                            checks existence so setting this to FALSE can avoid
+--                            repeating the check.
 --
 --    RETURNS anyelement
 --
@@ -570,7 +574,8 @@ CREATE OR REPLACE FUNCTION TT_TextFctEval(
   fctName text,
   args text[],
   vals jsonb,
-  returnType anyelement
+  returnType anyelement,
+  checkExistence boolean
 )
 RETURNS anyelement AS $$
   DECLARE
@@ -584,11 +589,17 @@ RETURNS anyelement AS $$
     result ALIAS FOR $0;
     debug boolean = TT_Debug();
   BEGIN
+    -- This function returns a polymorphic type, the type returned in result
+    -- will be whatever type is provided in the returnType input argument.
+  
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
-    -- if function has no args, pass 0 to TT_TextFctExists using coalesce.
-    IF fctName IS NULL OR NOT TT_TextFctExists(fctName, coalesce(cardinality(args),0)) OR vals IS NULL THEN
-      IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-      RAISE EXCEPTION 'TT_TextFctEval FUNCTION % DOES NOT EXIST', fctName;
+
+    IF checkExistence = TRUE THEN    
+      -- if function has no args, pass 0 to TT_TextFctExists using coalesce.
+      IF fctName IS NULL OR NOT TT_TextFctExists(fctName, coalesce(cardinality(args),0)) OR vals IS NULL THEN
+        IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
+        RAISE EXCEPTION 'TT_TextFctEval FUNCTION %(%) DOES NOT EXIST', fctName, left(repeat('text,',coalesce(cardinality(args),0)), char_length(repeat('text,',coalesce(cardinality(args),0)))-1);
+      END IF;
     END IF;
      
     ruleQuery = 'SELECT TT_' || fctName || '(';
@@ -990,7 +1001,7 @@ RETURNS SETOF RECORD AS $$
            IF isValid THEN
              IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
              -- Evaluate the rule
-             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean);
+             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, TRUE);
              IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
              -- initialize the final value
              finalVal = rule.errorCode;
@@ -1014,7 +1025,7 @@ RETURNS SETOF RECORD AS $$
            END IF;
 
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ');';
+           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', TRUE);';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            EXECUTE query
            USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;

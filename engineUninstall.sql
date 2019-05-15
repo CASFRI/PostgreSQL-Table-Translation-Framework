@@ -19,7 +19,7 @@ DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS TT_TableColumnNames(name, name);
 DROP FUNCTION IF EXISTS TT_FctEval(text, text[], jsonb, anyelement);
-DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement);
+DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement, boolean);
 DROP FUNCTION IF EXISTS TT_FctSignature(text[], jsonb);
 DROP FUNCTION IF EXISTS TT_FctReturnType(name, text[]);
 DROP FUNCTION IF EXISTS TT_FctReturnType(name, name, text[]);
