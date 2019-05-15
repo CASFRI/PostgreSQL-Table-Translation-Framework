@@ -1048,3 +1048,17 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
 RETURNS text AS $$
   SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
 $$ LANGUAGE sql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Nothing
+--
+-- Returns nothing
+-- e.g. TT_Nothing()
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Nothing()
+RETURNS void AS $$
+  BEGIN
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
