@@ -79,7 +79,7 @@ WITH test_nb AS (
     SELECT 'TT_FctExists'::text,                     6,          6         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
     SELECT 'TT_FctReturnType'::text,                 8,          1         UNION ALL
-    SELECT 'TT_TextFctEval'::text,                   9,          6         UNION ALL
+    SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0
 ),
 test_series AS (
@@ -414,6 +414,24 @@ SELECT '9.6'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
         TT_TextFctEval('between', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int) = 1 passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.7'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'Comma separated string, no column names'::text description,
+        TT_TextFctEval('Concat', '{"a,b,c",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text) = 'a-b-c' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.8'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'Comma separated string, column names only'::text description,
+        TT_TextFctEval('Concat', '{"id,crown_closure",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text) = 'a-1' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.9'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'Comma separated string, mixed column names and strings'::text description,
+        TT_TextFctEval('Concat', '{"id,b,crown_closure",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text) = 'a-b-1' passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
