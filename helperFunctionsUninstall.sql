@@ -51,3 +51,4 @@ DROP FUNCTION IF EXISTS TT_Pad(text,text);
 DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_Concat(text,text);
+DROP FUNCTION IF EXISTS TT_Nothing();
