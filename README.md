@@ -186,7 +186,7 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed.
+Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed. If source values do not represent a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). 
 
 ## Validation Functions
 
@@ -350,6 +350,19 @@ Helper functions are generally called with the name of the source value attribut
       * Pad(text, text, text)
       * Pad(text, text)
 
+12. **Concat**(srcVal, separator)
+    * Returns a string of concatenated values, interspersed with a separator. srcVal takes a comma separated string of column names and/or values. Column names will return the value from the column, non-column names will simply return the input value. 
+    * e.g. Concat('column1, column2, 1', '-')
+    * Signatures:
+      * Concat(text, text)
+
+13. **PadConcat**(srcVals, lengths, pads, separator, upperCase, includeEmpty\[default TRUE\])
+    * Returns a string of concatenated values, where each value is padded using **Pad()**. Inputs for srcVals, lengths, and pads are comma separated strings where the ith length and pad values correspond to the ith srcVal. If upperCase is TRUE, all characters are converted to upper case, if includeEmpty is FALSE, any empty strings in the srcVals are dropped from the concatenation. 
+    * e.g. PadConcat('column1, column2, 1', '5, 5, 7', 'x, x, 0', '-', TRUE, TRUE)
+    * Signatures:
+      * PadConcat(text, text, text, text, text, text)
+      * PadConcat(text, text, text, text, text)
+      
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
