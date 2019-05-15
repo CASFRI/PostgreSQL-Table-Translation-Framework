@@ -976,7 +976,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  Error if number of val, length and pad values not equal.
 --  Error if missing length or pad values
 --
--- e.g. TT_PadConcatString('a,b,c,', '5,5,5', 'x,x,x', '-', 'TRUE')
+-- e.g. TT_PadConcatString('a,b,c', '5,5,5', 'x,x,x', '-', 'TRUE')
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_PadConcat(
@@ -1045,7 +1045,7 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
   pad text,
   sep text,
   upperCase text
-)
+)	
 RETURNS text AS $$
   SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
 $$ LANGUAGE sql VOLATILE;
