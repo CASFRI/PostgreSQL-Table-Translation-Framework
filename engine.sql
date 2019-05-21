@@ -835,6 +835,8 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
+
+    -- loop through each row in the translation table
     query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id::int;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
@@ -852,18 +854,33 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
 
-      -- Check validation functions exist
+      -- Check validation functions exist, and error code can be cast to target attribute type
       FOREACH rule IN ARRAY validationRules LOOP
+        -- check function exists
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 991 function name: %, arguments: %', rule.fctName, rule.args;END IF;
         IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
           RAISE EXCEPTION 'TT_ValidateTTable FUNCTION %(%) DOES NOT EXIST', rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
         END IF;
+        -- check error code can be cast to attribute type, catch error with EXCEPTION
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 992 target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
+        BEGIN
+          query = 'SELECT ' || '''' || rule.errorcode || '''' || '::' || targetAttributeType || ';';
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable 993 query = %', query;END IF;
+          EXECUTE query;
+        EXCEPTION WHEN OTHERS THEN
+          RAISE EXCEPTION 'TT_ValidateTTable error code (%) cannot be cast to %', rule.errorcode, targetAttributeType;
+        END;
       END LOOP;
 
       -- Check translation function exists
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 992 function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
       IF translationRule.fctName IS NULL OR NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
           RAISE EXCEPTION 'TT_ValidateTTable FUNCTION %(%) DOES NOT EXIST', translationRule.fctName, left(repeat('text,',coalesce(cardinality(translationRule.args),0)), char_length(repeat('text,',coalesce(cardinality(translationRule.args),0)))-1);
+      END IF;
+
+      -- Check translation rule return type matches target attribute type
+      IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) = targetAttributeType THEN
+        RAISE EXCEPTION 'Translation table return type (%) does not match translation function return type (%)', targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args),0));
       END IF;
 
       RETURN NEXT;
