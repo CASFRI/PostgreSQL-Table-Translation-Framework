@@ -843,6 +843,8 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     
       -- check attributes not null and assign variables
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row;END IF;
+      IF row.rule_id IS NULL THEN RAISE EXCEPTION 'TT_ValidateTTable rule_id is null';END IF;
+
       IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN RAISE EXCEPTION 'TT_ValidateTTable target attribute is null or empty';END IF;
       targetAttribute = row.targetAttribute;
       
@@ -863,7 +865,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       description = coalesce(row.description, '');
 
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
-      IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN RAISE EXCEPTION 'TT_ValidateTTable descUpToDateWithRules is null or empty';END IF;
+      IF row.descUpToDateWithRules IS NULL THEN RAISE EXCEPTION 'TT_ValidateTTable descUpToDateWithRules is null';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
 
