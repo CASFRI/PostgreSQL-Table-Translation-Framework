@@ -840,26 +840,43 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id::int;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
+    
+      -- check attributes not null and assign variables
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row;END IF;
+      IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN RAISE EXCEPTION 'TT_ValidateTTable target attribute is null or empty';END IF;
       targetAttribute = row.targetAttribute;
+      
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
+      IF row.targetAttributeType IS NULL OR row.targetAttributeType = '' THEN RAISE EXCEPTION 'TT_ValidateTTable target attribute type is null or empty';END IF;
       targetAttributeType = row.targetAttributeType;
+
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
+      IF row.validationRules IS NULL OR row.validationRules = '' THEN RAISE EXCEPTION 'TT_ValidateTTable validation rules is null or empty';END IF;
       validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
+
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
+      IF row.translationRules IS NULL OR row.translationRules = '' THEN RAISE EXCEPTION 'TT_ValidateTTable translation rule is null or empty';END IF;
       translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
+
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
+      IF row.description IS NULL OR row.description = '' THEN RAISE EXCEPTION 'TT_ValidateTTable description is null or empty';END IF;
       description = coalesce(row.description, '');
+
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
+      IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN RAISE EXCEPTION 'TT_ValidateTTable descUpToDateWithRules is null or empty';END IF;
       descUpToDateWithRules = row.descUpToDateWithRules;
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
 
-      -- Check validation functions exist, and error code can be cast to target attribute type
+      -- Check validation functions exist, error code is not null, and error code can be cast to target attribute type
       FOREACH rule IN ARRAY validationRules LOOP
         -- check function exists
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 991 function name: %, arguments: %', rule.fctName, rule.args;END IF;
         IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
           RAISE EXCEPTION 'TT_ValidateTTable FUNCTION %(%) DOES NOT EXIST', rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
+        END IF;
+        -- check error code is not null
+        IF rule.errorcode IS NULL THEN
+          RAISE EXCEPTION 'TT_ValidateTTable: Error code is NULL';
         END IF;
         -- check error code can be cast to attribute type, catch error with EXCEPTION
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 992 target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
