@@ -1052,13 +1052,50 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Nothing
+-- TT_NothingText
 --
--- Returns nothing
--- e.g. TT_Nothing()
+-- Returns NULL, for text target attributes.
+-- Note this function is designed only be used with validation function TT_False() 
+-- and therefore should never be evaluated by the engine.
+-- e.g. TT_NothingText()
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Nothing()
-RETURNS void AS $$
+CREATE OR REPLACE FUNCTION TT_NothingText()
+RETURNS text AS $$
   BEGIN
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NothingDouble
+--
+-- Returns NULL, for double precision target attributes.
+-- Note this function is designed only be used with validation function TT_False() 
+-- and therefore should never be evaluated by the engine.
+-- e.g. TT_NothingDouble()
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_NothingDouble()
+RETURNS double precision AS $$
+  BEGIN
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NothingInt
+--
+-- Returns NULL, for int target attributes.
+-- Note this function is designed only be used with validation function TT_False() 
+-- and therefore should never be evaluated by the engine.
+-- e.g. TT_NothingText()
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_NothingInt()
+RETURNS int AS $$
+  BEGIN
+    RETURN NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
