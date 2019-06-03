@@ -366,14 +366,13 @@ Helper functions are generally called with the name of the source value attribut
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
-  * All helper function names must be prefixed with "TT_". The prefix must not be used in the translation file. This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to these conventions) can be used.
-  * All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function).
-  * All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type.
-  * Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value.
-  * Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
-  * Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If default parameter values are required, a separate function signature should be created that calls the full function.
-  * Translation functions should handle all data types without crashing.
-  
+  * **Namespace -** All helper function names must be prefixed with "TT_". The prefix must not be used in the translation file. This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to these conventions) can be used.
+  * **Input Types -** All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function).
+  * **Variable number of parameters -** Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon.
+  * **Default value -** Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If default parameter values are required, a separate function signature should be created that calls the full function.
+  * **Error handling -** All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type. Translation functions should handle any type of data values (always passed as text) without crashing. Translation functions should always validate that passed values are of the right type and return a standard CASFRI error othwise.
+  * **Return value -** Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. Translation functions must return a spedific type. For now only "int", "text" and boolean are supported.
+
 If you think your custom helper function could be of general interest to other framework users, you can submit it to the project. It could be integrated.
 
 # Known issues
