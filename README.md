@@ -309,7 +309,7 @@ Helper functions are generally called with the name of the source value attribut
       * Lookup(text, text, text, text, text)
       * Lookup(text, text, text, text)
 
-6. **LookupText**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+6. **LookupInt**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
     * Signatures:
