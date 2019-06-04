@@ -469,6 +469,44 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_GeoIsValid
+--
+-- the_geom text - the geometry value to validate
+-- fix text - default true. Should invalid geometries be fixed
+-- 
+-- Return true if the geometry is valid
+-- If invalid and fix is True, first try to fix with ST_MakeValid(), then with
+-- ST_Buffer. If still invalid print the reason with ST_IsValidReason().
+--
+-- e.g. TT_GeoIsValid(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), True)
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoIsValid(
+  the_geom text,
+  fix text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _the_geom geometry := the_geom::geometry;
+    _fix boolean := fix::boolean;
+    _valid boolean;
+  BEGIN
+    IF the_geom IS NULL THEN
+      RETURN FALSE;
+    ELSIF ST_IsValid(_the_geom) THEN
+      RETURN TRUE;
+    ELSIF _fix AND ST_IsValid(ST_MakeValid(_the_geom)) THEN
+      RETURN TRUE;
+    ELSIF _fix AND ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+      RETURN TRUE;
+    ELSE
+      RAISE NOTICE 'invalid geometry, reason: %', ST_IsValidReason(_the_geom);
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

@@ -103,7 +103,11 @@ WITH test_nb AS (
     SELECT 'TT_MapInt'::text,                 23,          4         UNION ALL
     SELECT 'TT_LookupDouble'::text,           24,          7         UNION ALL
     SELECT 'TT_LookupInt'::text,              25,          7         UNION ALL
-    SELECT 'TT_True'::text,                   26,          1
+    SELECT 'TT_True'::text,                   26,          1         UNION ALL
+    SELECT 'TT_NothingText'::text,            27,          1         UNION ALL
+    SELECT 'TT_NothingDouble'::text,          28,          1         UNION ALL
+    SELECT 'TT_NothingInt'::text,             29,          1         UNION ALL
+    SELECT 'TT_GeoIsValid'::text,             30,          5
 
 
 
@@ -1448,7 +1452,62 @@ SELECT '26.1'::text number,
        'Simple test'::text description,
        TT_True() passed
 ---------------------------------------------------------
-
+-- Test 27 - TT_NothingText
+---------------------------------------------------------
+UNION ALL
+SELECT '27.1'::text number,
+       'TT_NothingText'::text function_tested,
+       'Simple test'::text description,
+       TT_NothingText() IS NULL passed
+---------------------------------------------------------
+-- Test 28 - TT_NothingDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '28.1'::text number,
+       'TT_NothingDouble'::text function_tested,
+       'Simple test'::text description,
+       TT_NothingDouble() IS NULL passed
+---------------------------------------------------------
+-- Test 29 - TT_NothingInt
+---------------------------------------------------------
+UNION ALL
+SELECT '29.1'::text number,
+       'TT_NothingInt'::text function_tested,
+       'Simple test'::text description,
+       TT_NothingInt() IS NULL passed
+---------------------------------------------------------
+-- Test 30 - TT_GeoIsValid
+---------------------------------------------------------
+UNION ALL
+SELECT '30.1'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Valid geometry'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '30.2'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix=false'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '30.3'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix=true'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '30.4'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix default to true'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '30.5'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'NULL geometry, fix=false'::text description,
+       TT_GeoIsValid(NULL::text) IS FALSE passed
+---------------------------------------------------------
               
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
