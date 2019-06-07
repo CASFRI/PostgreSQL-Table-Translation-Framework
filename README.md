@@ -380,8 +380,8 @@ If you think some of your custom helper functions could be of general interest t
 1. Single quotes in the translation file are not yet allowed.
 
 # Credit
-**Pierre Racine**, Center for forest research, University Laval.
+**Pierre Racine** - Center for forest research, University Laval.
 
-**Pierre Vernier**, database designer.
+**Pierre Vernier** - Database designer.
 
-**Marc Edwards**, SQL programmer.
+**Marc Edwards** - SQL programmer.
