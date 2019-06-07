@@ -186,7 +186,7 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the process. Source values are replaced by the translation engine with the actual value when the current row is being processed. If source values do not represent a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). 
+Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the validation and translation process. Attribute names are replaced with the actual values by the translation engine when the current row is being processed. If names do not match a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). 
 
 ## Validation Functions
 
@@ -380,8 +380,8 @@ If you think some of your custom helper functions could be of general interest t
 1. Single quotes in the translation file are not yet allowed.
 
 # Credit
-**Pierre Racine**, Center for forest research, University Laval.
+**Pierre Racine** - Center for forest research, University Laval.
 
-**Pierre Vernier**, database designer.
+**Pierre Vernier** - Database designer.
 
-**Marc Edwards**, SQL programmer.
+**Marc Edwards** - SQL programmer.
