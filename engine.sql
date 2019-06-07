@@ -837,7 +837,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
 
     -- loop through each row in the translation table
-    query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id::int;';
+    query = 'SELECT rule_id::int, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY rule_id::int;';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
     
