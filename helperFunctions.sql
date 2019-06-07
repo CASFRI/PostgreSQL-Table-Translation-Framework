@@ -354,7 +354,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lookupSchemaName text - schema name holding lookup table.
 -- lookupTableName text - lookup table.
--- ignoreCase - text default TRUE. Should upper/lower case be ignored?
+-- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 --
 -- if val is present in source_val of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
@@ -395,7 +395,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, TRUE::text)
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -404,7 +404,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- val text - value to test.
 -- lst text - string containing comma separated vals.
--- ignoreCase - text default TRUE. Should upper/lower case be ignored?
+-- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 --
 -- Is val in lst?
 -- val followed by string of test values
@@ -437,7 +437,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, TRUE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -582,7 +582,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
 -- lookupColumn text - column to return
--- ignoreCase text - default TRUE. Should upper/lower case be ignored?
+-- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
 -- Return text value from lookupColumn in lookupSchemaName.lookupTableName
 -- that matches val in source_val column.
@@ -639,6 +639,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
 -- lookupColumn text - column to return
+-- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
 -- Return double precision value from lookupColumn in lookupSchemaName.lookupTableName
 -- that matches val in source_val column.
@@ -695,6 +696,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
 -- lookupColumn text - column to return
+-- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
 -- Return int value from lookupColumn in lookupSchemaName.lookupTableName
 -- that matches val in source_val column.
@@ -750,7 +752,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lst1 text - string containing comma seperated vals
 -- lst2 text - string containing comma seperated vals
--- ignoreCase - default TRUE. Should upper/lower case be ignored?
+-- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return text value from lst2 that matches value index in lst1
 -- Return type is text
@@ -801,7 +803,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lst1 text - string containing comma seperated vals
 -- lst2 text - string containing comma seperated vals
--- ignoreCase - default TRUE. Should upper/lower case be ignored?
+-- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return double precision value from lst2 that matches value index in lst1
 -- Return type is double precision
@@ -860,6 +862,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lst1 text - string containing comma seperated vals
 -- lst2 text - string containing comma seperated vals
+-- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return int value from lst2 that matches value index in lst1
 -- Return type is int
