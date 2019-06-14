@@ -50,7 +50,9 @@ SELECT 'c'::text, 'BBB'::text, 3::int, 1.3::double precision, FALSE::boolean
 UNION ALL
 SELECT NULL::text, NULL::text, NULL::int, NULL::double precision, NULL::boolean
 UNION ALL
-SELECT 'd'::text, 'CCC'::text, NULL::int, 5.5::double precision, NULL::boolean;
+SELECT 'd'::text, 'CCC'::text, NULL::int, 5.5::double precision, NULL::boolean
+UNION ALL
+SELECT 'AA'::text, 'abcde'::text, NULL::int, 5.5::double precision, NULL::boolean;
 
 DROP TABLE IF EXISTS photo_test;
 CREATE TABLE photo_test AS
@@ -96,7 +98,7 @@ WITH test_nb AS (
     SELECT 'TT_MatchTable'::text,             10,         19         UNION ALL   
     SELECT 'TT_Concat'::text,                 11,          3         UNION ALL
     SELECT 'TT_CopyText'::text,               12,          3         UNION ALL
-    SELECT 'TT_LookupText'::text,             13,          7         UNION ALL
+    SELECT 'TT_LookupText'::text,             13,          8         UNION ALL
     SELECT 'TT_False'::text,                  14,          1         UNION ALL
     SELECT 'TT_Length'::text,                 15,          5         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         15         UNION ALL
@@ -932,6 +934,13 @@ SELECT '13.7'::text number,
        'TT_LookupText'::text function_tested,
        'Test ignore case, false'::text description,
        TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, FALSE::text) IS NULL passed
+       UNION ALL
+---------------------------------------------------------
+SELECT '13.8'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test ignore case, true flipped case'::text description,
+       TT_LookupText('aa'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'abcde'::text passed
+---------------------------------------------------------
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 14 - TT_False
