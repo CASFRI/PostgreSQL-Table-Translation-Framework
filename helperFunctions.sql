@@ -614,7 +614,7 @@ RETURNS text AS $$
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
+      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
