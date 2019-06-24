@@ -115,7 +115,7 @@ WITH test_nb AS (
     SELECT 'TT_NothingText'::text,            27,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,          28,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,             29,          1         UNION ALL
-    SELECT 'TT_GeoIsValid'::text,             30,          5         UNION ALL
+    SELECT 'TT_GeoIntersects'::text,          30,          5         UNION ALL
     SELECT 'TT_GeoIntersectText'::text,       31,          5         UNION ALL
     SELECT 'TT_GeoIntersectInt'::text,        32,          7         UNION ALL
     SELECT 'TT_GeoIntersectDouble'::text,     33,          7
@@ -1492,37 +1492,37 @@ SELECT '29.1'::text number,
        'Simple test'::text description,
        TT_NothingInt() IS NULL passed
 ---------------------------------------------------------
--- Test 30 - TT_GeoIsValid
+-- Test 30 - TT_GeoIntersects
 ---------------------------------------------------------
 UNION ALL
 SELECT '30.1'::text number,
-       'TT_GeoIsValid'::text function_tested,
+       'TT_GeoIntersects'::text function_tested,
        'Valid geometry'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) passed
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '30.2'::text number,
-       'TT_GeoIsValid'::text function_tested,
+       'TT_GeoIntersects'::text function_tested,
        'Invalid geometry, fix=false'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '30.3'::text number,
-       'TT_GeoIsValid'::text function_tested,
+       'TT_GeoIntersects'::text function_tested,
        'Invalid geometry, fix=true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '30.4'::text number,
-       'TT_GeoIsValid'::text function_tested,
+       'TT_GeoIntersects'::text function_tested,
        'Invalid geometry, fix default to true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '30.5'::text number,
-       'TT_GeoIsValid'::text function_tested,
+       'TT_GeoIntersects'::text function_tested,
        'NULL geometry, fix=false'::text description,
-       TT_GeoIsValid(NULL::text) IS FALSE passed
+       TT_GeoIntersects(NULL::text) IS FALSE passed
 ---------------------------------------------------------
 -- Test 31 - TT_GeoIntersectText
 ---------------------------------------------------------

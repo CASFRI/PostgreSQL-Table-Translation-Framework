@@ -470,7 +470,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GeoIsValid
+-- TT_GeoIntersects
 --
 -- the_geom text - the geometry value to validate
 -- fix text - default true. Should invalid geometries be fixed
@@ -479,10 +479,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- If invalid and fix is True, first try to fix with ST_MakeValid(), then with
 -- ST_Buffer. If still invalid print the reason with ST_IsValidReason().
 --
--- e.g. TT_GeoIsValid(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), True)
+-- e.g. TT_GeoIntersects(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), True)
 
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_GeoIsValid(
+CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text,
   fix text
 )
@@ -506,11 +506,11 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_GeoIsValid(
+CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text
 )
 RETURNS boolean AS $$
-  SELECT TT_GeoIsValid(the_geom, TRUE::text)
+  SELECT TT_GeoIntersects(the_geom, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
