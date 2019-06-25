@@ -518,8 +518,8 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_GeoIntersects
 --
 -- the_geom text - the geometry to be tested
--- lookupSchemaName text - schema for the intersect table
--- lookupTableName text - table to intersect
+-- intersectSchemaName text - schema for the intersect table
+-- intersectTableName text - table to intersect
 -- geoCol text - geometry column from intersect table
 -- 
 -- Return True if the test geometry intersects any polygons in the intersect table
@@ -530,25 +530,25 @@ $$ LANGUAGE sql VOLATILE;
 -- DROP FUNCTION IF EXISTS TT_GeoIntersects(text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text,
-  lookupSchemaName text,
-  lookupTableName text,
+  intersectSchemaName text,
+  intersectTableName text,
   geoCol text
 )
 RETURNS boolean AS $$
   DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
+    _intersectSchemaName name := intersectSchemaName::name;
+    _intersectTableName name := intersectTableName::name;
     count int;
     query text;
     return boolean;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or geoCol is NULL';
+    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL THEN
+      RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol is NULL';
     ELSE      
       -- query to get count of intersects
-      query = 'SELECT count(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
+      query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
       EXECUTE query INTO count;
       
       -- RAISE NOTICE 'count: %', count;
@@ -1201,10 +1201,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_GeoIntersectionText
 --
 -- the_geom text - the geometry from the table that will receive the intersecting value
--- lookupSchemaName text - schema for the intersect table
--- lookupTableName text - table to intersect
+-- intersectSchemaName text - schema for the intersect table
+-- intersectTableName text - table to intersect
 -- geoCol text - geometry column from intersect table
--- lookupCol text - column conatining the values to return
+-- returnCol text - column conatining the values to return
 -- method text - intersect method if multiple intersecting polygons (only have area method for text)
 --    area - return value from intersecting polygon with largest area
 --    lowestVal - return lowest value
@@ -1218,29 +1218,29 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   the_geom text,
-  lookupSchemaName text,
-  lookupTableName text,
+  intersectSchemaName text,
+  intersectTableName text,
   geoCol text,
   returnCol text,
   method text
 )
 RETURNS text AS $$
   DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
+    _intersectSchemaName name := intersectSchemaName::name;
+    _intersectTableName name := intersectTableName::name;
     count int;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or geoCol or returnCol is NULL';
+    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
+      RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
     ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
       RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
     ELSE      
       -- get table of returnCol values and intersecting areas for all intersecting polygons
       -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
       EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || the_geom || '''::geometry, ' || geoCol || ')) AS int_area 
-      FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
+      FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
       ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
 
       EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
@@ -1274,14 +1274,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   the_geom text,
-  lookupSchemaName text,
-  lookupTableName text,
+  intersectSchemaName text,
+  intersectTableName text,
   geoCol text,
   returnCol text,
   method text
 )
 RETURNS integer AS $$
-  SELECT TT_GeoIntersectionText(the_geom, lookupSchemaName, lookupTableName, geoCol, returnCol, method)::int;
+  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::int;
 $$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
@@ -1293,12 +1293,12 @@ $$ LANGUAGE sql VOLATILE;
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   the_geom text,
-  lookupSchemaName text,
-  lookupTableName text,
+  intersectSchemaName text,
+  intersectTableName text,
   geoCol text,
   returnCol text,
   method text
 )
 RETURNS double precision AS $$
-  SELECT TT_GeoIntersectionText(the_geom, lookupSchemaName, lookupTableName, geoCol, returnCol, method)::double precision;
+  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::double precision;
 $$ LANGUAGE sql VOLATILE;
