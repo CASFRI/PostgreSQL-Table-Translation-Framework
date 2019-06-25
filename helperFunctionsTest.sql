@@ -120,8 +120,8 @@ WITH test_nb AS (
     SELECT 'TT_GeoIsValid'::text,             30,          5         UNION ALL
     SELECT 'TT_GeoIntersectionText'::text,    31,          8         UNION ALL
     SELECT 'TT_GeoIntersectionInt'::text,     32,          5         UNION ALL
-    SELECT 'TT_GeoIntersectionDouble'::text,  33,          5
-
+    SELECT 'TT_GeoIntersectionDouble'::text,  33,          5         UNION ALL
+    SELECT 'TT_GeoIntersects'::text,          34,          4
 
 ),
 test_series AS (
@@ -1639,7 +1639,33 @@ SELECT '33.5'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'No overlap error'::text description,
        TT_IsError('SELECT TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''dbl'', ''area'')') passed
+---------------------------------------------------------
+-- Test 34 - TT_GeoIntersects
 ---------------------------------------------------------                     
+UNION ALL
+SELECT '34.1'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'No overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom') IS FALSE passed
+---------------------------------------------------------                     
+UNION ALL
+SELECT '34.2'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'One overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+---------------------------------------------------------                     
+UNION ALL
+SELECT '34.3'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'Three overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '34.4'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'Null argument'::text description,
+       TT_IsError('SELECT TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)''), 4268)))::text, ''NULL'', ''photo_test'', ''the_geom'')') passed
+---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

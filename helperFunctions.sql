@@ -515,6 +515,54 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_GeoIntersects
+--
+-- the_geom text - the geometry to be tested
+-- lookupSchemaName text - schema for the intersect table
+-- lookupTableName text - table to intersect
+-- geoCol text - geometry column from intersect table
+-- 
+-- Return True if the test geometry intersects any polygons in the intersect table
+--
+-- e.g. TT_GeoIntersects(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom')
+
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GeoIntersects(text,text,text,text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersects(
+  the_geom text,
+  lookupSchemaName text,
+  lookupTableName text,
+  geoCol text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _lookupSchemaName name := lookupSchemaName::name;
+    _lookupTableName name := lookupTableName::name;
+    count int;
+    query text;
+    return boolean;
+  BEGIN
+    IF the_geom IS NULL THEN
+      RAISE EXCEPTION 'geometry is NULL';
+    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL THEN
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or geoCol is NULL';
+    ELSE      
+      -- query to get count of intersects
+      query = 'SELECT count(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
+      EXECUTE query INTO count;
+      
+      -- RAISE NOTICE 'count: %', count;
+      
+      -- return false if count = 0, true if > 0
+      IF count = 0 THEN
+        RETURN FALSE;
+      ELSIF count > 0 THEN
+        RETURN TRUE;
+      END IF;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -1181,12 +1229,11 @@ RETURNS text AS $$
     _lookupSchemaName name := lookupSchemaName::name;
     _lookupTableName name := lookupTableName::name;
     count int;
-    return text;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol or returnCol is NULL';
+      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or geoCol or returnCol is NULL';
     ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
       RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
     ELSE      
