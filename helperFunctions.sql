@@ -541,14 +541,26 @@ RETURNS boolean AS $$
     count int;
     query text;
     return boolean;
+    _the_geom geometry := the_geom::geometry;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
     ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL THEN
       RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol is NULL';
-    ELSE      
+    ELSE
+      -- make geo valid if not
+      IF NOT ST_IsValid(_the_geom) THEN
+        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
+          _the_geom = ST_MakeValid(_the_geom);
+        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+          _the_geom = ST_Buffer(_the_geom, 0);
+        ELSE
+          RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
+        END IF;
+      END IF;
+      
       -- query to get count of intersects
-      query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
+      query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || _the_geom::text || '''::geometry, ' || geoCol || ');';
       EXECUTE query INTO count;
       
       -- RAISE NOTICE 'count: %', count;
@@ -1229,6 +1241,7 @@ RETURNS text AS $$
     _intersectSchemaName name := intersectSchemaName::name;
     _intersectTableName name := intersectTableName::name;
     count int;
+    _the_geom geometry := the_geom::geometry;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
@@ -1236,12 +1249,24 @@ RETURNS text AS $$
       RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
     ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
       RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
-    ELSE      
+    ELSE
+
+      -- make geo valid if not
+      IF NOT ST_IsValid(_the_geom) THEN
+        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
+          _the_geom = ST_MakeValid(_the_geom);
+        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+          _the_geom = ST_Buffer(_the_geom, 0);
+        ELSE
+          RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
+        END IF;
+      END IF;
+      
       -- get table of returnCol values and intersecting areas for all intersecting polygons
       -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
-      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || the_geom || '''::geometry, ' || geoCol || ')) AS int_area 
+      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
       FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
-      ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
+      ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
 
       EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
 

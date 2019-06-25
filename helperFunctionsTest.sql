@@ -118,10 +118,10 @@ WITH test_nb AS (
     SELECT 'TT_NothingDouble'::text,          28,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,             29,          1         UNION ALL
     SELECT 'TT_GeoIsValid'::text,             30,          5         UNION ALL
-    SELECT 'TT_GeoIntersectionText'::text,    31,          8         UNION ALL
+    SELECT 'TT_GeoIntersectionText'::text,    31,          9         UNION ALL
     SELECT 'TT_GeoIntersectionInt'::text,     32,          5         UNION ALL
     SELECT 'TT_GeoIntersectionDouble'::text,  33,          5         UNION ALL
-    SELECT 'TT_GeoIntersects'::text,          34,          4
+    SELECT 'TT_GeoIntersects'::text,          34,          5
 
 ),
 test_series AS (
@@ -1576,6 +1576,12 @@ SELECT '31.8'::text number,
        'Invalid method'::text description,
        TT_IsError('SELECT TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(5 5, 5 6, 6 6, 6 5, 5 5)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''YEARtext'', ''area2'')') passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '31.9'::text number,
+       'TT_GeoIntersectionText'::text function_tested,
+       'Invalid geo'::text description,
+       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'highestVal') = '1999' passed
+---------------------------------------------------------
 -- Test 32 - TT_GeoIntersectionInt
 ---------------------------------------------------------
 UNION ALL
@@ -1665,6 +1671,12 @@ SELECT '34.4'::text number,
        'TT_GeoIntersects'::text function_tested,
        'Null argument'::text description,
        TT_IsError('SELECT TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)''), 4268)))::text, ''NULL'', ''photo_test'', ''the_geom'')') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '34.5'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'Invalid geometry'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
