@@ -1150,7 +1150,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GeoIntersectText
+-- TT_GeoIntersectionText
 --
 -- the_geom text - the geometry from the table that will receive the intersecting value
 -- lookupSchemaName text - schema for the intersect table
@@ -1159,14 +1159,16 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- lookupCol text - column conatining the values to return
 -- method text - intersect method if multiple intersecting polygons (only have area method for text)
 --    area - return value from intersecting polygon with largest area
+--    lowestVal - return lowest value
+--    highestVal - return highest value
 -- 
 -- Return the text value from the intersecting polygon
 --
--- e.g. TT_GeoIntersectText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
+-- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
 
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectText(text,text,text,text,text,text);
-CREATE OR REPLACE FUNCTION TT_GeoIntersectText(
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   the_geom text,
   lookupSchemaName text,
   lookupTableName text,
@@ -1179,34 +1181,38 @@ RETURNS text AS $$
     _lookupSchemaName name := lookupSchemaName::name;
     _lookupTableName name := lookupTableName::name;
     count int;
-    query text;
     return text;
   BEGIN
     IF the_geom IS NULL THEN
       RAISE EXCEPTION 'geometry is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
       RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol or returnCol is NULL';
-    ELSIF NOT method = any('{"area"}') OR method IS NULL THEN
-      RAISE EXCEPTION 'method not one of: "area"';
+    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
+      RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
     ELSE      
-      -- get count of intersects
-      query = 'SELECT count(*) AS count FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-      EXECUTE query INTO count;
-      --RAISE NOTICE 'Count: %', count;
+      -- get table of returnCol values and intersecting areas for all intersecting polygons
+      -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
+      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || the_geom || '''::geometry, ' || geoCol || ')) AS int_area 
+      FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
+      ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
+
+      EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
 
       -- return value based on count and method
       IF count = 0 THEN
         RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
       ELSIF count = 1 THEN
         -- return the value
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-        EXECUTE query INTO return;
-        RETURN return;
+        RETURN return_value FROM int_temp;
       ELSIF count > 1 AND method = 'area' THEN
         -- return val from intersect with largest area
-	query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ST_Area(''' || the_geom || '''::geometry) DESC LIMIT 1;';
-	EXECUTE query INTO return;
-	RETURN return;
+        RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
+      ELSIF count > 1 AND method = 'lowestVal' THEN
+        -- return lowest val
+        RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
+      ELSIF count > 1 AND method = 'highestVal' THEN
+        -- return highest val
+        RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
     END IF;
   END;
@@ -1215,25 +1221,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GeoIntersectInt
---
--- the_geom text - the geometry from the table that will receive the intersecting value
--- lookupSchemaName text - schema for the intersect table
--- lookupTableName text - table to intersect
--- geoCol text - geometry column from intersect table
--- lookupCol text - column conatining the values to return
--- method text - intersect method if multiple intersecting polygons
---    area - return value from intersecting polygon with largest area
---    lowestVal - return lowest value
---    highestVal - return highest value
--- 
--- Return the integer value from the intersecting polygon
---
--- e.g. TT_GeoIntersectint(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
-
+-- TT_GeoIntersectionInt
+-- integer wrapper for TT_GeoIntersectionText 
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectInt(text,text,text,text,text,text);
-CREATE OR REPLACE FUNCTION TT_GeoIntersectInt(
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   the_geom text,
   lookupSchemaName text,
   lookupTableName text,
@@ -1242,75 +1234,17 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectInt(
   method text
 )
 RETURNS integer AS $$
-  DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    count int;
-    query text;
-    return integer;
-  BEGIN
-    IF the_geom IS NULL THEN
-      RAISE EXCEPTION 'geometry is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol or returnCol is NULL';
-    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
-      RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "higestVal"';
-    ELSE      
-      -- get count of intersects
-      query = 'SELECT count(*) AS count FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-      EXECUTE query INTO count;
-      --RAISE NOTICE 'Count: %', count;
-
-      -- return value based on count and method
-      IF count = 0 THEN
-        RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
-      ELSIF count = 1 THEN
-        -- return the value
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'lowestVal' THEN
-        -- return lowest val
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ' || returnCol || ' LIMIT 1;';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'highestVal' THEN
-        -- return highest val
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ' || returnCol || ' DESC LIMIT 1;';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'area' THEN
-        -- return val from intersect with largest area
-	query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ST_Area(''' || the_geom || '''::geometry) DESC LIMIT 1;';
-	EXECUTE query INTO return;
-	RETURN return;
-      END IF;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_GeoIntersectionText(the_geom, lookupSchemaName, lookupTableName, geoCol, returnCol, method)::int;
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GeoIntersectDouble
---
--- the_geom text - the geometry from the table that will receive the intersecting value
--- lookupSchemaName text - schema for the intersect table
--- lookupTableName text - table to intersect
--- geoCol text - geometry column from intersect table
--- lookupCol text - column conatining the values to return
--- method text - intersect method if multiple intersecting polygons
---    area - return value from intersecting polygon with largest area
---    lowestVal - return lowest value
---    highestVal - return highest value
--- 
--- Return the double precision value from the intersecting polygon
---
--- e.g. TT_GeoIntersectDouble(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
-
+-- TT_GeoIntersectionDouble
+-- double wrapper for TT_GeoIntersectionText
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectDouble(text,text,text,text,text,text);
-CREATE OR REPLACE FUNCTION TT_GeoIntersectDouble(
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text,text,text,text,text,text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   the_geom text,
   lookupSchemaName text,
   lookupTableName text,
@@ -1319,50 +1253,5 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectDouble(
   method text
 )
 RETURNS double precision AS $$
-  DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    count int;
-    query text;
-    return double precision;
-  BEGIN
-    IF the_geom IS NULL THEN
-      RAISE EXCEPTION 'geometry is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol or returnCol is NULL';
-    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
-      RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "higestVal"';
-    ELSE      
-      -- get count of intersects
-      query = 'SELECT count(*) AS count FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-      EXECUTE query INTO count;
-      --RAISE NOTICE 'Count: %', count;
-
-      -- return value based on count and method
-      IF count = 0 THEN
-        RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
-      ELSIF count = 1 THEN
-        -- return the value
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ');';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'lowestVal' THEN
-        -- return lowest val
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ' || returnCol || ' LIMIT 1;';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'highestVal' THEN
-        -- return highest val
-        query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ' || returnCol || ' DESC LIMIT 1;';
-        EXECUTE query INTO return;
-        RETURN return;
-      ELSIF count > 1 AND method = 'area' THEN
-        -- return val from intersect with largest area
-	query = 'SELECT ' || returnCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE ST_Intersects(''' || the_geom || '''::geometry, ' || geoCol || ') ORDER BY ST_Area(''' || the_geom || '''::geometry) DESC LIMIT 1;';
-	EXECUTE query INTO return;
-	RETURN return;
-      END IF;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
+  SELECT TT_GeoIntersectionText(the_geom, lookupSchemaName, lookupTableName, geoCol, returnCol, method)::double precision;
+$$ LANGUAGE sql VOLATILE;
