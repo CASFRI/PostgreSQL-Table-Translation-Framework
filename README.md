@@ -186,183 +186,151 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the validation and translation process. Attribute names are replaced with the actual values by the translation engine when the current row is being processed. If names do not match a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). 
+Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the validation and translation process. Attribute names are replaced with the actual values by the translation engine when the current row is being processed. If names do not match a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3').
+
+One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt).
 
 ## Validation Functions
 
-1. **NotNull**(srcVal)
-    * Returns TRUE if srcVal is not NULL. Returns FALSE if srcVal is NULL.
+1. **NotNull**(any srcVal)
+    * Returns TRUE if srcVal is not NULL. Returns FALSE if srcVal is NULL. Paired with most translation functions to make sure input values are available.
     * e.g. NotNull('a')
-    * Signatures:
-      * NotNull(text)
 
-2. **NotEmpty**(srcVal)
-    * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL.
+2. **NotEmpty**(text srcVal)
+    * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
     * e.g. NotEmpty('a')
-    * Signatures:
-      * NotEmpty(text)
 
-3. **IsInt**(srcVal)
-    * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL.
+3. **IsInt**(text srcVal)
+    * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
     * e.g. IsInt('1')
-    * Signatures:
-      * IsInt(text)
 
-4. **IsNumeric**(srcVal) 
-    * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL.
+4. **IsNumeric**(text srcVal) 
+    * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
     * e.g. IsNumeric('1.1')
-    * Signatures:
-      * IsNumeric(text)
-
-5. **IsString**(srcVal) 
+   
+5. **IsString**(text srcVal) 
     * Returns TRUE if srcVal cannot be cast to double precision (e.g. '1', '1.1').
     * e.g. IsString('1a')
-    * Signatures:
-      * IsString(text)
-      
-6. **Between**(srcVal, min, max, includeMin\[default TRUE\], includeMax\[default TRUE\])
+          
+6. **Between**(numeric srcVal, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
     * e.g. Between(5, 0, 100, TRUE, TRUE)
-    * Signatures
-      * Between(text, text, text, text, text)
-      * Between(text, text, text)
-      
-7. **GreaterThan**(srcVal, lowerBound, inclusive\[default TRUE\])
+          
+7. **GreaterThan**(numeric srcVal, numeric lowerBound, boolean inclusive\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. GreaterThan(5, 0, TRUE)
-    * Signatures:
-      * GreaterThan(text, text, text)
-      * GreaterThan(text, text)
 
-8. **LessThan**(srcVal, upperBound, inclusive\[default TRUE\])
+8. **LessThan**(numeric srcVal, numeric upperBound, boolean inclusive\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. LessThan(1, 5, TRUE)
-    * Signatures:
-      * LessThan(text, text, text)
-      * LessThan(text, text)
 
-9. **HasUniqueValues**(srcVal, lookupSchemaName, lookupTableName, occurences\[default 1\])
-    * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences.
+9. **HasUniqueValues**(text srcVal, text lookupSchemaName, text lookupTableName, int occurences\[default 1\])
+    * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
     * e.g. HasUniqueValues(TA, public, species_lookup, 1)
-    * Signatures:
-      * HasUniqueValues(text, text, text, text)
-      * HasUniqueValues(text,text,text)
 
-10. **MatchTable**(srcVal, lookupSchemaName, lookupTableName, ignoreCase\[default TRUE\])
+10. **MatchTable**(text srcVal, text lookupSchemaName, text lookupTableName, boolean ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_MatchTable(sp1,public,species_lookup, TRUE)
-    * Signatures:
-      * MatchTable(text, text, text, text)
-      * MatchTable(text, text, text)
 
-11. **MatchList**(srcVal, lst, ignoreCase\[default TRUE\])
+11. **MatchList**(text srcVal, text lst, boolean ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * e.g. Match('a', 'a,b,c', TRUE)
-    * Signatures:
-      * MatchList(text, text)
-      * MatchList(text, text, text)
 
 12. **False**()
-    * Returns FALSE.
+    * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
     * e.g. False()
-    * Signatures:
-      * False()
 
 13. **True**()
-    * Returns TRUE.
+    * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
     * e.g. True()
-    * Signatures:
-      * True()
+    
+14. **GeoIsValid**(geometry the_geom, boolean fix)
+    * Returns True if geometry is valid. If fix is True and geometry is invalid, function will attempt to make a valid geometry and return True if successful. If geometry is invalid returns False. Note that using fix=True does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
+    * e.g. GeoIsValid(source_geo, TRUE)
+    
+15. **GeoIntersects**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol)
+    * Returns True if the_geom intersects with any features in the intersect table. Otherwise returns False. Invalid geometries are validated before running the intersection test.
+    * e.g. GeoIntersects(source_geo, public, intersect_tab, intersect_geo)
       
 ## Translation Functions
 
-1. **CopyText**(srcVal)
+1. **CopyText**(text srcVal)
     * Returns srcVal as text without any transformation.
     * e.g. Copy('sp1')
-    * Signatures:
-      * Copy(text)
       
-2. **CopyDouble**(srcVal)
+2. **CopyDouble**(numeric srcVal)
     * Returns srcVal as double precision without any transformation.
-    * e.g. Copy('1.1')
-    * Signatures:
-      * Copy(text)
+    * e.g. Copy(1.1)
 
-3. **CopyInt**(srcVal)
+3. **CopyInt**(integer srcVal)
     * Returns srcVal as integer without any transformation.
-    * e.g. Copy('1')
-    * Signatures:
-      * Copy(text)
+    * e.g. Copy(1)
       
-4. **LookupText**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+4. **LookupText**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(sp1, public, species_lookup, targetSp, TRUE)
-    * Signatures:
-      * Lookup(text, text, text, text, text)
-      * Lookup(text, text, text, text)
       
-5. **LookupDouble**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+5. **LookupDouble**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
-    * Signatures:
-      * Lookup(text, text, text, text, text)
-      * Lookup(text, text, text, text)
 
-6. **LookupInt**(srcVal, lookupSchemaName, lookupTableName, lookupCol, ignoreCase\[default TRUE\])
+6. **LookupInt**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
     * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
-    * Signatures:
-      * Lookup(text, text, text, text, text)
-      * Lookup(text, text, text, text)
 
-7. **MapText**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+7. **MapText**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','D,E,F', TRUE)
-    * Signatures:
-      * MapText(text, text, text, text)
-      * MapText(text, text, text)
       
-8. **MapDouble**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+8. **MapDouble**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','1.1,1.2,1.3', TRUE)
-    * Signatures:
-      * MapDouble(text, text, text, text)
-      * MapDouble(text, text, text)
       
-9. **MapInt**(srcVal, lst1, lst2, ignoreCase\[default TRUE\])
+9. **MapInt**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','A,B,C','1,2,3', TRUE)
-    * Signatures:
-      * MapInt(text, text, text, text)
-      * MapInt(text, text, text)
       
-10. **Length**(srcVal)
+10. **Length**(text srcVal)
     * Returns the length of the srcVal string.
     * e.g. Length('12345')
-    * Signatures:
-      * Length(text)
 
-11. **Pad**(srcVal, targetLength, padChar\[default x\])
+11. **Pad**(text srcVal, int targetLength, text padChar\[default x\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength.
     * e.g. Pad(tab1, 10, x)
-    * Signatures:
-      * Pad(text, text, text)
-      * Pad(text, text)
 
-12. **Concat**(srcVal, separator)
+12. **Concat**(text srcVal, text separator)
     * Returns a string of concatenated values, interspersed with a separator. srcVal takes a comma separated string of column names and/or values. Column names will return the value from the column, non-column names will simply return the input value. 
-    * e.g. Concat('column1, column2, 1', '-')
-    * Signatures:
-      * Concat(text, text)
+    * e.g. Concat('column1,column2,1', '-')
 
-13. **PadConcat**(srcVals, lengths, pads, separator, upperCase, includeEmpty\[default TRUE\])
+13. **PadConcat**(text srcVals, text lengths, text pads, text separator, boolean upperCase, boolean includeEmpty\[default TRUE\])
     * Returns a string of concatenated values, where each value is padded using **Pad()**. Inputs for srcVals, lengths, and pads are comma separated strings where the ith length and pad values correspond to the ith srcVal. If upperCase is TRUE, all characters are converted to upper case, if includeEmpty is FALSE, any empty strings in the srcVals are dropped from the concatenation. 
-    * e.g. PadConcat('column1, column2, 1', '5, 5, 7', 'x, x, 0', '-', TRUE, TRUE)
-    * Signatures:
-      * PadConcat(text, text, text, text, text, text)
-      * PadConcat(text, text, text, text, text)
-      
+    * e.g. PadConcat('column1,column2,1', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
+
+14. **NothingText**()
+    * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * e.g. NothingText()
+
+15. **NothingDouble**()
+    * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * e.g. NothingDouble()
+
+16. **NothingInt**()
+    * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * e.g. NothingInt()
+
+17. **GeoIntersectionText**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, text returnCol, text method)
+    * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='area'; the lowest intersecting value can be returned using method='lowestVal', or the highest value can be returned using method='highestVal'. The 'lowestVal' and 'highestVal' methods only work when returnCol is numeric.
+    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, TYPE, area)
+    
+18. **GeoIntersectionDouble**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, numeric returnCol, text method)
+    * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
+    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, LENGTH, highestVal)
+
+19. **GeoIntersectionInt**
+    * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
+    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, YEAR, lowestVal)
+
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
