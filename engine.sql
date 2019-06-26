@@ -569,13 +569,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- This version passes all vals as type text when running helper functions.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement);
+-- DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement, boolean);
 CREATE OR REPLACE FUNCTION TT_TextFctEval(
   fctName text,
   args text[],
   vals jsonb,
   returnType anyelement,
-  checkExistence boolean
+  checkExistence boolean DEFAULT TRUE
 )
 RETURNS anyelement AS $$
   DECLARE
