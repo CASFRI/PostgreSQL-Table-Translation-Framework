@@ -598,8 +598,12 @@ CREATE OR REPLACE FUNCTION TT_CopyText(
 RETURNS text AS $$
   BEGIN
     RETURN val;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -615,6 +619,9 @@ CREATE OR REPLACE FUNCTION TT_CopyDouble(
 RETURNS double precision AS $$
   BEGIN
     RETURN val::double precision;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -632,9 +639,13 @@ CREATE OR REPLACE FUNCTION TT_CopyInt(
 RETURNS int AS $$
   BEGIN
     RETURN round(val::numeric)::int;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333::int;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 -- TT_LookupText
 --
@@ -666,9 +677,11 @@ RETURNS text AS $$
     return text;
   BEGIN
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
@@ -678,6 +691,9 @@ RETURNS text AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -723,9 +739,11 @@ RETURNS double precision AS $$
     return text;
   BEGIN
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
@@ -735,6 +753,9 @@ RETURNS double precision AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -780,9 +801,11 @@ RETURNS int AS $$
     return text;
   BEGIN
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
+      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
     ELSIF _ignoreCase = FALSE THEN
       query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
       EXECUTE query INTO return;
@@ -792,6 +815,9 @@ RETURNS int AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -832,9 +858,9 @@ RETURNS text AS $$
     _lst2 text[];
     _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
-    
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
       _lst1 = string_to_array(lst1, ',');
       _lst2 = string_to_array(lst2, ',');
@@ -844,6 +870,9 @@ RETURNS text AS $$
       _lst2 = string_to_array(lst2, ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -892,17 +921,22 @@ RETURNS double precision AS $$
         -- no need to do anything inside loop, we just want to test if all _i's are double precision
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
-      RAISE EXCEPTION 'lst2 value cannot be cast to double precision';
+      --RAISE EXCEPTION 'lst2 value cannot be cast to double precision';
+      RAISE NOTICE 'lst2 value cannot be cast to double precision';
     END;
 
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_lst2)[array_position(_lst1,val)];
     ELSE
       _lst1 = string_to_array(upper(lst1), ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -951,17 +985,22 @@ RETURNS int AS $$
         -- no need to do anything inside loop, we just want to test if all _i's are int
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
-      RAISE EXCEPTION 'lst2 value is not int';
+      --RAISE EXCEPTION 'lst2 value is not int';
+      RAISE NOTICE 'lst2 value is not int';
     END;
     
     IF val IS NULL THEN
-      RAISE EXCEPTION 'val is NULL';
+      --RAISE EXCEPTION 'val is NULL';
+      RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_lst2)[array_position(_lst1,val)];
     ELSE
       _lst1 = string_to_array(upper(lst1), ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -993,6 +1032,9 @@ RETURNS int AS $$
     ELSE
       RETURN char_length(val);
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -1020,9 +1062,11 @@ RETURNS text AS $$
     pad_length int;
   BEGIN
     IF targetLength IS NULL OR padChar IS NULL THEN
-      RAISE EXCEPTION 'targetLength or padChar is NULL';
+      --RAISE EXCEPTION 'targetLength or padChar is NULL';
+      RAISE NOTICE 'targetLength or padChar is NULL';
     ELSIF TT_Length(padChar) != 1 THEN
-      RAISE EXCEPTION 'padChar length is not 1';
+      --RAISE EXCEPTION 'padChar length is not 1';
+      RAISE NOTICE 'padChar length is not 1';
     ELSE
       val_length = TT_Length(val);
       pad_length = _targetLength - val_length;
@@ -1032,6 +1076,9 @@ RETURNS text AS $$
         RETURN substring(val from 1 for _targetLength);
       END IF;
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1060,10 +1107,14 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 RETURNS text AS $$
   BEGIN
     IF sep is NULL THEN
-      RAISE EXCEPTION 'sep is null';
+      --RAISE EXCEPTION 'sep is null';
+      RAISE NOTICE 'sep is null';
     ELSE
       RETURN array_to_string(string_to_array(replace(val,' ',''), ','), sep);
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1104,19 +1155,20 @@ RETURNS text AS $$
     _includeEmpty boolean := includeEmpty::boolean;
   BEGIN
     IF length IS NULL THEN
-      RAISE EXCEPTION 'length is null';
+      --RAISE EXCEPTION 'length is null';
+      RAISE NOTICE 'length is null';
     ELSIF pad IS NULL THEN
-      RAISE EXCEPTION 'pad is null';
+      --RAISE EXCEPTION 'pad is null';
+      RAISE NOTICE 'pad is null';
     ELSIF sep is NULL THEN
-      RAISE EXCEPTION 'sep is null';  
+      --RAISE EXCEPTION 'sep is null';
+      RAISE NOTICE 'sep is null';  
     END IF;
     
     IF _upperCase = TRUE THEN
       _vals = string_to_array(replace(upper(val),' ',''), ',');
-      -- RETURN concat_ws(sep, TT_Pad(upper(val1), length1, pad1));
     ELSE
       _vals = string_to_array(replace(val,' ',''), ',');
-      -- RETURN concat_ws(sep, TT_Pad(val1, length1, pad1));
     END IF;
 
     _lengths = string_to_array(replace(length,' ',''), ',');
@@ -1124,16 +1176,19 @@ RETURNS text AS $$
 
     -- check length of _vals, _lengths, and _pads match
     IF (array_length(_vals,1) != array_length(_lengths,1)) OR (array_length(_vals,1) != array_length(_pads,1)) THEN
-      RAISE EXCEPTION 'number of val, length and pad elments do not match';
+      --RAISE EXCEPTION 'number of val, length and pad elments do not match';
+      RAISE NOTICE 'number of val, length and pad elments do not match';
     END IF;
 
     -- for each val in array, pad and merge to comma separated string
     _result = '';
     FOR i IN 1..array_length(_vals,1) LOOP
       IF _lengths[i] = '' THEN
-        RAISE EXCEPTION 'length is empty';
+        --RAISE EXCEPTION 'length is empty';
+        RAISE NOTICE 'length is empty';
       ELSIF _pads[i] = '' THEN
-        RAISE EXCEPTION 'pad is empty';
+        --RAISE EXCEPTION 'pad is empty';
+        RAISE NOTICE 'pad is empty';
       ELSIF _vals[i] = '' AND _includeEmpty = FALSE THEN 
         -- do nothing
       ELSE
@@ -1142,6 +1197,9 @@ RETURNS text AS $$
     END LOOP;
     -- run comma separated string through concat with sep
     RETURN TT_Concat(left(_result, char_length(_result) - 1), sep);
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1225,7 +1283,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Return the text value from the intersecting polygon
 --
 -- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
-
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
@@ -1244,13 +1301,15 @@ RETURNS text AS $$
     _the_geom geometry := the_geom::geometry;
   BEGIN
     IF the_geom IS NULL THEN
-      RAISE EXCEPTION 'geometry is NULL';
+      --RAISE EXCEPTION 'geometry is NULL';
+      RAISE NOTICE 'geometry is NULL';
     ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
+      --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
+      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
     ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
-      RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
+      --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
+      RAISE NOTICE 'method not one of: "area", "lowestVal", or "highestVal"';
     ELSE
-
       -- make geo valid if not
       IF NOT ST_IsValid(_the_geom) THEN
         IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
@@ -1258,7 +1317,8 @@ RETURNS text AS $$
         ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
           _the_geom = ST_Buffer(_the_geom, 0);
         ELSE
-          RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
+          --RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
+          RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
         END IF;
       END IF;
       
@@ -1272,7 +1332,8 @@ RETURNS text AS $$
 
       -- return value based on count and method
       IF count = 0 THEN
-        RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
+        --RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
+        RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
       ELSIF count = 1 THEN
         -- return the value
         RETURN return_value FROM int_temp;
@@ -1287,33 +1348,17 @@ RETURNS text AS $$
         RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
     END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GeoIntersectionInt
--- integer wrapper for TT_GeoIntersectionText 
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
-CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
-  the_geom text,
-  intersectSchemaName text,
-  intersectTableName text,
-  geoCol text,
-  returnCol text,
-  method text
-)
-RETURNS integer AS $$
-  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::int;
-$$ LANGUAGE sql VOLATILE;
-
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
 -- TT_GeoIntersectionDouble
--- double wrapper for TT_GeoIntersectionText
+-- Same as text version but with integer error code
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
@@ -1325,5 +1370,82 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   method text
 )
 RETURNS double precision AS $$
-  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::double precision;
+  DECLARE
+    _intersectSchemaName name := intersectSchemaName::name;
+    _intersectTableName name := intersectTableName::name;
+    count int;
+    _the_geom geometry := the_geom::geometry;
+  BEGIN
+    IF the_geom IS NULL THEN
+      --RAISE EXCEPTION 'geometry is NULL';
+      RAISE NOTICE 'geometry is NULL';
+    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
+      --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
+      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
+    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
+      --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
+      RAISE NOTICE 'method not one of: "area", "lowestVal", or "highestVal"';
+    ELSE
+
+      -- make geo valid if not
+      IF NOT ST_IsValid(_the_geom) THEN
+        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
+          _the_geom = ST_MakeValid(_the_geom);
+        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+          _the_geom = ST_Buffer(_the_geom, 0);
+        ELSE
+          --RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
+          RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
+        END IF;
+      END IF;
+      
+      -- get table of returnCol values and intersecting areas for all intersecting polygons
+      -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
+      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
+      FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
+      ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
+
+      EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
+
+      -- return value based on count and method
+      IF count = 0 THEN
+        --RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
+        RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
+      ELSIF count = 1 THEN
+        -- return the value
+        RETURN return_value FROM int_temp;
+      ELSIF count > 1 AND method = 'area' THEN
+        -- return val from intersect with largest area
+        RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
+      ELSIF count > 1 AND method = 'lowestVal' THEN
+        -- return lowest val
+        RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
+      ELSIF count > 1 AND method = 'highestVal' THEN
+        -- return highest val
+        RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
+      END IF;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TRANSLATION_ERROR';
+    RETURN '-3333';
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_GeoIntersectionInt
+-- int wrapper for TT_GeoIntersectionDouble
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
+  the_geom text,
+  intersectSchemaName text,
+  intersectTableName text,
+  geoCol text,
+  returnCol text,
+  method text
+)
+RETURNS integer AS $$
+  SELECT TT_GeoIntersectionDouble(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::int;
 $$ LANGUAGE sql VOLATILE;
