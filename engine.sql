@@ -1072,9 +1072,10 @@ RETURNS SETOF RECORD AS $$
          IF isValid THEN
 
            -- check return type of the translation helper function matches return type of the translation row
-           IF NOT TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0)) = translationrow.targetAttributeType THEN
-             RAISE EXCEPTION 'Translation table return type (%) does not match helper function return type (%)', translationrow.targetAttributeType, TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0));
-           END IF;
+           -- commenting out because its already checked in TT_ValidateTTable()
+           -- IF NOT TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0)) = translationrow.targetAttributeType THEN
+             -- RAISE EXCEPTION 'Translation table return type (%) does not match helper function return type (%)', translationrow.targetAttributeType, TT_TextFctReturnType((translationrow.translationRule).fctName, coalesce(cardinality((translationrow.translationRule).args),0));
+           -- END IF;
 
            --query = 'SELECT TT_FctEval($1, $2, $3, NULL::' || TT_FctReturnType((translationrow.translationRule).fctName, (translationrow.translationRule).args) || ');';
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
