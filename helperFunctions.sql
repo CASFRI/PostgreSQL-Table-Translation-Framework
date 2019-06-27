@@ -515,6 +515,51 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_GeoIsValidTable
+--
+-- intersectSchemaName text,
+-- intersectTableName text,
+-- geoCol text 
+--
+-- Return true if the geometry in all rows is valid
+-- Return false otherwise.
+--
+-- e.g. TT_GeoIsValidTable(public, photo_year, geo_col)
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoIsValidTable(
+  intersectSchemaName text,
+  intersectTableName text,
+  geoCol text,
+  fix text
+)
+RETURNS boolean AS $$
+  DECLARE
+    geo_valid boolean;
+    _intersectSchemaName name := intersectSchemaName::name;
+    _intersectTableName name := intersectTableName::name;
+    _fix boolean := fix::boolean;
+  BEGIN
+    IF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL THEN
+      RETURN FALSE;
+      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol is NULL';
+    END IF;
+
+    -- if any rows have invalid geo, return FALSE
+    FOR geo_valid IN EXECUTE 'SELECT TT_GeoIsValid(' || geoCol || '::text,' || _fix || '::text) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) LOOP
+      --RAISE NOTICE 'row geo: %', geo_valid::text;
+      IF geo_valid IS FALSE THEN
+        RETURN FALSE;
+      END IF;
+    END LOOP;
+
+    -- otherwise return true
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_GeoIntersects
 --
 -- the_geom text - the geometry to be tested
@@ -1276,13 +1321,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- geoCol text - geometry column from intersect table
 -- returnCol text - column conatining the values to return
 -- method text - intersect method if multiple intersecting polygons (only have area method for text)
---    area - return value from intersecting polygon with largest area
---    lowestVal - return lowest value
---    highestVal - return highest value
+--    methodArea - return value from intersecting polygon with largest area
+--    methodLowest - return lowest value
+--    methodHighest - return highest value
 -- 
 -- Return the text value from the intersecting polygon
 --
--- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'area')
+-- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'methodArea')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
@@ -1306,9 +1351,9 @@ RETURNS text AS $$
     ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
       --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
       RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
+    ELSIF NOT method = any('{"methodArea","methodLowest","methodHighest"}') OR method IS NULL THEN
       --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
-      RAISE NOTICE 'method not one of: "area", "lowestVal", or "highestVal"';
+      RAISE NOTICE 'method not one of: "methodArea", "methodLowest", or "methodHighest"';
     ELSE
       -- make geo valid if not
       IF NOT ST_IsValid(_the_geom) THEN
@@ -1337,13 +1382,13 @@ RETURNS text AS $$
       ELSIF count = 1 THEN
         -- return the value
         RETURN return_value FROM int_temp;
-      ELSIF count > 1 AND method = 'area' THEN
+      ELSIF count > 1 AND method = 'methodArea' THEN
         -- return val from intersect with largest area
         RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-      ELSIF count > 1 AND method = 'lowestVal' THEN
+      ELSIF count > 1 AND method = 'methodLowest' THEN
         -- return lowest val
         RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-      ELSIF count > 1 AND method = 'highestVal' THEN
+      ELSIF count > 1 AND method = 'methodHighest' THEN
         -- return highest val
         RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
@@ -1382,9 +1427,9 @@ RETURNS double precision AS $$
     ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
       --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
       RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-    ELSIF NOT method = any('{"area","lowestVal","highestVal"}') OR method IS NULL THEN
+    ELSIF NOT method = any('{"methodArea","methodLowest","methodHighest"}') OR method IS NULL THEN
       --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
-      RAISE NOTICE 'method not one of: "area", "lowestVal", or "highestVal"';
+      RAISE NOTICE 'method not one of: "methodArea", "methodLowest", or "methodHighest"';
     ELSE
 
       -- make geo valid if not
@@ -1414,13 +1459,13 @@ RETURNS double precision AS $$
       ELSIF count = 1 THEN
         -- return the value
         RETURN return_value FROM int_temp;
-      ELSIF count > 1 AND method = 'area' THEN
+      ELSIF count > 1 AND method = 'methodArea' THEN
         -- return val from intersect with largest area
         RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-      ELSIF count > 1 AND method = 'lowestVal' THEN
+      ELSIF count > 1 AND method = 'methodLowest' THEN
         -- return lowest val
         RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-      ELSIF count > 1 AND method = 'highestVal' THEN
+      ELSIF count > 1 AND method = 'methodHighest' THEN
         -- return highest val
         RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
