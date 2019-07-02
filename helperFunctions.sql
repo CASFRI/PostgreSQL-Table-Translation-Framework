@@ -620,6 +620,76 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NotNullEmptyOr
+--
+-- val text - comma separated list of values to test.
+--
+-- Return TRUE if at least one value is not null or empty strings.
+-- Return FALSE if all values are null or empty strings.
+-- e.g. TT_NotNullEmptyOr('a,b,c')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_NotNullEmptyOr(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    return boolean;
+    _vals text[];
+  BEGIN
+    return = FALSE;
+    _vals = string_to_array(replace(val,' ',''), ',');
+
+    FOR i IN 1..array_length(_vals,1) LOOP
+      IF _vals[i] IS NOT NULL THEN
+        IF replace(_vals[i], ' ', '') != ''::text THEN
+          return = TRUE;
+        END IF;
+      END IF;
+    END LOOP;
+    RETURN return;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsIntSubstring(text, text, text)
+--
+-- val text - input string
+-- start_char - start character to take substring from
+-- for_length - length of substring to take
+--
+-- Take substring and test isInt
+-- e.g. TT_IsIntSubstring('2001-01-01', 1, 4)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
+  val text,
+  start_char text,
+  for_length text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _substr double precision;
+    _start_char int := start_char::int;
+    _for_length int := for_length::int;
+  BEGIN
+    IF val IS NULL THEN
+      RAISE EXCEPTION 'val is null';
+    ELSIF start_char IS NULL THEN
+      RAISE EXCEPTION 'start_char is null';
+    ELSIF for_length IS NULL THEN
+      RAISE EXCEPTION 'for_length is null';
+    END IF;
+      
+    _substr = substring(val from _start_char for _for_length)::double precision; -- get year
+    RETURN _substr - _substr::int = 0; -- check its an integer
+  EXCEPTION WHEN OTHERS THEN
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
