@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -1700,13 +1700,13 @@ UNION ALL
 SELECT '36.1'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Good string'::text description,
-       TT_IsIntSubstring('2001-01-02'::text, 4, 1) passed
+       TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) passed
 ---------------------------------------------------------                     
 UNION ALL
 SELECT '36.2'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Bad string'::text description,
-       TT_IsIntSubstring('200-01-02'::text, 4, 1) IS FALSE passed
+       TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
