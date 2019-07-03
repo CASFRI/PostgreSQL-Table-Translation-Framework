@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -275,50 +275,64 @@ RETURNS anyelement AS $$
       -- Search for any argument names in the provided value jsonb object
       FOREACH arg IN ARRAY args LOOP
         IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
-        -- if arg does not exist as column name in jsonb row, treat it as a string
-        IF NOT vals ? arg THEN
-          IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-          -- The following if-loop processes comma separated strings of column names
-          -- It unpacks the string, gets the column values, and re-packages them into
-          -- a comma separated string for use by the helper function.
-          -- Only runs if comma detected in string.
-	  IF char_length(arg) - char_length(replace(arg,',','')) > 0 THEN
-            -- split string to array by comma's after removing spaces
-	    argsNested = string_to_array(replace(arg, ' ', ''), ',');
-            IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
-            -- loop through array, get values, add to new string (ruleQueryNested)
-	    ruleQueryNested = '''';
-	    FOREACH argNested in ARRAY argsNested LOOP
-	      IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
-	      IF NOT vals ? argNested THEN
-		IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-		ruleQueryNested = ruleQueryNested || argNested || ',';
-	      ELSE
-		argValNested = vals->>argNested;
-		IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
-		IF argValNested IS NULL THEN
+
+        ------ process comma separated strings ------
+	-- Unpack the string, get the string or column value, re-pack into comma separated string 
+	-- for use by the helper function. Only runs if comma detected in arg.
+	IF char_length(arg) - char_length(replace(arg,',','')) > 0 THEN
+	  -- split string to array by comma's after removing spaces
+	  argsNested = string_to_array(replace(arg, ' ', ''), ',');
+	  IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
+	  -- loop through array, get values, add to new string (ruleQueryNested)
+	  ruleQueryNested = '''';
+	  FOREACH argNested in ARRAY argsNested LOOP
+	    IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
+	    -- if arg has {} and is in vals, return column value.
+	    -- note: substring call gets colname from between {}
+	    IF argNested LIKE '{%}' THEN
+	      IF vals ? substring(argNested from '\{(.+)\}') THEN 
+                argValNested = vals->>substring(argNested from '\{(.+)\}');
+	        IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
+	        IF argValNested IS NULL THEN
 		  ruleQueryNested = ruleQueryNested || 'NULL' || ',';
-		ELSE
+	        ELSE
 		  ruleQueryNested = ruleQueryNested || argValNested || ',';
-		END IF;
+                END IF;
+              ELSE
+                -- if arg has {} and is not in vals, return column name as string.
+                ruleQueryNested = ruleQueryNested || substring(argNested from '\{(.+)\}') || ',';
               END IF;
-	    END LOOP;
-	    -- remove the last comma and space, and cast string to text
-	    ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
+            ELSE
+	      IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+	      ruleQueryNested = ruleQueryNested || argNested || ',';
+	    END IF;
+	  END LOOP;
+	  -- remove the last comma and space, and cast string to text
+	  ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
+
+	------ process strings ------
+	ELSIF arg NOT LIKE '{%}' THEN --if argument doesn' have commas and is not surrounded by {}, process it as a string
+	  IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+	  ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+	  
+        ------ process column names ------
+        ELSIF arg LIKE '{%}' THEN
+          IF vals ? substring(arg from '\{(.+)\}') THEN -- if arg surrounded by {} and colname in vals
+            argVal = vals->>substring(arg from '\{(.+)\}');
+            IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
+            IF argVal IS NULL THEN
+              ruleQuery = ruleQuery || 'NULL::text' || ', ';
+            ELSE
+              ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
+            END IF;
           ELSE
-            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
-	  END IF;
-        ELSE
-          argVal = vals->>arg;
-          IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
-          IF argVal IS NULL THEN
-            ruleQuery = ruleQuery || 'NULL::text' || ', ';
-          ELSE
-            ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
+            -- if column name requested with {} but colname not in vals, return string with {} removed.
+            ruleQuery = ruleQuery || '''' || substring(arg from '\{(.+)\}') || '''::text, ';
           END IF;
+          IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
         END IF;
-        IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
       END LOOP;
+      
       -- Remove the last comma.
       ruleQuery = left(ruleQuery, char_length(ruleQuery) - 2);
     END IF;
@@ -365,7 +379,7 @@ $$ LANGUAGE plpgsql;
 -- Parse an argument string into its separate components. A normal argument 
 -- string has arguments separated with commas: 'aa, bb, 99'
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_ParseRules(text);
+-- DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
     argStr text DEFAULT NULL
 )
@@ -376,6 +390,7 @@ RETURNS text[] AS $$
      SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
      -- Match any double quoted string or word
      FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|"[-;'',\.\w\s]*"|[-\.''"\w]+)', 'g') a) foo
+     --FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|"[-;'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
      INTO STRICT result;
     RETURN result;
   END;
