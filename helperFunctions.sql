@@ -635,20 +635,18 @@ CREATE OR REPLACE FUNCTION TT_NotNullEmptyOr(
 )
 RETURNS boolean AS $$
   DECLARE
-    return boolean;
     _vals text[];
   BEGIN
-    return = FALSE;
     _vals = string_to_array(replace(val,' ',''), ',');
 
     FOR i IN 1..array_length(_vals,1) LOOP
       IF _vals[i] IS NOT NULL THEN
         IF replace(_vals[i], ' ', '') != ''::text THEN
-          return = TRUE;
+          RETURN TRUE;
         END IF;
       END IF;
     END LOOP;
-    RETURN return;
+    RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
