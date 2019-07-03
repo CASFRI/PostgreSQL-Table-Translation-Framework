@@ -44,9 +44,10 @@ SELECT 2 rule_id,
        TRUE descUpToDateWithRules;
 
 SELECT TT_Prepare('test_translationtable');
-
+-------------------------------------------------------------------------------
 -- TT_IsError(text)
--- function to test if helper functions return errors
+-- Function to test if helper functions return errors
+-------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsError(
   functionString text
 )
@@ -60,8 +61,87 @@ RETURNS boolean AS $$
     RETURN TRUE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------------------------- 
+-- TT_LowerArr 
+-- Function needed by TT_FctExist below. 
+------------------------------------------------------------ 
+--DROP FUNCTION IF EXISTS TT_LowerArr(text[]); 
+CREATE OR REPLACE FUNCTION TT_LowerArr( 
+  arr text[] DEFAULT NULL 
+) 
+RETURNS text[] AS $$ 
+  DECLARE 
+    newArr text[] = ARRAY[]::text[]; 
+  BEGIN 
+    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN 
+      RETURN ARRAY[]::text[]; 
+    END IF; 
+    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr; 
+    RETURN newArr; 
+  END; 
+$$ LANGUAGE plpgsql VOLATILE STRICT; 
+-------------------------------------------------------------------------------
 
------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TT_FctExist 
+-- Function to test if a function exists. 
+------------------------------------------------------------ 
+-- Self contained example: 
+--  
+-- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'}) 
+------------------------------------------------------------ 
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]); 
+CREATE OR REPLACE FUNCTION TT_FctExists( 
+  schemaName name, 
+  fctName name, 
+  argTypes text[] DEFAULT NULL 
+) 
+RETURNS boolean AS $$ 
+  DECLARE 
+    cnt int = 0; 
+    debug boolean = TT_Debug(); 
+  BEGIN 
+    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF; 
+    fctName = 'tt_' || fctName; 
+    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN 
+      schemaName = ''; 
+    END IF; 
+    IF schemaName != '' THEN 
+      fctName = schemaName || '.' || fctName; 
+    END IF; 
+    IF fctName IS NULL THEN 
+      RETURN NULL; 
+    END IF; 
+    IF fctName = '' OR fctName = '.' THEN 
+      RETURN FALSE; 
+    END IF; 
+    fctName = lower(fctName); 
+    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF; 
+    SELECT count(*) 
+    FROM pg_proc 
+    WHERE schemaName = '' AND argTypes IS NULL AND proname = fctName OR  
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')' 
+    --WHERE proname = fctName     
+    INTO cnt; 
+     
+    IF cnt > 0 THEN 
+      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF; 
+      RETURN TRUE; 
+    END IF; 
+    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF; 
+    RETURN FALSE; 
+  END; 
+$$ LANGUAGE plpgsql VOLATILE; 
+---------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_FctExists( 
+  fctName name, 
+  argTypes text[] DEFAULT NULL 
+) 
+RETURNS boolean AS $$ 
+  SELECT TT_FctExists(''::name, fctName, argTypes) 
+$$ LANGUAGE sql VOLATILE; 
+------------------------------------------------------------------------------- 
+-------------------------------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
 -- only failing tests
 --SELECT * FROM (
@@ -75,10 +155,9 @@ WITH test_nb AS (
     SELECT 'TT_ParseArgs'::text,                     2,         11         UNION ALL
     SELECT 'TT_ParseRules'::text,                    3,          9         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                4,          4         UNION ALL
-    SELECT 'TT_LowerArr'::text,                      5,          3         UNION ALL
-    SELECT 'TT_FctExists'::text,                     6,          6         UNION ALL
+    SELECT 'TT_TextFctExists'::text,                 6,          2         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
-    SELECT 'TT_FctReturnType'::text,                 8,          1         UNION ALL
+    SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0
 ),
@@ -285,63 +364,19 @@ SELECT '4.4'::text number,
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 ---------------------------------------------------------
--- Test 5 - TT_LowerArr
---------------------------------------------------------
-UNION ALL
-SELECT '5.1'::text number,
-       'TT_LowerArr'::text function_tested,
-       'Basic test'::text description,
-        TT_LowerArr(ARRAY['Name', 'TEXT[]']) = ARRAY['name', 'text[]']::text[] passed
---------------------------------------------------------
-UNION ALL
-SELECT '5.2'::text number,
-       'TT_LowerArr'::text function_tested,
-       'Test NULL'::text description,
-        TT_LowerArr(NULL) IS NULL passed
---------------------------------------------------------
-UNION ALL
-SELECT '5.3'::text number,
-       'TT_LowerArr'::text function_tested,
-       'Test empty array'::text description,
-        TT_LowerArr(ARRAY[]::text[])  = ARRAY[]::text[] passed
----------------------------------------------------------
--- Test 6 - TT_FctExists
+-- Test 6 - TT_TextFctExists
 --------------------------------------------------------
 UNION ALL
 SELECT '6.1'::text number,
-       'TT_FctExists'::text function_tested,
-       'Test one NULL'::text description,
-        TT_FctExists(NULL) IS NULL passed
+       'TT_TextFctExists'::text function_tested,
+       'Test two NULLs'::text description,
+        TT_TextFctExists(NULL, NULL) IS NULL passed
 --------------------------------------------------------
 UNION ALL
 SELECT '6.2'::text number,
-       'TT_FctExists'::text function_tested,
-       'Test two NULLs'::text description,
-        TT_FctExists(NULL, NULL) IS NULL passed
---------------------------------------------------------
-UNION ALL
-SELECT '6.3'::text number,
-       'TT_FctExists'::text function_tested,
-       'Test NULLs'::text description,
-        TT_FctExists(NULL, NULL, NULL) IS NULL passed
---------------------------------------------------------
-UNION ALL
-SELECT '6.4'::text number,
-       'TT_FctExists'::text function_tested,
+       'TT_TextFctExists'::text function_tested,
        'Test one empty'::text description,
-        TT_FctExists('') = FALSE passed
---------------------------------------------------------
-UNION ALL
-SELECT '6.5'::text number,
-       'TT_FctExists'::text function_tested,
-       'Test two emptys'::text description,
-        TT_FctExists('', '') = FALSE passed
---------------------------------------------------------
-UNION ALL
-SELECT '6.6'::text number,
-       'TT_FctExists'::text function_tested,
-       'Test three emptys'::text description,
-        TT_FctExists('', '', ARRAY[]::text[]) = FALSE passed
+        TT_TextFctExists('', NULL) = FALSE passed
 --------------------------------------------------------
 -- Test 7 - TT_Prepare
 --------------------------------------------------------
@@ -369,15 +404,15 @@ SELECT '7.4'::text number,
        'Test upper and lower case caracters'::text description,
         TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) passed
 --------------------------------------------------------
--- Test 8 - TT_FctReturnType
+-- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------
 UNION ALL
 SELECT '8.1'::text number,
-       'TT_FctReturnType'::text function_tested,
+       'TT_TextFctReturnType'::text function_tested,
        'Basic test'::text description,
-        TT_FctReturnType('between', '{text,text,text}'::text[]) = 'boolean' passed
+        TT_TextFctReturnType('between', 3) = 'boolean' passed
 --------------------------------------------------------
--- Test 9 - TT_FctEval
+-- Test 9 - TT_TextFctEval
 --------------------------------------------------------
 UNION ALL
 SELECT '9.1'::text number,
