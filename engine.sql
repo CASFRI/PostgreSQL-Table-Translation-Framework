@@ -372,7 +372,7 @@ $$ LANGUAGE plpgsql;
 -------------------------------------------------------------------------------
 -- TT_ParseArgs
 --
---  argStr text - Rule string to parse into it differetn components.
+--  argStr text - Rule string to parse into it different components.
 --
 --  RETURNS text[]
 --
@@ -388,9 +388,8 @@ RETURNS text[] AS $$
     result text[] = '{}';
   BEGIN
      SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
-     -- Match any double quoted string or word
-     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|"[-;'',\.\w\s]*"|[-\.''"\w]+)', 'g') a) foo
-     --FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|"[-;'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
+     -- Match any double quoted string, double quoted string containing {}, single word, or single word surrounded by {}.
+     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
      INTO STRICT result;
     RETURN result;
   END;
