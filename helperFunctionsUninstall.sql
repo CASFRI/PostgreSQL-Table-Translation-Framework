@@ -62,3 +62,4 @@ DROP FUNCTION IF EXISTS TT_NothingInt();
 DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
 DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text,text,text,text,text,text);
+DROP FUNCTION IF EXISTS TT_GeoMakeValid(text);

@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -123,8 +123,8 @@ WITH test_nb AS (
     SELECT 'TT_GeoIntersectionDouble'::text,  33,          5         UNION ALL
     SELECT 'TT_GeoIntersects'::text,          34,          5         UNION ALL
     SELECT 'TT_NotNullEmptyOr'::text,         35,          2         UNION ALL
-    SELECT 'TT_IsIntSubstring'::text,          36,          2
-
+    SELECT 'TT_IsIntSubstring'::text,         36,          2         UNION ALL
+    SELECT 'TT_GeoMakeValid'::text,           37,          2
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1707,6 +1707,20 @@ SELECT '36.2'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Bad string'::text description,
        TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
+---------------------------------------------------------
+-- Test 37 - TT_GeoMakeValid
+---------------------------------------------------------                     
+UNION ALL
+SELECT '37.1'::text number,
+       'TT_GeoMakeValid'::text function_tested,
+       'Good geo'::text description,
+       ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 10,10 10,0 0)))' passed
+---------------------------------------------------------                     
+UNION ALL
+SELECT '37.2'::text number,
+       'TT_GeoMakeValid'::text function_tested,
+       'Bad geo'::text description,
+       ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

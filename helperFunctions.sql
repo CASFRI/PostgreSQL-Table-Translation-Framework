@@ -1562,3 +1562,56 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
 RETURNS integer AS $$
   SELECT TT_GeoIntersectionDouble(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::int;
 $$ LANGUAGE sql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_GeoMakeValid
+--
+-- the_geom text - the geometry value to validate
+-- 
+-- If geometry valid, returns geometry
+-- If geometry invalid, returns fixed geometry
+-- If geometry cannot be fixed, returns NULL
+--
+-- If invalid, first try to fix with ST_MakeValid(), then with
+-- ST_Buffer. If still invalid print the reason with ST_IsValidReason().
+--
+-- e.g. TT_GeoMakeValid(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), True)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoMakeValid(
+  the_geom text
+)
+RETURNS geometry AS $$
+  DECLARE
+    _the_geom geometry := the_geom::geometry;
+    _the_geom_makeValid geometry;
+    _the_geom_buffer geometry;
+  BEGIN
+    IF the_geom IS NULL THEN
+      RAISE NOTICE 'geometry is NULL';
+    END IF;
+
+    -- if already valid, return the geometry
+    IF ST_IsValid(_the_geom) THEN 
+      RETURN _the_geom;
+    END IF;
+
+    -- attempt to fix with ST_MakeValid()
+    _the_geom_makeValid = ST_MakeValid(_the_geom);
+    IF ST_IsValid(_the_geom_makeValid) THEN
+      RETURN _the_geom_makeValid;
+    END IF;
+
+    -- attempt to fix with buffer
+    _the_geom_buffer = ST_Buffer(_the_geom, 0);
+    IF ST_IsValid(_the_geom_buffer) THEN
+      RETURN _the_geom_buffer;
+    END IF;
+    
+    -- if attempts fail, return NULL and report the issue
+    RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
+    RETURN NULL;
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
