@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -27,21 +27,21 @@ SELECT 'c'::text, 101;
 -- Create a test translation table
 DROP TABLE IF EXISTS test_translationTable;
 CREATE TABLE test_translationTable AS
-SELECT 1 rule_id,
+SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
-       TRUE descUpToDateWithRules
+       'TRUE' descUpToDateWithRules
 UNION ALL
-SELECT 2 rule_id,
+SELECT '2' rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
-       TRUE descUpToDateWithRules;
+       'TRUE' descUpToDateWithRules;
 
 SELECT TT_Prepare('test_translationtable');
 -------------------------------------------------------------------------------
