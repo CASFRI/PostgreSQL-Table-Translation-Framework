@@ -711,9 +711,6 @@ CREATE OR REPLACE FUNCTION TT_CopyText(
 RETURNS text AS $$
   BEGIN
     RETURN val;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -732,9 +729,6 @@ CREATE OR REPLACE FUNCTION TT_CopyDouble(
 RETURNS double precision AS $$
   BEGIN
     RETURN val::double precision;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -752,9 +746,6 @@ CREATE OR REPLACE FUNCTION TT_CopyInt(
 RETURNS int AS $$
   BEGIN
     RETURN round(val::numeric)::int;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333::int;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -804,9 +795,6 @@ RETURNS text AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -866,9 +854,6 @@ RETURNS double precision AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -928,9 +913,6 @@ RETURNS int AS $$
       EXECUTE query INTO return;
       RETURN return;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -983,9 +965,6 @@ RETURNS text AS $$
       _lst2 = string_to_array(lst2, ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1047,9 +1026,6 @@ RETURNS double precision AS $$
       _lst1 = string_to_array(upper(lst1), ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1111,9 +1087,6 @@ RETURNS int AS $$
       _lst1 = string_to_array(upper(lst1), ',');
       RETURN (_lst2)[array_position(_lst1,upper(val))];
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1145,9 +1118,6 @@ RETURNS int AS $$
     ELSE
       RETURN char_length(val);
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN -3333;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -1189,9 +1159,6 @@ RETURNS text AS $$
         RETURN substring(val from 1 for _targetLength);
       END IF;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1225,9 +1192,6 @@ RETURNS text AS $$
     ELSE
       RETURN array_to_string(string_to_array(replace(val,' ',''), ','), sep);
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1310,9 +1274,6 @@ RETURNS text AS $$
     END LOOP;
     -- run comma separated string through concat with sep
     RETURN TT_Concat(left(_result, char_length(_result) - 1), sep);
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1461,9 +1422,6 @@ RETURNS text AS $$
         RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN 'TRANSLATION_ERROR';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1538,9 +1496,6 @@ RETURNS double precision AS $$
         RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
       END IF;
     END IF;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'TRANSLATION_ERROR';
-    RETURN '-3333';
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 

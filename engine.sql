@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -711,9 +711,21 @@ RETURNS SETOF RECORD AS $$
          IF isValid THEN
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
-           EXECUTE query
-           USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
-           IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
+
+           -- catch all errors and return generic error code if translation fails
+           BEGIN
+             EXECUTE query
+             USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
+             IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
+           EXCEPTION WHEN OTHERS THEN
+             RAISE NOTICE 'TRANSLATION_ERROR';
+             IF translationrow.targetAttributeType IN ('text','char','character','varchar','character varying') THEN
+               finalVal = 'TRANSLATION_ERROR';
+             ELSE
+               finalVal = -3333;
+             END IF;
+           END;
+
          ELSE
            IF debug THEN RAISE NOTICE '_TT_Translate 99 INVALID';END IF;
          END IF;
