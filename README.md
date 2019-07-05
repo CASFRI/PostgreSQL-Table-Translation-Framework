@@ -71,7 +71,7 @@ Translation tables have one row per target attribute and they must contain these
  7. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
  
 * Multiple validation rules can be seperated with a semi-colon.
-* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull(sp1_per|-8888)).
+* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull({sp1_per}|-8888)).
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine checks that:
 
@@ -94,8 +94,10 @@ A textual description of the rules is provided and the flag indicating that the 
 
 | rule_id | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,public,species_lookup\|NOT_IN_SET)|lookupText(sp1, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
-|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,0,100\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+|1        |SPECIES_1        |text                 |notNull({sp1}\|NULL); matchTable({sp1},public,species_lookup\|NOT_IN_SET)|lookupText({sp1}, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull({sp1_per}\|-8888); between({sp1_per},0,100\|-9999)|copyInt({sp1_per})|Copies source value to SPECIES_PER_1|TRUE|
+
+The column names of the source table are wrapped in {} (e.g. {sp1}). This tells the engine to retrieve the source value for that column and pass it to the helper function. Conversely, column names for any lookup tables (e.g. targetSp) are expected as strings by the helper function and should not be wrapped in {}.
 
 # How to actually translate a source table?
 
@@ -150,15 +152,15 @@ CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
        'SPECIES_1' AS targetAttribute, 
        'text' AS targetAttributeType, 
-       'notNull(sp1|NULL);matchTable(sp1,public,species_lookup|NOT_IN_SET)' AS validationRules, 
-       'lookupText(sp1, public, species_lookup, targetSp)' AS translationRules, 
+       'notNull({sp1}|NULL);matchTable({sp1},public,species_lookup|NOT_IN_SET)' AS validationRules, 
+       'lookupText({sp1}, public, species_lookup, targetSp)' AS translationRules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS descUpToDateWithRules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
-          'notNull(sp1_per|-8888);between(sp1_per,0,100|-9999)', 
-          'copyInt(sp1_per)', 
+          'notNull({sp1_per}|-8888);between({sp1_per},0,100|-9999)', 
+          'copyInt({sp1_per})', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
 ```
@@ -186,7 +188,12 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the name of the source value attribute to validate or translate as the first argument, and some other fixed arguments controling others aspects of the validation and translation process. Attribute names are replaced with the actual values by the translation engine when the current row is being processed. If names do not match a column name in the source table, the source value is simply passed to the helper function as a string. Some helper functions accept a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3').
+Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. Helper functions can take arguments in three formats:
+1. Strings - the string is simply passed from the translation table to the helper function. The string is written in the helper function either with no quotes (e.g. string1) or single quotes (e.g. 'string1').
+2. Source attribute names - if a column name from the source table is provided, the translation engine will pass the value in that column for the row being processed to the helper function. The source attribute name is identified in the translation table by wrapping it in {} (e.g. {columnA}). If the provided names do not match a column name in the source table, the name is simply passed to the helper function as a string.
+3. Comma separated strings of either string values or source attribute names - some helper functions support a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). An example is Concat() which concatenates any number of strings together. These are idenitfied in translation tables using single quotes, and can contain any number of comma separated column names ('{colA}, {colB}, {colC}'), string values ('str1, str2, str3'), or a mix of both ('str1, {colB}, str2, str3').
+
+If multiple validation helper functions are provided, they will run in order from left to right. Multiple validations can therefore be used to test for example, that a value is an integer, before testing whether it falls between two other values.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt).
 
@@ -227,11 +234,11 @@ One feature of the translation engine is that the return type of a translation f
 
 9. **HasUniqueValues**(text srcVal, text lookupSchemaName, text lookupTableName, int occurences\[default 1\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
-    * e.g. HasUniqueValues(TA, public, species_lookup, 1)
+    * e.g. HasUniqueValues('TA', public, species_lookup, 1)
 
 10. **MatchTable**(text srcVal, text lookupSchemaName, text lookupTableName, boolean ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
-    * e.g. TT_MatchTable(sp1,public,species_lookup, TRUE)
+    * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
 
 11. **MatchList**(text srcVal, text lst, boolean ignoreCase\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
@@ -247,37 +254,37 @@ One feature of the translation engine is that the return type of a translation f
     
 14. **GeoIsValid**(geometry the_geom, boolean fix)
     * Returns True if geometry is valid. If fix is True and geometry is invalid, function will attempt to make a valid geometry and return True if successful. If geometry is invalid returns False. Note that using fix=True does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
-    * e.g. GeoIsValid(source_geo, TRUE)
+    * e.g. GeoIsValid(POLYGON, TRUE)
     
 15. **GeoIntersects**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol)
     * Returns True if the_geom intersects with any features in the intersect table. Otherwise returns False. Invalid geometries are validated before running the intersection test.
-    * e.g. GeoIntersects(source_geo, public, intersect_tab, intersect_geo)
+    * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo)
       
 ## Translation Functions
 
 1. **CopyText**(text srcVal)
     * Returns srcVal as text without any transformation.
-    * e.g. Copy('sp1')
+    * e.g. CopyText('sp1')
       
 2. **CopyDouble**(numeric srcVal)
     * Returns srcVal as double precision without any transformation.
-    * e.g. Copy(1.1)
+    * e.g. CopyDouble(1.1)
 
 3. **CopyInt**(integer srcVal)
     * Returns srcVal as integer without any transformation.
-    * e.g. Copy(1)
+    * e.g. CopyInt(1)
       
 4. **LookupText**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
-    * e.g. Lookup(sp1, public, species_lookup, targetSp, TRUE)
+    * e.g. LookupText('sp1', public, species_lookup, targetSp, TRUE)
       
 5. **LookupDouble**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
-    * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
+    * e.g. LookupDouble(5.5, public, species_lookup, sp_percent, TRUE)
 
 6. **LookupInt**(text srcVal, text lookupSchemaName, text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column. If multiple matches, first row is returned.
-    * e.g. Lookup(percent, public, species_lookup, sp_percent, TRUE)
+    * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
 
 7. **MapText**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
@@ -285,7 +292,7 @@ One feature of the translation engine is that the return type of a translation f
       
 8. **MapDouble**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
-    * e.g. Map('A','A,B,C','1.1,1.2,1.3', TRUE)
+    * e.g. MapDouble('A','A,B,C','1.1,1.2,1.3', TRUE)
       
 9. **MapInt**(text srcVal, text lst1, text lst2, boolean ignoreCase\[default TRUE\])
     * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
@@ -297,15 +304,15 @@ One feature of the translation engine is that the return type of a translation f
 
 11. **Pad**(text srcVal, int targetLength, text padChar\[default x\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength.
-    * e.g. Pad(tab1, 10, x)
+    * e.g. Pad('tab1', 10, x)
 
 12. **Concat**(text srcVal, text separator)
     * Returns a string of concatenated values, interspersed with a separator. srcVal takes a comma separated string of column names and/or values. Column names will return the value from the column, non-column names will simply return the input value. 
-    * e.g. Concat('column1,column2,1', '-')
+    * e.g. Concat('str1,str2,str3', '-')
 
 13. **PadConcat**(text srcVals, text lengths, text pads, text separator, boolean upperCase, boolean includeEmpty\[default TRUE\])
     * Returns a string of concatenated values, where each value is padded using **Pad()**. Inputs for srcVals, lengths, and pads are comma separated strings where the ith length and pad values correspond to the ith srcVal. If upperCase is TRUE, all characters are converted to upper case, if includeEmpty is FALSE, any empty strings in the srcVals are dropped from the concatenation. 
-    * e.g. PadConcat('column1,column2,1', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
+    * e.g. PadConcat('str1,str2,str3', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
 
 14. **NothingText**()
     * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
@@ -321,25 +328,25 @@ One feature of the translation engine is that the return type of a translation f
 
 17. **GeoIntersectionText**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, text returnCol, text method)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='area'; the lowest intersecting value can be returned using method='lowestVal', or the highest value can be returned using method='highestVal'. The 'lowestVal' and 'highestVal' methods only work when returnCol is numeric.
-    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, TYPE, area)
+    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, area)
     
 18. **GeoIntersectionDouble**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, numeric returnCol, text method)
     * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
-    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, LENGTH, highestVal)
+    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, LENGTH, highestVal)
 
 19. **GeoIntersectionInt**
     * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
-    * e.g. GeoIntersectionText(source_geo, public, intersect_tab, intersect_geo, YEAR, lowestVal)
+    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, YEAR, lowestVal)
 
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
 
   * **Namespace -** All helper function names must be prefixed with "TT_". The prefix must not be used in the translation file. This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to these conventions) can be used.
-  * **Input Types -** All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function). This greatly simplify the development of helper functions and the parsing and validation of translation files.
-  * **Variable number of parameters -** Helper function should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma or a semicolon. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog.
+  * **Input Types -** All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function). This greatly simplifies the development of helper functions and the parsing and validation of translation files.
+  * **Variable number of parameters -** Helper functions should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog.
   * **Default value -** Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If default parameter values are required, a separate function signature should be created that calls the full function. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog.
-  * **Polymorphic translation functions -** If a translation helper functions must be written to return different types (e.g. int and text), as many different different functions with corresponding names must be written (e.g. TT_CopyInt() and TT_CopyText()). The use of the generic "any" PostgreSQL type is forbidden. This ensure that the engine can explicitly know that the translation function returns the right type.
-  * **Error handling -** All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type. This is to avoid badly written translation files. They should handle any type of source data values (always passed as text) without crashing. This is to avoid crashing of the engine when translating big source file. 
+  * **Polymorphic translation functions -** If a translation helper function must be written to return different types (e.g. int and text), as many different functions with corresponding names must be written (e.g. TT_CopyInt() and TT_CopyText()). The use of the generic "any" PostgreSQL type is forbidden. This ensures that the engine can explicitly know that the translation function returns the correct type.
+  * **Error handling -** All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type. This is to avoid badly written translation files. They should handle any type of source data values (always passed as text) without crashing. This is to avoid crashing of the engine when translating big source files. 
   * **Return value -** 1) Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. Error codes are provided in the translation file when source values do not fulfill the validation test. 2) Translation functions must return a specific type. For now only "int", "numeric", "text" and "boolean" are supported.
 
 If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper funciton file.
