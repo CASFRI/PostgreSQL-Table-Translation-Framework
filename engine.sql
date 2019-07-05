@@ -299,8 +299,8 @@ RETURNS anyelement AS $$
 		  ruleQueryNested = ruleQueryNested || argValNested || ',';
                 END IF;
               ELSE
-                -- if arg has {} and is not in vals, return column name as string.
-                ruleQueryNested = ruleQueryNested || substring(argNested from '\{(.+)\}') || ',';
+                -- if arg has {} and is not in vals, return string including {}.
+                ruleQueryNested = ruleQueryNested || argNested || ',';
               END IF;
             ELSE
 	      IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
@@ -316,9 +316,9 @@ RETURNS anyelement AS $$
 	  ruleQuery = ruleQuery || '''' || arg || '''::text, ';
 	  
         ------ process column names ------
-        ELSIF arg LIKE '{%}' THEN
-          IF vals ? substring(arg from '\{(.+)\}') THEN -- if arg surrounded by {} and colname in vals
-            argVal = vals->>substring(arg from '\{(.+)\}');
+        ELSIF arg LIKE '{%}' THEN -- if arg surrounded by {}... 
+          IF vals ? substring(arg from '\{(.+)\}') THEN -- ...and colname in vals
+            argVal = vals->>substring(arg from '\{(.+)\}'); 
             IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
             IF argVal IS NULL THEN
               ruleQuery = ruleQuery || 'NULL::text' || ', ';
@@ -326,8 +326,8 @@ RETURNS anyelement AS $$
               ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
             END IF;
           ELSE
-            -- if column name requested with {} but colname not in vals, return string with {} removed.
-            ruleQuery = ruleQuery || '''' || substring(arg from '\{(.+)\}') || '''::text, ';
+            -- if column name requested with {} but colname not in vals, return string including {}.
+            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
           END IF;
           IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
         END IF;
@@ -389,7 +389,7 @@ RETURNS text[] AS $$
   BEGIN
      SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
      -- Match any double quoted string, double quoted string containing {}, single word, or single word surrounded by {}.
-     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
+     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|"[-{};'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
      INTO STRICT result;
     RETURN result;
   END;
