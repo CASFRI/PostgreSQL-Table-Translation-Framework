@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -249,8 +249,6 @@ CREATE OR REPLACE FUNCTION TT_GreaterThan(
 RETURNS boolean AS $$
   SELECT TT_GreaterThan(val, lowerBound, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
-  
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -603,13 +601,13 @@ RETURNS boolean AS $$
           RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
         END IF;
       END IF;
-      
+
       -- query to get count of intersects
       query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || _the_geom::text || '''::geometry, ' || geoCol || ');';
       EXECUTE query INTO count;
-      
+
       -- RAISE NOTICE 'count: %', count;
-      
+
       -- return false if count = 0, true if > 0
       IF count = 0 THEN
         RETURN FALSE;
@@ -680,7 +678,7 @@ RETURNS boolean AS $$
     ELSIF for_length IS NULL THEN
       RAISE EXCEPTION 'for_length is null';
     END IF;
-      
+
     _substr = substring(val from _start_char for _for_length)::double precision; -- get year
     RETURN _substr - _substr::int = 0; -- check its an integer
   EXCEPTION WHEN OTHERS THEN
@@ -1009,7 +1007,7 @@ RETURNS double precision AS $$
     _lst2 = string_to_array(lst2, ',');
 
     BEGIN
-      FOREACH _i in ARRAY _lst2 LOOP  
+      FOREACH _i in ARRAY _lst2 LOOP
         -- no need to do anything inside loop, we just want to test if all _i's are double precision
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
@@ -1070,14 +1068,14 @@ RETURNS int AS $$
     _lst2 = string_to_array(lst2, ',');
 
     BEGIN
-      FOREACH _i in ARRAY _lst2 LOOP  
+      FOREACH _i in ARRAY _lst2 LOOP
         -- no need to do anything inside loop, we just want to test if all _i's are int
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
       --RAISE EXCEPTION 'lst2 value is not int';
       RAISE NOTICE 'lst2 value is not int';
     END;
-    
+
     IF val IS NULL THEN
       --RAISE EXCEPTION 'val is NULL';
       RAISE NOTICE 'val is NULL';
@@ -1239,9 +1237,9 @@ RETURNS text AS $$
       RAISE NOTICE 'pad is null';
     ELSIF sep is NULL THEN
       --RAISE EXCEPTION 'sep is null';
-      RAISE NOTICE 'sep is null';  
+      RAISE NOTICE 'sep is null';
     END IF;
-    
+
     IF _upperCase = TRUE THEN
       _vals = string_to_array(replace(upper(val),' ',''), ',');
     ELSE
@@ -1395,7 +1393,7 @@ RETURNS text AS $$
           RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
         END IF;
       END IF;
-      
+
       -- get table of returnCol values and intersecting areas for all intersecting polygons
       -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
       EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
@@ -1469,7 +1467,7 @@ RETURNS double precision AS $$
           RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
         END IF;
       END IF;
-      
+
       -- get table of returnCol values and intersecting areas for all intersecting polygons
       -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
       EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
@@ -1563,10 +1561,9 @@ RETURNS geometry AS $$
     IF ST_IsValid(_the_geom_buffer) THEN
       RETURN _the_geom_buffer;
     END IF;
-    
+
     -- if attempts fail, return NULL and report the issue
     RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
     RETURN NULL;
-    
   END;
 $$ LANGUAGE plpgsql VOLATILE;

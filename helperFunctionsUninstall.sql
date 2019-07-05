@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions uninstallation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -34,6 +34,7 @@ DROP FUNCTION IF EXISTS TT_GeoIsValid(text);
 DROP FUNCTION IF EXISTS TT_GeoIntersects(text,text,text,text);
 DROP FUNCTION IF EXISTS TT_NotNullEmptyOr(text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text,text,text);
+DROP FUNCTION IF EXISTS TT_GeoIsValidTable(text, text, text, text);
 
 DROP FUNCTION IF EXISTS TT_CopyText(text);
 DROP FUNCTION IF EXISTS TT_CopyDouble(text);

@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -97,7 +97,7 @@ WITH test_nb AS (
     SELECT 'TT_GreaterThan'::text,             7,          9         UNION ALL
     SELECT 'TT_LessThan'::text,                8,          9         UNION ALL
     SELECT 'TT_MatchList'::text,               9,         20         UNION ALL
-    SELECT 'TT_MatchTable'::text,             10,         19         UNION ALL   
+    SELECT 'TT_MatchTable'::text,             10,         19         UNION ALL
     SELECT 'TT_Concat'::text,                 11,          3         UNION ALL
     SELECT 'TT_CopyText'::text,               12,          3         UNION ALL
     SELECT 'TT_LookupText'::text,             13,          8         UNION ALL
@@ -216,7 +216,7 @@ UNION ALL
 SELECT '2.6'::text number,
        'TT_NotEmpty'::text function_tested,
        'Not empty char string'::text description,
-       TT_NotEmpty('test test'::char(10)) passed       
+       TT_NotEmpty('test test'::char(10)) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.7'::text number,
@@ -246,7 +246,7 @@ UNION ALL
 SELECT '2.11'::text number,
        'TT_NotEmpty'::text function_tested,
        'Double precision'::text description,
-       TT_NotEmpty(1.2::text) passed       
+       TT_NotEmpty(1.2::text) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 3 - TT_IsInt
@@ -515,12 +515,12 @@ SELECT '7.4'::text number,
        'TT_GreaterThan'::text function_tested,
        'Double precision, bad value'::text description,
        TT_GreaterThan(10.1::text, 10.2::text, TRUE::text) IS FALSE passed
----------------------------------------------------------       
+---------------------------------------------------------
 UNION ALL
 SELECT '7.5'::text number,
        'TT_GreaterThan'::text function_tested,
        'Default applied'::text description,
-       TT_GreaterThan(10.1::text, 10.1::text) passed       
+       TT_GreaterThan(10.1::text, 10.1::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.6'::text number,
@@ -577,7 +577,7 @@ UNION ALL
 SELECT '8.5'::text number,
        'TT_LessThan'::text function_tested,
        'Default applied'::text description,
-       TT_LessThan(10.1::text, 10.1::text) passed       
+       TT_LessThan(10.1::text, 10.1::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.6'::text number,
@@ -1649,19 +1649,19 @@ SELECT '33.5'::text number,
        TT_IsError('SELECT TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''dbl'', ''methodArea'')') passed
 ---------------------------------------------------------
 -- Test 34 - TT_GeoIntersects
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '34.1'::text number,
        'TT_GeoIntersects'::text function_tested,
        'No overlap'::text description,
        TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom') IS FALSE passed
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '34.2'::text number,
        'TT_GeoIntersects'::text function_tested,
        'One overlap'::text description,
        TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '34.3'::text number,
        'TT_GeoIntersects'::text function_tested,
@@ -1681,7 +1681,7 @@ SELECT '34.5'::text number,
        TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
 ---------------------------------------------------------
 -- Test 35 - TT_NotNullEmptyOr
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '35.1'::text number,
        'TT_NotNullEmptyOr'::text function_tested,
@@ -1695,13 +1695,13 @@ SELECT '35.2'::text number,
        TT_NotNullEmptyOr(',d,,') passed
 ---------------------------------------------------------
 -- Test 36 - TT_IsIntSubstring
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '36.1'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Good string'::text description,
        TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) passed
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '36.2'::text number,
        'TT_IsIntSubstring'::text function_tested,
@@ -1709,13 +1709,13 @@ SELECT '36.2'::text number,
        TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 -- Test 37 - TT_GeoMakeValid
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '37.1'::text number,
        'TT_GeoMakeValid'::text function_tested,
        'Good geo'::text description,
        ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 10,10 10,0 0)))' passed
----------------------------------------------------------                     
+---------------------------------------------------------
 UNION ALL
 SELECT '37.2'::text number,
        'TT_GeoMakeValid'::text function_tested,

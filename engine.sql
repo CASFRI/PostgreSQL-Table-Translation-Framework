@@ -29,10 +29,7 @@ SET tt.debug TO FALSE;
 -------------------------------------------------------------------------------
 -- TT_Debug
 --
---   schemaName name - Name of the schema.
---   tableName name  - Name of the table.
---
---   RETURNS booelan  - True if tt_debug is set to true. False if set to false or not set.
+--   RETURNS boolean  - True if tt_debug is set to true. False if set to false or not set.
 --
 -- Wrapper to catch error when tt.error is not set.
 ------------------------------------------------------------
@@ -80,6 +77,41 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_FullFunctionName
+--
+--   schemaName name - Name of the schema.
+--   fctName name    - Name of the function.
+--
+--   RETURNS text    - Full name of the table.
+--
+-- Return a full function name, including the schema.
+-- The schema default to 'public' if not provided.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FullFunctionName(name, name);
+CREATE OR REPLACE FUNCTION TT_FullFunctionName(
+  schemaName name,
+  fctName name
+)
+RETURNS text AS $$
+  DECLARE
+  BEGIN
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    fctName = 'tt_' || lower(fctName);
+    schemaName = lower(schemaName);
+    IF schemaName = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    RETURN fctName;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_TextFctExist
 --
 --   schemaName name,
@@ -109,27 +141,17 @@ RETURNS boolean AS $$
     args text;
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctExists BEGIN';END IF;
-    fctName = 'tt_' || lower(fctName);
-    schemaName = lower(schemaName);
-    IF schemaName = 'public' OR schemaName IS NULL THEN
-      schemaName = '';
-    END IF;
-    IF schemaName != '' THEN
-      fctName = schemaName || '.' || fctName;
-    END IF;
+    fctName = TT_FullFunctionName(schemaName, fctName);
     IF fctName IS NULL THEN
-      RETURN NULL;
-    END IF;
-    IF fctName = '' OR fctName = '.' THEN
       RETURN FALSE;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_TextFctExists 11 fctName=%, argLength=%', fctName, argLength;END IF;
-    
-	SELECT count(*)
+
+    SELECT count(*)
     FROM pg_proc
     WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
     INTO cnt;
-    
+
     IF cnt > 0 THEN
       IF debug THEN RAISE NOTICE 'TT_TextFctExists END TRUE';END IF;
       RETURN TRUE;
@@ -172,18 +194,8 @@ RETURNS text AS $$
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctReturnType BEGIN';END IF;
     IF TT_TextFctExists(fctName, argLength) THEN
-      fctName = 'tt_' || lower(fctName);
-      schemaName = lower(schemaName);
-      IF schemaName = 'public' OR schemaName IS NULL THEN
-        schemaName = '';
-      END IF;
-      IF schemaName != '' THEN
-        fctName = schemaName || '.' || fctName;
-      END IF;
+      fctName = TT_FullFunctionName(schemaName, fctName);
       IF fctName IS NULL THEN
-        RETURN NULL;
-      END IF;
-      IF fctName = '' OR fctName = '.' THEN
         RETURN FALSE;
       END IF;
       IF debug THEN RAISE NOTICE 'TT_TextFctReturnType 11 fctName=%, argLength=%', fctName, argLength;END IF;
@@ -192,7 +204,7 @@ RETURNS text AS $$
       FROM pg_proc
       WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
       INTO result;
-      
+
       IF debug THEN RAISE NOTICE 'TT_TextFctReturnType END result=%', result;END IF;
       RETURN result;
     ELSE
@@ -221,7 +233,7 @@ $$ LANGUAGE sql VOLATILE;
 --  - arg text[]            - Array of argument values to pass to the function. 
 --                            Generally includes one or two column names to get replaced 
 --                            with values from the vals argument.
---  - vals jsonb            - Replacement values passed as a jsonb object (since  
+--  - vals jsonb            - Replacement values passed as a jsonb object (since
 --                            PostgresQL does not allow passing RECORDs to functions).
 --  - returnType anyelement - Determines the type of the returned value 
 --                            (declared generically as anyelement).
@@ -261,17 +273,17 @@ RETURNS anyelement AS $$
   BEGIN
     -- This function returns a polymorphic type, the type returned in result
     -- will be whatever type is provided in the returnType input argument.
-  
+
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
 
-    IF checkExistence = TRUE THEN    
+    IF checkExistence = TRUE THEN
       -- if function has no args, pass 0 to TT_TextFctExists using coalesce.
       IF fctName IS NULL OR NOT TT_TextFctExists(fctName, coalesce(cardinality(args),0)) OR vals IS NULL THEN
         IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
         RAISE EXCEPTION 'TT_TextFctEval FUNCTION %(%) DOES NOT EXIST', fctName, left(repeat('text,',coalesce(cardinality(args),0)), char_length(repeat('text,',coalesce(cardinality(args),0)))-1);
       END IF;
     END IF;
-     
+
     ruleQuery = 'SELECT TT_' || fctName || '(';
     IF NOT args IS NULL THEN
       -- Search for any argument names in the provided value jsonb object
@@ -284,32 +296,32 @@ RETURNS anyelement AS $$
           -- It unpacks the string, gets the column values, and re-packages them into
           -- a comma separated string for use by the helper function.
           -- Only runs if comma detected in string.
-	  IF char_length(arg) - char_length(replace(arg,',','')) > 0 THEN
+          IF char_length(arg) - char_length(replace(arg,',','')) > 0 THEN
             -- split string to array by comma's after removing spaces
-	    argsNested = string_to_array(replace(arg, ' ', ''), ',');
+            argsNested = string_to_array(replace(arg, ' ', ''), ',');
             IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
             -- loop through array, get values, add to new string (ruleQueryNested)
-	    ruleQueryNested = '''';
-	    FOREACH argNested in ARRAY argsNested LOOP
-	      IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
-	      IF NOT vals ? argNested THEN
-		IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-		ruleQueryNested = ruleQueryNested || argNested || ',';
-	      ELSE
-		argValNested = vals->>argNested;
-		IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
-		IF argValNested IS NULL THEN
-		  ruleQueryNested = ruleQueryNested || 'NULL' || ',';
-		ELSE
-		  ruleQueryNested = ruleQueryNested || argValNested || ',';
-		END IF;
+            ruleQueryNested = '''';
+            FOREACH argNested in ARRAY argsNested LOOP
+              IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
+              IF NOT vals ? argNested THEN
+                IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+                ruleQueryNested = ruleQueryNested || argNested || ',';
+              ELSE
+                argValNested = vals->>argNested;
+                IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
+                IF argValNested IS NULL THEN
+                  ruleQueryNested = ruleQueryNested || 'NULL' || ',';
+                ELSE
+                  ruleQueryNested = ruleQueryNested || argValNested || ',';
+                END IF;
               END IF;
-	    END LOOP;
-	    -- remove the last comma and space, and cast string to text
-	    ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
+            END LOOP;
+            -- remove the last comma and space, and cast string to text
+            ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
           ELSE
             ruleQuery = ruleQuery || '''' || arg || '''::text, ';
-	  END IF;
+          END IF;
         ELSE
           argVal = vals->>arg;
           IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
@@ -465,7 +477,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     query text;
     debug boolean = TT_Debug();
     rule TT_RuleDef;
-	error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
+    error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF translationTable IS NULL THEN
@@ -479,18 +491,18 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
 
     -- loop through each row in the translation table
-    query = 'SELECT rule_id, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY to_number(rule_id, ''999999'');';
+    query = 'SELECT rule_id::text, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY to_number(rule_id, ''999999'');';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
-    
+
       -- check attributes not null and assign variables
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
       IF row.rule_id IS NULL OR row.rule_id = '' THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';END IF;
       IF NOT TT_IsInt(row.rule_id) THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;END IF;
-	  
+
       IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;END IF;
       targetAttribute = row.targetAttribute;
-      
+
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
       IF row.targetAttributeType IS NULL OR row.targetAttributeType = '' THEN RAISE EXCEPTION '% % : Target attribute type is NULL or empty.', error_msg_start, row.rule_id;END IF;
       targetAttributeType = row.targetAttributeType;
@@ -510,22 +522,22 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN RAISE EXCEPTION '% % : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id;END IF;
       descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;
-      
-	  IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
+
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
       -- check validation functions exist, error code is not null, and error code can be cast to target attribute type
       FOREACH rule IN ARRAY validationRules LOOP
-	  
+
         -- check function exists
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
         IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
           RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
         END IF;
-		
+
         -- check error code is not null
         IF rule.errorcode IS NULL OR rule.errorcode = '' THEN
           RAISE EXCEPTION '% % : Error code is NULL or empty for validation rule %().', error_msg_start, row.rule_id, rule.fctName;
         END IF;
-		
+
         -- check error code can be cast to attribute type, catch error with EXCEPTION
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
         BEGIN
@@ -602,7 +614,7 @@ RETURNS text AS $f$
     -- Build the list of attribute types
     query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY rule_id::int) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
-      
+
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
                sourceTableSchema name,
                sourceTable name,
