@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -152,7 +152,7 @@ $$ LANGUAGE sql VOLATILE;
 WITH test_nb AS (
     SELECT 'TT_FullTableName'::text function_tested, 1 maj_num,  5 nb_test UNION ALL
     SELECT 'TT_FullFunctionName'::text,              2,          5         UNION ALL
-    SELECT 'TT_ParseArgs'::text,                     3,         11         UNION ALL
+    SELECT 'TT_ParseArgs'::text,                     3,         18         UNION ALL
     SELECT 'TT_ParseRules'::text,                    4,          9         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          4         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          2         UNION ALL
@@ -306,6 +306,48 @@ SELECT '3.11'::text number,
        'Test single quote inside single quotes'::text description,
         TT_ParseArgs('  aa, bb  ') = ARRAY['aa', 'bb'] passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '3.12'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test single colname wrapped in {}'::text description,
+        TT_ParseArgs('{colA}') = ARRAY['{colA}'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.13'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test multiple colnames'::text description,
+        TT_ParseArgs('{colA}, {colB}') = ARRAY['{colA}', '{colB}'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.14'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test comma separated colnames'::text description,
+        TT_ParseArgs('''{colA}, {colB}''') = ARRAY['{colA}, {colB}'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.15'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test comma separated strings'::text description,
+        TT_ParseArgs('''str1, str2''') = ARRAY['str1, str2'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.16'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test comma separated strings and colnames'::text description,
+        TT_ParseArgs('''{colA}, str2''') = ARRAY['{colA}, str2'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.17'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test comma separated strings and regular strings'::text description,
+        TT_ParseArgs('''str1, str2'', str3') = ARRAY['str1, str2','str3'] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.18'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Test comma separated colnames and regular colnames'::text description,
+        TT_ParseArgs('''{colA}, {colB}'', {colC}') = ARRAY['{colA}, {colB}','{colC}'] passed
+---------------------------------------------------------
 -- Test 4 - TT_ParseRules
 ---------------------------------------------------------
 UNION ALL
@@ -449,7 +491,7 @@ UNION ALL
 SELECT '9.1'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic test'::text description,
-        TT_TextFctEval('between', '{crown_closure,0.0,2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
+        TT_TextFctEval('between', '{\{crown_closure\},0.0,2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.2'::text number,
@@ -467,19 +509,19 @@ UNION ALL
 SELECT '9.4'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_IsError('TT_TextFctEval(''between'', ''{crown_closure, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
+        TT_IsError('TT_TextFctEval(''between'', ''{\{crown_closure\}, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_IsError('TT_TextFctEval(''between'', ''{xcrown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
+        TT_IsError('TT_TextFctEval(''between'', ''{\{crown_closureX\}, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
-        TT_TextFctEval('between', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
+        TT_TextFctEval('between', '{\{crown_closure\}, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.7'::text number,
@@ -491,13 +533,13 @@ UNION ALL
 SELECT '9.8'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, column names only'::text description,
-        TT_TextFctEval('Concat', '{"id,crown_closure",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-1' passed
+        TT_TextFctEval('Concat', '{"\{id\},\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-1' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.9'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, mixed column names and strings'::text description,
-        TT_TextFctEval('Concat', '{"id,b,crown_closure",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
+        TT_TextFctEval('Concat', '{"\{id\},b,\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
