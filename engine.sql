@@ -480,10 +480,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  Return an error and stop the process if any invalid value is found in the
 --  translation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
+--DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTableSchema name DEFAULT NULL,
-  translationTable name DEFAULT NULL
+  translationTable name DEFAULT NULL,
+  checkExistence boolean DEFAULT TRUE
 )
 RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef, description text, descUpToDateWithRules boolean) AS $$
   DECLARE
@@ -542,10 +543,12 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       FOREACH rule IN ARRAY validationRules LOOP
 
         -- check function exists
-        IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
-        IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
-          RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
-        END IF;
+        IF checkExistence THEN
+		  IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
+		  IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
+            RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
+          END IF;
+		END IF;
 
         -- check error code is not null
         IF rule.errorcode IS NULL OR rule.errorcode = '' THEN
@@ -564,9 +567,11 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       END LOOP;
 
       -- check translation function exists
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
-      IF translationRule.fctName IS NULL OR NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
-          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,',coalesce(cardinality(translationRule.args),0)), char_length(repeat('text,',coalesce(cardinality(translationRule.args),0)))-1), row.rule_id;
+      IF checkExistence THEN
+	  IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
+	    IF translationRule.fctName IS NULL OR NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
+            RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,',coalesce(cardinality(translationRule.args),0)), char_length(repeat('text,',coalesce(cardinality(translationRule.args),0)))-1), row.rule_id;
+        END IF;
       END IF;
 
       -- check translation rule return type matches target attribute type
@@ -704,12 +709,15 @@ RETURNS SETOF RECORD AS $$
     isValid boolean;
     jsonbRow jsonb;
     debug boolean = TT_Debug();
+	_checkExistence boolean;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
+	-- Set variable so TT_ValidateTTable only checks for functions on the first row
+	_checkExistence = TRUE;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
 
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
@@ -717,7 +725,7 @@ RETURNS SETOF RECORD AS $$
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourcerow=%', jsonbRow;END IF;
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
-       FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable) LOOP
+       FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, _checkExistence) LOOP
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationrow=%', translationrow;END IF;
          -- Iterate over each validation rule
          isValid = TRUE;
@@ -774,6 +782,7 @@ RETURNS SETOF RECORD AS $$
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, translationrow.targetAttributeType, finalQuery;END IF;
+		 _checkExistence = FALSE; --only check on first row
        END LOOP;
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);

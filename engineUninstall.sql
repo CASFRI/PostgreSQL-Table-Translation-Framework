@@ -13,7 +13,7 @@
 SELECT TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
-DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name);
+DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
