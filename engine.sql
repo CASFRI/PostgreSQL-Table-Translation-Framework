@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -758,13 +758,22 @@ RETURNS SETOF RECORD AS $$
                finalVal = -3333;
              END IF;
            END;
+		   
+		   -- if helper function returns a NULL, change it to the generic translation error
+		   IF finalVal IS NULL THEN
+		     IF translationrow.targetAttributeType IN ('text','char','character','varchar','character varying') THEN
+               finalVal = 'TRANSLATION_ERROR';
+             ELSE
+               finalVal = -3333;
+             END IF;
+		   END IF;
 
          ELSE
            IF debug THEN RAISE NOTICE '_TT_Translate 99 INVALID';END IF;
          END IF;
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
-         IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, finalQuery, translationrow.targetAttributeType;END IF;
+         IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, translationrow.targetAttributeType, finalQuery;END IF;
        END LOOP;
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);
