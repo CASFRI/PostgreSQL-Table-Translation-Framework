@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -459,12 +459,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   translationTable name       - Name of the translation table.
 --   targetAttributeList text[]  - List of attribute definition to be found in 
 --                                 the table.
+--   checkExistence              - boolean flag indicating whether validation
+--                                 and translation function existence should
+--                                 be checked.
 --
 --   RETURNS boolean             - TRUE if the translation table is valid.
 --
 -- Parse and validate the translation table. It must fullfil a number of conditions:
---
---   - the list of target attribute should match the targetAttributeList parameter,
 --
 --   - each of those attribute names should be shorter than 64 charaters and 
 --     contain no spaces,
@@ -476,6 +477,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 --   - the return type of translation rules and the type of the error code should 
 --     both match the attribute type,
+--
+--   - targetAttribute name should be valid with no special characters
 --
 --  Return an error and stop the process if any invalid value is found in the
 --  translation table.
@@ -510,30 +513,39 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
 
-      -- check attributes not null and assign variables
+      -- validate attributes and assign values
+
+      -- rule_id should be integer, not null, not empty string
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
       IF row.rule_id IS NULL OR row.rule_id = '' THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';END IF;
       IF NOT TT_IsInt(row.rule_id) THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;END IF;
 
+      -- targetAttribute should not be null or empty string, should be word with underscore allowed but no special characters
       IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN RAISE EXCEPTION '% % : Target attribute name is invalid.', error_msg_start, row.rule_id;END IF;
       targetAttribute = row.targetAttribute;
 
+      -- targetAttributeType should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
       IF row.targetAttributeType IS NULL OR row.targetAttributeType = '' THEN RAISE EXCEPTION '% % : Target attribute type is NULL or empty.', error_msg_start, row.rule_id;END IF;
       targetAttributeType = row.targetAttributeType;
 
+      -- validationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
       IF row.validationRules IS NULL OR row.validationRules = '' THEN RAISE EXCEPTION '% % : Validation rules is NULL or empty.', error_msg_start, row.rule_id;END IF;
       validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
 
+      -- translationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
       IF row.translationRules IS NULL OR row.translationRules = '' THEN RAISE EXCEPTION '% % : Translation rule is NULL or empty.', error_msg_start, row.rule_id;END IF;
       translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
 
+      -- description should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
       IF row.description IS NULL OR row.description = '' THEN RAISE EXCEPTION '% % : Description is NULL or empty.', error_msg_start, row.rule_id;END IF;
       description = coalesce(row.description, '');
 
+      -- descUpToDateWithRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
       IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN RAISE EXCEPTION '% % : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id;END IF;
       descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;

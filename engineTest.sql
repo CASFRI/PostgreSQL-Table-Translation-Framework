@@ -43,6 +43,16 @@ SELECT '2' rule_id,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 
+DROP TABLE IF EXISTS test_translationTable2;
+CREATE TABLE test_translationTable2 AS
+SELECT '1' rule_id,
+       'CROWN CLOSURE UPPER'::text targetAttribute,
+       'integer'::text targetAttributeType,
+       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
+       'copyInt(crown_closure)'::text translationRules,
+       'Test'::text description,
+       'TRUE' descUpToDateWithRules
+
 SELECT TT_Prepare('test_translationtable');
 -------------------------------------------------------------------------------
 -- TT_IsError(text)
@@ -436,6 +446,14 @@ SELECT '5.4'::text number,
         array_agg(rec)::text = 
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
+--------------------------------------------------------
+UNION ALL
+SELECT '5.5'::text number,
+       'TT_ValidateTTable'::text function_tested,
+       'Basic test'::text description,
+        TT_IsError('array_agg(rec)::text = 
+''{"(CROWN CLOSURE UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}'' passed
+FROM (SELECT TT_ValidateTTable(''public'', ''test_translationtable2'') rec) foo')
 ---------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
