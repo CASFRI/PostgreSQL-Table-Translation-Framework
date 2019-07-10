@@ -52,7 +52,7 @@ The current version is 0.0.2-beta and is available for download at https://githu
 
 # What are translation tables and how to write them?
 
-A translation table is a normal PostgreSQL table defining the structure of the target table (one row per target attribute), how to validate source values to be translated, and how to translate source values into target attributes. It also provides a way to document the validation and translation rules and to flag rules that are not yet in synch with their description (in the case where rules are written as a second step or by different people).
+A translation table is a normal PostgreSQL table defining the structure of the target table (one row per target attribute), how to validate source values to be translated, and how to translate source values into target attributes. It also provides a way to document the validation and translation rules and to flag rules that are not yet in sync with their description (in the case where rules are written as a second step or by different people).
 
 The translation table implements two very different steps:
 
