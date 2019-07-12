@@ -399,15 +399,84 @@ CREATE OR REPLACE FUNCTION TT_ParseArgs(
 )
 RETURNS text[] AS $$
   DECLARE
+    args text[];
+    arg text;
     result text[] = '{}';
   BEGIN
-     SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
-     -- Match any double quoted string, double quoted string containing {}, single word, or single word surrounded by {}.
-     FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|"[-{};'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
+     --SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
+     SELECT array_agg(a[1])
+      --Match any double quoted string, double quoted string containing {}, single word, or single word surrounded by {}.
+     --FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|"[-{};'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
+     FROM (SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^'']+''|"[^"]+"|{.+})', 'g') a) foo
      INTO STRICT result;
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+------------------------------------------------------------
+-- NEED TO ADD SUPPORT FOR ESCAPING QUOTES IN HERE.
+-- DROP FUNCTION IF EXISTS TT_ParseArgs2(text);
+CREATE OR REPLACE FUNCTION TT_ParseArgs2(
+    argStr text DEFAULT NULL
+)
+RETURNS text[] AS $$
+  DECLARE
+    args text[];
+    arg text;
+    result text[] = '{}';
+  BEGIN
+    --FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^'']+''|"[^"]+"|{.+})', 'g') LOOP
+    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^'']+''|"[^"]+"|{[^}]+})', 'g') LOOP
+      --RAISE NOTICE '%', array_to_string(args,'');
+
+      arg = array_to_string(args,'');
+      IF arg ~ '{.+}' THEN -- anything surrounded with {}
+        RAISE NOTICE 'LIST: %', arg;
+        --result = array_append(result, arg);
+        result = array_append(result, '{' || array_to_string(TT_ParseStringList(btrim(arg,'{}')),',') || '}');
+      ELSIF arg ~ '^[^''"][-_\w\s]*' THEN --doesn't start with ' or " and is word with spaces allowed
+        RAISE NOTICE 'COLUMN NAME: %', arg;
+        -- check no spaces
+        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF;
+        result = array_append(result, arg);
+      ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN
+        RAISE NOTICE 'STRING: %', arg;
+        result = array_append(result, arg);
+      END IF;
+    END LOOP;
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+------------------------------------------------------------
+
+-- DROP FUNCTION IF EXISTS TT_ParseStringList(text);
+CREATE OR REPLACE FUNCTION TT_ParseStringList(
+    argStr text DEFAULT NULL
+)
+RETURNS text[] AS $$
+  DECLARE
+    args text[];
+    arg text;
+    result text[] = '{}';
+  BEGIN
+    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^'']+''|"[^"]+")', 'g') LOOP
+
+      arg = array_to_string(args,'');
+      IF arg ~ '^[^''"][-_\w\s]*' THEN --doesn't start with ' or " and is word with spaces allowed
+        RAISE NOTICE 'COLUMN NAME: %', arg;
+        -- check no spaces
+        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF;
+        result = array_append(result, arg);
+      ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN
+        RAISE NOTICE 'STRING: %', arg;
+        result = array_append(result, arg);
+      END IF;
+    END LOOP;
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
