@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Uninstallation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -16,6 +16,7 @@ DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);
+DROP FUNCTION IF EXISTS TT_ParseStringList(text);
 DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement, boolean);
 DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
