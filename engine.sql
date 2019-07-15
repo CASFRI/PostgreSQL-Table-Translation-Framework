@@ -387,33 +387,15 @@ $$ LANGUAGE plpgsql;
 -------------------------------------------------------------------------------
 -- TT_ParseArgs
 --
---  argStr text - Rule string to parse into it different components.
+-- Parses arguments from translation table into three classes:
+-- LISTS - wrapped in {}, to be processed by TT_ParseStringList()
+      -- TT_ParseStringList returns a text array of parsed strings and column names
+      -- which are re-wrapped in {} and passed to the output array.
+-- STRINGS - wrapped in '' or "" or empty strings. Passed directly to the output array.
+-- COLUMN NAMES - words containing - or _ but no spaces. Validated and passed to the
+-- output array. Error raised if invalid.
 --
---  RETURNS text[]
---
--- Parse an argument string into its separate components. A normal argument 
--- string has arguments separated with commas: 'aa, bb, 99'
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_ParseArgsOld(text);
-CREATE OR REPLACE FUNCTION TT_ParseArgsOld(
-    argStr text DEFAULT NULL
-)
-RETURNS text[] AS $$
-  DECLARE
-    args text[];
-    arg text;
-    result text[] = '{}';
-  BEGIN
-     --SELECT array_agg(btrim(btrim(a[1], '"'), ''''))
-     SELECT array_agg(a[1])
-      --Match any double quoted string, double quoted string containing {}, single word, or single word surrounded by {}.
-     --FROM (SELECT regexp_matches(argStr, '(''[-;",\.\w\s]*''|''[-{};",\.\w\s]*''|"[-;'',\.\w\s]*"|"[-{};'',\.\w\s]*"|{[-\.''"\w]+}|[-\.''"\w]+)', 'g') a) foo
-     FROM (SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^'']+''|"[^"]+"|{.+})', 'g') a) foo
-     INTO STRICT result;
-    RETURN result;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
+-- e.g. TT_ParseArgs('column_A, ''string 1'', {col2, "string2", "", ""}')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
@@ -461,6 +443,17 @@ RETURNS text[] AS $$
   END;
 $$ LANGUAGE plpgsql STRICT VOLATILE;
 
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_ParseStringList
+--
+-- Parses strings containing column names and strings into the following two types:
+-- STRINGS - wrapped in '' or "" or empty strings. Passed directly to the output array.
+-- COLUMN NAMES - words containing - or _ but no spaces. Validated and passed to the
+-- output array. Error raised if invalid.
+--
+-- e.g. TT_ParseStringList('col2, "string2", "", ""')
 ------------------------------------------------------------
 
 -- DROP FUNCTION IF EXISTS TT_ParseStringList(text);
