@@ -285,7 +285,7 @@ RETURNS anyelement AS $$
     END IF;
 
     ruleQuery = 'SELECT TT_' || fctName || '(';
-    IF NOT args IS NULL THEN
+    IF args IS NOT NULL AND args != '{}' THEN --only build the query if there are arguments
       -- Search for any argument names in the provided value jsonb object
       FOREACH arg IN ARRAY args LOOP
         IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
@@ -415,7 +415,6 @@ RETURNS text[] AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 
 ------------------------------------------------------------
--- NEED TO ADD SUPPORT FOR ESCAPING QUOTES IN HERE.
 -- DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 CREATE OR REPLACE FUNCTION TT_ParseArgs(
     argStr text DEFAULT NULL
@@ -424,7 +423,7 @@ RETURNS text[] AS $$
   DECLARE
     args text[];
     arg text;
-    result text[]; -- this use to be set to = '{}' but that means result will never be null. Was causing true() and false() to be run in the TextFctEval IF statement and get cut off to TT_fals)::text. Not sure how this ran before but removing = '{}' seems to work. Check with PR if this will break anything?
+    result text[] = '{}'; 
   BEGIN
     -- Matches:
       -- [^\s,][-_\w\s]* - any word including '-' or '_' or a space, removes any preceding spaces or commas
@@ -434,25 +433,25 @@ RETURNS text[] AS $$
         -- (?:\\''[^''\\]*)* - zero or more sequences of...
           -- \\'' - a backslash escaped '
           -- [^''\\]* - anything thats not \ or '
-        -- ?:\\'' - makes a non-capturing match. The match is not reported.
+        -- ?:\\'' - makes a non-capturing match. The match for \' is not reported.
       -- "[^"]+" - double quotes surrounding anything except double quotes. No need to escape single quotes here.
       -- {[^}]+} - anything inside curly brackets. [^}] makes it not greedy so it will match multiple lists
     FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+})', 'g') LOOP
 
       arg = array_to_string(args,'');
       IF arg ~ '{.+}' THEN -- LIST - anything surrounded with {}
-        RAISE NOTICE 'LIST: %', arg;
+        --RAISE NOTICE 'LIST: %', arg;
         -- Feed the contents of {} into TT_ParseStringList as string.
-        -- TT_ParseStringList returns array, convert that to a string and pad with {}, then add to result object.
+        -- TT_ParseStringList returns array, convert that to a string and pad with {}, then add to result array.
         result = array_append(result, '{' || array_to_string(TT_ParseStringList(btrim(arg,'{}')),',') || '}');
 
       ELSIF arg ~ '^[^''"][-_\w\s]*' THEN --COLUMN - doesn't start with ' or " and is word with spaces allowed
-        RAISE NOTICE 'COLUMN NAME: %', arg;
+        --RAISE NOTICE 'COLUMN NAME: %', arg;
         IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
         result = array_append(result, arg);
 
       ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN -- STRING - surrounded by '' or ""
-        RAISE NOTICE 'STRING: %', arg;
+        --RAISE NOTICE 'STRING: %', arg;
         result = array_append(result, arg);
       END IF;
     END LOOP;
@@ -476,11 +475,11 @@ RETURNS text[] AS $$
 
       arg = array_to_string(args,'');
       IF arg ~ '^[^''"][-_\w\s]*' THEN --doesn't start with ' or " and is word with spaces allowed
-        RAISE NOTICE 'COLUMN NAME: %', arg;
+        --RAISE NOTICE 'COLUMN NAME: %', arg;
         IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
         result = array_append(result, arg);
       ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN
-        RAISE NOTICE 'STRING: %', arg;
+        --RAISE NOTICE 'STRING: %', arg;
         result = array_append(result, arg);
       END IF;
     END LOOP;
