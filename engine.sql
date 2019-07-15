@@ -301,7 +301,7 @@ RETURNS anyelement AS $$
 	        ruleQueryNested = '''';
 	        FOREACH argNested in ARRAY argsNested LOOP
 	          IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
-            IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
+            IF argNested ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
               -- if STRING, return string
 	            IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
 	            ruleQueryNested = ruleQueryNested || btrim(btrim(argNested,''''),'"') || ',';
