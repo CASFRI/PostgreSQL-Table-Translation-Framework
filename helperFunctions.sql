@@ -9,9 +9,6 @@
 -- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
---
---
---
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -24,15 +21,15 @@
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- TT_NotNull
+-- TT_NotNULL
 --
 --  val text - Value to test.
 --
 -- Return TRUE if val is not NULL.
 -- Return FALSE if val is NULL.
--- e.g. TT_NotNull('a')
+-- e.g. TT_NotNULL('a')
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_NotNull(
+CREATE OR REPLACE FUNCTION TT_NotNULL(
   val text
 )
 RETURNS boolean AS $$
@@ -49,7 +46,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  val text - value to test
 --
 -- Return TRUE if val is not an empty string.
--- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or Null.
+-- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or NULL.
 -- e.g. TT_NotEmpty('a')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
@@ -67,12 +64,28 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_Length
+--
+-- val text - values to test.
+--
+-- Count characters in string
+-- e.g. TT_Length('12345')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Length(
+  val text
+)
+RETURNS int AS $$
+      SELECT coalesce(char_length(val), 0);
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_IsInt
 --
 --  val text - value to test.
 --
 --  Does value represent integer? (e.g. 1 or 1.0)
---  Null values return FALSE
+--  NULL values return FALSE
 --  Strings with numeric characters and '.' will be evaluated
 --  Strings with anything else (e.g. letter characters) return FALSE.
 --  e.g. TT_IsInt('1.0')
@@ -105,46 +118,124 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  val text - Value to test.
 --
 --  Can value be cast to double precision? (e.g. 1.1, 1, '1.5')
---  Null values return FALSE
+--  NULL values return FALSE
 --  e.g. TT_IsNumeric('1.1')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
    val text
 )
-  RETURNS boolean AS $$
-    DECLARE
-      _val double precision;
-    BEGIN
-      IF val IS NULL THEN
-        RETURN FALSE;
-      ELSE
-        BEGIN
-          _val = val::double precision;
-          RETURN TRUE;
-        EXCEPTION WHEN OTHERS THEN
-          RETURN FALSE;
-        END;
-      END IF;
-    END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_IsString
---
--- Return TRUE if val is string (i.e. not numeric)
--- e.g. TT_IsString('a')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsString(
-  val text
-)
 RETURNS boolean AS $$
+  DECLARE
+    _val double precision;
   BEGIN
     IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN TT_IsNumeric(val) IS FALSE;
+      BEGIN
+        _val = val::double precision;
+        RETURN TRUE;
+      EXCEPTION WHEN OTHERS THEN
+        RETURN FALSE;
+      END;
     END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsBoolean
+--
+-- Return TRUE if val is boolean
+-- e.g. TT_IsBoolean('TRUE')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsBoolean(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _val boolean;
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      BEGIN
+        _val = val::boolean;
+        RETURN TRUE;
+      EXCEPTION WHEN OTHERS THEN
+        RETURN FALSE;
+      END;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsGeometry
+--
+-- Return TRUE if val is a geometry
+-- e.g. TT_IsGeometry('LNESTRING(0 0, 0 10, 10 10, 0 0)')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsGeometry(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _val geometry;
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      BEGIN
+        _val = val::geometry;
+        RETURN TRUE;
+      EXCEPTION WHEN OTHERS THEN
+        RETURN FALSE;
+      END;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_ValidateParams
+--
+-- Validates parameters.
+-- Generate an error if params are NULL or of the wrong type.
+-------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_ValidateParams(
+  fctName text,
+  params text[]
+) 
+RETURNS void AS $$
+  DECLARE
+    i integer;
+    paramName text;
+    paramVal text;
+    paramType text;
+  BEGIN
+    IF array_upper(params, 1) % 3 != 0 THEN
+      RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): params ARRAY must have a multiple of 3 number of parameters';
+    END IF;
+    FOR i IN 1..array_upper(params, 1)/3 LOOP
+      paramName = params[(i - 1) * 3 + 1];
+      paramVal  = params[(i - 1) * 3 + 2];
+      paramType = params[(i - 1) * 3 + 3];
+      IF paramType != 'int' AND paramType != 'numeric' AND paramType != 'text' AND paramType != 'char' AND paramType != 'boolean' THEN
+        RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "text", "char" or "boolean"', i;
+      END IF;
+      IF paramVal IS NULL THEN
+        RAISE EXCEPTION 'ERROR in %(): % is NULL', fctName, paramName;
+      END IF;
+      IF paramType = 'int' AND NOT TT_IsInt(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a int value', fctName, paramName;
+      ELSIF paramType = 'numeric' AND NOT TT_IsNumeric(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a numeric value', fctName, paramName;
+      ELSIF paramType = 'boolean' AND NOT TT_IsBoolean(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
+      ELSIF paramType = 'char' AND TT_Length(paramVal) != 1 THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
+      END IF;
+    END LOOP;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -152,16 +243,16 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Between
 --
--- val text - Value to test.
--- min text - Minimum.
--- max text - Maximum.
--- includeMin - is min inclusive? Default True.
--- includeMax - is max inclusive? Default True.
+-- val text - Value to test
+-- min text - Minimum
+-- max text - Maximum
+-- includeMin - is min inclusive? Default True
+-- includeMax - is max inclusive? Default True
 --
 -- Return TRUE if val is between min and max.
 -- Return FALSE otherwise.
 -- Return FALSE if val is NULL.
--- Return error if min or max are null.
+-- Return error if min, max, includeMin or includeMax are NULL.
 -- e.g. TT_Between(5, 0, 100)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Between(
@@ -173,24 +264,41 @@ CREATE OR REPLACE FUNCTION TT_Between(
 )
 RETURNS boolean AS $$
   DECLARE
-    _val double precision := val::double precision;
-    _min double precision := min::double precision;
-    _max double precision := max::double precision;
-    _includeMin boolean := includeMin::boolean;
-    _includeMax boolean := includeMax::boolean;
+    _val double precision;
+    _min double precision;
+    _max double precision;
+    _includeMin boolean;
+    _includeMax boolean;
   BEGIN
-    IF min IS NULL OR max IS NULL THEN
-      RAISE EXCEPTION 'min or max is null';
-    ELSIF val IS NULL THEN
+    PERFORM TT_ValidateParams('TT_Between',
+                              ARRAY['min', min, 'numeric', 
+                                    'max', max, 'numeric', 
+                                    'includeMin', includeMin, 'boolean', 
+                                    'includeMax', includeMax, 'boolean']);
+    _min = min::double precision;
+    _max = max::double precision;
+    _includeMin = includeMin::boolean;
+    _includeMax = includeMax::boolean;
+    
+    IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
-    ELSIF _includeMin = FALSE AND _includeMax = FALSE THEN
-      RETURN _val > _min and _val < _max;
+    END IF;
+    _val = val::double precision;
+    
+    IF _min = _max THEN
+      RAISE EXCEPTION 'ERROR in TT_Between(): min is equal to max';
+    ELSIF _min > _max THEN
+	    RAISE EXCEPTION 'ERROR in TT_Between(): min is greater than max';
+    END IF;
+    
+    IF _includeMin = FALSE AND _includeMax = FALSE THEN
+      RETURN _val > _min AND _val < _max;
     ELSIF _includeMin = TRUE AND _includeMax = FALSE THEN
-      RETURN _val >= _min and _val < _max;
+      RETURN _val >= _min AND _val < _max;
     ELSIF _includeMin = FALSE AND _includeMax = TRUE THEN
-      RETURN _val > _min and _val <= _max;
+      RETURN _val > _min AND _val <= _max;
     ELSE
-      RETURN _val >= _min and _val <= _max;
+      RETURN _val >= _min AND _val <= _max;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -216,7 +324,7 @@ $$ LANGUAGE sql VOLATILE;
 --  Return TRUE if val > lowerBound and inclusive = FALSE.
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
---  Return error if lowerBound or inclusive are null.
+--  Return error if lowerBound or inclusive are NULL.
 --  e.g. TT_GreaterThan(5, 0, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_GreaterThan(
@@ -226,15 +334,22 @@ CREATE OR REPLACE FUNCTION TT_GreaterThan(
 )
 RETURNS boolean AS $$
   DECLARE
-    _val double precision := val::double precision;
-    _lowerBound double precision := lowerBound::double precision;
-    _inclusive boolean := inclusive::boolean;
+    _val double precision;
+    _lowerBound double precision;
+    _inclusive boolean;
   BEGIN
-    IF lowerBound IS NULL OR inclusive IS NULL THEN
-      RAISE EXCEPTION 'lowerBound or inclusive is null';
-    ELSIF val IS NULL THEN
+    PERFORM TT_ValidateParams('TT_GreaterThan',
+                              ARRAY['lowerBound', lowerBound, 'numeric', 
+                                    'inclusive', inclusive, 'boolean']);
+    _lowerBound = lowerBound::double precision;
+    _inclusive = inclusive::boolean;
+   
+    IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
-    ELSIF _inclusive = TRUE THEN
+    END IF;
+    _val = val::double precision;
+
+    IF _inclusive = TRUE THEN
       RETURN _val >= _lowerBound;
     ELSE
       RETURN _val > _lowerBound;
@@ -262,7 +377,7 @@ $$ LANGUAGE sql VOLATILE;
 --  Return TRUE if val < upperBound and inclusive = FALSE.
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
---  Return error if upperBound or inclusive are null.
+--  Return error if upperBound or inclusive are NULL.
 --  e.g. TT_LessThan(1, 5, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LessThan(
@@ -272,15 +387,22 @@ CREATE OR REPLACE FUNCTION TT_LessThan(
 )
 RETURNS boolean AS $$
   DECLARE
-    _val double precision := val::double precision;
-    _upperBound double precision := upperBound::double precision;
-    _inclusive boolean := inclusive::boolean;
+    _val double precision;
+    _upperBound double precision;
+    _inclusive boolean;
   BEGIN
-    IF upperBound IS NULL OR inclusive IS NULL THEN
-      RAISE EXCEPTION 'upperBound or inclusive is null';
-    ELSIF val IS NULL THEN
+    PERFORM TT_ValidateParams('TT_LessThan',
+                              ARRAY['upperBound', upperBound, 'numeric', 
+                                    'inclusive', inclusive, 'boolean']);
+    _upperBound = upperBound::double precision;
+    _inclusive = inclusive::boolean;
+    
+    IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
-    ELSIF _inclusive = TRUE THEN
+    END IF;
+    _val = val::double precision;
+
+    IF _inclusive = TRUE THEN
       RETURN _val <= _upperBound;
     ELSE
       RETURN _val < _upperBound;
@@ -316,17 +438,21 @@ CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
 )
 RETURNS boolean AS $$
   DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    _occurrences int := occurrences::int;
+    _lookupSchemaName name;
+    _lookupTableName name;
+    _occurrences int;
     query text;
     return boolean;
   BEGIN
-    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF occurrences IS NULL THEN
-      RAISE EXCEPTION 'occurrences is null';
-    ELSIF val IS NULL THEN
+    PERFORM TT_ValidateParams('TT_HasUniqueValues',
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
+                                    'lookupTableName', lookupTableName, 'text',
+                                    'occurrences', occurrences, 'int']);
+    _lookupSchemaName = lookupSchemaName::name;
+    _lookupTableName = lookupTableName::name;
+    _occurrences = occurrences::int;
+
+    IF val IS NULL THEN
       RETURN FALSE;
     ELSE
       query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurrences || ';';
@@ -343,6 +469,14 @@ CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
 )
 RETURNS boolean AS $$
   SELECT TT_HasUniqueValues(val, lookupSchemaName, lookupTableName, 1::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
+  val text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasUniqueValues(val, 'public', lookupTableName, 1::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -365,15 +499,21 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    _ignoreCase boolean := ignoreCase::boolean;
+    _lookupSchemaName name;
+    _lookupTableName name;
+    _ignoreCase boolean;
     query text;
     return boolean;
   BEGIN
-    IF lookupSchemaName IS NULL OR lookupTableName IS NULL THEN
-      RAISE EXCEPTION 'lookupSchemaName or lookupTableName is null';
-    ELSIF val IS NULL THEN
+    PERFORM TT_ValidateParams('TT_MatchTable',
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
+                                    'lookupTableName', lookupTableName, 'text',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _lookupSchemaName = lookupSchemaName::name;
+    _lookupTableName = lookupTableName::name;
+    _ignoreCase = ignoreCase::boolean;
+
+    IF val IS NULL THEN
       RETURN FALSE;
     ELSIF _ignoreCase = FALSE THEN
       query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
@@ -394,6 +534,14 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTable(
+  val text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTable(val, 'public', lookupTableName, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -416,8 +564,12 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 RETURNS boolean AS $$
   DECLARE
     _lst text[];
-    _ignoreCase boolean := ignoreCase::boolean;
+    _ignoreCase boolean;
   BEGIN
+    PERFORM TT_ValidateParams('TT_MatchList',
+                              ARRAY['lst', lst, 'text',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _ignoreCase = ignoreCase::boolean;
     IF val IS NULL THEN
       RETURN FALSE;
     ELSIF _ignoreCase = FALSE THEN
@@ -486,19 +638,26 @@ CREATE OR REPLACE FUNCTION TT_GeoIsValid(
 )
 RETURNS boolean AS $$
   DECLARE
-    _the_geom geometry := the_geom::geometry;
-    _fix boolean := fix::boolean;
+    _the_geom geometry;
+    _fix boolean;
   BEGIN
-    IF the_geom IS NULL THEN
+    PERFORM TT_ValidateParams('TT_GeoIsValid',
+                              ARRAY['fix', fix, 'boolean']);
+    _fix = fix::boolean;
+
+    IF NOT TT_IsGeometry(the_geom) THEN
       RETURN FALSE;
-    ELSIF ST_IsValid(_the_geom) THEN
+    END IF;
+    _the_geom = the_geom::geometry;
+
+    IF ST_IsValid(_the_geom) THEN
       RETURN TRUE;
     ELSIF _fix AND ST_IsValid(ST_MakeValid(_the_geom)) THEN
       RETURN TRUE;
     ELSIF _fix AND ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
       RETURN TRUE;
     ELSE
-      RAISE NOTICE 'invalid geometry, reason: %', ST_IsValidReason(_the_geom);
+      RAISE NOTICE 'TT_GeoIsValid(): invalid geometry, reason: %', ST_IsValidReason(_the_geom);
       RETURN FALSE;
     END IF;
   END;
@@ -510,51 +669,6 @@ CREATE OR REPLACE FUNCTION TT_GeoIsValid(
 RETURNS boolean AS $$
   SELECT TT_GeoIsValid(the_geom, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_GeoIsValidTable
---
--- intersectSchemaName text,
--- intersectTableName text,
--- geoCol text 
---
--- Return true if the geometry in all rows is valid
--- Return false otherwise.
---
--- e.g. TT_GeoIsValidTable(public, photo_year, geo_col)
-
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_GeoIsValidTable(
-  intersectSchemaName text,
-  intersectTableName text,
-  geoCol text,
-  fix text
-)
-RETURNS boolean AS $$
-  DECLARE
-    geo_valid boolean;
-    _intersectSchemaName name := intersectSchemaName::name;
-    _intersectTableName name := intersectTableName::name;
-    _fix boolean := fix::boolean;
-  BEGIN
-    IF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL THEN
-      RETURN FALSE;
-      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol is NULL';
-    END IF;
-
-    -- if any rows have invalid geo, return FALSE
-    FOR geo_valid IN EXECUTE 'SELECT TT_GeoIsValid(' || geoCol || '::text,' || _fix || '::text) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) LOOP
-      --RAISE NOTICE 'row geo: %', geo_valid::text;
-      IF geo_valid IS FALSE THEN
-        RETURN FALSE;
-      END IF;
-    END LOOP;
-
-    -- otherwise return true
-    RETURN TRUE;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -579,56 +693,78 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersects(
 )
 RETURNS boolean AS $$
   DECLARE
-    _intersectSchemaName name := intersectSchemaName::name;
-    _intersectTableName name := intersectTableName::name;
+    _intersectSchemaName name;
+    _intersectTableName name;
     count int;
     query text;
     return boolean;
-    _the_geom geometry := the_geom::geometry;
+    _the_geom geometry;
   BEGIN
-    IF the_geom IS NULL THEN
-      RAISE EXCEPTION 'geometry is NULL';
-    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL THEN
-      RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol is NULL';
-    ELSE
-      -- make geo valid if not
-      IF NOT ST_IsValid(_the_geom) THEN
-        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
-          _the_geom = ST_MakeValid(_the_geom);
-        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
-          _the_geom = ST_Buffer(_the_geom, 0);
-        ELSE
-          RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
-        END IF;
+    PERFORM TT_ValidateParams('TT_GeoIntersects',
+                              ARRAY['intersectSchemaName', intersectSchemaName, 'text',
+                                    'intersectTableName', intersectTableName, 'text',
+                                    'geoCol', geoCol, 'text']);
+    _intersectSchemaName = intersectSchemaName::name;
+    _intersectTableName = intersectTableName::name;
+
+    IF NOT TT_IsGeometry(the_geom) THEN
+      RETURN FALSE;
+    END IF;
+    _the_geom = the_geom::geometry;
+  
+    IF NOT ST_IsValid(_the_geom) THEN
+      IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
+        _the_geom = ST_MakeValid(_the_geom);
+      ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+        _the_geom = ST_Buffer(_the_geom, 0);
+      ELSE
+        RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
       END IF;
+    END IF;
 
-      -- query to get count of intersects
-      query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || _the_geom::text || '''::geometry, ' || geoCol || ');';
-      EXECUTE query INTO count;
+    -- query to get count of intersects
+    query = 'SELECT count(*) FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) || ' WHERE ST_Intersects(''' || _the_geom::text || '''::geometry, ' || geoCol || ') LIMIT 1;';
+    EXECUTE query INTO count;
 
-      -- RAISE NOTICE 'count: %', count;
+    -- RAISE NOTICE 'count: %', count;
 
-      -- return false if count = 0, true if > 0
-      IF count = 0 THEN
-        RETURN FALSE;
-      ELSIF count > 0 THEN
-        RETURN TRUE;
-      END IF;
+    -- return false if count = 0, true if > 0
+    IF count = 0 THEN
+      RETURN FALSE;
+    ELSIF count > 0 THEN
+      RETURN TRUE;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_GeoIntersects(
+  the_geom text,
+  intersectSchemaName text,
+  intersectTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_GeoIntersects(the_geom, intersectSchemaName, intersectTableName, 'geom')
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_GeoIntersects(
+  the_geom text,
+  intersectTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_GeoIntersects(the_geom, 'public', intersectTableName, 'geom')
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_NotNullEmptyOr
+-- TT_NotNULLEmptyOr
 --
 -- val text - comma separated list of values to test.
 --
--- Return TRUE if at least one value is not null or empty strings.
--- Return FALSE if all values are null or empty strings.
--- e.g. TT_NotNullEmptyOr('a,b,c')
+-- Return TRUE if at least one value is not NULL or empty strings.
+-- Return FALSE if all values are NULL or empty strings.
+-- e.g. TT_NotNULLEmptyOr('a,b,c')
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_NotNullEmptyOr(
+CREATE OR REPLACE FUNCTION TT_NotNULLEmptyOr(
   val text
 )
 RETURNS boolean AS $$
@@ -667,22 +803,16 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
 )
 RETURNS boolean AS $$
   DECLARE
-    _substr double precision;
-    _start_char int := start_char::int;
-    _for_length int := for_length::int;
+    _start_char int;
+    _for_length int;
   BEGIN
-    IF val IS NULL THEN
-      RAISE EXCEPTION 'val is null';
-    ELSIF start_char IS NULL THEN
-      RAISE EXCEPTION 'start_char is null';
-    ELSIF for_length IS NULL THEN
-      RAISE EXCEPTION 'for_length is null';
-    END IF;
-
-    _substr = substring(val from _start_char for _for_length)::double precision; -- get year
-    RETURN _substr - _substr::int = 0; -- check its an integer
-  EXCEPTION WHEN OTHERS THEN
-    RETURN FALSE;
+    PERFORM TT_ValidateParams('TT_IsIntSubstring',
+                              ARRAY['start_char', start_char, 'int',
+                                    'for_length', for_length, 'int']);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+    
+    RETURN TT_IsInt(substring(val from _start_char for _for_length));
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -768,33 +898,52 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
-  ignoreCase text
+  ignoreCase text,
+  callerFctName text
 )
 RETURNS text AS $$
   DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    _ignoreCase boolean := ignoreCase::boolean;
+    _lookupSchemaName name;
+    _lookupTableName name;
+    _ignoreCase boolean;
     query text;
-    return text;
+    result text;
   BEGIN
+    PERFORM TT_ValidateParams(callerFctName,
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
+                                    'lookupTableName', lookupTableName, 'text',
+                                    'lookupCol', lookupCol, 'text',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _lookupSchemaName = lookupSchemaName::name;
+    _lookupTableName = lookupTableName::name;
+    _ignoreCase = ignoreCase::boolean;
+
     IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
-      RAISE NOTICE 'val is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
-      EXECUTE query INTO return;
-      RETURN return;
+      RETURN NULL;
     END IF;
+    
+    query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || 
+            CASE WHEN _ignoreCase IS TRUE THEN
+                   ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ')'
+                 ELSE 
+                   ' WHERE source_val = ' || quote_literal(val)
+            END || ';';
+
+    EXECUTE query INTO result;
+    RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupText(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupText')
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
@@ -804,6 +953,15 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
 )
 RETURNS text AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupText(
+  val text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS text AS $$
+  SELECT TT_LookupText(val, 'public', lookupTableName, lookupCol, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -830,30 +988,8 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
   ignoreCase text
 )
 RETURNS double precision AS $$
-  DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    _ignoreCase boolean := ignoreCase::boolean;
-    query text;
-    return text;
-  BEGIN
-    IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
-      RAISE NOTICE 'val is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupDouble')::double precision;
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
@@ -862,7 +998,16 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
   lookupCol text
 )
 RETURNS double precision AS $$
-  SELECT TT_LookupDouble(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+  SELECT TT_LookupDouble(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupDouble(
+  val text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS double precision AS $$
+  SELECT TT_LookupDouble(val, 'public', lookupTableName, lookupCol, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -889,30 +1034,16 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
   ignoreCase text
 )
 RETURNS int AS $$
-  DECLARE
-    _lookupSchemaName name := lookupSchemaName::name;
-    _lookupTableName name := lookupTableName::name;
-    _ignoreCase boolean := ignoreCase::boolean;
-    query text;
-    return text;
-  BEGIN
-    IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
-      RAISE NOTICE 'val is NULL';
-    ELSIF lookupSchemaName IS NULL OR lookupTableName IS NULL OR lookupCol IS NULL THEN
-      --RAISE EXCEPTION 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-      RAISE NOTICE 'lookupSchemaName or lookupTableName or lookupCol is NULL';
-    ELSIF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ';';
-      EXECUTE query INTO return;
-      RETURN return;
-    ELSE
-      query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(lookupSchemaName, lookupTableName) || ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ');';
-      EXECUTE query INTO return;
-      RETURN return;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+  WITH inttxt AS (
+    SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupInt') val
+  )
+  SELECT CASE WHEN TT_IsINT(val) THEN
+              val::int
+         ELSE
+              NULL
+         END
+  FROM inttxt;
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
@@ -921,7 +1052,16 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
   lookupCol text
 )
 RETURNS int AS $$
-  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupInt(
+  val text,
+  lookupTableName text,
+  lookupCol text
+)
+RETURNS int AS $$
+  SELECT TT_LookupInt(val, 'public', lookupTableName, lookupCol, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -929,11 +1069,11 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_MapText
 --
 -- val text - value to test.
--- lst1 text - string containing comma seperated vals
--- lst2 text - string containing comma seperated vals
+-- mapVals text - string list of mapping values
+-- targetVals text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
--- Return text value from lst2 that matches value index in lst1
+-- Return value from targetVals that matches value index in mapVals
 -- Return type is text
 -- Error if val is NULL
 -- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
@@ -941,38 +1081,37 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapText(
   val text,
-  lst1 text,
-  lst2 text,
+  mapVals text,
+  targetVals text,
   ignoreCase text
 )
 RETURNS text AS $$
   DECLARE
-    _lst1 text[];
-    _lst2 text[];
+    _mapVals text[];
+    _targetVals text[];
     _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
     IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      _lst1 = string_to_array(lst1, ',');
-      _lst2 = string_to_array(lst2, ',');
-      RETURN (_lst2)[array_position(_lst1,val)];
+      _mapVals = string_to_array(mapVals, ',');
+      _targetVals = string_to_array(targetVals, ',');
+      RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _lst1 = string_to_array(upper(lst1), ',');
-      _lst2 = string_to_array(lst2, ',');
-      RETURN (_lst2)[array_position(_lst1,upper(val))];
+      _mapVals = string_to_array(upper(mapVals), ',');
+      _targetVals = string_to_array(targetVals, ',');
+      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapText(
   val text,
-  lst1 text,
-  lst2 text
+  mapVals text,
+  targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_MapText(val, lst1, lst2, FALSE::text)
+  SELECT TT_MapText(val, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -980,60 +1119,58 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_MapDouble
 --
 -- val text - value to test.
--- lst1 text - string containing comma seperated vals
--- lst2 text - string containing comma seperated vals
+-- mapVals text - string containing comma seperated vals
+-- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
--- Return double precision value from lst2 that matches value index in lst1
+-- Return double precision value from targetVals that matches value index in mapVals
 -- Return type is double precision
--- Error if val is NULL, or if any lst2 elements cannot be cast to double precision, or if val is not in lst1
+-- Error if val is NULL, or if any targetVals elements cannot be cast to double precision, or if val is not in mapVals
 -- e.g. TT_Map('A','A,B,C','1.1,2.2,3.3')
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapDouble(
   val text,
-  lst1 text,
-  lst2 text,
+  mapVals text,
+  targetVals text,
   ignoreCase text
 )
 RETURNS double precision AS $$
   DECLARE
-    _lst1 text[];
-    _lst2 text[];
+    _mapVals text[];
+    _targetVals text[];
     _i double precision;
     _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
-    _lst1 = string_to_array(lst1, ',');
-    _lst2 = string_to_array(lst2, ',');
+    _mapVals = string_to_array(mapVals, ',');
+    _targetVals = string_to_array(targetVals, ',');
 
     BEGIN
-      FOREACH _i in ARRAY _lst2 LOOP
+      FOREACH _i in ARRAY _targetVals LOOP
         -- no need to do anything inside loop, we just want to test if all _i's are double precision
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
-      --RAISE EXCEPTION 'lst2 value cannot be cast to double precision';
-      RAISE NOTICE 'lst2 value cannot be cast to double precision';
+      RAISE NOTICE 'targetVals value cannot be cast to double precision';
     END;
 
     IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      RETURN (_lst2)[array_position(_lst1,val)];
+      RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _lst1 = string_to_array(upper(lst1), ',');
-      RETURN (_lst2)[array_position(_lst1,upper(val))];
+      _mapVals = string_to_array(upper(mapVals), ',');
+      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapDouble(
   val text,
-  lst1 text,
-  lst2 text
+  mapVals text,
+  targetVals text
 )
 RETURNS double precision AS $$
-  SELECT TT_MapDouble(val, lst1, lst2, FALSE::text)
+  SELECT TT_MapDouble(val, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1041,83 +1178,58 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_MapInt
 --
 -- val text - value to test.
--- lst1 text - string containing comma seperated vals
--- lst2 text - string containing comma seperated vals
+-- mapVals text - string containing comma seperated vals
+-- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
--- Return int value from lst2 that matches value index in lst1
+-- Return int value from targetVals that matches value index in mapVals
 -- Return type is int
--- Error if val is NULL, or if any lst2 elements are not int, or if val is not in lst1
+-- Error if val is NULL, or if any targetVals elements are not int, or if val is not in mapVals
 -- e.g. TT_MapInt('A','A,B,C','1,2,3')
-
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapInt(
   val text,
-  lst1 text,
-  lst2 text,
+  mapVals text,
+  targetVals text,
   ignoreCase text
 )
 RETURNS int AS $$
   DECLARE
-    _lst1 text[];
-    _lst2 text[];
+    _mapVals text[];
+    _targetVals text[];
     _i int;
     _ignoreCase boolean := ignoreCase::boolean;
   BEGIN
-    _lst1 = string_to_array(lst1, ',');
-    _lst2 = string_to_array(lst2, ',');
+    _mapVals = string_to_array(mapVals, ',');
+    _targetVals = string_to_array(targetVals, ',');
 
     BEGIN
-      FOREACH _i in ARRAY _lst2 LOOP
+      FOREACH _i in ARRAY _targetVals LOOP
         -- no need to do anything inside loop, we just want to test if all _i's are int
       END LOOP;
     EXCEPTION WHEN OTHERS THEN
-      --RAISE EXCEPTION 'lst2 value is not int';
-      RAISE NOTICE 'lst2 value is not int';
+      RAISE NOTICE 'targetVals value is not int';
     END;
 
     IF val IS NULL THEN
-      --RAISE EXCEPTION 'val is NULL';
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      RETURN (_lst2)[array_position(_lst1,val)];
+      RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _lst1 = string_to_array(upper(lst1), ',');
-      RETURN (_lst2)[array_position(_lst1,upper(val))];
+      _mapVals = string_to_array(upper(mapVals), ',');
+      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapInt(
   val text,
-  lst1 text,
-  lst2 text
+  mapVals text,
+  targetVals text
 )
 RETURNS int AS $$
-  SELECT TT_MapInt(val, lst1, lst2, FALSE::text)
+  SELECT TT_MapInt(val, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_Length
---
--- val text - values to test.
---
--- Count characters in string
--- e.g. TT_Length('12345')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Length(
-  val text
-)
-RETURNS int AS $$
-  BEGIN
-    IF val IS NULL THEN
-      RETURN 0;
-    ELSE
-      RETURN char_length(val);
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1127,45 +1239,53 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- targetLength text - total characters of output string.
 -- padChar text - character to pad with - Defaults to 'x'.
 --
--- Pads if val shorter than target, trims if val longer than target.
+-- Pads if val length is smaller than target, trims if val 
+-- length is longer than target.
 -- padChar should always be a single character.
 -- e.g. TT_Pad('tab1', 10, 'x')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
   targetLength text,
-  padChar text
+  padChar text,
+  trunc text
 )
 RETURNS text AS $$
   DECLARE
-    _targetLength int := targetLength::int;
+    _targetLength int;
+    _trunc boolean;
     val_length int;
     pad_length int;
   BEGIN
-    IF targetLength IS NULL OR padChar IS NULL THEN
-      --RAISE EXCEPTION 'targetLength or padChar is NULL';
-      RAISE NOTICE 'targetLength or padChar is NULL';
-    ELSIF TT_Length(padChar) != 1 THEN
-      --RAISE EXCEPTION 'padChar length is not 1';
-      RAISE NOTICE 'padChar length is not 1';
-    ELSE
-      val_length = TT_Length(val);
-      pad_length = _targetLength - val_length;
-      IF pad_length > 0 THEN
-        RETURN concat_ws('', repeat(padChar,pad_length), val);
-      ELSE
-        RETURN substring(val from 1 for _targetLength);
-      END IF;
+    PERFORM TT_ValidateParams('TT_Pad',
+                              ARRAY['targetLength', targetLength, 'int',
+                                    'padChar', padChar, 'char',
+                                    'trunc', trunc, 'boolean']);
+    _targetLength = targetLength::int;
+    _trunc = trunc::boolean;
+    
+    IF _targetLength < 0 THEN
+      RAISE EXCEPTION 'ERROR in TT_Pad(): targetLength is smaller than 0';
     END IF;
+    
+    pad_length = _targetLength - TT_Length(val);
+    IF pad_length > 0 THEN
+      RETURN concat_ws('', repeat(padChar, pad_length), val);
+    END IF;
+    IF _trunc THEN
+      RETURN substring(val from 1 for _targetLength);
+    END IF;
+    RETURN val;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
-  targetLength text
+  targetLength text,
+  padChar text
 )
 RETURNS text AS $$
-  SELECT TT_Pad(val, targetLength, 'x'::text)
+  SELECT TT_Pad(val, targetLength, padChar, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1173,7 +1293,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Concat
 --
 --  val text - comma separated string of strings to concatenate
---  sep text  - Separator (e.g. '_'). If no sep required use '' as second argument.
+--  sep text - Separator (e.g. '_'). If no sep required use '' as second argument.
 --
 -- Return the concatenated value.
 -- e.g. TT_Concat('a,b,c', '-')
@@ -1184,12 +1304,10 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 )
 RETURNS text AS $$
   BEGIN
-    IF sep is NULL THEN
-      --RAISE EXCEPTION 'sep is null';
-      RAISE NOTICE 'sep is null';
-    ELSE
-      RETURN array_to_string(string_to_array(replace(val,' ',''), ','), sep);
-    END IF;
+    PERFORM TT_ValidateParams('TT_Concat',
+                              ARRAY['sep', sep, 'text']);
+
+    RETURN array_to_string(string_to_array(replace(val, ' ', ''), ','), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1230,14 +1348,11 @@ RETURNS text AS $$
     _includeEmpty boolean := includeEmpty::boolean;
   BEGIN
     IF length IS NULL THEN
-      --RAISE EXCEPTION 'length is null';
-      RAISE NOTICE 'length is null';
+      RAISE NOTICE 'length is NULL';
     ELSIF pad IS NULL THEN
-      --RAISE EXCEPTION 'pad is null';
-      RAISE NOTICE 'pad is null';
+      RAISE NOTICE 'pad is NULL';
     ELSIF sep is NULL THEN
-      --RAISE EXCEPTION 'sep is null';
-      RAISE NOTICE 'sep is null';
+      RAISE NOTICE 'sep is NULL';
     END IF;
 
     IF _upperCase = TRUE THEN
@@ -1251,7 +1366,6 @@ RETURNS text AS $$
 
     -- check length of _vals, _lengths, and _pads match
     IF (array_length(_vals,1) != array_length(_lengths,1)) OR (array_length(_vals,1) != array_length(_pads,1)) THEN
-      --RAISE EXCEPTION 'number of val, length and pad elments do not match';
       RAISE NOTICE 'number of val, length and pad elments do not match';
     END IF;
 
@@ -1259,10 +1373,8 @@ RETURNS text AS $$
     _result = '';
     FOR i IN 1..array_length(_vals,1) LOOP
       IF _lengths[i] = '' THEN
-        --RAISE EXCEPTION 'length is empty';
         RAISE NOTICE 'length is empty';
       ELSIF _pads[i] = '' THEN
-        --RAISE EXCEPTION 'pad is empty';
         RAISE NOTICE 'pad is empty';
       ELSIF _vals[i] = '' AND _includeEmpty = FALSE THEN 
         -- do nothing
@@ -1298,10 +1410,8 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NothingText()
 RETURNS text AS $$
-  BEGIN
-    RETURN NULL;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+    SELECT NULL;
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
@@ -1315,10 +1425,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NothingDouble()
 RETURNS double precision AS $$
-  BEGIN
-    RETURN NULL;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+    SELECT NULL::double precision;
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
@@ -1332,10 +1440,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NothingInt()
 RETURNS int AS $$
-  BEGIN
-    RETURN NULL;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
+    SELECT NULL::int;
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 
@@ -1363,66 +1469,92 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   intersectTableName text,
   geoCol text,
   returnCol text,
-  method text
+  method text,
+  callerFctName text
 )
 RETURNS text AS $$
   DECLARE
-    _intersectSchemaName name := intersectSchemaName::name;
-    _intersectTableName name := intersectTableName::name;
+    _intersectSchemaName name;
+    _intersectTableName name;
     count int;
-    _the_geom geometry := the_geom::geometry;
+    _the_geom geometry;
   BEGIN
-    IF the_geom IS NULL THEN
-      --RAISE EXCEPTION 'geometry is NULL';
-      RAISE NOTICE 'geometry is NULL';
-    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-    ELSIF NOT method = any('{"methodArea","methodLowest","methodHighest"}') OR method IS NULL THEN
-      --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
-      RAISE NOTICE 'method not one of: "methodArea", "methodLowest", or "methodHighest"';
-    ELSE
-      -- make geo valid if not
-      IF NOT ST_IsValid(_the_geom) THEN
-        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
-          _the_geom = ST_MakeValid(_the_geom);
-        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
-          _the_geom = ST_Buffer(_the_geom, 0);
-        ELSE
-          --RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
-          RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
-        END IF;
+    PERFORM TT_ValidateParams(callerFctName,
+                              ARRAY['intersectSchemaName', intersectSchemaName, 'text',
+                                    'intersectTableName', intersectTableName, 'text',
+                                    'geoCol', geoCol, 'text',
+                                    'returnCol', returnCol, 'text',
+                                    'method', method, 'text']);
+    _intersectSchemaName = intersectSchemaName::name;
+    _intersectTableName = intersectTableName::name;
+
+    IF NOT method = any('{"methodArea","methodLowest","methodHighest"}') THEN
+      RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "methodArea", "methodLowest", or "methodHighest"';
+    ELSIF NOT TT_IsGeometry(the_geom) THEN
+      RETURN NULL;
+    END IF;
+    _the_geom = the_geom::geometry;
+    
+    -- make geo valid if not
+    IF NOT ST_IsValid(_the_geom) THEN
+      IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
+        _the_geom = ST_MakeValid(_the_geom);
+      ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
+        _the_geom = ST_Buffer(_the_geom, 0);
+      ELSE
+        RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
       END IF;
+    END IF;
 
-      -- get table of returnCol values and intersecting areas for all intersecting polygons
-      -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
-      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
-      FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
-      ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
+    -- get table of returnCol values and intersecting areas for all intersecting polygons
+    -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
+    EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
+    FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
+    ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
 
-      EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
+    EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
 
-      -- return value based on count and method
-      IF count = 0 THEN
-        --RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
-        RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
-      ELSIF count = 1 THEN
-        -- return the value
-        RETURN return_value FROM int_temp;
-      ELSIF count > 1 AND method = 'methodArea' THEN
-        -- return val from intersect with largest area
-        RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-      ELSIF count > 1 AND method = 'methodLowest' THEN
-        -- return lowest val
-        RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-      ELSIF count > 1 AND method = 'methodHighest' THEN
-        -- return highest val
-        RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
-      END IF;
+    -- return value based on count and method
+    IF count = 0 THEN
+      RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
+      RETURN NULL;
+    ELSIF count = 1 THEN
+      -- return the value
+      RETURN return_value FROM int_temp;
+    ELSIF count > 1 AND method = 'methodArea' THEN
+      -- return val from intersect with largest area
+      RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
+    ELSIF count > 1 AND method = 'methodLowest' THEN
+      -- return lowest val
+      RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
+    ELSIF count > 1 AND method = 'methodHighest' THEN
+      -- return highest val
+      RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
+  the_geom text,
+  intersectSchemaName text,
+  intersectTableName text,
+  geoCol text,
+  returnCol text,
+  method text
+)
+RETURNS text AS $$
+  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionText')
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
+  the_geom text,
+  intersectTableName text,
+  returnCol text,
+  method text
+)
+RETURNS text AS $$
+  SELECT TT_GeoIntersectionText(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1439,64 +1571,18 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   method text
 )
 RETURNS double precision AS $$
-  DECLARE
-    _intersectSchemaName name := intersectSchemaName::name;
-    _intersectTableName name := intersectTableName::name;
-    count int;
-    _the_geom geometry := the_geom::geometry;
-  BEGIN
-    IF the_geom IS NULL THEN
-      --RAISE EXCEPTION 'geometry is NULL';
-      RAISE NOTICE 'geometry is NULL';
-    ELSIF intersectSchemaName IS NULL OR intersectTableName IS NULL OR geoCol IS NULL OR returnCol IS NULL THEN
-      --RAISE EXCEPTION 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-      RAISE NOTICE 'intersectSchemaName or intersectTableName or geoCol or returnCol is NULL';
-    ELSIF NOT method = any('{"methodArea","methodLowest","methodHighest"}') OR method IS NULL THEN
-      --RAISE EXCEPTION 'method not one of: "area", "lowestVal", or "highestVal"';
-      RAISE NOTICE 'method not one of: "methodArea", "methodLowest", or "methodHighest"';
-    ELSE
+  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionDouble')::double precision;
+$$ LANGUAGE sql VOLATILE;
 
-      -- make geo valid if not
-      IF NOT ST_IsValid(_the_geom) THEN
-        IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
-          _the_geom = ST_MakeValid(_the_geom);
-        ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
-          _the_geom = ST_Buffer(_the_geom, 0);
-        ELSE
-          --RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
-          RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
-        END IF;
-      END IF;
-
-      -- get table of returnCol values and intersecting areas for all intersecting polygons
-      -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
-      EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
-      FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
-      ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
-
-      EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
-
-      -- return value based on count and method
-      IF count = 0 THEN
-        --RAISE EXCEPTION 'No intersecting polygons for geometry: %', the_geom;
-        RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
-      ELSIF count = 1 THEN
-        -- return the value
-        RETURN return_value FROM int_temp;
-      ELSIF count > 1 AND method = 'methodArea' THEN
-        -- return val from intersect with largest area
-        RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-      ELSIF count > 1 AND method = 'methodLowest' THEN
-        -- return lowest val
-        RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-      ELSIF count > 1 AND method = 'methodHighest' THEN
-        -- return highest val
-        RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
-      END IF;
-    END IF;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
-
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
+  the_geom text,
+  intersectTableName text,
+  returnCol text,
+  method text
+)
+RETURNS double precision AS $$
+  SELECT TT_GeoIntersectionDouble(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1513,9 +1599,18 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   method text
 )
 RETURNS integer AS $$
-  SELECT TT_GeoIntersectionDouble(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method)::int;
+  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionInt')::int;
 $$ LANGUAGE sql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
+  the_geom text,
+  intersectTableName text,
+  returnCol text,
+  method text
+)
+RETURNS int AS $$
+  SELECT TT_GeoIntersectionInt(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1537,13 +1632,14 @@ CREATE OR REPLACE FUNCTION TT_GeoMakeValid(
 )
 RETURNS geometry AS $$
   DECLARE
-    _the_geom geometry := the_geom::geometry;
+    _the_geom geometry;
     _the_geom_makeValid geometry;
     _the_geom_buffer geometry;
   BEGIN
-    IF the_geom IS NULL THEN
-      RAISE NOTICE 'geometry is NULL';
+    IF NOT TT_IsGeometry(the_geom) THEN
+      RETURN NULL;
     END IF;
+    _the_geom = the_geom::geometry;
 
     -- if already valid, return the geometry
     IF ST_IsValid(_the_geom) THEN 

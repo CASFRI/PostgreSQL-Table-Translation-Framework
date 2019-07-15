@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -276,17 +276,15 @@ RETURNS anyelement AS $$
 
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
 
-    IF checkExistence = TRUE THEN
-      -- if function has no args, pass 0 to TT_TextFctExists using coalesce.
-      IF fctName IS NULL OR NOT TT_TextFctExists(fctName, coalesce(cardinality(args),0)) OR vals IS NULL THEN
+    IF checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)) OR vals IS NULL) THEN
         IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-        RAISE EXCEPTION 'TT_TextFctEval FUNCTION %(%) DOES NOT EXIST', fctName, left(repeat('text,',coalesce(cardinality(args),0)), char_length(repeat('text,',coalesce(cardinality(args),0)))-1);
+        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, left(repeat('text,', coalesce(cardinality(args), 0)), char_length(repeat('text,', coalesce(cardinality(args), 0))) - 1);
       END IF;
     END IF;
 
-    ruleQuery = 'SELECT TT_' || fctName || '(';
+    ruleQuery = 'SELECT tt_' || fctName || '(';
     IF NOT args IS NULL THEN
-      -- Search for any argument names in the provided value jsonb object
+      -- Search if any argument match names in the provided value jsonb object
       FOREACH arg IN ARRAY args LOOP
         IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
 
@@ -557,10 +555,9 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
         -- check function exists
         IF checkExistence THEN
 		      IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
-		      IF rule.fctName IS NULL OR NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args),0)) THEN
-            RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,',coalesce(cardinality(rule.args),0)), char_length(repeat('text,',coalesce(cardinality(rule.args),0)))-1);
+        IF checkExistence AND NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
+            RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,', coalesce(cardinality(rule.args), 0)), char_length(repeat('text,', coalesce(cardinality(rule.args), 0))) - 1);
           END IF;
-		    END IF;
 
         -- check error code is not null
         IF rule.errorcode IS NULL OR rule.errorcode = '' THEN
@@ -581,10 +578,9 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       -- check translation function exists
       IF checkExistence THEN
 	      IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
-	      IF translationRule.fctName IS NULL OR NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
-            RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,',coalesce(cardinality(translationRule.args),0)), char_length(repeat('text,',coalesce(cardinality(translationRule.args),0)))-1), row.rule_id;
+      IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
+          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,', coalesce(cardinality(translationRule.args), 0)), char_length(repeat('text,', coalesce(cardinality(translationRule.args), 0)))-1), row.rule_id;
         END IF;
-      END IF;
 
       -- check translation rule return type matches target attribute type
       IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) = targetAttributeType THEN
@@ -765,21 +761,10 @@ RETURNS SETOF RECORD AS $$
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
 
-           -- catch all errors and return generic error code if translation fails
-           BEGIN
              EXECUTE query
              USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
              IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
-           EXCEPTION WHEN OTHERS THEN
-             RAISE NOTICE 'TRANSLATION_ERROR';
-             IF translationrow.targetAttributeType IN ('text','char','character','varchar','character varying') THEN
-               finalVal = 'TRANSLATION_ERROR';
-             ELSE
-               finalVal = -3333;
-             END IF;
-           END;
-		   
-		   -- if helper function returns a NULL, change it to the generic translation error
+           
 		   IF finalVal IS NULL THEN
 		     IF translationrow.targetAttributeType IN ('text','char','character','varchar','character varying') THEN
                finalVal = 'TRANSLATION_ERROR';

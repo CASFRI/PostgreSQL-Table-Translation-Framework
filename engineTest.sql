@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -51,7 +51,7 @@ SELECT '1' rule_id,
        'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules
+       'TRUE' descUpToDateWithRules;
 
 SELECT TT_Prepare('test_translationtable');
 -------------------------------------------------------------------------------
@@ -61,14 +61,14 @@ SELECT TT_Prepare('test_translationtable');
 CREATE OR REPLACE FUNCTION TT_IsError(
   functionString text
 )
-RETURNS boolean AS $$
+RETURNS text AS $$
   DECLARE
     result boolean;
   BEGIN
     EXECUTE functionString INTO result;
-    RETURN FALSE;
+    RETURN 'FALSE';
   EXCEPTION WHEN OTHERS THEN
-    RETURN TRUE;
+    RETURN SQLERRM;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------------------------- 
@@ -164,7 +164,7 @@ WITH test_nb AS (
     SELECT 'TT_FullFunctionName'::text,              2,          5         UNION ALL
     SELECT 'TT_ParseArgs'::text,                     3,         18         UNION ALL
     SELECT 'TT_ParseRules'::text,                    4,          9         UNION ALL
-    SELECT 'TT_ValidateTTable'::text,                5,          4         UNION ALL
+    SELECT 'TT_ValidateTTable'::text,                5,          5         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          2         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
@@ -451,9 +451,7 @@ UNION ALL
 SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
-        TT_IsError('array_agg(rec)::text = 
-''{"(CROWN CLOSURE UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}'' passed
-FROM (SELECT TT_ValidateTTable(''public'', ''test_translationtable2'') rec) foo')
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name is invalid.' passed
 ---------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
@@ -515,25 +513,25 @@ UNION ALL
 SELECT '9.2'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic NULLs'::text description,
-        TT_Iserror('TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') IS TRUE passed
+        TT_Iserror('SELECT TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') = 'query string argument of EXECUTE is null' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.3'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong fonction name'::text description,
-        TT_Iserror('TT_TextFctEval(''xbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
+        TT_Iserror('SELECT TT_TextFctEval(''xbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE : Helper function xbetween(text,text,text) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_IsError('TT_TextFctEval(''between'', ''{\{crown_closure\}, 0, ''b''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
+        TT_IsError('SELECT TT_TextFctEval(''between'', ''{\{crown_closure\}, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_Between(): max is not a numeric value' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_IsError('TT_TextFctEval(''between'', ''{\{crown_closureX\}, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') IS TRUE passed
+        TT_TextFctEval('between', '{\{crown_closureX\}, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
