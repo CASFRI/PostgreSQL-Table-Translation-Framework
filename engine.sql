@@ -301,9 +301,12 @@ RETURNS anyelement AS $$
 	        ruleQueryNested = '''';
 	        FOREACH argNested in ARRAY argsNested LOOP
 	          IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
+            IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
+              -- if STRING, return string
+	            IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+	            ruleQueryNested = ruleQueryNested || btrim(btrim(argNested,''''),'"') || ',';
 	          -- if arg is column name, return column value.
-	          -- note: substring call gets colname from between {}
-	          IF argNested ~ '^[^''"][-_\w\s]*' THEN -- If COLUMN NAME
+	          ELSE -- If COLUMN NAME
 	            IF vals ? argNested THEN 
                 argValNested = vals->>argNested;
 	              IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
@@ -316,36 +319,32 @@ RETURNS anyelement AS $$
                 -- if column name not in source table, return as string.
                 ruleQueryNested = ruleQueryNested || argNested || ',';
               END IF;
-            ELSE
-              -- if STRING, return string
-	            IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-	            ruleQueryNested = ruleQueryNested || btrim(btrim(argNested,''''),'"') || ',';
 	          END IF;
 	        END LOOP;
 	        -- remove the last comma and space, and cast string to text
 	        ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
 
-  	      ------ process strings ------
-	        ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN --if STRING
-	          IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-	          ruleQuery = ruleQuery || '''' || btrim(btrim(arg,''''),'"') || '''::text, ';
+  	    ------ process strings ------
+	      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
+	        IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+	        ruleQuery = ruleQuery || '''' || btrim(btrim(arg,''''),'"') || '''::text, ';
 	  
-          ------ process column names ------
-          ELSIF arg ~ '^[^''"][-_\w\s]*' THEN -- if COLUMN NAME
-            IF vals ? arg THEN -- ...and colname in vals
-              argVal = vals->>arg; 
-              IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
-              IF argVal IS NULL THEN
-                ruleQuery = ruleQuery || 'NULL::text' || ', ';
-              ELSE
-                ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
-              END IF;
+        ------ process column names ------
+        ELSE -- if COLUMN NAME
+          IF vals ? arg THEN -- ...and colname in vals
+            argVal = vals->>arg; 
+            IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argVal=%', argVal;END IF;
+            IF argVal IS NULL THEN
+              ruleQuery = ruleQuery || 'NULL::text' || ', ';
             ELSE
-              -- if column name not in source table, return as string.
-              ruleQuery = ruleQuery || '''' || arg || '''::text, ';
+              ruleQuery = ruleQuery || '''' || argVal || '''::text, ';
             END IF;
-            IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
+          ELSE
+            -- if column name not in source table, return as string.
+            ruleQuery = ruleQuery || '''' || arg || '''::text, ';
           END IF;
+          IF debug THEN RAISE NOTICE 'TT_TextFctEval 44 ruleQuery=%', ruleQuery;END IF;
+        END IF;
       END LOOP;
       
       -- Remove the last comma.
