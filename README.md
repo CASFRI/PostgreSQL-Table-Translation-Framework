@@ -195,7 +195,7 @@ Helper functions are generally called with the names of the source value attribu
 
 If multiple validation helper functions are provided, they will run in order from left to right. Multiple validations can therefore be used to test for example, that a value is an integer, before testing whether it falls between two other values.
 
-One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt).
+One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
 ## Validation Functions
 
