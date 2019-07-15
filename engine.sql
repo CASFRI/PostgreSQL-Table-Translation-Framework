@@ -436,22 +436,24 @@ RETURNS text[] AS $$
         -- ?:\\'' - makes a non-capturing match. The match for \' is not reported.
       -- "[^"]+" - double quotes surrounding anything except double quotes. No need to escape single quotes here.
       -- {[^}]+} - anything inside curly brackets. [^}] makes it not greedy so it will match multiple lists
-    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+})', 'g') LOOP
+      -- ""|'''' - empty strings
+    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+}|""|'''')', 'g') LOOP
 
-      arg = array_to_string(args,'');
+      arg = args[1];
       IF arg ~ '{.+}' THEN -- LIST - anything surrounded with {}
         --RAISE NOTICE 'LIST: %', arg;
         -- Feed the contents of {} into TT_ParseStringList as string.
         -- TT_ParseStringList returns array, convert that to a string and pad with {}, then add to result array.
         result = array_append(result, '{' || array_to_string(TT_ParseStringList(btrim(arg,'{}')),',') || '}');
 
-      ELSIF arg ~ '^[^''"][-_\w\s]*' THEN --COLUMN - doesn't start with ' or " and is word with spaces allowed
-        --RAISE NOTICE 'COLUMN NAME: %', arg;
-        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
-        result = array_append(result, arg);
-
-      ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN -- STRING - surrounded by '' or ""
+      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- STRING surrounded by '' or "", or empty string
         --RAISE NOTICE 'STRING: %', arg;
+        result = array_append(result, arg);
+        
+      ELSE --COLUMN - doesn't start with ' or " and is word with spaces allowed
+        --RAISE NOTICE 'COLUMN NAME: %', arg;
+        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;END IF; -- check valid column name
+        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
         result = array_append(result, arg);
       END IF;
     END LOOP;
@@ -471,15 +473,17 @@ RETURNS text[] AS $$
     arg text;
     result text[] = '{}';
   BEGIN
-    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+")', 'g') LOOP
+    FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|""|'''')', 'g') LOOP
 
       arg = array_to_string(args,'');
-      IF arg ~ '^[^''"][-_\w\s]*' THEN --doesn't start with ' or " and is word with spaces allowed
-        --RAISE NOTICE 'COLUMN NAME: %', arg;
-        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
-        result = array_append(result, arg);
-      ELSIF arg ~ '''[^'']+''|"[^"]+"' THEN
+      IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN
         --RAISE NOTICE 'STRING: %', arg;
+        result = array_append(result, arg);
+      ELSE 
+        --test if valid column name - doesn't start with ' or " and is word with spaces allowed
+        --RAISE NOTICE 'COLUMN NAME: %', arg;
+        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;END IF; -- check valid column name
+        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
         result = array_append(result, arg);
       END IF;
     END LOOP;
