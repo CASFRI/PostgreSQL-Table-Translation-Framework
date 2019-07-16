@@ -181,7 +181,7 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
 ```
 
-# Helper function syntax
+# Helper Function Syntax
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If multiple validation helper functions are provided they should be seperated by semi colons, they will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translationRules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table.
