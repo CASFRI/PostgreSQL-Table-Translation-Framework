@@ -112,6 +112,30 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_DropAllTranslateFct
+--
+--   RETURNS SETOF text     - All DROPed query executed.
+--
+-- DROP all functions starting with 'TT_Translate' (case insensitive).
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
+CREATE OR REPLACE FUNCTION TT_DropAllTranslateFct(
+)
+RETURNS SETOF text AS $$
+  DECLARE
+    res RECORD;
+  BEGIN
+    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text query
+               FROM pg_proc WHERE left(proname, 12) = 'tt_translate' AND pg_function_is_visible(oid) LOOP
+      EXECUTE res.query;
+      RETURN NEXT res.query;
+    END LOOP;
+  RETURN;
+END
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_TextFctExist
 --
 --   schemaName name,
@@ -149,7 +173,7 @@ RETURNS boolean AS $$
 
     SELECT count(*)
     FROM pg_proc
-    WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
+    WHERE proname = fctName AND coalesce(cardinality(proargnames), 0) = argLength
     INTO cnt;
 
     IF cnt > 0 THEN
@@ -202,7 +226,7 @@ RETURNS text AS $$
 
       SELECT pg_catalog.pg_get_function_result(oid)
       FROM pg_proc
-      WHERE proname = fctName AND coalesce(cardinality(proargnames),0) = argLength
+      WHERE proname = fctName AND coalesce(cardinality(proargnames), 0) = argLength
       INTO result;
 
       IF debug THEN RAISE NOTICE 'TT_TextFctReturnType END result=%', result;END IF;
@@ -279,7 +303,6 @@ RETURNS anyelement AS $$
     IF checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)) OR vals IS NULL) THEN
         IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
         RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, left(repeat('text,', coalesce(cardinality(args), 0)), char_length(repeat('text,', coalesce(cardinality(args), 0))) - 1);
-      END IF;
     END IF;
 
     ruleQuery = 'SELECT tt_' || fctName || '(';
@@ -289,44 +312,44 @@ RETURNS anyelement AS $$
         IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
 
         ------ process lists of arguments ------
-	      -- Unpack the string from list, get the string or column values, re-pack into comma separated string 
-	      IF arg ~ '{.+}' THEN -- If LIST
-	        -- split string to array after removing {}
+        -- Unpack the string from list, get the string or column values, re-pack into comma separated string 
+        IF arg ~ '{.+}' THEN -- If LIST
+          -- split string to array after removing {}
           argsNested = TT_ParseStringList(btrim(arg, '{}')); -- trim {} and return parsed arguments as array
-	        IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
+          IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
 
-	        -- loop through array, get values, add to new string (ruleQueryNested)
-	        ruleQueryNested = '''';
-	        FOREACH argNested in ARRAY argsNested LOOP
-	          IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
+          -- loop through array, get values, add to new string (ruleQueryNested)
+          ruleQueryNested = '''';
+          FOREACH argNested in ARRAY argsNested LOOP
+            IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
             IF argNested ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
               -- if STRING, return string
-	            IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-	            ruleQueryNested = ruleQueryNested || btrim(btrim(argNested,''''),'"') || ',';
-	          -- if arg is column name, return column value.
-	          ELSE -- If COLUMN NAME
-	            IF vals ? argNested THEN 
+              IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+              ruleQueryNested = ruleQueryNested || btrim(btrim(argNested, ''''), '"') || ',';
+            -- if arg is column name, return column value.
+            ELSE -- If COLUMN NAME
+              IF vals ? argNested THEN 
                 argValNested = vals->>argNested;
-	              IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
-	              IF argValNested IS NULL THEN
-		              ruleQueryNested = ruleQueryNested || 'NULL' || ',';
-	              ELSE
-		              ruleQueryNested = ruleQueryNested || argValNested || ',';
+                IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
+                IF argValNested IS NULL THEN
+                  ruleQueryNested = ruleQueryNested || 'NULL' || ',';
+                ELSE
+                  ruleQueryNested = ruleQueryNested || argValNested || ',';
                 END IF;
               ELSE
                 -- if column name not in source table, return as string.
                 ruleQueryNested = ruleQueryNested || argNested || ',';
               END IF;
-	          END IF;
-	        END LOOP;
-	        -- remove the last comma and space, and cast string to text
-	        ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
+            END IF;
+          END LOOP;
+          -- remove the last comma and space, and cast string to text
+          ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '''::text, ';
 
-  	    ------ process strings ------
-	      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
-	        IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-	        ruleQuery = ruleQuery || '''' || btrim(btrim(arg,''''),'"') || '''::text, ';
-	  
+        ------ process strings ------
+        ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
+          IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
+          ruleQuery = ruleQuery || '''' || btrim(btrim(arg, ''''),'"') || '''::text, ';
+    
         ------ process column names ------
         ELSE -- if COLUMN NAME
           IF vals ? arg THEN -- ...and colname in vals
@@ -355,30 +378,6 @@ RETURNS anyelement AS $$
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_DropAllTranslateFct
---
---   RETURNS SETOF text     - All DROPed query executed.
---
--- DROP all functions starting with 'TT_Translate' (case insensitive).
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
-CREATE OR REPLACE FUNCTION TT_DropAllTranslateFct(
-)
-RETURNS SETOF text AS $$
-  DECLARE
-    res RECORD;
-  BEGIN
-    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text query
-               FROM pg_proc WHERE left(proname, 12) = 'tt_translate' AND pg_function_is_visible(oid) LOOP
-      EXECUTE res.query;
-      RETURN NEXT res.query;
-    END LOOP;
-  RETURN;
-END
-$$ LANGUAGE plpgsql;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -417,22 +416,33 @@ RETURNS text[] AS $$
       -- {[^}]+} - anything inside curly brackets. [^}] makes it not greedy so it will match multiple lists
       -- ""|'''' - empty strings
     FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+}|""|'''')', 'g') LOOP
-
       arg = args[1];
-      IF arg ~ '{.+}' THEN -- LIST - anything surrounded with {}
+      
+      -- LIST - anything surrounded with {}
+      IF arg ~ '{.+}' THEN 
         --RAISE NOTICE 'LIST: %', arg;
         -- Feed the contents of {} into TT_ParseStringList as string.
         -- TT_ParseStringList returns array, convert that to a string and pad with {}, then add to result array.
-        result = array_append(result, '{' || array_to_string(TT_ParseStringList(btrim(arg,'{}')),',') || '}');
-
-      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- STRING surrounded by '' or "", or empty string
+        result = array_append(result, '{' || array_to_string(TT_ParseStringList(btrim(arg, '{}')), ',') || '}');
+      
+      -- STRING surrounded by '' or "", or empty string
+      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN 
         --RAISE NOTICE 'STRING: %', arg;
         result = array_append(result, arg);
-        
-      ELSE --COLUMN - doesn't start with ' or " and is word with spaces allowed
+      
+      --COLUMN - doesn't start with ' or " and is word with spaces allowed
+      ELSE 
         --RAISE NOTICE 'COLUMN NAME: %', arg;
-        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;END IF; -- check valid column name
-        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
+        -- check valid column name
+        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN 
+          RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;
+        END IF;
+        
+        -- check no spaces
+        IF arg ~ '\s' THEN 
+          RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;
+        END IF;
+        
         result = array_append(result, arg);
       END IF;
     END LOOP;
@@ -465,7 +475,7 @@ RETURNS text[] AS $$
   BEGIN
     FOR args IN SELECT regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|""|'''')', 'g') LOOP
 
-      arg = array_to_string(args,'');
+      arg = array_to_string(args, '');
       IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN
         --RAISE NOTICE 'STRING: %', arg;
         result = array_append(result, arg);
@@ -628,11 +638,10 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       FOREACH rule IN ARRAY validationRules LOOP
 
         -- check function exists
-        IF checkExistence THEN
-		      IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
         IF checkExistence AND NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
             RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,', coalesce(cardinality(rule.args), 0)), char_length(repeat('text,', coalesce(cardinality(rule.args), 0))) - 1);
-          END IF;
+        END IF;
 
         -- check error code is not null
         IF rule.errorcode IS NULL OR rule.errorcode = '' THEN
@@ -651,15 +660,14 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       END LOOP;
 
       -- check translation function exists
-      IF checkExistence THEN
-	      IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
-      IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) THEN
+      IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
+      IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) THEN
           RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,', coalesce(cardinality(translationRule.args), 0)), char_length(repeat('text,', coalesce(cardinality(translationRule.args), 0)))-1), row.rule_id;
-        END IF;
+      END IF;
 
       -- check translation rule return type matches target attribute type
-      IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args),0)) = targetAttributeType THEN
-        RAISE EXCEPTION '% % : Translation table return type (%) does not match translation helper function return type (%).', error_msg_start, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args),0)), row.rule_id;
+      IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
+        RAISE EXCEPTION '% % : Translation table return type (%) does not match translation helper function return type (%).', error_msg_start, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)), row.rule_id;
       END IF;
 
       RETURN NEXT;
@@ -792,15 +800,15 @@ RETURNS SETOF RECORD AS $$
     isValid boolean;
     jsonbRow jsonb;
     debug boolean = TT_Debug();
-	_checkExistence boolean;
+    _checkExistence boolean;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
-	-- Set variable so TT_ValidateTTable only checks for functions on the first row
-	_checkExistence = TRUE;
+    -- Set variable so TT_ValidateTTable only checks for functions on the first row
+    _checkExistence = TRUE;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
 
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
@@ -836,17 +844,17 @@ RETURNS SETOF RECORD AS $$
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
 
-             EXECUTE query
-             USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
-             IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
+           EXECUTE query
+           USING (translationrow.translationRule).fctName, (translationrow.translationRule).args, jsonbRow INTO STRICT finalVal;
+           IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
            
-		   IF finalVal IS NULL THEN
-		     IF translationrow.targetAttributeType IN ('text','char','character','varchar','character varying') THEN
+           IF finalVal IS NULL THEN
+             IF translationrow.targetAttributeType IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
                finalVal = 'TRANSLATION_ERROR';
              ELSE
                finalVal = -3333;
              END IF;
-		   END IF;
+           END IF;
 
          ELSE
            IF debug THEN RAISE NOTICE '_TT_Translate 99 INVALID';END IF;
@@ -854,7 +862,7 @@ RETURNS SETOF RECORD AS $$
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, translationrow.targetAttributeType, finalQuery;END IF;
-		 _checkExistence = FALSE; --only check on first row
+         _checkExistence = FALSE; --only check on first row
        END LOOP;
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);

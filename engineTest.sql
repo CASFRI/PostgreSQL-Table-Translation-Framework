@@ -350,13 +350,13 @@ UNION ALL
 SELECT '3.17'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test comma separated strings and regular strings'::text description,
-        TT_ParseArgs('''str1, str2'', str3') = ARRAY['str1, str2','str3'] passed
+        TT_ParseArgs('''str1, str2'', str3') = ARRAY['str1, str2', 'str3'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.18'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test comma separated colnames and regular colnames'::text description,
-        TT_ParseArgs('''{colA}, {colB}'', {colC}') = ARRAY['{colA}, {colB}','{colC}'] passed
+        TT_ParseArgs('''{colA}, {colB}'', {colC}') = ARRAY['{colA}, {colB}', '{colC}'] passed
 ---------------------------------------------------------
 -- Test 4 - TT_ParseRules
 ---------------------------------------------------------

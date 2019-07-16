@@ -27,7 +27,7 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
   BEGIN
     number = baseNumber;
     function_tested = fctName;
-	-- chaeck that all parameters have an associated type
+    -- check that all parameters have an associated type
     IF array_upper(params, 1) % 2 != 0 THEN
       RAISE EXCEPTION 'ERROR when calling TT_TestNullAndWrongTypeParams(): params ARRAY must have an even number of parameters';
     END IF;
@@ -66,7 +66,7 @@ RAISE NOTICE 'query = %', query;
         query = 'SELECT TT_IsError(''SELECT ' || function_tested || '(''''val'''', ';
         FOR j IN 1..array_upper(params, 1)/2 LOOP
           IF j = i THEN
-		    -- test an invalid value
+            -- test an invalid value
             query = query || CASE WHEN params[(j - 1) * 2 + 2] = 'int' OR params[(j - 1) * 2 + 2] = 'numeric' THEN
                                        '''''1a'''', '
                                   WHEN params[(j - 1) * 2 + 2] = 'char' THEN
@@ -105,7 +105,7 @@ DROP TABLE IF EXISTS test_lookuptable1;
 CREATE TABLE test_lookuptable1 AS
 SELECT 'ACB'::text source_val, 'Popu balb'::text target_val
 UNION ALL
-SELECT '*AX'::text, 'Popu delx'::text	
+SELECT '*AX'::text, 'Popu delx'::text
 UNION ALL
 SELECT 'RA'::text, 'Arbu menz'::text
 UNION ALL
@@ -115,7 +115,7 @@ DROP TABLE IF EXISTS test_lookuptable2;
 CREATE TABLE test_lookuptable2 AS
 SELECT 1::int source_val, 1.1::double precision dblCol
 UNION ALL
-SELECT 2::int, 1.2::double precision	
+SELECT 2::int, 1.2::double precision
 UNION ALL
 SELECT 3::int, 1.3::double precision;
 -----------------------------------------------------------
@@ -123,7 +123,7 @@ DROP TABLE IF EXISTS test_lookuptable3;
 CREATE TABLE test_lookuptable3 AS
 SELECT 1.1::double precision source_val, 1::int intCol
 UNION ALL
-SELECT 1.2::double precision, 2::int	
+SELECT 1.2::double precision, 2::int
 UNION ALL
 SELECT 1.3::double precision, 3::int;
 -----------------------------------------------------------
@@ -131,7 +131,7 @@ DROP TABLE IF EXISTS test_table_with_null;
 CREATE TABLE test_table_with_null AS
 SELECT 'a'::text source_val, 'ACB'::text text_val, 1::int int_val, 1.1::double precision dbl_val, TRUE::boolean bool_val
 UNION ALL
-SELECT 'b'::text, 'AAA'::text, 2::int, 1.2::double precision, TRUE::boolean	
+SELECT 'b'::text, 'AAA'::text, 2::int, 1.2::double precision, TRUE::boolean
 UNION ALL
 SELECT 'c'::text, 'BBB'::text, 3::int, 1.3::double precision, FALSE::boolean
 UNION ALL
@@ -489,10 +489,11 @@ SELECT '5.8'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (8 tests)
-SELECT (TT_TestNullAndWrongTypeParams(6, 'TT_Between', ARRAY['min', 'numeric', 
-															 'max', 'numeric', 
-															 'includeMin', 'boolean', 
-															 'includeMax', 'boolean'])).*
+SELECT (TT_TestNullAndWrongTypeParams(6, 'TT_Between',
+                                      ARRAY['min', 'numeric', 
+                                            'max', 'numeric', 
+                                            'includeMin', 'boolean', 
+                                            'includeMax', 'boolean'])).*
 UNION ALL
 SELECT '6.9'::text number,
        'TT_Between'::text function_tested,
@@ -618,8 +619,9 @@ SELECT '6.28'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_GreaterThan', ARRAY['lowerBound', 'numeric', 
-																 'inclusive', 'boolean'])).*
+SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_GreaterThan', 
+                                      ARRAY['lowerBound', 'numeric', 
+                                            'inclusive', 'boolean'])).*
 UNION ALL
 SELECT '7.5'::text number,
        'TT_GreaterThan'::text function_tested,
@@ -661,8 +663,9 @@ SELECT '7.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_LessThan', ARRAY['upperBound', 'numeric', 
-															  'inclusive', 'boolean'])).*
+SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_LessThan', 
+                                      ARRAY['upperBound', 'numeric', 
+                                            'inclusive', 'boolean'])).*
 UNION ALL
 SELECT '8.5'::text number,
        'TT_LessThan'::text function_tested,
@@ -969,9 +972,9 @@ SELECT '12.3'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(13, 'TT_LookupText', 
-									  ARRAY['lookupSchemaName', 'text',
+                                      ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
-											'lookupCol', 'text',
+                                            'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
 UNION ALL
 SELECT '13.6'::text number,
@@ -1051,9 +1054,9 @@ SELECT '15.5'::text number,
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_Pad', 
-									  ARRAY['targetLength', 'int',
+                                      ARRAY['targetLength', 'int',
                                             'padChar', 'char',
-										    'trunc', 'boolean'])).*
+                                            'trunc', 'boolean'])).*
 UNION ALL
 SELECT '16.5'::text number,
        'TT_Pad'::text function_tested,
@@ -1137,9 +1140,10 @@ SELECT '16.17'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_HasUniqueValues', ARRAY['lookupSchemaName', 'text', 
-																	  'lookupTableName', 'text', 
-																	  'occurrences', 'int'])).*
+SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_HasUniqueValues', 
+                                      ARRAY['lookupSchemaName', 'text', 
+                                            'lookupTableName', 'text', 
+                                            'occurrences', 'int'])).*
 UNION ALL
 SELECT '17.5'::text number,
        'TT_HasUniqueValues'::text function_tested,
@@ -1422,9 +1426,9 @@ SELECT '23.4'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(24, 'TT_LookupDouble', 
-									  ARRAY['lookupSchemaName', 'text',
+                                      ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
-											'lookupCol', 'text',
+                                            'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
 UNION ALL
 SELECT '24.6'::text number,
@@ -1456,9 +1460,9 @@ SELECT '24.9'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(25, 'TT_LookupInt', 
-									  ARRAY['lookupSchemaName', 'text',
+                                      ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
-											'lookupCol', 'text',
+                                            'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
 UNION ALL
 SELECT '25.6'::text number,
@@ -1562,7 +1566,7 @@ SELECT '30.7'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(31, 'TT_GeoIntersectionText', 
-									  ARRAY['intersectSchemaName', 'text',
+                                      ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
                                             'returnCol', 'text',
@@ -1621,7 +1625,7 @@ SELECT '31.13'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(32, 'TT_GeoIntersectionInt', 
-									  ARRAY['intersectSchemaName', 'text',
+                                      ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
                                             'returnCol', 'text',
@@ -1662,7 +1666,7 @@ SELECT '32.10'::text number,
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
 SELECT (TT_TestNullAndWrongTypeParams(33, 'TT_GeoIntersectionDouble', 
-									  ARRAY['intersectSchemaName', 'text',
+                                      ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
                                             'returnCol', 'text',
@@ -1703,7 +1707,7 @@ SELECT '33.10'::text number,
 UNION ALL
 -- test all NULLs and wrong types (3 tests)
 SELECT (TT_TestNullAndWrongTypeParams(34, 'TT_GeoIntersects', 
-									  ARRAY['intersectSchemaName', 'text',
+                                      ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text'])).*
 UNION ALL
@@ -1751,7 +1755,7 @@ SELECT '35.2'::text number,
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(36, 'TT_IsIntSubstring', 
-									  ARRAY['start_char', 'int',
+                                      ARRAY['start_char', 'int',
                                             'for_length', 'int'])).*
 ---------------------------------------------------------
 UNION ALL
