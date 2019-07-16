@@ -66,7 +66,7 @@ Translation tables have one row per target attribute and they must contain these
  2. **targetAttribute** - The name of the target attribute to be created in the target table.
  3. **targetAttributeType** - The data type of the target attribute.
  4. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
- 5. **translationRules** - The translation rules to convert source values to target values.
+ 5. **translationRules** - The translation rule to convert source values to target values.
  6. **description** - A text description of the translation taking place.
  7. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
  
@@ -94,11 +94,9 @@ A textual description of the rules is provided and the flag indicating that the 
 
 | rule_id | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|1        |SPECIES_1        |text                 |notNull({sp1}\|NULL); matchTable({sp1},public,species_lookup\|NOT_IN_SET)|lookupText({sp1}, public, species_lookup, targetSp)|Maps source value to SPECIES_1 using lookup table|TRUE|
-|2        |SPECIES_1_PER    |integer              |notNull({sp1_per}\|-8888); between({sp1_per},0,100\|-9999)|copyInt({sp1_per})|Copies source value to SPECIES_PER_1|TRUE|
-
-The column names of the source table are wrapped in {} (e.g. {sp1}). This tells the engine to retrieve the source value for that column and pass it to the helper function. Conversely, column names for any lookup tables (e.g. targetSp) are expected as strings by the helper function and should not be wrapped in {}.
-
+|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,'public','species_lookup'\|NOT_IN_SET)|lookupText(sp1, 'public', 'species_lookup', 'targetSp')|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,'0','100'\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+ 
 # How to actually translate a source table?
 
 The translation is done in two steps:
@@ -152,15 +150,15 @@ CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
        'SPECIES_1' AS targetAttribute, 
        'text' AS targetAttributeType, 
-       'notNull({sp1}|NULL);matchTable({sp1},public,species_lookup|NOT_IN_SET)' AS validationRules, 
-       'lookupText({sp1}, public, species_lookup, targetSp)' AS translationRules, 
+       'notNull(sp1|NULL);matchTable(sp1,'public','species_lookup'|NOT_IN_SET)' AS validationRules, 
+       'lookupText(sp1, 'public', 'species_lookup', 'targetSp')' AS translationRules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS descUpToDateWithRules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
-          'notNull({sp1_per}|-8888);between({sp1_per},0,100|-9999)', 
-          'copyInt({sp1_per})', 
+          'notNull(sp1_per|-8888);between(sp1_per,'0','100'|-9999)', 
+          'copyInt(sp1_per)', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
 ```
@@ -183,20 +181,41 @@ CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
 ```
 
-# Provided Helper Functions
+# Helper function syntax
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
-Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If the validation fails, an error code is returned, otherwise the translation helper function in the **translationRules** column is run. Translation helper functions take a source value as input and return a translated target value for the target table.
+Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If multiple validation helper functions are provided they should be seperated by semi colons, they will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translationRules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. Helper functions can take arguments in three formats:
-1. Strings - the string is simply passed from the translation table to the helper function. The string is written in the helper function with no quotes (e.g. string1).
-2. Source attribute names - if a column name from the source table is provided, the translation engine will pass the value in that column for the row being processed to the helper function. The source attribute name is identified in the translation table by wrapping it in {} (e.g. {columnA}). If the provided names do not match a column name in the source table, the name is simply passed to the helper function as a string.
-3. Comma separated strings of either string values or source attribute names - some helper functions support a variable number of input parameters by using comma separated strings of values as arguments (e.g. 'col1,col2,col3'). An example is Concat() which concatenates any number of strings together. These are identified in translation tables using single quotes, and can contain any number of comma separated column names ('{colA}, {colB}, {colC}'), string values ('str1, str2, str3'), or a mix of both ('str1, {colB}, str2, str3').
+Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. 
 
-If multiple validation helper functions are provided, they will run in order from left to right. Multiple validations can therefore be used to test for example, that a value is an integer, before testing whether it falls between two other values.
+Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
+1. Strings
+    - Any arguments wrapped in single or double quotes is interpreted by the engine as a string and passed as-is to the helper function.
+    - e.g. CopyText('a string')
+      - this would simply return the string 'a string' for every row in the translation.
+    - Strings can contain any characters, and escaping of single quotes is supported using \\'.
+      - e.g. CopyText('string\\'s')
+    - Empty strings can be passed as arguments using '' or "".
+    - Since helper functions only accept arguments as type text, any numeric or boolean values should also be input as strings. The helper function will convert them to the correct type when it runs (e.g. Between(percent_column, '0', '100', 'TRUE', 'TRUE')).
+2. Source table column names
+    - Any word not wrapped in quotes is interpreted as a column name.
+    - Column names can include "\_" and "-" but no other special characters and no spaces are allowed. Invalid column names stop the engine.
+    - When the engine encounters a valid column name, it searches the source table for that column and returns the corresponding value for the row being processed. This value is then passed as an argument to the helper function.
+    - e.g. CopyText(column_A)
+      - this would return the text value from column_A in the source table for each row being translated.
+    - If the column name is not found as a column in the source table, it is processed as a string.
+    - Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'targetSp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the targetSp column in the public.species_lookup table.
+3. Argument lists
+    - Some helper functions can take a variable number of inputs. Concatenation functions are an example.
+    - Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated list of values wrapped in '{}'.
+    - Argument lists can contain both strings and column names following the rules described above.
+    - e.g. Concat({column_A, column_B, 'joined'}, '-')
+      - the Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
+      - This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
+# Provided Helper Functions
 ## Validation Functions
 
 * **NotNull**(any srcVal)
@@ -339,16 +358,13 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
 
   * **Namespace -** All helper function names must be prefixed with "TT_". This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to the following conventions) can be used. This prefix must not be used when referring to the function in the translation file.
   * **Parameter Types -** All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function). This greatly simplifies the development of helper functions and the parsing and validation of translation files.
-  * **Variable number of parameters -** Helper functions should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog.
+  * **Variable number of parameters -** Helper functions should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog. Note that when passing arguments from the translation table to the helper functions, the engine strips the '{}' from any argument lists. So helper functions of this type need only process the comma separated list of values.
   * **Default value -** Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If signatures with default parameter are required, a separate function signature should be created as a wrapper around the function supporting all the parameters. This is to avoid the hurdle of finding, when validating the translation file, if the function exists in the PostgreSQL catalog.
   * **Polymorphic translation functions -** If a translation helper function must be written to return different types (e.g. int and text), as many different functions with corresponding names must be written (e.g. TT_CopyInt() and TT_CopyText()). The use of the generic "any" PostgreSQL type is forbidden. This ensures that the engine can explicitly know that the translation function returns the correct type.
   * **Error handling -** All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type. This is to avoid badly written translation files. All helper functions (validation and translation) should handle any source data values (always passed as text) without failing. This is to avoid crashing of the engine when translating big source files. 
-  * **Return value -** 1) Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. Error codes are provided in the translation file when source values do not fulfill the validation test. 2) Translation functions must return a specific type. For now only "int", "numeric", "text", "boolean" and "geometry" are supported. If any error happen diring translation, the translation function must return NULL and the engine will translate to the generic "TRANSLATION_ERROR" (-3333) code.
+  * **Return value -** 1) Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. Error codes are provided in the translation file when source values do not fulfill the validation test. 2) Translation functions must return a specific type. For now only "int", "numeric", "text", "boolean" and "geometry" are supported. If any errors happen diring translation, the translation function must return NULL and the engine will translate to the generic "TRANSLATION_ERROR" (-3333) code.
 
 If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper funciton file.
-
-# Known issues
-1. Single quotes in the translation file are not yet allowed.
 
 # Credit
 **Pierre Racine** - Center for forest research, University Laval.
