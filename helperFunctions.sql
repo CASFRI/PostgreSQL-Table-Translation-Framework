@@ -326,7 +326,7 @@ RETURNS boolean AS $$
     IF _min = _max THEN
       RAISE EXCEPTION 'ERROR in TT_Between(): min is equal to max';
     ELSIF _min > _max THEN
-	    RAISE EXCEPTION 'ERROR in TT_Between(): min is greater than max';
+      RAISE EXCEPTION 'ERROR in TT_Between(): min is greater than max';
     END IF;
     
     IF _includeMin = FALSE AND _includeMax = FALSE THEN
@@ -722,7 +722,7 @@ $$ LANGUAGE sql VOLATILE;
 -- e.g. TT_GeoIntersects(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom')
 
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersects(text,text,text,text);
+-- DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text,
   intersectSchemaName text,
@@ -813,7 +813,7 @@ RETURNS boolean AS $$
   BEGIN
     _vals = TT_ParseStringList(val, TRUE);
 
-    FOR i IN 1..array_length(_vals,1) LOOP
+    FOR i IN 1..array_length(_vals, 1) LOOP
       IF _vals[i] IS NOT NULL THEN
         IF replace(_vals[i], ' ', '') != ''::text THEN
           RETURN TRUE;
@@ -1207,7 +1207,7 @@ RETURNS double precision AS $$
     IF val IS NULL THEN
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      RETURN (_targetVals)[array_position(_mapVals,val)];
+      RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
@@ -1270,7 +1270,7 @@ RETURNS int AS $$
     IF val IS NULL THEN
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      RETURN (_targetVals)[array_position(_mapVals,val)];
+      RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
@@ -1386,7 +1386,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- e.g. TT_PadConcatString({'a','b','c'}, {'5','5','5'}, {'x','x','x'}, '-', 'TRUE')
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
+--DROP FUNCTION IF EXISTS TT_PadConcat(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_PadConcat(
   val text,
   length text,
@@ -1432,7 +1432,7 @@ RETURNS text AS $$
     _pads = TT_ParseStringList(pad, TRUE);
 
     -- check length of _vals, _lengths, and _pads match
-    IF (array_length(_vals,1) != array_length(_lengths,1)) OR (array_length(_vals,1) != array_length(_pads,1)) THEN
+    IF (array_length(_vals, 1) != array_length(_lengths, 1)) OR (array_length(_vals, 1) != array_length(_pads, 1)) THEN
       RAISE NOTICE 'number of val, length and pad elments do not match';
     END IF;
 
@@ -1462,7 +1462,7 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
   pad text,
   sep text,
   upperCase text
-)	
+)
 RETURNS text AS $$
   SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
 $$ LANGUAGE sql VOLATILE;
@@ -1531,7 +1531,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'methodArea')
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text,text,text,text,text,text);
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   the_geom text,
   intersectSchemaName text,
@@ -1557,7 +1557,7 @@ RETURNS text AS $$
     _intersectSchemaName = intersectSchemaName::name;
     _intersectTableName = intersectTableName::name;
 
-    IF NOT method = any('{"methodArea","methodLowest","methodHighest"}') THEN
+    IF NOT method = any('{"methodArea", "methodLowest", "methodHighest"}') THEN
       RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "methodArea", "methodLowest", or "methodHighest"';
     ELSIF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
@@ -1630,7 +1630,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_GeoIntersectionDouble
 -- Same as text version but with integer error code
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text,text,text,text,text,text);
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   the_geom text,
   intersectSchemaName text,
@@ -1658,7 +1658,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_GeoIntersectionInt
 -- int wrapper for TT_GeoIntersectionDouble
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text,text,text,text,text,text);
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   the_geom text,
   intersectSchemaName text,
