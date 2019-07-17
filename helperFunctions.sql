@@ -1523,9 +1523,9 @@ $$ LANGUAGE sql VOLATILE;
 -- geoCol text - geometry column from intersect table
 -- returnCol text - column conatining the values to return
 -- method text - intersect method if multiple intersecting polygons (only have area method for text)
---    methodArea - return value from intersecting polygon with largest area
---    methodLowest - return lowest value
---    methodHighest - return highest value
+--    GREATEST_AREA - return value from intersecting polygon with largest area
+--    LOWEST_VALUE - return lowest value
+--    HIGHEST_VALUE - return highest value
 -- 
 -- Return the text value from the intersecting polygon
 --
@@ -1557,8 +1557,8 @@ RETURNS text AS $$
     _intersectSchemaName = intersectSchemaName::name;
     _intersectTableName = intersectTableName::name;
 
-    IF NOT method = any('{"methodArea", "methodLowest", "methodHighest"}') THEN
-      RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "methodArea", "methodLowest", or "methodHighest"';
+    IF NOT method = any('{"GREATEST_AREA", "LOWEST_VALUE", "HIGHEST_VALUE"}') THEN
+      RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"';
     ELSIF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
@@ -1590,13 +1590,13 @@ RETURNS text AS $$
     ELSIF count = 1 THEN
       -- return the value
       RETURN return_value FROM int_temp;
-    ELSIF count > 1 AND method = 'methodArea' THEN
+    ELSIF count > 1 AND method = 'GREATEST_AREA' THEN
       -- return val from intersect with largest area
       RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-    ELSIF count > 1 AND method = 'methodLowest' THEN
+    ELSIF count > 1 AND method = 'LOWEST_VALUE' THEN
       -- return lowest val
       RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-    ELSIF count > 1 AND method = 'methodHighest' THEN
+    ELSIF count > 1 AND method = 'HIGHEST_VALUE' THEN
       -- return highest val
       RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
     END IF;
