@@ -458,7 +458,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_HasUniqueValues
+-- TT_IsUnique
 --
 -- val text - value to test.
 -- lookupSchemaName text - schema name holding lookup table.
@@ -466,9 +466,9 @@ $$ LANGUAGE sql VOLATILE;
 -- occurrences - text defaults to 1
 --
 -- if number of occurences of val in source_val of schema.table equals occurences, return true.
--- e.g. TT_HasUniqueValues('BS', 'public', 'bc08', 1)
+-- e.g. TT_IsUnique('BS', 'public', 'bc08', 1)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
+CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
   lookupSchemaName text,
   lookupTableName text,
@@ -482,7 +482,7 @@ RETURNS boolean AS $$
     query text;
     return boolean;
   BEGIN
-    PERFORM TT_ValidateParams('TT_HasUniqueValues',
+    PERFORM TT_ValidateParams('TT_IsUnique',
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
                                     'lookupTableName', lookupTableName, 'text',
                                     'occurrences', occurrences, 'int']);
@@ -500,21 +500,21 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
+CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
   lookupSchemaName text,
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasUniqueValues(val, lookupSchemaName, lookupTableName, 1::text)
+  SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, 1::text)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_HasUniqueValues(
+CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasUniqueValues(val, 'public', lookupTableName, 1::text)
+  SELECT TT_IsUnique(val, 'public', lookupTableName, 1::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1451,7 +1451,7 @@ RETURNS text AS $$
     END LOOP;
     -- run comma separated string through concat with sep
     _result = left(_result, char_length(_result) - 1) || '}';
-    RAISE NOTICE '%',_result;
+    --RAISE NOTICE '%',_result;
     RETURN TT_Concat(_result, sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -1529,7 +1529,7 @@ $$ LANGUAGE sql VOLATILE;
 -- 
 -- Return the text value from the intersecting polygon
 --
--- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'methodArea')
+-- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'GREATEST_AREA')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(

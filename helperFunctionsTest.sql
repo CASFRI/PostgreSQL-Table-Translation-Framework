@@ -175,7 +175,7 @@ WITH test_nb AS (
     SELECT 'TT_False'::text,                  14,          1         UNION ALL
     SELECT 'TT_Length'::text,                 15,          5         UNION ALL
     SELECT 'TT_Pad'::text,                    16,         17         UNION ALL
-    SELECT 'TT_HasUniqueValues'::text,        17,         14         UNION ALL
+    SELECT 'TT_IsUnique'::text,        17,         14         UNION ALL
     SELECT 'TT_MapText'::text,                18,          6         UNION ALL
     SELECT 'TT_PadConcat'::text,              19,          8         UNION ALL
     SELECT 'TT_CopyDouble'::text,             20,          2         UNION ALL
@@ -1136,97 +1136,97 @@ SELECT '16.17'::text number,
        TT_IsError('SELECT TT_Pad(''aaa''::text, ''-3''::text, ''x''::text)'::text) = 'ERROR in TT_Pad(): targetLength is smaller than 0' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 17 - TT_HasUniqueValues
+-- Test 17 - TT_IsUnique
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_HasUniqueValues', 
+SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_IsUnique', 
                                       ARRAY['lookupSchemaName', 'text', 
                                             'lookupTableName', 'text', 
                                             'occurrences', 'int'])).*
 UNION ALL
 SELECT '17.5'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, text, good value'::text description,
-       TT_HasUniqueValues('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) passed
+       TT_IsUnique('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.6'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, double precision, good value'::text description,
-       TT_HasUniqueValues(1.2::text, 'public'::text, 'test_lookuptable3'::text, 1::text) passed
+       TT_IsUnique(1.2::text, 'public'::text, 'test_lookuptable3'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.7'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, integer, good value'::text description,
-       TT_HasUniqueValues(3::text, 'public'::text, 'test_lookuptable2'::text, 1::text) passed
+       TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.8'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, text, bad value'::text description,
-       TT_HasUniqueValues('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 2::text) IS FALSE passed
+       TT_IsUnique('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.9'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, double precision, bad value'::text description,
-       TT_HasUniqueValues(1.2::text, 'public'::text, 'test_lookuptable3'::text, 2::text) IS FALSE passed
+       TT_IsUnique(1.2::text, 'public'::text, 'test_lookuptable3'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.10'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, integer, bad value'::text description,
-       TT_HasUniqueValues(3::text, 'public'::text, 'test_lookuptable2'::text, 2::text) IS FALSE passed
+       TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.11'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, empty string, good value'::text description,
-       TT_HasUniqueValues(''::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS TRUE passed
+       TT_IsUnique(''::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.12'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Null val, text'::text description,
-       TT_HasUniqueValues(NULL::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
+       TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.13'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Null val, double precision'::text description,
-       TT_HasUniqueValues(NULL::text, 'public'::text, 'test_lookuptable3'::text, 1::text) IS FALSE passed
+       TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable3'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.10'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Null val, int'::text description,
-       TT_HasUniqueValues(NULL::text, 'public'::text, 'test_lookuptable2'::text, 1::text) IS FALSE passed
+       TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable2'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.11'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test default, text'::text description,
-       TT_HasUniqueValues('RA'::text, 'public'::text, 'test_lookuptable1'::text) passed
+       TT_IsUnique('RA'::text, 'public'::text, 'test_lookuptable1'::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.12'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test default, double precision'::text description,
-       TT_HasUniqueValues(1.3::text, 'public'::text, 'test_lookuptable3'::text) passed
+       TT_IsUnique(1.3::text, 'public'::text, 'test_lookuptable3'::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.13'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test default, int'::text description,
-       TT_HasUniqueValues(3::text, 'public'::text, 'test_lookuptable2'::text) passed
+       TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.14'::text number,
-       'TT_HasUniqueValues'::text function_tested,
+       'TT_IsUnique'::text function_tested,
        'Test, text, missing value'::text description,
-       TT_HasUniqueValues('**AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
+       TT_IsUnique('**AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 18 - TT_MapText
