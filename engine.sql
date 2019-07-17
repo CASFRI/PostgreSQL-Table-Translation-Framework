@@ -305,8 +305,8 @@ RETURNS anyelement AS $$
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
 
     IF checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)) OR vals IS NULL) THEN
-        IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, left(repeat('text,', coalesce(cardinality(args), 0)), char_length(repeat('text,', coalesce(cardinality(args), 0))) - 1);
+      IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
+      RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, btrim(repeat('text,', 2),',');
     END IF;
 
     ruleQuery = 'SELECT tt_' || fctName || '(';
@@ -323,7 +323,7 @@ RETURNS anyelement AS $$
           IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
 
           -- loop through array, get values, add to new string (ruleQueryNested)
-          ruleQueryNested = '''';
+          ruleQueryNested = '''{';
           FOREACH argNested in ARRAY argsNested LOOP
             IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
             IF argNested ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
@@ -654,7 +654,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
         -- check function exists
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
         IF checkExistence AND NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
-            RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, left(repeat('text,', coalesce(cardinality(rule.args), 0)), char_length(repeat('text,', coalesce(cardinality(rule.args), 0))) - 1);
+            RAISE EXCEPTION '% % : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
         END IF;
 
         -- check error code is not null
@@ -676,12 +676,12 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       -- check translation function exists
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
       IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) THEN
-          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, translationRule.fctName, left(repeat('text,', coalesce(cardinality(translationRule.args), 0)), char_length(repeat('text,', coalesce(cardinality(translationRule.args), 0)))-1), row.rule_id;
+          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, translationRule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
       END IF;
 
       -- check translation rule return type matches target attribute type
       IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
-        RAISE EXCEPTION '% % : Translation table return type (%) does not match translation helper function return type (%).', error_msg_start, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)), row.rule_id;
+        RAISE EXCEPTION '% % : Translation table return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0));
       END IF;
 
       RETURN NEXT;
