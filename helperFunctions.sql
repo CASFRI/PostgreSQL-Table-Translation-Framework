@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -12,6 +12,21 @@
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+-- Types Definitions...
+-------------------------------------------------------------------------------
+-- Type TT_stringListDef is used for stringList arguments in helper functions.
+-- It needs its own type so it can be validated in TT_ValidateParams as a unique
+-- input argument.
+
+--DROP TYPE IF EXISTS TT_stringListDef;
+CREATE TYPE TT_stringListDef AS (
+  stringList text
+);
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
@@ -20,7 +35,7 @@
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
+
 -- TT_NotNULL
 --
 --  val text - Value to test.
@@ -197,6 +212,27 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsStringList
+--
+-- Return TRUE if val is a string list
+-- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsStringList(
+  val text
+)
+RETURNS boolean AS $$
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF val ~ '{.+}' THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- TT_ValidateParams
 --
 -- Validates parameters.
@@ -220,7 +256,7 @@ RETURNS void AS $$
       paramName = params[(i - 1) * 3 + 1];
       paramVal  = params[(i - 1) * 3 + 2];
       paramType = params[(i - 1) * 3 + 3];
-      IF paramType != 'int' AND paramType != 'numeric' AND paramType != 'text' AND paramType != 'char' AND paramType != 'boolean' THEN
+      IF paramType != 'int' AND paramType != 'numeric' AND paramType != 'text' AND paramType != 'char' AND paramType != 'boolean' AND paramType != 'TT_stringListDef' THEN
         RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "text", "char" or "boolean"', i;
       END IF;
       IF paramVal IS NULL THEN
@@ -234,6 +270,8 @@ RETURNS void AS $$
         RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
       ELSIF paramType = 'char' AND TT_Length(paramVal) != 1 THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
+      ELSIF paramType = 'stringListDef' AND NOT TT_IsStringList(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a stringList value', fctName, paramName;
       END IF;
     END LOOP;
   END;
@@ -548,13 +586,13 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MatchList
 --
--- val text - value to test.
+-- val text (stringList) - value to test.
 -- lst text - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 --
 -- Is val in lst?
 -- val followed by string of test values
--- e.g. TT_Match('a', 'a,b,c')
+-- e.g. TT_Match('a', {'a','b','c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -567,16 +605,16 @@ RETURNS boolean AS $$
     _ignoreCase boolean;
   BEGIN
     PERFORM TT_ValidateParams('TT_MatchList',
-                              ARRAY['lst', lst, 'text',
+                              ARRAY['lst', lst, 'TT_stringListDef',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
     IF val IS NULL THEN
       RETURN FALSE;
     ELSIF _ignoreCase = FALSE THEN
-      _lst = string_to_array(lst, ',');
+      _lst = TT_ParseStringList(lst, TRUE);
       RETURN val = ANY(array_remove(_lst, NULL));
     ELSE
-      _lst = string_to_array(upper(lst), ',');
+      _lst = TT_ParseStringList(upper(lst), TRUE);
       RETURN upper(val) = ANY(array_remove(_lst, NULL));
     END IF;
   END;
@@ -737,6 +775,7 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-- DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text,
   intersectSchemaName text,
@@ -746,6 +785,7 @@ RETURNS boolean AS $$
   SELECT TT_GeoIntersects(the_geom, intersectSchemaName, intersectTableName, 'geom')
 $$ LANGUAGE sql VOLATILE;
 
+-- DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
   the_geom text,
   intersectTableName text
@@ -762,7 +802,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Return TRUE if at least one value is not NULL or empty strings.
 -- Return FALSE if all values are NULL or empty strings.
--- e.g. TT_NotNULLEmptyOr('a,b,c')
+-- e.g. TT_NotNULLEmptyOr({'a','b','c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNULLEmptyOr(
   val text
@@ -771,7 +811,7 @@ RETURNS boolean AS $$
   DECLARE
     _vals text[];
   BEGIN
-    _vals = string_to_array(replace(val,' ',''), ',');
+    _vals = TT_ParseStringList(val, TRUE);
 
     FOR i IN 1..array_length(_vals,1) LOOP
       IF _vals[i] IS NOT NULL THEN
@@ -1069,14 +1109,14 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_MapText
 --
 -- val text - value to test.
--- mapVals text - string list of mapping values
--- targetVals text - string list of target values
+-- mapVals text (stringList) - string list of mapping values
+-- targetVals (stringList) text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return value from targetVals that matches value index in mapVals
 -- Return type is text
 -- Error if val is NULL
--- e.g. TT_Map('A','A,B,C','1,2,3', TRUE)
+-- e.g. TT_Map('A',{'A','B','C'},{'1','2','3'}, 'TRUE')
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapText(
@@ -1089,17 +1129,23 @@ RETURNS text AS $$
   DECLARE
     _mapVals text[];
     _targetVals text[];
-    _ignoreCase boolean := ignoreCase::boolean;
+    _ignoreCase boolean;
   BEGIN
+    PERFORM TT_ValidateParams('TT_MapText',
+                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
+                                    'targetVals', targetVals, 'TT_stringListDef',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _ignoreCase = ignoreCase::boolean;
+
     IF val IS NULL THEN
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      _mapVals = string_to_array(mapVals, ',');
-      _targetVals = string_to_array(targetVals, ',');
+      _mapVals = TT_ParseStringList(mapVals, TRUE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE);
       RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _mapVals = string_to_array(upper(mapVals), ',');
-      _targetVals = string_to_array(targetVals, ',');
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1126,7 +1172,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Return double precision value from targetVals that matches value index in mapVals
 -- Return type is double precision
 -- Error if val is NULL, or if any targetVals elements cannot be cast to double precision, or if val is not in mapVals
--- e.g. TT_Map('A','A,B,C','1.1,2.2,3.3')
+-- e.g. TT_Map('A',{'A','B','C'},{'1.1','2.2','3.3'})
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapDouble(
@@ -1140,10 +1186,15 @@ RETURNS double precision AS $$
     _mapVals text[];
     _targetVals text[];
     _i double precision;
-    _ignoreCase boolean := ignoreCase::boolean;
+    _ignoreCase boolean;
   BEGIN
-    _mapVals = string_to_array(mapVals, ',');
-    _targetVals = string_to_array(targetVals, ',');
+    PERFORM TT_ValidateParams('TT_MapDouble',
+                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
+                                    'targetVals', targetVals, 'TT_stringListDef',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _ignoreCase = ignoreCase::boolean;
+    _mapVals = TT_ParseStringList(mapVals, TRUE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     BEGIN
       FOREACH _i in ARRAY _targetVals LOOP
@@ -1158,7 +1209,7 @@ RETURNS double precision AS $$
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _mapVals = string_to_array(upper(mapVals), ',');
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1185,7 +1236,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Return int value from targetVals that matches value index in mapVals
 -- Return type is int
 -- Error if val is NULL, or if any targetVals elements are not int, or if val is not in mapVals
--- e.g. TT_MapInt('A','A,B,C','1,2,3')
+-- e.g. TT_MapInt('A',{'A','B','C'}, {'1','2','3'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapInt(
   val text,
@@ -1198,10 +1249,15 @@ RETURNS int AS $$
     _mapVals text[];
     _targetVals text[];
     _i int;
-    _ignoreCase boolean := ignoreCase::boolean;
+    _ignoreCase boolean;
   BEGIN
-    _mapVals = string_to_array(mapVals, ',');
-    _targetVals = string_to_array(targetVals, ',');
+    PERFORM TT_ValidateParams('TT_MapInt',
+                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
+                                    'targetVals', targetVals, 'TT_stringListDef',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _ignoreCase = ignoreCase::boolean;
+    _mapVals = TT_ParseStringList(mapVals, TRUE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     BEGIN
       FOREACH _i in ARRAY _targetVals LOOP
@@ -1216,7 +1272,7 @@ RETURNS int AS $$
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _mapVals = string_to_array(upper(mapVals), ',');
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1292,11 +1348,11 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Concat
 --
---  val text - comma separated string of strings to concatenate
+--  val text (stringList) - comma separated string of strings to concatenate
 --  sep text - Separator (e.g. '_'). If no sep required use '' as second argument.
 --
 -- Return the concatenated value.
--- e.g. TT_Concat('a,b,c', '-')
+-- e.g. TT_Concat({'a','b','c'}, '-')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   val text,
@@ -1305,9 +1361,10 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 RETURNS text AS $$
   BEGIN
     PERFORM TT_ValidateParams('TT_Concat',
-                              ARRAY['sep', sep, 'text']);
+                             ARRAY['val', val, 'TT_stringListDef',
+                                   'sep', sep, 'char']);
 
-    RETURN array_to_string(string_to_array(replace(val, ' ', ''), ','), sep);
+    RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1327,7 +1384,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --  Error if number of val, length and pad values not equal.
 --  Error if missing length or pad values
 --
--- e.g. TT_PadConcatString('a,b,c', '5,5,5', 'x,x,x', '-', 'TRUE')
+-- e.g. TT_PadConcatString({'a','b','c'}, {'5','5','5'}, {'x','x','x'}, '-', 'TRUE')
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_PadConcat(text,text,text,text,text,text);
 CREATE OR REPLACE FUNCTION TT_PadConcat(
@@ -1340,13 +1397,23 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
 )
 RETURNS text AS $$
   DECLARE
-    _upperCase boolean := upperCase::boolean;
+    _upperCase boolean;
     _vals text[];
     _lengths text[];
     _pads text[];
     _result text;
-    _includeEmpty boolean := includeEmpty::boolean;
+    _includeEmpty boolean;
   BEGIN
+    PERFORM TT_ValidateParams('TT_PadConcat',
+                              ARRAY['val', val, 'TT_stringListDef',
+                                    'length', length, 'TT_stringListDef',
+                                    'pad', pad, 'TT_stringListDef',
+                                    'sep', sep, 'char',
+                                    'upperCase', upperCase, 'boolean',
+                                    'includeEmpty', includeEmpty, 'boolean']);
+    _upperCase = upperCase::boolean;
+    _includeEmpty = includeEmpty::boolean;
+    
     IF length IS NULL THEN
       RAISE NOTICE 'length is NULL';
     ELSIF pad IS NULL THEN
@@ -1356,13 +1423,13 @@ RETURNS text AS $$
     END IF;
 
     IF _upperCase = TRUE THEN
-      _vals = string_to_array(replace(upper(val),' ',''), ',');
+      _vals = TT_ParseStringList(upper(val), TRUE);
     ELSE
-      _vals = string_to_array(replace(val,' ',''), ',');
+      _vals = TT_ParseStringList(val, TRUE);
     END IF;
 
-    _lengths = string_to_array(replace(length,' ',''), ',');
-    _pads = string_to_array(replace(pad,' ',''), ',');
+    _lengths = TT_ParseStringList(length, TRUE);
+    _pads = TT_ParseStringList(pad, TRUE);
 
     -- check length of _vals, _lengths, and _pads match
     IF (array_length(_vals,1) != array_length(_lengths,1)) OR (array_length(_vals,1) != array_length(_pads,1)) THEN
@@ -1370,7 +1437,7 @@ RETURNS text AS $$
     END IF;
 
     -- for each val in array, pad and merge to comma separated string
-    _result = '';
+    _result = '{';
     FOR i IN 1..array_length(_vals,1) LOOP
       IF _lengths[i] = '' THEN
         RAISE NOTICE 'length is empty';
@@ -1379,11 +1446,13 @@ RETURNS text AS $$
       ELSIF _vals[i] = '' AND _includeEmpty = FALSE THEN 
         -- do nothing
       ELSE
-        _result = _result || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ',';
+        _result = _result || '''' || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ''',';
       END IF;
     END LOOP;
     -- run comma separated string through concat with sep
-    RETURN TT_Concat(left(_result, char_length(_result) - 1), sep);
+    _result = left(_result, char_length(_result) - 1) || '}';
+    RAISE NOTICE '%',_result;
+    RETURN TT_Concat(_result, sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1410,7 +1479,7 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NothingText()
 RETURNS text AS $$
-    SELECT NULL;
+    SELECT NULL::text;
 $$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------

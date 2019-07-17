@@ -15,7 +15,7 @@ DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, i
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
 DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
-DROP FUNCTION IF EXISTS TT_ParseArgs(text);
+DROP FUNCTION IF EXISTS TT_ParseArgs(text, boolean);
 DROP FUNCTION IF EXISTS TT_ParseStringList(text);
 DROP FUNCTION IF EXISTS TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS TT_TextFctEval(text, text[], jsonb, anyelement, boolean);

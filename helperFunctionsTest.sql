@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -1231,37 +1231,37 @@ UNION ALL
 SELECT '18.1'::text number,
        'TT_MapText'::text function_tested,
        'Test text list, text list'::text description,
-       TT_MapText('A'::text, 'A,B,C,D'::text, 'a,b,c,d'::text) = 'a'::text passed
+       TT_MapText('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''a'',''b'',''c'',''d''}'::text) = 'a'::text passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.2'::text number,
        'TT_MapText'::text function_tested,
        'Test double precision list, text list'::text description,
-       TT_MapText(1.1::text, '1.1,1.2,1.3,1.4'::text, 'A,B,C,D'::text) = 'A' passed
+       TT_MapText(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''A'',''B'',''C'',''D''}'::text) = 'A' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.3'::text number,
        'TT_MapText'::text function_tested,
        'Test int list, text list'::text description,
-       TT_MapText(2::text, '1,2,3,4'::text, 'A,B,C,D'::text) = 'B' passed
+       TT_MapText(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''A'',''B'',''C'',''D''}'::text) = 'B' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.4'::text number,
        'TT_MapText'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapText(NULL::text, ''A,B,C,D''::text, ''a,b,c,d''::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_MapText(NULL::text, ''{''A'',''B'',''C'',''D''}''::text, ''{''a'',''b'',''c'',''d''}''::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.5'::text number,
        'TT_MapText'::text function_tested,
        'Test caseIgnore, true'::text description,
-       TT_MapText('a'::text, 'A,B,C,D'::text, 'aa,bb,cc,dd'::text, TRUE::text) = 'aa' passed
+       TT_MapText('a'::text, '{''A'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text, TRUE::text) = 'aa' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '18.6'::text number,
        'TT_MapText'::text function_tested,
        'Test caseIgnore, false'::text description,
-       TT_MapText('a'::text, 'A,B,C,D'::text, 'aa,bb,cc,dd'::text, FALSE::text) IS NULL passed
+       TT_MapText('a'::text, '{''A'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text, FALSE::text) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 19 - TT_PadConcat
@@ -1270,49 +1270,49 @@ UNION ALL
 SELECT '19.1'::text number,
        'TT_PadConcat'::text function_tested,
        'Test with spaces and uppercase'::text description,
-       TT_PadConcat('ab06, GB_S21_TWP, 81145, 811451038, 1', '4, 15, 10, 10, 7', 'x, x, x, 0, 0'::text, '-'::text, TRUE::text) = 'AB06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
+       TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'', ''15'', ''10'', ''10'', ''7''}', '{''x'', ''x'', ''x'', ''0'', ''0''}'::text, '-'::text, TRUE::text) = 'AB06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.2'::text number,
        'TT_PadConcat'::text function_tested,
        'Test without spaces and not uppercase'::text description,
-       TT_PadConcat('ab06, GB_S21_TWP, 81145, 811451038, 1', '4,15,10,10,7', 'x,x,x,0,0'::text, '-'::text, FALSE::text) = 'ab06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
+       TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.3'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value'::text description,
-       TT_PadConcat('ab06, , 81145, 811451038, 1', '4,15,10,10,7', 'x,x,x,0,0'::text, '-'::text, FALSE::text) = 'ab06-xxxxxxxxxxxxxxx-xxxxx81145-0811451038-0000001' passed
+       TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxxxxxxxxxxx-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.4'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty length'::text description,
-       TT_IsError('SELECT TT_PadConcat(''ab06, , 81145, 811451038, 1'', ''4,15,,10,7'', ''x,x,x,0,0''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'','''',''10'',''7''}'', ''{''x'',''x'',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.5'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty pad'::text description,
-       TT_IsError('SELECT TT_PadConcat(''ab06, , 81145, 811451038, 1'', ''4,15,10,10,7'', ''x,,x,0,0''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.6'::text number,
        'TT_PadConcat'::text function_tested,
        'Uneven val, length, pad strings'::text description,
-       TT_IsError('SELECT TT_PadConcat(''ab06, , 81145, 811451038'', ''4,15,10,10,7'', ''x,,x,0,0''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.7'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value, includeEmpty FALSE'::text description,
-       TT_PadConcat('ab06, , 81145, 811451038, 1', '4,15,10,10,7', 'x,x,x,0,0'::text, '-'::text, TRUE::text, FALSE::text) = 'AB06-xxxxx81145-0811451038-0000001' passed
+       TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, TRUE::text, FALSE::text) = 'AB06-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '19.8'::text number,
        'TT_PadConcat'::text function_tested,
        'Zero length'::text description,
-       TT_PadConcat('ab06, GB_S21_TWP, 81145, 811451038, 1', '4,0,10,10,7', 'x,x,x,0,0'::text, '-'::text, FALSE::text) = 'ab06--xxxxx81145-0811451038-0000001' passed
+       TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''0'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06--xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 20 - TT_CopyDouble
@@ -1369,25 +1369,25 @@ UNION ALL
 SELECT '22.1'::text number,
        'TT_MapDouble'::text function_tested,
        'Test text list, double precision list'::text description,
-       TT_MapDouble('A'::text, 'A,B,C,D'::text, '1.1,2.2,3.3,4.4'::text) = '1.1'::double precision passed
+       TT_MapDouble('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1'::double precision passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '22.2'::text number,
        'TT_MapDouble'::text function_tested,
        'Test double precision list, double precision list'::text description,
-       TT_MapDouble(1.1::text, '1.1,1.2,1.3,1.4'::text, '1.11,2.22,3.33,4.44'::text) = '1.11'::double precision passed
+       TT_MapDouble(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1.11'',''2.22'',''3.33'',''4.44''}'::text) = '1.11'::double precision passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '22.3'::text number,
        'TT_MapDouble'::text function_tested,
        'Test int list, double precision list'::text description,
-       TT_MapDouble(2::text, '1,2,3,4'::text, '1.1,2.2,3.3,4.4'::text) = '2.2'::double precision passed
+       TT_MapDouble(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '2.2'::double precision passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '22.4'::text number,
        'TT_MapDouble'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapDouble(NULL::text, ''1,2,3,4''::text, ''1.1,2.2,3.3,4.4''::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_MapDouble(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''1.1'',''2.2'',''3.3'',''4.4''}''::text);') != 'FALSE' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 23 - TT_MapInt
@@ -1396,25 +1396,25 @@ UNION ALL
 SELECT '23.1'::text number,
        'TT_MapInt'::text function_tested,
        'Test text list, int list'::text description,
-       TT_MapInt('A'::text, 'A,B,C,D'::text, '1,2,3,4'::text) = '1'::int passed
+       TT_MapInt('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '23.2'::text number,
        'TT_MapInt'::text function_tested,
        'Test double precision list, int list'::text description,
-       TT_MapInt(1.1::text, '1.1,1.2,1.3,1.4'::text, '1,2,3,4'::text) = '1'::int passed
+       TT_MapInt(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '23.3'::text number,
        'TT_MapInt'::text function_tested,
        'Test int list, int list'::text description,
-       TT_MapInt(2::text, '1,2,3,4'::text, '5,6,7,8'::text) = '6'::int passed
+       TT_MapInt(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''5'',''6'',''7'',''8''}'::text) = '6'::int passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '23.4'::text number,
        'TT_MapInt'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapInt(NULL::text, ''1,2,3,4''::text, ''5,6,7,8''::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_MapInt(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''5'',''6'',''7'',''8''}''::text);') != 'FALSE' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 24 - TT_LookupDouble
@@ -1737,13 +1737,13 @@ UNION ALL
 SELECT '35.1'::text number,
        'TT_NotNullEmptyOr'::text function_tested,
        'All empty'::text description,
-       TT_NotNullEmptyOr(',,,') IS FALSE passed
+       TT_NotNullEmptyOr('{'''','''','''',''''}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '35.2'::text number,
        'TT_NotNullEmptyOr'::text function_tested,
        'One val'::text description,
-       TT_NotNullEmptyOr(',d,,') passed
+       TT_NotNullEmptyOr('{'''',''d'','''',''''}') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 36 - TT_IsIntSubstring
