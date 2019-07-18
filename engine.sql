@@ -296,6 +296,7 @@ RETURNS anyelement AS $$
     argNested text;
     argValNested text;
     ruleQueryNested text;
+    repackArray text[];
     result ALIAS FOR $0;
     debug boolean = TT_Debug();
   BEGIN
@@ -321,34 +322,25 @@ RETURNS anyelement AS $$
           -- split string to array after removing {}
           argsNested = TT_ParseStringList(arg); -- return parsed arguments as array
           IF debug THEN RAISE NOTICE 'argsNested=%', argsNested;END IF;
-
-          -- loop through array, get values, add to new string (ruleQueryNested)
-          ruleQueryNested = '''{';
+          
+          -- get array of values from strings and columns, then repack using TT_RepackStringList
           FOREACH argNested in ARRAY argsNested LOOP
             IF debug THEN RAISE NOTICE 'argNested=%', argNested;END IF;
             IF argNested ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
-              -- if STRING, return string
-              IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
-	            ruleQueryNested = ruleQueryNested || '''''' || btrim(btrim(argNested,''''),'"') || '''''' || ',';
-	          -- if arg is column name, return column value.
-	          ELSE -- If COLUMN NAME
+              repackArray = array_append(repackArray, argNested);
+            ELSE -- If COLUMN NAME - get value
 	            IF vals ? argNested THEN 
                 argValNested = vals->>argNested;
-                IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 argValNested=%', argValNested;END IF;
-                IF argValNested IS NULL THEN
-		              ruleQueryNested = ruleQueryNested || '''''NULL''''' || ',';
-	              ELSE
-		              ruleQueryNested = ruleQueryNested || '''''' || argValNested || '''''' || ',';
-                END IF;
+                repackArray = array_append(repackArray, argValNested);
               ELSE
                 -- if column name not in source table, return as string.
-                ruleQueryNested = ruleQueryNested || '''''' || argNested || '''''' || ',';
+                repackArray = array_append(repackArray, argNested);
               END IF;
-	          END IF;
-	        END LOOP;
-	        -- remove the last comma and space, and cast string to text
-	        ruleQuery = ruleQuery || left(ruleQueryNested, char_length(ruleQueryNested) - 1) || '}''::text, ';
-
+            END IF;
+          END LOOP;
+          ruleQuery = ruleQuery || TT_RepackStringList(repackArray, TRUE) || '::text, ';
+          repackArray = ARRAY[]::text[];
+          
         ------ process strings ------
         ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
           IF debug THEN RAISE NOTICE 'TT_TextFctEval 22';END IF;
@@ -383,7 +375,7 @@ RETURNS anyelement AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
-
+	        
 -------------------------------------------------------------------------------
 -- TT_ParseArgs
 --
@@ -468,11 +460,11 @@ $$ LANGUAGE plpgsql STRICT VOLATILE;
 --
 -- e.g. TT_ParseStringList('col2, "string2", "", ""')
 ------------------------------------------------------------
-
--- DROP FUNCTION IF EXISTS TT_ParseStringList(text,boolean);
+-- DROP FUNCTION IF EXISTS TT_ParseStringList(text,boolean,boolean);
 CREATE OR REPLACE FUNCTION TT_ParseStringList(
     argStr text DEFAULT NULL,
-    strip boolean DEFAULT FALSE
+    strip boolean DEFAULT FALSE,
+    checkColumnNames boolean DEFAULT TRUE
 )
 RETURNS text[] AS $$
   DECLARE
@@ -487,17 +479,17 @@ RETURNS text[] AS $$
 
       arg = args[1];
       IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN
-        --RAISE NOTICE 'STRING: %', arg;
         IF strip THEN
           result = array_append(result, btrim(btrim(arg,'"'),''''));
         ELSE
           result = array_append(result, arg);
         END IF;
       ELSE 
-        --test if valid column name - doesn't start with ' or " and is word with spaces allowed
-        --RAISE NOTICE 'COLUMN NAME: %', arg;
-        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;END IF; -- check valid column name
-        IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
+        IF checkColumnNames THEN
+          --test if valid column name - doesn't start with ' or " and is word with spaces allowed
+          IF NOT arg ~ '^[^''"][-_\w\s]*' THEN RAISE EXCEPTION '%: INVALID COLUMN NAME', arg;END IF; -- check valid column name
+          IF arg~'\s' THEN RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg;END IF; -- check no spaces
+        END IF;
         result = array_append(result, arg);
       END IF;
     END LOOP;
@@ -507,6 +499,42 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_RepackStringList
+--
+-- Takes an array of strings, wraps each string in single quotes, and wraps 
+-- the whole thing in {}
+
+-- DROP FUNCTION IF EXISTS TT_RepackStringList(text[], boolean);
+CREATE OR REPLACE FUNCTION TT_RepackStringList(
+    args text[],
+    strip boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  DECLARE
+    arg text;
+    result text;
+  BEGIN
+    result = '''{';
+    FOREACH arg in ARRAY args LOOP
+      IF strip THEN
+        arg = btrim(btrim(arg,''''),'"');
+      END IF;
+    
+      IF arg IS NULL THEN
+        result = result || '''NULL''' || ',';
+      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' AND strip = FALSE THEN
+  	    result = result || '''' || arg || '''' || ',';
+      ELSE
+        result = result || arg || ',';
+	    END IF;          
+	  END LOOP;
+	  -- remove the last comma and space, and cast string to text
+	  result = left(result, char_length(result) - 1) || '}''';
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+	        
 -------------------------------------------------------------------------------
 -- TT_ParseRules
 --
