@@ -611,10 +611,10 @@ RETURNS boolean AS $$
     IF val IS NULL THEN
       RETURN FALSE;
     ELSIF _ignoreCase = FALSE THEN
-      _lst = TT_ParseStringList(lst, TRUE);
+      _lst = TT_ParseStringList(lst, TRUE, FALSE);
       RETURN val = ANY(array_remove(_lst, NULL));
     ELSE
-      _lst = TT_ParseStringList(upper(lst), TRUE);
+      _lst = TT_ParseStringList(upper(lst), TRUE, FALSE);
       RETURN upper(val) = ANY(array_remove(_lst, NULL));
     END IF;
   END;
@@ -811,7 +811,7 @@ RETURNS boolean AS $$
   DECLARE
     _vals text[];
   BEGIN
-    _vals = TT_ParseStringList(val, TRUE);
+    _vals = TT_ParseStringList(val, TRUE, FALSE);
 
     FOR i IN 1..array_length(_vals, 1) LOOP
       IF _vals[i] IS NOT NULL THEN
@@ -1140,12 +1140,12 @@ RETURNS text AS $$
     IF val IS NULL THEN
       RAISE NOTICE 'val is NULL';
     ELSIF _ignoreCase = FALSE THEN
-      _mapVals = TT_ParseStringList(mapVals, TRUE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE);
+      _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
       RETURN (_targetVals)[array_position(_mapVals,val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1193,8 +1193,8 @@ RETURNS double precision AS $$
                                     'targetVals', targetVals, 'TT_stringListDef',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE);
-    _targetVals = TT_ParseStringList(targetVals, TRUE);
+    _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
 
     BEGIN
       FOREACH _i in ARRAY _targetVals LOOP
@@ -1209,7 +1209,7 @@ RETURNS double precision AS $$
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1256,8 +1256,8 @@ RETURNS int AS $$
                                     'targetVals', targetVals, 'TT_stringListDef',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE);
-    _targetVals = TT_ParseStringList(targetVals, TRUE);
+    _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
 
     BEGIN
       FOREACH _i in ARRAY _targetVals LOOP
@@ -1272,7 +1272,7 @@ RETURNS int AS $$
     ELSIF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1364,7 +1364,7 @@ RETURNS text AS $$
                              ARRAY['val', val, 'TT_stringListDef',
                                    'sep', sep, 'char']);
 
-    RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
+    RETURN array_to_string(TT_ParseStringList(val, TRUE, FALSE), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -1423,13 +1423,13 @@ RETURNS text AS $$
     END IF;
 
     IF _upperCase = TRUE THEN
-      _vals = TT_ParseStringList(upper(val), TRUE);
+      _vals = TT_ParseStringList(upper(val), TRUE, FALSE);
     ELSE
-      _vals = TT_ParseStringList(val, TRUE);
+      _vals = TT_ParseStringList(val, TRUE, FALSE);
     END IF;
 
-    _lengths = TT_ParseStringList(length, TRUE);
-    _pads = TT_ParseStringList(pad, TRUE);
+    _lengths = TT_ParseStringList(length, TRUE, FALSE);
+    _pads = TT_ParseStringList(pad, TRUE, FALSE);
 
     -- check length of _vals, _lengths, and _pads match
     IF (array_length(_vals, 1) != array_length(_lengths, 1)) OR (array_length(_vals, 1) != array_length(_pads, 1)) THEN
