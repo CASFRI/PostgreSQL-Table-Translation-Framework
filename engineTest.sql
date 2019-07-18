@@ -255,7 +255,7 @@ UNION ALL
 SELECT '3.1'::text number,
        'TT_ParseArgs'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseArgs('aa,  bb,-111.11') = ARRAY['aa', 'bb', '-111.11'] passed
+        TT_ParseArgs('aa,  bb, ''-111.11''') = ARRAY['aa', 'bb', '-111.11'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.2'::text number,
@@ -266,98 +266,56 @@ SELECT '3.2'::text number,
 UNION ALL
 SELECT '3.3'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test empty'::text description,
-        TT_ParseArgs('') IS NULL  passed
+       'Test empty strings'::text description,
+        TT_ParseArgs(''''',""') = ARRAY['''''', '""'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.4'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test value containing a comma'::text description,
-        TT_ParseArgs('"a,a", bb,-111.11') = ARRAY['a,a', 'bb', '-111.11'] passed
+       'Test string containing a comma'::text description,
+        TT_ParseArgs('''a,a''') = ARRAY['''a,a'''] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.5'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test value containing a single quote'::text description,
-        TT_ParseArgs('"a''a", bb,-111.11') = ARRAY['a''a', 'bb', '-111.11'] passed
+       'Test value containing escaped single quote'::text description,
+        TT_ParseArgs('''a\''a''') = ARRAY['''a\''a'''] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.6'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test one empty value'::text description,
-        TT_ParseArgs('"", bb,-111.11') = ARRAY['', 'bb', '-111.11'] passed
+       'Test column with _ and -'::text description,
+        TT_ParseArgs('column_A, column-B') = ARRAY['column_A', 'column-B'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.7'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test one NULL value'::text description,
-        TT_ParseArgs(', bb,-111.11') = ARRAY['bb', '-111.11'] passed
+       'Test strings with special chars'::text description,
+        TT_ParseArgs('''str /:ng 1'', ''str   --   ing2''') = ARRAY['''str /:ng 1''', '''str   --   ing2'''] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.8'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test only quoted values'::text description,
-        TT_ParseArgs('"aa", "bb", "-111.11"') = ARRAY['aa', 'bb', '-111.11'] passed
+       'Test stringLists with string'::text description,
+        TT_ParseArgs('{''string 1'', ''string,2''}') = ARRAY['{''string 1'',''string,2''}'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.9'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test only single quoted values'::text description,
-        TT_ParseArgs('''aa'', ''bb'', ''-111.11''') = ARRAY['aa', 'bb', '-111.11'] passed
+       'Test stringList of colnames'::text description,
+        TT_ParseArgs('{cola, col_b}') = ARRAY['{cola,col_b}'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.10'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test trailing spaces'::text description,
-        TT_ParseArgs('aa''bb') = ARRAY['aa''bb'] passed
+       'Test mixed stringList'::text description,
+        TT_ParseArgs('{cola, ''string 1''}') = ARRAY['{cola,''string 1''}'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.11'::text number,
        'TT_ParseArgs'::text function_tested,
-       'Test single quote inside single quotes'::text description,
-        TT_ParseArgs('  aa, bb  ') = ARRAY['aa', 'bb'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.12'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test single colname wrapped in {}'::text description,
-        TT_ParseArgs('{colA}') = ARRAY['{colA}'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.13'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test multiple colnames'::text description,
-        TT_ParseArgs('{colA}, {colB}') = ARRAY['{colA}', '{colB}'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.14'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test comma separated colnames'::text description,
-        TT_ParseArgs('''{colA}, {colB}''') = ARRAY['{colA}, {colB}'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.15'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test comma separated strings'::text description,
-        TT_ParseArgs('''str1, str2''') = ARRAY['str1, str2'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.16'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test comma separated strings and colnames'::text description,
-        TT_ParseArgs('''{colA}, str2''') = ARRAY['{colA}, str2'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.17'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test comma separated strings and regular strings'::text description,
-        TT_ParseArgs('''str1, str2'', str3') = ARRAY['str1, str2', 'str3'] passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.18'::text number,
-       'TT_ParseArgs'::text function_tested,
-       'Test comma separated colnames and regular colnames'::text description,
-        TT_ParseArgs('''{colA}, {colB}'', {colC}') = ARRAY['{colA}, {colB}', '{colC}'] passed
+       'Test two stringLists and strings and col names'::text description,
+        TT_ParseArgs('col_a, {col_b, ''str1''}, {''str2'', colC}, ''str 3''') = ARRAY['col_a','{col_b,''str1''}','{''str2'',colC}','''str 3'''] passed
 ---------------------------------------------------------
 -- Test 4 - TT_ParseRules
 ---------------------------------------------------------
@@ -365,7 +323,7 @@ UNION ALL
 SELECT '4.1'::text number,
        'TT_ParseRules'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseRules('test1(aa, bb,-999.55); test2(cc, dd,222.22)') = ARRAY[('test1', '{aa,bb,-999.55}', NULL, FALSE)::TT_RuleDef, ('test2', '{cc,dd,222.22}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(aa, bb,''-999.55''); test2(cc, dd,''222.22'')') = ARRAY[('test1', '{aa,bb,''-999.55''}', NULL, FALSE)::TT_RuleDef, ('test2', '{cc,dd,''222.22''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.2'::text number,
@@ -383,25 +341,25 @@ UNION ALL
 SELECT '4.4'::text number,
        'TT_ParseRules'::text function_tested,
        'Test empty function'::text description,
-        TT_ParseRules('test1()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1()') = ARRAY[('test1', '{}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.5'::text number,
        'TT_ParseRules'::text function_tested,
        'Test many empty functions'::text description,
-        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef, ('test2', NULL, NULL, FALSE)::TT_RuleDef, ('test3', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', '{}', NULL, FALSE)::TT_RuleDef, ('test2', '{}', NULL, FALSE)::TT_RuleDef, ('test3', '{}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
        'TT_ParseRules'::text function_tested,
        'Test quoted arguments'::text description,
-        TT_ParseRules('test1("aa", ''bb'')') =  ARRAY[('test1', '{aa,bb}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(''aa'', ''bb'')') =  ARRAY[('test1', '{''aa'',''bb''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.7'::text number,
        'TT_ParseRules'::text function_tested,
-       'Test quoted arguments containing comma and quotes'::text description,
-        TT_ParseRules('test1("a,a", ''b''b'', ''c"c'')') = ARRAY[('test1', '{"a,a","b''b","c\"c"}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+       'Test quoted arguments containing comma and special chars'::text description,
+        TT_ParseRules('test1(''a,a'', ''b@b'')') =  ARRAY[('test1', '{"''a,a''",''b@b''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.8'::text number,
@@ -413,7 +371,7 @@ UNION ALL
 SELECT '4.9'::text number,
        'TT_ParseRules'::text function_tested,
        'Test what''s in the test translation table'::text description,
-        array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, 0, 100}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, 0, 100}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
+        array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
 FROM public.test_translationtable
 ---------------------------------------------------------
 -- Test 5 - TT_ValidateTTable
@@ -558,7 +516,7 @@ SELECT '9.9'::text number,
        'Comma separated string, mixed column names and strings'::text description,
         TT_TextFctEval('Concat', '{"\{id\},b,\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
 --------------------------------------------------------
--- Test 9 - TT_TextFctEval
+-- Test 9 - TT_RepackStringList
 --------------------------------------------------------
 UNION ALL
 SELECT '11.1'::text number,
