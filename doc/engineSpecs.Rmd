@@ -1,8 +1,8 @@
 ---
 title: "Translation Engine Specifications"
 output:
- html_document: default
  md_document: default
+ html_document: default
  word_document: default
 ---
 
@@ -77,7 +77,7 @@ kable(tab2)
     1) Set the global "stopOnInvalid" configuration variable to TRUE.
     2) Write a basic translation table.
     3) Translate.
-    4) Translation stops as soon as a source value is invavalidated by a validation rule.
+    4) Translation stops as soon as a source value is invalidated by a validation rule.
     5) Fix the source table value (and the translation table if necessary) and resume execution. Back to step 3).
     6) Translation table and translation are complete.
 
@@ -101,7 +101,7 @@ kable(tab2)
 - In summary the translation engine execution stops if any of these conditions is encountered:
 
     - The configuration variable "stopOnInvalid" is set to TRUE and a source value is invalidated by a validation rule. This is helpful for the first scenario.
-    - No invalidation code is defined for a validation rule and the source value is invalidated by this validation rule. This is helpful for the second scenario. It makes it mandatory to define invalidation codes as soon as errors are found in the source table. The translation process can not finish without all these codes being defined (unless there are no error in the source file).
+    - No invalidation code is provided with a validation rule and the source value is invalidated by this validation rule. This is helpful for the second scenario. It makes it mandatory to provide invalidation codes as soon as errors are found in the source table. The translation process can not finish without all these codes being defined (unless there are no error in the source file).
     - The configuration variable "stopOnInvalid" is set to FALSE, all invalidation codes are provided, one validation rule has its "stopOnInvalid" flag set to TRUE and a source value is invalidated by this validation rule. This is typical of the second scenario while searching for invalid values.
 
 \
