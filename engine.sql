@@ -338,8 +338,8 @@ RETURNS anyelement AS $$
               END IF;
             END IF;
           END LOOP;
-          ruleQuery = ruleQuery || TT_RepackStringList(repackArray, TRUE) || '::text, ';
-          repackArray = ARRAY[]::text[];
+          ruleQuery = ruleQuery || TT_RepackStringList(repackArray) || '::text, ';
+          repackArray = ARRAY[]::text[]; -- reset array for next stringList
           
         ------ process strings ------
         ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- if STRING
@@ -510,10 +510,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Takes an array of strings, wraps each string in single quotes, and wraps 
 -- the whole thing in {}
 
--- DROP FUNCTION IF EXISTS TT_RepackStringList(text[], boolean);
+-- DROP FUNCTION IF EXISTS TT_RepackStringList(text[]);
 CREATE OR REPLACE FUNCTION TT_RepackStringList(
-    args text[],
-    strip boolean DEFAULT FALSE
+    args text[]
 )
 RETURNS text AS $$
   DECLARE
@@ -522,16 +521,12 @@ RETURNS text AS $$
   BEGIN
     result = '''{';
     FOREACH arg in ARRAY args LOOP
-      IF strip THEN
-        arg = btrim(btrim(arg,''''),'"');
-      END IF;
-    
+            
       IF arg IS NULL THEN
         result = result || '''NULL''' || ',';
-      ELSIF arg ~ '''[^'']+''|"[^"]+"|""|''''' AND strip = FALSE THEN
-  	    result = result || '''' || arg || '''' || ',';
       ELSE
-        result = result || arg || ',';
+        -- remove any quotes and wrap everything in single quotes
+  	    result = result || '''''' || btrim(btrim(arg,''''),'"') || '''''' || ',';
 	    END IF;          
 	  END LOOP;
 	  -- remove the last comma and space, and cast string to text

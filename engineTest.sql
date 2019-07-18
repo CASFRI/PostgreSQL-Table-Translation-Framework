@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Test file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -30,7 +30,7 @@ CREATE TABLE test_translationTable AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
+       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules
@@ -38,7 +38,7 @@ UNION ALL
 SELECT '2' rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
+       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -48,7 +48,7 @@ CREATE TABLE test_translationTable2 AS
 SELECT '1' rule_id,
        'CROWN CLOSURE UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, 0, 100| -9999)'::text validationRules,
+       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -169,7 +169,8 @@ WITH test_nb AS (
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
-    SELECT '_TT_Translate'::text,                   10,          0
+    SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
+    SELECT 'TT_RepackStringList'::text,             11,          0
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -556,6 +557,20 @@ SELECT '9.9'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, mixed column names and strings'::text description,
         TT_TextFctEval('Concat', '{"\{id\},b,\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
+--------------------------------------------------------
+-- Test 9 - TT_TextFctEval
+--------------------------------------------------------
+UNION ALL
+SELECT '11.1'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'Basic test'::text description,
+        TT_RepackStringList(ARRAY['''str1''', '''str2''', 'col_A']) = '''{''''str1'''',''''str 2'''',''''col_A''''}'''::text passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.2'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'Special char test'::text description,
+        TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2''']) = '''{''''str 1 --'''',''''str@/\:2''''}'''::text passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
