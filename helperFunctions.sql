@@ -214,17 +214,31 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
-  val text
+  argStr text
 )
 RETURNS boolean AS $$
+  DECLARE
+    args text[];
+    arg text;
   BEGIN
-    IF val IS NULL THEN
+    IF argStr IS NULL THEN
       RETURN FALSE;
-    ELSIF val ~ '{.+}' THEN
-      RETURN TRUE;
+    ELSIF argStr ~ '{.+}' THEN -- must have {}
+      FOR args IN SELECT regexp_matches(btrim(argStr, '{}'), '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|""|'''')', 'g') LOOP
+        arg = args[1];
+        RAISE NOTICE '%', arg;
+        IF arg !~ '''[^'']+''|"[^"]+"|""|''''' THEN -- must be a quoted string...
+          IF arg !~ '^[^''"][-_\w\s]*' THEN -- or an unquoted word with - and _
+            RETURN FALSE;
+          ELSIF arg ~ '\s' THEN -- if unquoted word must not have space
+            RETURN FALSE;
+          END IF;
+        END IF;
+      END LOOP;
     ELSE
       RETURN FALSE;
     END IF;
+    RETURN TRUE; -- if nothing failed return true
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
