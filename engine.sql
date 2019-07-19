@@ -307,11 +307,11 @@ RETURNS anyelement AS $$
 
     IF checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)) OR vals IS NULL) THEN
       IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-      RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, btrim(repeat('text,', 2),',');
+      RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, btrim(repeat('text,', cardinality(args)),',');
     END IF;
 
     ruleQuery = 'SELECT tt_' || fctName || '(';
-    IF args IS NOT NULL AND args != '{}' THEN --only build the query if there are arguments
+    IF args IS NOT NULL AND args != '{}' THEN --only add parameters if there are some
       -- Search for any argument names in the provided value jsonb object
       FOREACH arg IN ARRAY args LOOP
         IF debug THEN RAISE NOTICE 'arg=%', arg;END IF;
@@ -453,18 +453,17 @@ $$ LANGUAGE plpgsql STRICT VOLATILE;
 -- Parses strings containing column names and strings into the following two types:
 -- STRINGS - wrapped in '' or "" or empty strings. Passed directly to the output array.
 -- COLUMN NAMES - words containing - or _ but no spaces. Validated and passed to the
--- output array. Error raised if invalid.
+-- output array. Error raised if invalid column name provided.
 --
 -- strip - strips surrounding quotes from any strings. Used in helper functions when 
 -- parsing values.
 --
 -- e.g. TT_ParseStringList('col2, "string2", "", ""')
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_ParseStringList(text,boolean,boolean);
+-- DROP FUNCTION IF EXISTS TT_ParseStringList(text,boolean);
 CREATE OR REPLACE FUNCTION TT_ParseStringList(
     argStr text DEFAULT NULL,
-    strip boolean DEFAULT FALSE,
-    checkColumnNames boolean DEFAULT TRUE
+    strip boolean DEFAULT FALSE
 )
 RETURNS text[] AS $$
   DECLARE
@@ -478,24 +477,21 @@ RETURNS text[] AS $$
     FOR args IN SELECT regexp_matches(btrim(argStr, '{}'), '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|""|'''')', 'g') LOOP
 
       arg = args[1];
-      IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN
+      IF arg ~ '''[^'']+''|"[^"]+"|""|''''' THEN -- STRINGS
         IF strip THEN
           result = array_append(result, btrim(btrim(arg,'"'),''''));
         ELSE
           result = array_append(result, arg);
         END IF;
-      ELSE 
-        IF checkColumnNames THEN
-          --test if valid column name - doesn't start with ' or " and is word with spaces allowed
-          IF NOT arg ~ '^[^''"][-_\w\s]*' THEN 
-            RAISE EXCEPTION '%: INVALID COLUMN NAME', arg; -- check valid column name
-          END IF;
-          
-          IF arg~'\s' THEN 
-            RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg; -- check no spaces
-          END IF; 
+      ELSE -- COLUMN NAMES
+        --test if valid column name - doesn't start with ' or " and is word with spaces allowed
+        IF NOT arg ~ '^[^''"][-_\w\s]*' THEN 
+          RAISE EXCEPTION '%: INVALID COLUMN NAME', arg; -- check valid column name
         END IF;
-        result = array_append(result, arg);
+        IF arg~'\s' THEN 
+          RAISE EXCEPTION '%: COLUMN NAME CONTAINS SPACES', arg; -- check no spaces
+        END IF;
+        result = array_append(result, arg); 
       END IF;
     END LOOP;
     RETURN result;
@@ -642,37 +638,55 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
 
       -- rule_id should be integer, not null, not empty string
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
-      IF row.rule_id IS NULL OR row.rule_id = '' THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';END IF;
-      IF NOT TT_IsInt(row.rule_id) THEN RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;END IF;
+      IF row.rule_id IS NULL OR row.rule_id = '' THEN 
+        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';
+      END IF;
+      IF NOT TT_IsInt(row.rule_id) THEN 
+        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;
+      END IF;
 
       -- targetAttribute should not be null or empty string, should be word with underscore allowed but no special characters
-      IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;END IF;
-      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN RAISE EXCEPTION '% % : Target attribute name is invalid.', error_msg_start, row.rule_id;END IF;
+      IF row.targetAttribute IS NULL OR row.targetAttribute = '' THEN 
+        RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
+      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN 
+        RAISE EXCEPTION '% % : Target attribute name is invalid.', error_msg_start, row.rule_id;
+      END IF;
       targetAttribute = row.targetAttribute;
 
       -- targetAttributeType should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      IF row.targetAttributeType IS NULL OR row.targetAttributeType = '' THEN RAISE EXCEPTION '% % : Target attribute type is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF row.targetAttributeType IS NULL OR row.targetAttributeType = '' THEN 
+        RAISE EXCEPTION '% % : Target attribute type is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
       targetAttributeType = row.targetAttributeType;
 
       -- validationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      IF row.validationRules IS NULL OR row.validationRules = '' THEN RAISE EXCEPTION '% % : Validation rules is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF row.validationRules IS NULL OR row.validationRules = '' THEN 
+        RAISE EXCEPTION '% % : Validation rules is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
       validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
 
       -- translationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      IF row.translationRules IS NULL OR row.translationRules = '' THEN RAISE EXCEPTION '% % : Translation rule is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF row.translationRules IS NULL OR row.translationRules = '' THEN 
+        RAISE EXCEPTION '% % : Translation rule is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
       translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
 
       -- description should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      IF row.description IS NULL OR row.description = '' THEN RAISE EXCEPTION '% % : Description is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF row.description IS NULL OR row.description = '' THEN 
+        RAISE EXCEPTION '% % : Description is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
       description = coalesce(row.description, '');
 
       -- descUpToDateWithRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
-      IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN RAISE EXCEPTION '% % : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id;END IF;
+      IF row.descUpToDateWithRules IS NULL OR row.descUpToDateWithRules = '' THEN 
+        RAISE EXCEPTION '% % : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id;
+      END IF;
       descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;
 
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
@@ -759,7 +773,7 @@ RETURNS text AS $f$
     -- Validate the translation table
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
-    -- Drop any existing TT_Translate function
+    -- Drop any existing TT_Translate function with the same suffix
     query = 'DROP FUNCTION IF EXISTS TT_Translate' || fctNameSuf || '(name, name, name, name, text[], boolean, int, boolean, boolean);';
     EXECUTE query;
 
@@ -852,10 +866,10 @@ RETURNS SETOF RECORD AS $$
     -- Set variable so TT_ValidateTTable only checks for functions on the first row
     _checkExistence = TRUE;
     FOR sourcerow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
-
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourcerow);
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourcerow=%', jsonbRow;END IF;
+       
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
        FOR translationrow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, _checkExistence) LOOP
@@ -877,10 +891,10 @@ RETURNS SETOF RECORD AS $$
              END IF;
              -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
              IF NOT isValid AND rule.stopOnInvalid THEN
-                 RAISE EXCEPTION 'Invalid rule found...';
+               RAISE EXCEPTION 'Invalid rule found...';
              END IF;
            END IF;
-         END LOOP ;
+         END LOOP; -- FOR EACH RULE
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationrow.targetAttributeType || ', FALSE);';
@@ -904,14 +918,16 @@ RETURNS SETOF RECORD AS $$
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationrow.targetAttributeType || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationrow.targetAttributeType=%, finalQuery=%', finalVal, translationrow.targetAttributeType, finalQuery;END IF;
-         _checkExistence = FALSE; --only check on first row
-       END LOOP;
+       END LOOP; -- FOR TRANSLATION ROW
+       
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);
        IF debug THEN RAISE NOTICE '_TT_Translate BB finalQuery=%', finalQuery;END IF;
        EXECUTE finalQuery INTO translatedrow;
        RETURN NEXT translatedrow;
-    END LOOP;
+
+       _checkExistence = FALSE; --only check existence of helper function on first source row
+    END LOOP; -- FOR sourcerow
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;
     RETURN;
   END;
