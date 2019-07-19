@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -9,22 +9,6 @@
 -- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
--- Types Definitions...
--------------------------------------------------------------------------------
--- Type TT_stringListDef is used for stringList arguments in helper functions.
--- It needs its own type so it can be validated in TT_ValidateParams as a unique
--- input argument.
-
---DROP TYPE IF EXISTS TT_stringListDef;
-CREATE TYPE TT_stringListDef AS (
-  stringList text
-);
--------------------------------------------------------------------------------
-
-
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -52,7 +36,6 @@ RETURNS boolean AS $$
     RETURN val IS NOT NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -124,7 +107,6 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -185,6 +167,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsChar
+--
+-- Return TRUE if val is a char
+-- e.g. TT_IsBoolean('TRUE')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsChar(
+  val text
+)
+RETURNS boolean AS $$
+  SELECT TT_Length(val) = 1;
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_IsGeometry
 --
 -- Return TRUE if val is a geometry
@@ -232,6 +228,94 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsDoubleList
+--
+-- Return TRUE if val is a list of text double precision values
+-- e.g. TT_IsDoubleList('{''val1'', ''val2'', ''val3''}')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsDoubleList(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    i text;
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF NOT TT_IsStringList(val) THEN
+      RETURN FALSE;
+    ELSE
+      FOREACH i IN ARRAY TT_ParseStringList(val, TRUE) LOOP
+        IF NOT TT_IsNumeric(i) THEN
+          RETURN FALSE;
+        END IF;
+      END LOOP;
+    END IF;
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsIntList
+--
+-- Return TRUE if val is a list of text int values
+-- e.g. TT_IsIntList('{''val1'', ''val2'', ''val3''}')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsIntList(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    i text;
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF NOT TT_IsStringList(val) THEN
+      RETURN FALSE;
+    ELSE
+      FOREACH i IN ARRAY TT_ParseStringList(val, TRUE) LOOP
+        IF NOT TT_IsInt(i) THEN
+          RETURN FALSE;
+        END IF;
+      END LOOP;
+    END IF;
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsCharList
+--
+-- Return TRUE if val is a list of text char values
+-- e.g. TT_IsCharList('{''val1'', ''val2'', ''val3''}')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsCharList(
+  val text
+)
+RETURNS boolean AS $$
+  DECLARE
+    i text;
+  BEGIN
+    IF val IS NULL THEN
+      RETURN FALSE;
+    ELSIF NOT TT_IsStringList(val) THEN
+      RETURN FALSE;
+    ELSE
+      FOREACH i IN ARRAY TT_ParseStringList(val, TRUE) LOOP
+        IF NOT TT_IsChar(i) THEN
+          RETURN FALSE;
+        END IF;
+      END LOOP;
+    END IF;
+    RETURN TRUE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 -- TT_ValidateParams
 --
@@ -256,8 +340,16 @@ RETURNS void AS $$
       paramName = params[(i - 1) * 3 + 1];
       paramVal  = params[(i - 1) * 3 + 2];
       paramType = params[(i - 1) * 3 + 3];
-      IF paramType != 'int' AND paramType != 'numeric' AND paramType != 'text' AND paramType != 'char' AND paramType != 'boolean' AND paramType != 'TT_stringListDef' THEN
-        RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "text", "char" or "boolean"', i;
+      IF paramType != 'int' AND 
+         paramType != 'numeric' AND 
+         paramType != 'text' AND 
+         paramType != 'char' AND 
+         paramType != 'boolean' AND 
+         paramType != 'stringlist' AND
+         paramType != 'doublelist' AND
+         paramType != 'intlist' AND
+         paramType != 'charlist' THEN
+        RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "text", "char", "boolean", "stringlist", "doublelist", "intlist", "charlist"', i;
       END IF;
       IF paramVal IS NULL THEN
         RAISE EXCEPTION 'ERROR in %(): % is NULL', fctName, paramName;
@@ -270,8 +362,14 @@ RETURNS void AS $$
         RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
       ELSIF paramType = 'char' AND TT_Length(paramVal) != 1 THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
-      ELSIF paramType = 'stringListDef' AND NOT TT_IsStringList(paramVal) THEN
-        RAISE EXCEPTION 'ERROR in %(): % is not a stringList value', fctName, paramName;
+      ELSIF paramType = 'stringlist' AND NOT TT_IsStringList(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a stringlist value', fctName, paramName;
+      ELSIF paramType = 'doublelist' AND NOT TT_IsDoubleList(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a doublelist value', fctName, paramName;
+      ELSIF paramType = 'intlist' AND NOT TT_IsIntList(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a intlist value', fctName, paramName;
+      ELSIF paramType = 'charlist' AND NOT TT_IsCharList(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a charlist value', fctName, paramName;
       END IF;
     END LOOP;
   END;
@@ -308,6 +406,7 @@ RETURNS boolean AS $$
     _includeMin boolean;
     _includeMax boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_Between',
                               ARRAY['min', min, 'numeric', 
                                     'max', max, 'numeric', 
@@ -318,17 +417,19 @@ RETURNS boolean AS $$
     _includeMin = includeMin::boolean;
     _includeMax = includeMax::boolean;
     
-    IF NOT TT_IsNumeric(val) THEN
-      RETURN FALSE;
-    END IF;
-    _val = val::double precision;
-    
     IF _min = _max THEN
       RAISE EXCEPTION 'ERROR in TT_Between(): min is equal to max';
     ELSIF _min > _max THEN
       RAISE EXCEPTION 'ERROR in TT_Between(): min is greater than max';
     END IF;
     
+    -- validate source value (return FALSE)
+    IF NOT TT_IsNumeric(val) THEN
+      RETURN FALSE;
+    END IF;
+    _val = val::double precision;
+    
+    -- process
     IF _includeMin = FALSE AND _includeMax = FALSE THEN
       RETURN _val > _min AND _val < _max;
     ELSIF _includeMin = TRUE AND _includeMax = FALSE THEN
@@ -376,17 +477,20 @@ RETURNS boolean AS $$
     _lowerBound double precision;
     _inclusive boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_GreaterThan',
                               ARRAY['lowerBound', lowerBound, 'numeric', 
                                     'inclusive', inclusive, 'boolean']);
     _lowerBound = lowerBound::double precision;
     _inclusive = inclusive::boolean;
    
+    -- validate source value (return FALSE)
     IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
 
+    -- process
     IF _inclusive = TRUE THEN
       RETURN _val >= _lowerBound;
     ELSE
@@ -429,17 +533,20 @@ RETURNS boolean AS $$
     _upperBound double precision;
     _inclusive boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LessThan',
                               ARRAY['upperBound', upperBound, 'numeric', 
                                     'inclusive', inclusive, 'boolean']);
     _upperBound = upperBound::double precision;
     _inclusive = inclusive::boolean;
     
+    -- validate source value (return FALSE)
     IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
 
+    -- process
     IF _inclusive = TRUE THEN
       RETURN _val <= _upperBound;
     ELSE
@@ -482,6 +589,7 @@ RETURNS boolean AS $$
     query text;
     return boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsUnique',
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
                                     'lookupTableName', lookupTableName, 'text',
@@ -490,13 +598,15 @@ RETURNS boolean AS $$
     _lookupTableName = lookupTableName::name;
     _occurrences = occurrences::int;
 
+    -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
-    ELSE
-      query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurrences || ';';
-      EXECUTE query INTO return;
-      RETURN return;
     END IF;
+
+    -- process
+    query = 'SELECT (SELECT COUNT(*) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ' WHERE source_val = ' || quote_literal(val) || ') = ' || _occurrences || ';';
+    EXECUTE query INTO return;
+    RETURN return;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -543,6 +653,7 @@ RETURNS boolean AS $$
     query text;
     return boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchTable',
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
                                     'lookupTableName', lookupTableName, 'text',
@@ -551,9 +662,13 @@ RETURNS boolean AS $$
     _lookupTableName = lookupTableName::name;
     _ignoreCase = ignoreCase::boolean;
 
+    -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
-    ELSIF _ignoreCase = FALSE THEN
+    END IF;
+    
+    -- process    
+    IF _ignoreCase = FALSE THEN
       query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
@@ -604,18 +719,24 @@ RETURNS boolean AS $$
     _lst text[];
     _ignoreCase boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchList',
-                              ARRAY['lst', lst, 'TT_stringListDef',
+                              ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
+    
+    -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
-    ELSIF _ignoreCase = FALSE THEN
+    END IF;
+    
+    -- process
+    IF _ignoreCase = FALSE THEN
       _lst = TT_ParseStringList(lst, TRUE, FALSE);
-      RETURN val = ANY(array_remove(_lst, NULL));
+      RETURN val = ANY(_lst);
     ELSE
       _lst = TT_ParseStringList(upper(lst), TRUE, FALSE);
-      RETURN upper(val) = ANY(array_remove(_lst, NULL));
+      RETURN upper(val) = ANY(_lst);
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -679,15 +800,18 @@ RETURNS boolean AS $$
     _the_geom geometry;
     _fix boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_GeoIsValid',
                               ARRAY['fix', fix, 'boolean']);
     _fix = fix::boolean;
 
+    -- validate source value (return FALSE)
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN FALSE;
     END IF;
     _the_geom = the_geom::geometry;
 
+    -- process
     IF ST_IsValid(_the_geom) THEN
       RETURN TRUE;
     ELSIF _fix AND ST_IsValid(ST_MakeValid(_the_geom)) THEN
@@ -738,6 +862,7 @@ RETURNS boolean AS $$
     return boolean;
     _the_geom geometry;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_GeoIntersects',
                               ARRAY['intersectSchemaName', intersectSchemaName, 'text',
                                     'intersectTableName', intersectTableName, 'text',
@@ -745,11 +870,13 @@ RETURNS boolean AS $$
     _intersectSchemaName = intersectSchemaName::name;
     _intersectTableName = intersectTableName::name;
 
+    -- validate source value (return FALSE)
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN FALSE;
     END IF;
     _the_geom = the_geom::geometry;
   
+    -- process
     IF NOT ST_IsValid(_the_geom) THEN
       IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
         _the_geom = ST_MakeValid(_the_geom);
@@ -811,19 +938,21 @@ RETURNS boolean AS $$
   DECLARE
     _vals text[];
   BEGIN
-    _vals = TT_ParseStringList(val, TRUE, FALSE);
+    -- validate source value (return FALSE)
+    IF NOT TT_IsStringList(val) THEN
+      RETURN FALSE;
+    END IF;
 
-    FOR i IN 1..array_length(_vals, 1) LOOP
-      IF _vals[i] IS NOT NULL THEN
-        IF replace(_vals[i], ' ', '') != ''::text THEN
-          RETURN TRUE;
-        END IF;
+    -- process
+    _vals = TT_ParseStringList(val, TRUE, FALSE);
+    FOREACH val in ARRAY _vals LOOP
+      IF TT_NotNULL(val) AND TT_NOTEmpty(val) THEN
+        RETURN TRUE;
       END IF;
     END LOOP;
     RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -846,12 +975,19 @@ RETURNS boolean AS $$
     _start_char int;
     _for_length int;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsIntSubstring',
                               ARRAY['start_char', start_char, 'int',
                                     'for_length', for_length, 'int']);
     _start_char = start_char::int;
     _for_length = for_length::int;
     
+    -- validate source value (return FALSE)
+    IF val IS NULL THEN
+      RETURN FALSE;
+    END IF;
+
+    -- process
     RETURN TT_IsInt(substring(val from _start_char for _for_length));
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -881,7 +1017,6 @@ RETURNS text AS $$
     RETURN val;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -949,6 +1084,7 @@ RETURNS text AS $$
     query text;
     result text;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text',
                                     'lookupTableName', lookupTableName, 'text',
@@ -958,10 +1094,12 @@ RETURNS text AS $$
     _lookupTableName = lookupTableName::name;
     _ignoreCase = ignoreCase::boolean;
 
+    -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
       RETURN NULL;
     END IF;
     
+    -- process
     query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || 
             CASE WHEN _ignoreCase IS TRUE THEN
                    ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ')'
@@ -1116,7 +1254,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Return value from targetVals that matches value index in mapVals
 -- Return type is text
 -- Error if val is NULL
--- e.g. TT_Map('A',{'A','B','C'},{'1','2','3'}, 'TRUE')
+-- e.g. TT_Map('A', '{''A'',''B'',''C''}', '{''1'',''2'',''3''}', 'TRUE')
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapText(
@@ -1131,22 +1269,27 @@ RETURNS text AS $$
     _targetVals text[];
     _ignoreCase boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapText',
-                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
-                                    'targetVals', targetVals, 'TT_stringListDef',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
 
+    -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
-      RAISE NOTICE 'val is NULL';
-    ELSIF _ignoreCase = FALSE THEN
+      RETURN FALSE;
+    END IF;
+    
+    -- process
+    IF _ignoreCase = FALSE THEN
       _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
       _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
-      RETURN (_targetVals)[array_position(_mapVals,val)];
+      RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
       _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
-      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
+      RETURN (_targetVals)[array_position(_mapVals, upper(val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -1188,25 +1331,22 @@ RETURNS double precision AS $$
     _i double precision;
     _ignoreCase boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapDouble',
-                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
-                                    'targetVals', targetVals, 'TT_stringListDef',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'doublelist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
     _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
     _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
 
-    BEGIN
-      FOREACH _i in ARRAY _targetVals LOOP
-        -- no need to do anything inside loop, we just want to test if all _i's are double precision
-      END LOOP;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'targetVals value cannot be cast to double precision';
-    END;
-
+    -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
-      RAISE NOTICE 'val is NULL';
-    ELSIF _ignoreCase = FALSE THEN
+      RETURN FALSE;
+    END IF;
+    
+    -- process
+    IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
@@ -1251,25 +1391,22 @@ RETURNS int AS $$
     _i int;
     _ignoreCase boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapInt',
-                              ARRAY['mapVals', mapVals, 'TT_stringListDef',
-                                    'targetVals', targetVals, 'TT_stringListDef',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'intlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
     _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
     _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
 
-    BEGIN
-      FOREACH _i in ARRAY _targetVals LOOP
-        -- no need to do anything inside loop, we just want to test if all _i's are int
-      END LOOP;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'targetVals value is not int';
-    END;
-
+    -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
-      RAISE NOTICE 'val is NULL';
-    ELSIF _ignoreCase = FALSE THEN
+      RETURN NULL;
+    END IF;
+    
+    -- process
+    IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
@@ -1313,7 +1450,8 @@ RETURNS text AS $$
     val_length int;
     pad_length int;
   BEGIN
-    PERFORM TT_ValidateParams('TT_Pad',
+    -- validate parameters (trigger EXCEPTION)
+     PERFORM TT_ValidateParams('TT_Pad',
                               ARRAY['targetLength', targetLength, 'int',
                                     'padChar', padChar, 'char',
                                     'trunc', trunc, 'boolean']);
@@ -1324,6 +1462,12 @@ RETURNS text AS $$
       RAISE EXCEPTION 'ERROR in TT_Pad(): targetLength is smaller than 0';
     END IF;
     
+    -- validate source value (return NULL if not valid)
+    IF val IS NULL THEN
+      RETURN NULL;
+    END If;
+    
+    -- process
     pad_length = _targetLength - TT_Length(val);
     IF pad_length > 0 THEN
       RETURN concat_ws('', repeat(padChar, pad_length), val);
@@ -1352,7 +1496,7 @@ $$ LANGUAGE sql VOLATILE;
 --  sep text - Separator (e.g. '_'). If no sep required use '' as second argument.
 --
 -- Return the concatenated value.
--- e.g. TT_Concat({'a','b','c'}, '-')
+-- e.g. TT_Concat({'a', 'b', 'c'}, '-')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   val text,
@@ -1360,14 +1504,19 @@ CREATE OR REPLACE FUNCTION TT_Concat(
 )
 RETURNS text AS $$
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_Concat',
-                             ARRAY['val', val, 'TT_stringListDef',
-                                   'sep', sep, 'char']);
+                             ARRAY['sep', sep, 'char']);
 
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsStringList(val) THEN
+      RETURN NULL;
+    END IF;
+    
+    -- process
     RETURN array_to_string(TT_ParseStringList(val, TRUE, FALSE), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1404,46 +1553,45 @@ RETURNS text AS $$
     _result text;
     _includeEmpty boolean;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_PadConcat',
-                              ARRAY['val', val, 'TT_stringListDef',
-                                    'length', length, 'TT_stringListDef',
-                                    'pad', pad, 'TT_stringListDef',
+                              ARRAY['length', length, 'intlist',
+                                    'pad', pad, 'charlist',
                                     'sep', sep, 'char',
                                     'upperCase', upperCase, 'boolean',
                                     'includeEmpty', includeEmpty, 'boolean']);
     _upperCase = upperCase::boolean;
     _includeEmpty = includeEmpty::boolean;
+
+    _lengths = TT_ParseStringList(length, TRUE, FALSE);
+    _pads = TT_ParseStringList(pad, TRUE, FALSE);
     
-    IF length IS NULL THEN
-      RAISE NOTICE 'length is NULL';
-    ELSIF pad IS NULL THEN
-      RAISE NOTICE 'pad is NULL';
-    ELSIF sep is NULL THEN
-      RAISE NOTICE 'sep is NULL';
+    -- check length of _lengths matches and _pads match
+    IF array_length(_vals, 1) != array_length(_pads, 1) THEN
+      RAISE EXCEPTION 'ERROR in number TT_PadConcat(): length and pad elements do not match';
     END IF;
 
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsStringList(val) THEN
+      RETURN NULL;
+    END IF;
+    
     IF _upperCase = TRUE THEN
       _vals = TT_ParseStringList(upper(val), TRUE, FALSE);
     ELSE
       _vals = TT_ParseStringList(val, TRUE, FALSE);
     END IF;
 
-    _lengths = TT_ParseStringList(length, TRUE, FALSE);
-    _pads = TT_ParseStringList(pad, TRUE, FALSE);
-
-    -- check length of _vals, _lengths, and _pads match
-    IF (array_length(_vals, 1) != array_length(_lengths, 1)) OR (array_length(_vals, 1) != array_length(_pads, 1)) THEN
-      RAISE NOTICE 'number of val, length and pad elments do not match';
+    -- check length of _vals matches _lengths and _pads match
+    IF (array_length(_vals, 1) != array_length(_lengths, 1)) THEN
+      RETURN NULL;
     END IF;
 
+    -- process
     -- for each val in array, pad and merge to comma separated string
     _result = '{';
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF _lengths[i] = '' THEN
-        RAISE NOTICE 'length is empty';
-      ELSIF _pads[i] = '' THEN
-        RAISE NOTICE 'pad is empty';
-      ELSIF _vals[i] = '' AND _includeEmpty = FALSE THEN 
+      IF _vals[i] = '' AND _includeEmpty = FALSE THEN 
         -- do nothing
       ELSE
         _result = _result || '''' || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ''',';
@@ -1466,7 +1614,6 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
 RETURNS text AS $$
   SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
 $$ LANGUAGE sql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1481,7 +1628,6 @@ CREATE OR REPLACE FUNCTION TT_NothingText()
 RETURNS text AS $$
     SELECT NULL::text;
 $$ LANGUAGE sql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1496,7 +1642,6 @@ CREATE OR REPLACE FUNCTION TT_NothingDouble()
 RETURNS double precision AS $$
     SELECT NULL::double precision;
 $$ LANGUAGE sql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1511,7 +1656,6 @@ CREATE OR REPLACE FUNCTION TT_NothingInt()
 RETURNS int AS $$
     SELECT NULL::int;
 $$ LANGUAGE sql VOLATILE;
-
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1548,6 +1692,7 @@ RETURNS text AS $$
     count int;
     _the_geom geometry;
   BEGIN
+    -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
                               ARRAY['intersectSchemaName', intersectSchemaName, 'text',
                                     'intersectTableName', intersectTableName, 'text',
@@ -1559,22 +1704,15 @@ RETURNS text AS $$
 
     IF NOT method = any('{"GREATEST_AREA", "LOWEST_VALUE", "HIGHEST_VALUE"}') THEN
       RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"';
-    ELSIF NOT TT_IsGeometry(the_geom) THEN
+    END IF;
+    
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
-    _the_geom = the_geom::geometry;
+    _the_geom = TT_GeoMakeValid(the_geom);
     
-    -- make geo valid if not
-    IF NOT ST_IsValid(_the_geom) THEN
-      IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
-        _the_geom = ST_MakeValid(_the_geom);
-      ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
-        _the_geom = ST_Buffer(_the_geom, 0);
-      ELSE
-        RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
-      END IF;
-    END IF;
-
+    -- process
     -- get table of returnCol values and intersecting areas for all intersecting polygons
     -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
     EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
@@ -1705,6 +1843,7 @@ RETURNS geometry AS $$
     _the_geom_makeValid geometry;
     _the_geom_buffer geometry;
   BEGIN
+    -- validate source value (return NULL if not valid)
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
