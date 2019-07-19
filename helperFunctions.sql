@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+﻿------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -732,10 +732,10 @@ RETURNS boolean AS $$
     
     -- process
     IF _ignoreCase = FALSE THEN
-      _lst = TT_ParseStringList(lst, TRUE, FALSE);
+      _lst = TT_ParseStringList(lst, TRUE);
       RETURN val = ANY(_lst);
     ELSE
-      _lst = TT_ParseStringList(upper(lst), TRUE, FALSE);
+      _lst = TT_ParseStringList(upper(lst), TRUE);
       RETURN upper(val) = ANY(_lst);
     END IF;
   END;
@@ -944,7 +944,7 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    _vals = TT_ParseStringList(val, TRUE, FALSE);
+    _vals = TT_ParseStringList(val, TRUE);
     FOREACH val in ARRAY _vals LOOP
       IF TT_NotNULL(val) AND TT_NOTEmpty(val) THEN
         RETURN TRUE;
@@ -1283,12 +1283,12 @@ RETURNS text AS $$
     
     -- process
     IF _ignoreCase = FALSE THEN
-      _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
+      _mapVals = TT_ParseStringList(mapVals, TRUE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE);
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
+      _targetVals = TT_ParseStringList(targetVals, TRUE);
       RETURN (_targetVals)[array_position(_mapVals, upper(val))];
     END IF;
   END;
@@ -1337,8 +1337,8 @@ RETURNS double precision AS $$
                                     'targetVals', targetVals, 'doublelist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
-    _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
+    _mapVals = TT_ParseStringList(mapVals, TRUE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
@@ -1349,7 +1349,7 @@ RETURNS double precision AS $$
     IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1397,8 +1397,8 @@ RETURNS int AS $$
                                     'targetVals', targetVals, 'intlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE, FALSE);
-    _targetVals = TT_ParseStringList(targetVals, TRUE, FALSE);
+    _mapVals = TT_ParseStringList(mapVals, TRUE);
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
@@ -1409,7 +1409,7 @@ RETURNS int AS $$
     IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
     ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE, FALSE);
+      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
       RETURN (_targetVals)[array_position(_mapVals,upper(val))];
     END IF;
   END;
@@ -1514,7 +1514,7 @@ RETURNS text AS $$
     END IF;
     
     -- process
-    RETURN array_to_string(TT_ParseStringList(val, TRUE, FALSE), sep);
+    RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -1563,8 +1563,8 @@ RETURNS text AS $$
     _upperCase = upperCase::boolean;
     _includeEmpty = includeEmpty::boolean;
 
-    _lengths = TT_ParseStringList(length, TRUE, FALSE);
-    _pads = TT_ParseStringList(pad, TRUE, FALSE);
+    _lengths = TT_ParseStringList(length, TRUE);
+    _pads = TT_ParseStringList(pad, TRUE);
     
     -- check length of _lengths matches and _pads match
     IF array_length(_vals, 1) != array_length(_pads, 1) THEN
@@ -1577,9 +1577,9 @@ RETURNS text AS $$
     END IF;
     
     IF _upperCase = TRUE THEN
-      _vals = TT_ParseStringList(upper(val), TRUE, FALSE);
+      _vals = TT_ParseStringList(upper(val), TRUE);
     ELSE
-      _vals = TT_ParseStringList(val, TRUE, FALSE);
+      _vals = TT_ParseStringList(val, TRUE);
     END IF;
 
     -- check length of _vals matches _lengths and _pads match
