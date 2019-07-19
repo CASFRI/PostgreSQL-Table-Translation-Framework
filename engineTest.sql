@@ -25,12 +25,12 @@ UNION ALL
 SELECT 'c'::text, 101;
 
 -- Create a test translation table
-DROP TABLE IF EXISTS test_translationTable;
-CREATE TABLE test_translationTable AS
+DROP TABLE IF EXISTS test_translationtable;
+CREATE TABLE test_translationtable AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
+       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules
@@ -38,17 +38,17 @@ UNION ALL
 SELECT '2' rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
+       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 
-DROP TABLE IF EXISTS test_translationTable2;
-CREATE TABLE test_translationTable2 AS
+DROP TABLE IF EXISTS test_translationtable2;
+CREATE TABLE test_translationtable2 AS
 SELECT '1' rule_id,
        'CROWN CLOSURE UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure| -8888);between(crown_closure, ''0'', ''100''| -9999)'::text validationRules,
+       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -162,15 +162,16 @@ $$ LANGUAGE sql VOLATILE;
 WITH test_nb AS (
     SELECT 'TT_FullTableName'::text function_tested, 1 maj_num,  5 nb_test UNION ALL
     SELECT 'TT_FullFunctionName'::text,              2,          5         UNION ALL
-    SELECT 'TT_ParseArgs'::text,                     3,         18         UNION ALL
-    SELECT 'TT_ParseRules'::text,                    4,          9         UNION ALL
+    SELECT 'TT_ParseArgs'::text,                     3,         11         UNION ALL
+    SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          5         UNION ALL
-    SELECT 'TT_TextFctExists'::text,                 6,          2         UNION ALL
+    SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
-    SELECT 'TT_RepackStringList'::text,             11,          0
+    SELECT 'TT_RepackStringList'::text,             11,          2         UNION ALL
+    SELECT 'TT_ParseStringList'::text,              12,          7
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -255,7 +256,7 @@ UNION ALL
 SELECT '3.1'::text number,
        'TT_ParseArgs'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseArgs('aa,  bb, ''-111.11''') = ARRAY['aa', 'bb', '-111.11'] passed
+        TT_ParseArgs('aa,  bb, ''-111.11''') = ARRAY['aa', 'bb', '''-111.11'''] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.2'::text number,
@@ -364,12 +365,6 @@ SELECT '4.7'::text number,
 UNION ALL
 SELECT '4.8'::text number,
        'TT_ParseRules'::text function_tested,
-       'Test that quoted is equivalent to unquoted (when not containing comma or quotes)'::text description,
-        TT_ParseRules('test1("aa", ''bb'')') =  TT_ParseRules('test1(aa, bb)') passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.9'::text number,
-       'TT_ParseRules'::text function_tested,
        'Test what''s in the test translation table'::text description,
         array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
 FROM public.test_translationtable
@@ -381,7 +376,7 @@ SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -403,7 +398,7 @@ SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,0,100}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -425,6 +420,12 @@ SELECT '6.2'::text number,
        'TT_TextFctExists'::text function_tested,
        'Test one empty'::text description,
         TT_TextFctExists('', NULL) = FALSE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '6.3'::text number,
+       'TT_TextFctExists'::text function_tested,
+       'Basic test'::text description,
+        TT_TextFctExists('Between', '3') passed
 --------------------------------------------------------
 -- Test 7 - TT_Prepare
 --------------------------------------------------------
@@ -466,7 +467,7 @@ UNION ALL
 SELECT '9.1'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic test'::text description,
-        TT_TextFctEval('between', '{\{crown_closure\},0.0,2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
+        TT_TextFctEval('between', '{crown_closure,''0.0'',''2.0''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.2'::text number,
@@ -477,58 +478,102 @@ SELECT '9.2'::text number,
 UNION ALL
 SELECT '9.3'::text number,
        'TT_TextFctEval'::text function_tested,
-       'Wrong fonction name'::text description,
+       'Wrong function name'::text description,
         TT_Iserror('SELECT TT_TextFctEval(''xbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE : Helper function xbetween(text,text,text) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_IsError('SELECT TT_TextFctEval(''between'', ''{\{crown_closure\}, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_Between(): max is not a numeric value' passed
+        TT_IsError('SELECT TT_TextFctEval(''between'', ''{crown_closure, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_Between(): max is not a numeric value' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_TextFctEval('between', '{\{crown_closureX\}, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
+        TT_TextFctEval('between', '{crown_closureX, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
-        TT_TextFctEval('between', '{\{crown_closure\}, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
+        TT_TextFctEval('between', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.7'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, no column names'::text description,
-        TT_TextFctEval('Concat', '{"a,b,c",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-c' passed
+        TT_TextFctEval('Concat', '{"{''a'',''b'',''c''}",''-''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-c' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.8'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, column names only'::text description,
-        TT_TextFctEval('Concat', '{"\{id\},\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-1' passed
+        TT_TextFctEval('Concat', '{"{id,crown_closure}",''-''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-1' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.9'::text number,
        'TT_TextFctEval'::text function_tested,
        'Comma separated string, mixed column names and strings'::text description,
-        TT_TextFctEval('Concat', '{"\{id\},b,\{crown_closure\}",-}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
+        TT_TextFctEval('Concat', '{"{id,''b'',crown_closure}",''-''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
 --------------------------------------------------------
--- Test 9 - TT_RepackStringList
+-- Test 11 - TT_RepackStringList
 --------------------------------------------------------
 UNION ALL
 SELECT '11.1'::text number,
        'TT_RepackStringList'::text function_tested,
        'Basic test'::text description,
-        TT_RepackStringList(ARRAY['''str1''', '''str2''', 'col_A']) = '''{''''str1'''',''''str 2'''',''''col_A''''}'''::text passed
+        TT_RepackStringList(ARRAY['''str1''', '''str 2''', 'col_A']) = '''{''''str1'''',''''str 2'''',''''col_A''''}'''::text passed
 --------------------------------------------------------
 UNION ALL
 SELECT '11.2'::text number,
        'TT_RepackStringList'::text function_tested,
        'Special char test'::text description,
         TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2''']) = '''{''''str 1 --'''',''''str@/\:2''''}'''::text passed
+--------------------------------------------------------
+-- Test 12 - TT_ParseStringList
+--------------------------------------------------------
+UNION ALL
+SELECT '12.1'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse strings'::text description,
+       TT_ParseStringList('{''str 1'', "str @-_= //2"}') = '{''str 1'',\"str @-_= //2\"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.2'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse column names'::text description,
+       TT_ParseStringList('{column_A, column-B}') = '{column_A,column-B}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.3'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse strings and column names'::text description,
+       TT_ParseStringList('{''string 1'', column_A}') = '{''string 1'',column_A}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.4'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse one string'::text description,
+       TT_ParseStringList('{''string 1 ''}') = '{''string 1 ''}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.5'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse one column name'::text description,
+       TT_ParseStringList('{column_A}') = '{column_A}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.6'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Parse invalid column name'::text description,
+       TT_IsError('SELECT TT_ParseStringList(''{column A}'')') = 'column A: COLUMN NAME CONTAINS SPACES' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '12.7'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'Test strip argument'::text description,
+       TT_ParseStringList('{''string1'',"string 2"}', TRUE) = '{string1,"string 2"}' passed
 --------------------------------------------------------
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
