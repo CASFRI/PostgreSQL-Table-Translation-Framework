@@ -365,7 +365,7 @@ RETURNS void AS $$
         RAISE EXCEPTION 'ERROR in %(): % is not a numeric value', fctName, paramName;
       ELSIF paramType = 'boolean' AND NOT TT_IsBoolean(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
-      ELSIF paramType = 'char' AND TT_Length(paramVal) != 1 THEN
+      ELSIF paramType = 'char' AND NOT TT_IsChar(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
       ELSIF paramType = 'stringlist' AND NOT TT_IsStringList(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a stringlist value', fctName, paramName;

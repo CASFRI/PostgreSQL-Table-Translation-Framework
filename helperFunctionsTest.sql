@@ -189,7 +189,7 @@ WITH test_nb AS (
     SELECT 'TT_LessThan'::text,                9,         10         UNION ALL
     SELECT 'TT_IsUnique'::text,               10,         18         UNION ALL
     SELECT 'TT_MatchTable'::text,             11,         17         UNION ALL
-    SELECT 'TT_MatchList'::text,              12,         24         UNION ALL
+    SELECT 'TT_MatchList'::text,              12,         25         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_GeoIsValid'::text,             15,          7         UNION ALL
@@ -942,131 +942,131 @@ SELECT '11.17'::text number,
 -- Test 12 - TT_MatchList (list variant)
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (3 tests)
+-- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(12, 'TT_MatchList', ARRAY['lst', 'stringlist', 
                                                                'ignoreCase', 'boolean'])).*
 UNION ALL
-SELECT '12.4'::text number,
+SELECT '12.5'::text number,
        'TT_MatchList'::text function_tested,
        'String good value'::text description,
        TT_MatchList('1'::text, '{''1'', ''2'', ''3''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.5'::text number,
+SELECT '12.6'::text number,
        'TT_MatchList'::text function_tested,
        'String bad value'::text description,
        TT_MatchList('1'::text, '{''4'', ''5'', ''6''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.6'::text number,
+SELECT '12.7'::text number,
        'TT_MatchList'::text function_tested,
        'String Null val'::text description,
-       TT_MatchList(NULL::text, '{''1'', 2'', ''3''}'::text) IS FALSE passed
+       TT_MatchList(NULL::text, '{''1'', ''2'', ''3''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.7'::text number,
+SELECT '12.8'::text number,
        'TT_MatchList'::text function_tested,
        'String, empty string in list, good value'::text description,
        TT_MatchList('1'::text, '{''a'', ''2'', ''3'', ''1''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.8'::text number,
+SELECT '12.9'::text number,
        'TT_MatchList'::text function_tested,
        'String, empty string in list, bad value'::text description,
        TT_MatchList('4'::text, '{'''', ''2'', ''3'', ''1''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.9'::text number,
+SELECT '12.10'::text number,
        'TT_MatchList'::text function_tested,
        'String, val is empty string, good value'::text description,
        TT_MatchList(''::text, '{'''', ''1'', ''2'', ''3''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.10'::text number,
+SELECT '12.11'::text number,
        'TT_MatchList'::text function_tested,
        'String, val is empty string, bad value'::text description,
        TT_MatchList(''::text, '{''1'', ''2'', ''3''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.11'::text number,
+SELECT '12.12'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision good value'::text description,
        TT_MatchList(1.5::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.12'::text number,
+SELECT '12.13'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision bad value'::text description,
        TT_MatchList(1.1::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.13'::text number,
+SELECT '12.14'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision empty string in list, good value'::text description,
        TT_MatchList(1.5::text, '{'''', ''1.5'', ''1.6''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.14'::text number,
+SELECT '12.15'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision empty string in list, bad value'::text description,
        TT_MatchList(1.5::text, '{'''', ''1.7'', ''1.6''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.15'::text number,
+SELECT '12.16'::text number,
        'TT_MatchList'::text function_tested,
        'Integer good value'::text description,
        TT_MatchList(5::text, '{''5'', ''4'', ''6''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.16'::text number,
+SELECT '12.17'::text number,
        'TT_MatchList'::text function_tested,
        'Integer bad value'::text description,
        TT_MatchList(1::text, '{''5'', ''4'', ''6''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.17'::text number,
+SELECT '12.18'::text number,
        'TT_MatchList'::text function_tested,
        'Integer empty string in list, good value'::text description,
        TT_MatchList(5::text, '{'''', ''5'', ''6''}'::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.18'::text number,
+SELECT '12.19'::text number,
        'TT_MatchList'::text function_tested,
        'Integer empty string in list, bad value'::text description,
        TT_MatchList(1::text, '{'''', ''2'', ''6''}'::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.19'::text number,
+SELECT '12.20'::text number,
        'TT_MatchList'::text function_tested,
        'Test ignoreCase, true, val lower'::text description,
        TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, TRUE::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.20'::text number,
+SELECT '12.21'::text number,
        'TT_MatchList'::text function_tested,
        'Test ignoreCase, true, list lower'::text description,
        TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, TRUE::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.21'::text number,
+SELECT '12.22'::text number,
        'TT_MatchList'::text function_tested,
        'Test ignoreCase, false, val lower'::text description,
        TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.22'::text number,
+SELECT '12.23'::text number,
        'TT_MatchList'::text function_tested,
        'Test ignoreCase, false, list lower'::text description,
        TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.23'::text number,
+SELECT '12.24'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision test ignore case TRUE'::text description,
        TT_MatchList(1.5::text, '{''1.5'', ''1.7'', ''1.6''}'::text, TRUE::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '12.24'::text number,
+SELECT '12.25'::text number,
        'TT_MatchList'::text function_tested,
        'Double precision test ignore case FALSE'::text description,
        TT_MatchList(1.5::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text) IS FALSE passed
