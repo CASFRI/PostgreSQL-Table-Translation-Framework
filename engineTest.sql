@@ -31,7 +31,7 @@ SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|-3333)'::text translationRules,
+       'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules
 UNION ALL
@@ -39,7 +39,7 @@ SELECT '2' rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|-3333)'::text translationRules,
+       'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 
@@ -49,7 +49,7 @@ SELECT '1' rule_id,
        'CROWN CLOSURE UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|-3333)'::text translationRules,
+       'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 
@@ -58,8 +58,8 @@ CREATE TABLE test_translationtable3 AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|WRONG_TYPE);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|-3333)'::text translationRules,
+       'notNull(crown_closure|);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 			 
@@ -69,7 +69,7 @@ SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
        'notNull(crown_closure|-3333);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|)'::text translationRules,
+       'copyInt(crown_closure|WRONG_TYPE)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
 
@@ -396,7 +396,7 @@ SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -418,7 +418,7 @@ SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -430,14 +430,14 @@ SELECT '5.5'::text number,
 UNION ALL
 SELECT '5.6'::text number,
        'TT_ValidateTTable'::text function_tested,
-       'Test wrong validation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable3''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for validation rule notNull().' passed
+       'Test wrong translation error type'::text description,
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule copyInt().' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,
        'TT_ValidateTTable'::text function_tested,
-       'Test NULL translation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code is NULL or empty for translation rule copyInt().' passed
+       'Test NULL validation error type'::text description,
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable3''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code is NULL or empty for validation rule notNull().' passed
 ---------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
