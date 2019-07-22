@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Main installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -718,13 +718,28 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       -- check translation function exists
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
       IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) THEN
-          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, translationRule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
+          RAISE EXCEPTION '% % : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, translationRule.fctName, btrim(repeat('text,', coalesce(cardinality(translationRule.args), 0)), ',');
       END IF;
 
       -- check translation rule return type matches target attribute type
       IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
         RAISE EXCEPTION '% % : Translation table return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0));
       END IF;
+			
+			-- check translation error code is not null
+			IF translationRule.errorcode IS NULL OR translationRule.errorcode = '' THEN
+				RAISE EXCEPTION '% % : Error code is NULL or empty for translation rule %().', error_msg_start, row.rule_id, translationRule.fctName;
+			END IF;
+
+			-- check translation error code can be cast to attribute type, catch error with EXCEPTION
+			IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', targetAttributeType, translationRule.errorcode;END IF;
+			BEGIN
+				query = 'SELECT ' || '''' || translationRule.errorcode || '''' || '::' || targetAttributeType || ';';
+				IF debug THEN RAISE NOTICE 'TT_ValidateTTable GG query = %', query;END IF;
+				EXECUTE query;
+			EXCEPTION WHEN OTHERS THEN
+				RAISE EXCEPTION '% % : Error code (%) cannot be cast to the target attribute type (%) for translation rule %().', error_msg_start, row.rule_id, translationRule.errorcode, targetAttributeType, translationRule.fctName;
+			END;
 
       RETURN NEXT;
     END LOOP;
@@ -905,11 +920,8 @@ RETURNS SETOF RECORD AS $$
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
            
            IF finalVal IS NULL THEN
-             IF translationrow.targetAttributeType IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
-               finalVal = 'TRANSLATION_ERROR';
-             ELSE
-               finalVal = -3333;
-             END IF;
+					   -- return the translation error code
+						 finalVal = (translationrow.translationRule).errorCode;
            END IF;
 
          ELSE
