@@ -177,57 +177,63 @@ SELECT * FROM (
 -- It is required to list tests which would not appear because they failed
 -- by returning nothing.
 WITH test_nb AS (
+    -- Validation functions
     SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  6 nb_test UNION ALL
     SELECT 'TT_NotEmpty'::text,                2,         11         UNION ALL
-    SELECT 'TT_IsInt'::text,                   3,         11         UNION ALL
-    SELECT 'TT_IsNumeric'::text,               4,          7         UNION ALL
-    SELECT 'TT_IsBoolean'::text,               5,          8         UNION ALL
-    SELECT 'TT_Between'::text,                 6,         28         UNION ALL
-    SELECT 'TT_GreaterThan'::text,             7,         10         UNION ALL
-    SELECT 'TT_LessThan'::text,                8,         10         UNION ALL
-    SELECT 'TT_MatchList'::text,               9,         24         UNION ALL
-    SELECT 'TT_MatchTable'::text,             10,         17         UNION ALL
-    SELECT 'TT_Concat'::text,                 11,          4         UNION ALL
-    SELECT 'TT_CopyText'::text,               12,          3         UNION ALL
-    SELECT 'TT_LookupText'::text,             13,         10         UNION ALL
-    SELECT 'TT_False'::text,                  14,          1         UNION ALL
-    SELECT 'TT_Length'::text,                 15,          5         UNION ALL
-    SELECT 'TT_Pad'::text,                    16,         17         UNION ALL
-    SELECT 'TT_IsUnique'::text,               17,         14         UNION ALL
-    SELECT 'TT_MapText'::text,                18,         12         UNION ALL
-    SELECT 'TT_PadConcat'::text,              19,         18         UNION ALL
-    SELECT 'TT_CopyDouble'::text,             20,          2         UNION ALL
-    SELECT 'TT_CopyInt'::text,                21,          5         UNION ALL
-    SELECT 'TT_MapDouble'::text,              22,         10         UNION ALL
-    SELECT 'TT_MapInt'::text,                 23,         10         UNION ALL
-    SELECT 'TT_LookupDouble'::text,           24,          9         UNION ALL
-    SELECT 'TT_LookupInt'::text,              25,          9         UNION ALL
-    SELECT 'TT_True'::text,                   26,          1         UNION ALL
-    SELECT 'TT_NothingText'::text,            27,          1         UNION ALL
-    SELECT 'TT_NothingDouble'::text,          28,          1         UNION ALL
-    SELECT 'TT_NothingInt'::text,             29,          1         UNION ALL
-    SELECT 'TT_GeoIsValid'::text,             30,          7         UNION ALL
-    SELECT 'TT_GeoIntersectionText'::text,    31,         13         UNION ALL
-    SELECT 'TT_GeoIntersectionInt'::text,     32,         10         UNION ALL
-    SELECT 'TT_GeoIntersectionDouble'::text,  33,         10         UNION ALL
-    SELECT 'TT_GeoIntersects'::text,          34,          7         UNION ALL
-    SELECT 'TT_NotNullEmptyOr'::text,         35,          2         UNION ALL
-    SELECT 'TT_IsIntSubstring'::text,         36,          7         UNION ALL
-    SELECT 'TT_GeoMakeValid'::text,           37,          2
+    SELECT 'TT_Length'::text,                  3,          5         UNION ALL
+    SELECT 'TT_IsInt'::text,                   4,         11         UNION ALL
+    SELECT 'TT_IsNumeric'::text,               5,          7         UNION ALL
+    SELECT 'TT_IsBoolean'::text,               6,          8         UNION ALL
+    SELECT 'TT_Between'::text,                 7,         28         UNION ALL
+    SELECT 'TT_GreaterThan'::text,             8,         10         UNION ALL
+    SELECT 'TT_LessThan'::text,                9,         10         UNION ALL
+    SELECT 'TT_IsUnique'::text,               10,         18         UNION ALL
+    SELECT 'TT_MatchTable'::text,             11,         17         UNION ALL
+    SELECT 'TT_MatchList'::text,              12,         24         UNION ALL
+    SELECT 'TT_False'::text,                  13,          1         UNION ALL
+    SELECT 'TT_True'::text,                   14,          1         UNION ALL
+    SELECT 'TT_GeoIsValid'::text,             15,          7         UNION ALL
+    SELECT 'TT_GeoIntersects'::text,          16,          7         UNION ALL
+    SELECT 'TT_NotNullEmptyOr'::text,         17,          2         UNION ALL
+    SELECT 'TT_IsIntSubstring'::text,         18,          7         UNION ALL
+    -- Translation functions
+    SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
+    SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
+    SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
+    SELECT 'TT_LookupText'::text,            104,         10         UNION ALL
+    SELECT 'TT_LookupDouble'::text,          105,          9         UNION ALL
+    SELECT 'TT_LookupInt'::text,             106,          9         UNION ALL
+    SELECT 'TT_MapText'::text,               107,         12         UNION ALL
+    SELECT 'TT_MapDouble'::text,             108,         10         UNION ALL
+    SELECT 'TT_MapInt'::text,                109,         10         UNION ALL
+    SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
+    SELECT 'TT_Concat'::text,                111,          4         UNION ALL
+    SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
+    SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
+    SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
+    SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
+    SELECT 'TT_GeoIntersectionText'::text,   121,         13         UNION ALL
+    SELECT 'TT_GeoIntersectionDouble'::text, 122,         10         UNION ALL
+    SELECT 'TT_GeoIntersectionInt'::text,    123,         10         UNION ALL
+    SELECT 'TT_GeoMakeValid'::text,          124,          2         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
 SELECT function_tested, maj_num, nb_test, generate_series(1, nb_test)::text min_num
 FROM test_nb
+ORDER BY maj_num, min_num
 )
 SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,
        coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' || 
                 b.function_tested || ' in the initial table...') AS function_tested,
        coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') description, 
-       NOT passed IS NULL AND (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed
+       NOT passed IS NULL AND 
+          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND 
+          (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed
 FROM test_series AS a FULL OUTER JOIN (
 
 ---------------------------------------------------------
+---------------- Validation functions -------------------
 ---------------------------------------------------------
 -- Test 1 - TT_NotNull
 ---------------------------------------------------------
@@ -338,1500 +344,1501 @@ SELECT '2.11'::text number,
        TT_NotEmpty(1.2::text) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 3 - TT_IsInt
+-- Test 3 - TT_Length
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.1'::text number,
-       'TT_IsInt'::text function_tested,
-       'Integer'::text description,
-       TT_IsInt(1::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.2'::text number,
-       'TT_IsInt'::text function_tested,
-       'Double precision, good value'::text description,
-       TT_IsInt(1.0::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.3'::text number,
-       'TT_IsInt'::text function_tested,
-       'Double precision, bad value'::text description,
-       TT_IsInt(1.1::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.4'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, good value'::text description,
-       TT_IsInt('1'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.5'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, decimal good value'::text description,
-       TT_IsInt('1.0'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.6'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, decimal bad value'::text description,
-       TT_IsInt('1.1'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.7'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, with letters'::text description,
-       TT_IsInt('1D'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.8'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, with invalid decimal'::text description,
-       TT_IsInt('1.0.0'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.9'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, with leading decimal'::text description,
-       TT_IsInt('.5'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.10'::text number,
-       'TT_IsInt'::text function_tested,
-       'Text, with trailing decimal'::text description,
-       TT_IsInt('1.'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '3.11'::text number,
-       'TT_IsInt'::text function_tested,
-       'NULL'::text description,
-       TT_IsInt(NULL::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 4 - TT_IsNumeric
----------------------------------------------------------
-UNION ALL
-SELECT '4.1'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'Integer'::text description,
-       TT_IsNumeric(1::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.2'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'Double precision'::text description,
-       TT_IsNumeric(1.1::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.3'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'leading decimal'::text description,
-       TT_IsNumeric('.1'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.4'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'Trailing decimal'::text description,
-       TT_IsNumeric('1.'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.5'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'Invalid decimals'::text description,
-       TT_IsNumeric('1.1.1'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.6'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'Text, with letter'::text description,
-       TT_IsNumeric('1F'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '4.7'::text number,
-       'TT_IsNumeric'::text function_tested,
-       'NULL'::text description,
-       TT_IsNumeric(NULL::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 5 - TT_IsBoolean
----------------------------------------------------------
-UNION ALL
-SELECT '5.1'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test true'::text description,
-       TT_IsBoolean(TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.2'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test false'::text description,
-       TT_IsBoolean(FALSE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.3'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test true as string'::text description,
-       TT_IsBoolean('TRUE') passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.4'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test false as string'::text description,
-       TT_IsBoolean('FALSE') passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.5'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test true as int'::text description,
-       TT_IsBoolean(1::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.6'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test false as int'::text description,
-       TT_IsBoolean(0::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.7'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test too big int'::text description,
-       TT_IsBoolean(2::text) = FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '5.8'::text number,
-       'TT_IsBoolean'::text function_tested,
-       'Test other text'::text description,
-       TT_IsBoolean('2a') = FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 6 - TT_Between
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (8 tests)
-SELECT (TT_TestNullAndWrongTypeParams(6, 'TT_Between',
-                                      ARRAY['min', 'numeric', 
-                                            'max', 'numeric', 
-                                            'includeMin', 'boolean', 
-                                            'includeMax', 'boolean'])).*
-UNION ALL
-SELECT '6.9'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, good value'::text description,
-       TT_Between(50::text, 0::text, 100::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.10'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, failed higher'::text description,
-       TT_Between(150::text, 0::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.11'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, failed lower'::text description,
-       TT_Between(5::text, 10::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.12'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, NULL val'::text description,
-       TT_Between(NULL::text, 0::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.13'::text number,
-       'TT_Between'::text function_tested,
-       'double precision, good value'::text description,
-       TT_Between(50.5::text, 0::text, 100::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.14'::text number,
-       'TT_Between'::text function_tested,
-       'double precision, failed higher'::text description,
-       TT_Between(150.5::text, 0::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.15'::text number,
-       'TT_Between'::text function_tested,
-       'double precision, failed lower'::text description,
-       TT_Between(5.5::text, 10::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.16'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, test inclusive lower'::text description,
-       TT_Between(0::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.17'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, test inclusive higher'::text description,
-       TT_Between(100::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.18'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, test inclusive lower false'::text description,
-       TT_Between(0::text, 0::text, 100::text, FALSE::text, TRUE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.19'::text number,
-       'TT_Between'::text function_tested,
-       'Integer, test inclusive higher false'::text description,
-       TT_Between(100::text, 0::text, 100::text, TRUE::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.20'::text number,
-       'TT_Between'::text function_tested,
-       'Non-valid val'::text description,
-       TT_Between('1a'::text, 0::text, 100::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.21'::text number,
-       'TT_Between'::text function_tested,
-       'min equal to max'::text description,
-       TT_IsError('SELECT TT_Between(0::text, 100::text, 100::text);'::text) = 'ERROR in TT_Between(): min is equal to max' passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.22'::text number,
-       'TT_Between'::text function_tested,
-       'min higher than max'::text description,
-       TT_IsError('SELECT TT_Between(0::text, 150::text, 100::text);'::text) = 'ERROR in TT_Between(): min is greater than max' passed
---------------------------------------------------------
-UNION ALL
-SELECT '6.23'::text number,
-       'TT_Between'::text function_tested,
-       'Text includeMin'::text description,
-       TT_Between(0::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.24'::text number,
-       'TT_Between'::text function_tested,
-       'Text includeMax'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.25'::text number,
-       'TT_Between'::text function_tested,
-       'Numeric includeMin false'::text description,
-       TT_Between(0::text, 0::text, 100::text, '0', 'TRUE') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.26'::text number,
-       'TT_Between'::text function_tested,
-       'Numeric includeMin true'::text description,
-       TT_Between(0::text, 0::text, 100::text, '1', 'TRUE') IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.27'::text number,
-       'TT_Between'::text function_tested,
-       'Numeric includeMax false'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', '0') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '6.28'::text number,
-       'TT_Between'::text function_tested,
-       'Numeric includeMax true'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', '1') IS TRUE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 7 - TT_GreaterThan
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_GreaterThan', 
-                                      ARRAY['lowerBound', 'numeric', 
-                                            'inclusive', 'boolean'])).*
-UNION ALL
-SELECT '7.5'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'Integer, good value'::text description,
-       TT_GreaterThan(11::text, 10::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '7.6'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'Integer, bad value'::text description,
-       TT_GreaterThan(9::text, 10::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '7.7'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'Double precision, good value'::text description,
-       TT_GreaterThan(10.3::text, 10.2::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '7.8'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'Double precision, bad value'::text description,
-       TT_GreaterThan(10.1::text, 10.2::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '7.9'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'Inclusive false'::text description,
-       TT_GreaterThan(10::text, 10.0::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '7.10'::text number,
-       'TT_GreaterThan'::text function_tested,
-       'NULL val'::text description,
-       TT_GreaterThan(NULL::text, 10.1::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 8 - TT_LessThan
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_LessThan', 
-                                      ARRAY['upperBound', 'numeric', 
-                                            'inclusive', 'boolean'])).*
-UNION ALL
-SELECT '8.5'::text number,
-       'TT_LessThan'::text function_tested,
-       'Integer, good value'::text description,
-       TT_LessThan(9::text, 10::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '8.6'::text number,
-       'TT_LessThan'::text function_tested,
-       'Integer, bad value'::text description,
-       TT_LessThan(11::text, 10::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '8.7'::text number,
-       'TT_LessThan'::text function_tested,
-       'Double precision, good value'::text description,
-       TT_LessThan(10.1::text, 10.7::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '8.8'::text number,
-       'TT_LessThan'::text function_tested,
-       'Double precision, bad value'::text description,
-       TT_LessThan(9.9::text, 9.5::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '8.9'::text number,
-       'TT_LessThan'::text function_tested,
-       'Inclusive false'::text description,
-       TT_LessThan(10.1::text, 10.1::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '8.10'::text number,
-       'TT_LessThan'::text function_tested,
-       'NULL val'::text description,
-       TT_LessThan(NULL::text, 10.1::text, TRUE::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 9 - TT_MatchList (list variant)
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (3 tests)
-SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_MatchList', ARRAY['lst', 'stringlist', 
-                                                               'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '9.4'::text number,
-       'TT_MatchList'::text function_tested,
-       'String good value'::text description,
-       TT_MatchList('1'::text, '{''1'', ''2'', ''3''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.5'::text number,
-       'TT_MatchList'::text function_tested,
-       'String bad value'::text description,
-       TT_MatchList('1'::text, '{''4'', ''5'', ''6''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.6'::text number,
-       'TT_MatchList'::text function_tested,
-       'String Null val'::text description,
-       TT_MatchList(NULL::text, '{''1'', 2'', ''3''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.7'::text number,
-       'TT_MatchList'::text function_tested,
-       'String, empty string in list, good value'::text description,
-       TT_MatchList('1'::text, '{''a'', ''2'', ''3'', ''1''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.8'::text number,
-       'TT_MatchList'::text function_tested,
-       'String, empty string in list, bad value'::text description,
-       TT_MatchList('4'::text, '{'''', ''2'', ''3'', ''1''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.9'::text number,
-       'TT_MatchList'::text function_tested,
-       'String, val is empty string, good value'::text description,
-       TT_MatchList(''::text, '{'''', ''1'', ''2'', ''3''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.10'::text number,
-       'TT_MatchList'::text function_tested,
-       'String, val is empty string, bad value'::text description,
-       TT_MatchList(''::text, '{''1'', ''2'', ''3''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.11'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision good value'::text description,
-       TT_MatchList(1.5::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.12'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision bad value'::text description,
-       TT_MatchList(1.1::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.13'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision empty string in list, good value'::text description,
-       TT_MatchList(1.5::text, '{'''', ''1.5'', ''1.6''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.14'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision empty string in list, bad value'::text description,
-       TT_MatchList(1.5::text, '{'''', ''1.7'', ''1.6''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.15'::text number,
-       'TT_MatchList'::text function_tested,
-       'Integer good value'::text description,
-       TT_MatchList(5::text, '{''5'', ''4'', ''6''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.16'::text number,
-       'TT_MatchList'::text function_tested,
-       'Integer bad value'::text description,
-       TT_MatchList(1::text, '{''5'', ''4'', ''6''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.17'::text number,
-       'TT_MatchList'::text function_tested,
-       'Integer empty string in list, good value'::text description,
-       TT_MatchList(5::text, '{'''', ''5'', ''6''}'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.18'::text number,
-       'TT_MatchList'::text function_tested,
-       'Integer empty string in list, bad value'::text description,
-       TT_MatchList(1::text, '{'''', ''2'', ''6''}'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.19'::text number,
-       'TT_MatchList'::text function_tested,
-       'Test ignoreCase, true, val lower'::text description,
-       TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.20'::text number,
-       'TT_MatchList'::text function_tested,
-       'Test ignoreCase, true, list lower'::text description,
-       TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.21'::text number,
-       'TT_MatchList'::text function_tested,
-       'Test ignoreCase, false, val lower'::text description,
-       TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.22'::text number,
-       'TT_MatchList'::text function_tested,
-       'Test ignoreCase, false, list lower'::text description,
-       TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.23'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision test ignore case TRUE'::text description,
-       TT_MatchList(1.5::text, '{''1.5'', ''1.7'', ''1.6''}'::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '9.24'::text number,
-       'TT_MatchList'::text function_tested,
-       'Double precision test ignore case FALSE'::text description,
-       TT_MatchList(1.5::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text) IS FALSE passed
-------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------
--- Test 10 - TT_MatchTable (lookup table variant)
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text', 
-                                                                 'lookupTableName', 'text', 
-                                                                 'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '10.5'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test text, pass'::text description,
-       TT_MatchTable('RA'::text, 'public'::text, 'test_lookuptable1'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.6'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test text, fail'::text description,
-       TT_MatchTable('RAA'::text, 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.7'::text number,
-       'TT_MatchTable'::text function_tested,
-       'val NULL text'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.8'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.9'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, fail'::text description,
-       TT_MatchTable(1.5::text, 'public'::text, 'test_lookuptable3'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.10'::text number,
-       'TT_MatchTable'::text function_tested,
-       'NULL val double precision'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable3'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.11'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test integer, pass'::text description,
-       TT_MatchTable(1::text, 'public'::text, 'test_lookuptable2'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.12'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test integer, fail'::text description,
-       TT_MatchTable(5::text, 'public'::text, 'test_lookuptable2'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.13'::text number,
-       'TT_MatchTable'::text function_tested,
-       'NULL val integer'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable2'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.14'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Test ignoreCase when false'::text description,
-       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.15'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass, ignore case false'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, FALSE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.16'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Test ignoreCase when true'::text description,
-       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '10.17'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass, ingore case true'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, TRUE::text) passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 11 - TT_Concat
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_Concat', 
-                                      ARRAY['sep', 'text'])).*
-UNION ALL
-SELECT '11.2'::text number,
-       'TT_Concat'::text function_tested,
-       'Basic usage'::text description,
-       TT_Concat('{''cas'', ''id'', ''test''}'::text, '-'::text) = 'cas-id-test' passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.3'::text number,
-       'TT_Concat'::text function_tested,
-       'Basic usage with numbers and symbols'::text description,
-       TT_Concat('{''001'', ''--0--'', ''tt.tt''}'::text, '-'::text) = '001---0---tt.tt' passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.4'::text number,
-       'TT_Concat'::text function_tested,
-       'Sep is null'::text description,
-       TT_IsError('SELECT TT_Concat(''{''''cas'''', ''''id'''', ''''test''''}''::text, NULL::text);') != 'FALSE' passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 12 - TT_CopyText
----------------------------------------------------------
-UNION ALL
-SELECT '12.1'::text number,
-       'TT_CopyText'::text function_tested,
-       'Text usage'::text description,
-       TT_CopyText('copytest'::text) = 'copytest'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '12.2'::text number,
-       'TT_CopyText'::text function_tested,
-       'Empty string usage'::text description,
-       TT_CopyText(''::text) = ''::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '12.3'::text number,
-       'TT_CopyText'::text function_tested,
-       'Null'::text description,
-       TT_CopyText(NULL::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 13 - TT_LookupText
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(13, 'TT_LookupText', 
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
-                                            'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '13.6'::text number,
-       'TT_LookupText'::text function_tested,
-       'Text usage'::text description,
-       TT_LookupText('a'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) = 'ACB'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '13.7'::text number,
-       'TT_LookupText'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupText(NULL::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '13.8'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'ACB'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '13.9'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, FALSE::text) IS NULL passed
-       UNION ALL
----------------------------------------------------------
-SELECT '13.10'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, true flipped case'::text description,
-       TT_LookupText('aa'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'abcde'::text passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 14 - TT_False
----------------------------------------------------------
-UNION ALL
-SELECT '14.1'::text number,
-       'TT_False'::text function_tested,
-       'Test'::text description,
-       TT_False() IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 15 - TT_Length
----------------------------------------------------------
-UNION ALL
-SELECT '15.1'::text number,
        'TT_Length'::text function_tested,
        'Test, text'::text description,
        TT_Length('text'::text) = 4 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '15.2'::text number,
+SELECT '3.2'::text number,
        'TT_Length'::text function_tested,
        'Test empty string'::text description,
        TT_Length(''::text) = 0 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '15.3'::text number,
+SELECT '3.3'::text number,
        'TT_Length'::text function_tested,
        'Test double precision'::text description,
        TT_Length(5.5555::text) = 6 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '15.4'::text number,
+SELECT '3.4'::text number,
        'TT_Length'::text function_tested,
        'Test int'::text description,
        TT_Length(1234::text) = 4 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '15.5'::text number,
+SELECT '3.5'::text number,
        'TT_Length'::text function_tested,
        'Test NULL text'::text description,
        TT_Length(NULL::text) = 0 passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 16 - TT_Pad
+-- Test 4 - TT_IsInt
+---------------------------------------------------------
+UNION ALL
+SELECT '4.1'::text number,
+       'TT_IsInt'::text function_tested,
+       'Integer'::text description,
+       TT_IsInt(1::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.2'::text number,
+       'TT_IsInt'::text function_tested,
+       'Double precision, good value'::text description,
+       TT_IsInt(1.0::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.3'::text number,
+       'TT_IsInt'::text function_tested,
+       'Double precision, bad value'::text description,
+       TT_IsInt(1.1::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.4'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, good value'::text description,
+       TT_IsInt('1'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.5'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, decimal good value'::text description,
+       TT_IsInt('1.0'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.6'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, decimal bad value'::text description,
+       TT_IsInt('1.1'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.7'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, with letters'::text description,
+       TT_IsInt('1D'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.8'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, with invalid decimal'::text description,
+       TT_IsInt('1.0.0'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.9'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, with leading decimal'::text description,
+       TT_IsInt('.5'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.10'::text number,
+       'TT_IsInt'::text function_tested,
+       'Text, with trailing decimal'::text description,
+       TT_IsInt('1.'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '4.11'::text number,
+       'TT_IsInt'::text function_tested,
+       'NULL'::text description,
+       TT_IsInt(NULL::text) IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 5 - TT_IsNumeric
+---------------------------------------------------------
+UNION ALL
+SELECT '5.1'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'Integer'::text description,
+       TT_IsNumeric(1::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.2'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'Double precision'::text description,
+       TT_IsNumeric(1.1::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.3'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'leading decimal'::text description,
+       TT_IsNumeric('.1'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.4'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'Trailing decimal'::text description,
+       TT_IsNumeric('1.'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.5'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'Invalid decimals'::text description,
+       TT_IsNumeric('1.1.1'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.6'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'Text, with letter'::text description,
+       TT_IsNumeric('1F'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '5.7'::text number,
+       'TT_IsNumeric'::text function_tested,
+       'NULL'::text description,
+       TT_IsNumeric(NULL::text) IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 6 - TT_IsBoolean
+---------------------------------------------------------
+UNION ALL
+SELECT '6.1'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test true'::text description,
+       TT_IsBoolean(TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.2'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test false'::text description,
+       TT_IsBoolean(FALSE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.3'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test true as string'::text description,
+       TT_IsBoolean('TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.4'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test false as string'::text description,
+       TT_IsBoolean('FALSE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.5'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test true as int'::text description,
+       TT_IsBoolean(1::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.6'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test false as int'::text description,
+       TT_IsBoolean(0::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.7'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test too big int'::text description,
+       TT_IsBoolean(2::text) = FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '6.8'::text number,
+       'TT_IsBoolean'::text function_tested,
+       'Test other text'::text description,
+       TT_IsBoolean('2a') = FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 7 - TT_Between
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (8 tests)
+SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_Between',
+                                      ARRAY['min', 'numeric', 
+                                            'max', 'numeric', 
+                                            'includeMin', 'boolean', 
+                                            'includeMax', 'boolean'])).*
+UNION ALL
+SELECT '7.9'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, good value'::text description,
+       TT_Between(50::text, 0::text, 100::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.10'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, failed higher'::text description,
+       TT_Between(150::text, 0::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.11'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, failed lower'::text description,
+       TT_Between(5::text, 10::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.12'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, NULL val'::text description,
+       TT_Between(NULL::text, 0::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.13'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, good value'::text description,
+       TT_Between(50.5::text, 0::text, 100::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.14'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, failed higher'::text description,
+       TT_Between(150.5::text, 0::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.15'::text number,
+       'TT_Between'::text function_tested,
+       'double precision, failed lower'::text description,
+       TT_Between(5.5::text, 10::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.16'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive lower'::text description,
+       TT_Between(0::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.17'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive higher'::text description,
+       TT_Between(100::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.18'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive lower false'::text description,
+       TT_Between(0::text, 0::text, 100::text, FALSE::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.19'::text number,
+       'TT_Between'::text function_tested,
+       'Integer, test inclusive higher false'::text description,
+       TT_Between(100::text, 0::text, 100::text, TRUE::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.20'::text number,
+       'TT_Between'::text function_tested,
+       'Non-valid val'::text description,
+       TT_Between('1a'::text, 0::text, 100::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.21'::text number,
+       'TT_Between'::text function_tested,
+       'min equal to max'::text description,
+       TT_IsError('SELECT TT_Between(0::text, 100::text, 100::text);'::text) = 'ERROR in TT_Between(): min is equal to max' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.22'::text number,
+       'TT_Between'::text function_tested,
+       'min higher than max'::text description,
+       TT_IsError('SELECT TT_Between(0::text, 150::text, 100::text);'::text) = 'ERROR in TT_Between(): min is greater than max' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.23'::text number,
+       'TT_Between'::text function_tested,
+       'Text includeMin'::text description,
+       TT_Between(0::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.24'::text number,
+       'TT_Between'::text function_tested,
+       'Text includeMax'::text description,
+       TT_Between(100::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.25'::text number,
+       'TT_Between'::text function_tested,
+       'Numeric includeMin false'::text description,
+       TT_Between(0::text, 0::text, 100::text, '0', 'TRUE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.26'::text number,
+       'TT_Between'::text function_tested,
+       'Numeric includeMin true'::text description,
+       TT_Between(0::text, 0::text, 100::text, '1', 'TRUE') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.27'::text number,
+       'TT_Between'::text function_tested,
+       'Numeric includeMax false'::text description,
+       TT_Between(100::text, 0::text, 100::text, 'TRUE', '0') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '7.28'::text number,
+       'TT_Between'::text function_tested,
+       'Numeric includeMax true'::text description,
+       TT_Between(100::text, 0::text, 100::text, 'TRUE', '1') IS TRUE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 8 - TT_GreaterThan
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_Pad', 
-                                      ARRAY['targetLength', 'int',
-                                            'padChar', 'char',
-                                            'trunc', 'boolean'])).*
+SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_GreaterThan', 
+                                      ARRAY['lowerBound', 'numeric', 
+                                            'inclusive', 'boolean'])).*
 UNION ALL
-SELECT '16.5'::text number,
-       'TT_Pad'::text function_tested,
-       'Basic test'::text description,
-       TT_Pad('species1'::text, 10::text, 'X'::text) = 'XXspecies1' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.6'::text number,
-       'TT_Pad'::text function_tested,
-       'Basic int test'::text description,
-       TT_Pad(12345::text, 10::text, '0'::text) = '0000012345' passed
+SELECT '8.5'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Integer, good value'::text description,
+       TT_GreaterThan(11::text, 10::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.7'::text number,
-       'TT_Pad'::text function_tested,
-       'Basic double precision test'::text description,
-       TT_Pad(1.234::text, 10::text, '0'::text) = '000001.234' passed
+SELECT '8.6'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Integer, bad value'::text description,
+       TT_GreaterThan(9::text, 10::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.8'::text number,
-       'TT_Pad'::text function_tested,
-       'Empty string'::text description,
-       TT_Pad(''::text, 10::text, 'x'::text) = 'xxxxxxxxxx' passed
+SELECT '8.7'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Double precision, good value'::text description,
+       TT_GreaterThan(10.3::text, 10.2::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.9'::text number,
-       'TT_Pad'::text function_tested,
-       'String longer than pad length, trunc TRUE'::text description,
-       TT_Pad('123456'::text, 5::text, '0'::text) = '12345' passed
+SELECT '8.8'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Double precision, bad value'::text description,
+       TT_GreaterThan(10.1::text, 10.2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.10'::text number,
-       'TT_Pad'::text function_tested,
-       'String longer than pad length, trunc FALSE'::text description,
-       TT_Pad('123456'::text, 5::text, '0'::text, FALSE::text) = '123456' passed
+SELECT '8.9'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'Inclusive false'::text description,
+       TT_GreaterThan(10::text, 10.0::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.11'::text number,
-       'TT_Pad'::text function_tested,
-       'Int longer than pad length'::text description,
-       TT_Pad(123456789::text, 5::text, 'x'::text) = '12345' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.12'::text number,
-       'TT_Pad'::text function_tested,
-       'Test, double precision, trim'::text description,
-       TT_Pad(1.3456789::text, 5::text, 'x'::text) = '1.345' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.13'::text number,
-       'TT_Pad'::text function_tested,
-       'Test default, int'::text description,
-       TT_Pad(12345678::text, 10::text, 'x'::text) = 'xx12345678' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.14'::text number,
-       'TT_Pad'::text function_tested,
-       'Test default, double precision'::text description,
-       TT_Pad(1.345678::text, 5::text, 'x'::text) = '1.345' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.15'::text number,
-       'TT_Pad'::text function_tested,
-       'Test error, pad_char > 1'::text description,
-       TT_IsError('SELECT TT_Pad(1::text, 10::text, ''22''::text);') != 'FALSE' passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.16'::text number,
-       'TT_Pad'::text function_tested,
-       'Test error, null val'::text description,
-       TT_Pad(NULL::text, 3::text, 'x'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.17'::text number,
-       'TT_Pad'::text function_tested,
-       'Test negative padding length'::text description,
-       TT_IsError('SELECT TT_Pad(''aaa''::text, ''-3''::text, ''x''::text)'::text) = 'ERROR in TT_Pad(): targetLength is smaller than 0' passed
+SELECT '8.10'::text number,
+       'TT_GreaterThan'::text function_tested,
+       'NULL val'::text description,
+       TT_GreaterThan(NULL::text, 10.1::text) IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 17 - TT_IsUnique
+-- Test 9 - TT_LessThan
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_IsUnique', 
+SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_LessThan', 
+                                      ARRAY['upperBound', 'numeric', 
+                                            'inclusive', 'boolean'])).*
+UNION ALL
+SELECT '9.5'::text number,
+       'TT_LessThan'::text function_tested,
+       'Integer, good value'::text description,
+       TT_LessThan(9::text, 10::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.6'::text number,
+       'TT_LessThan'::text function_tested,
+       'Integer, bad value'::text description,
+       TT_LessThan(11::text, 10::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.7'::text number,
+       'TT_LessThan'::text function_tested,
+       'Double precision, good value'::text description,
+       TT_LessThan(10.1::text, 10.7::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.8'::text number,
+       'TT_LessThan'::text function_tested,
+       'Double precision, bad value'::text description,
+       TT_LessThan(9.9::text, 9.5::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.9'::text number,
+       'TT_LessThan'::text function_tested,
+       'Inclusive false'::text description,
+       TT_LessThan(10.1::text, 10.1::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.10'::text number,
+       'TT_LessThan'::text function_tested,
+       'NULL val'::text description,
+       TT_LessThan(NULL::text, 10.1::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 10 - TT_IsUnique
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_IsUnique', 
                                       ARRAY['lookupSchemaName', 'text', 
                                             'lookupTableName', 'text', 
                                             'occurrences', 'int'])).*
 UNION ALL
-SELECT '17.5'::text number,
+SELECT '10.5'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, text, good value'::text description,
        TT_IsUnique('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.6'::text number,
+SELECT '10.6'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, double precision, good value'::text description,
        TT_IsUnique(1.2::text, 'public'::text, 'test_lookuptable3'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.7'::text number,
+SELECT '10.7'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, integer, good value'::text description,
        TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text, 1::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.8'::text number,
+SELECT '10.8'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, text, bad value'::text description,
        TT_IsUnique('*AX'::text, 'public'::text, 'test_lookuptable1'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.9'::text number,
+SELECT '10.9'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, double precision, bad value'::text description,
        TT_IsUnique(1.2::text, 'public'::text, 'test_lookuptable3'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.10'::text number,
+SELECT '10.10'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, integer, bad value'::text description,
        TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text, 2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.11'::text number,
+SELECT '10.11'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, empty string, good value'::text description,
        TT_IsUnique(''::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.12'::text number,
+SELECT '10.12'::text number,
        'TT_IsUnique'::text function_tested,
        'Null val, text'::text description,
        TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.13'::text number,
+SELECT '10.13'::text number,
        'TT_IsUnique'::text function_tested,
        'Null val, double precision'::text description,
        TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable3'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.10'::text number,
+SELECT '10.14'::text number,
        'TT_IsUnique'::text function_tested,
        'Null val, int'::text description,
        TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable2'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.11'::text number,
+SELECT '10.15'::text number,
        'TT_IsUnique'::text function_tested,
        'Test default, text'::text description,
        TT_IsUnique('RA'::text, 'public'::text, 'test_lookuptable1'::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.12'::text number,
+SELECT '10.16'::text number,
        'TT_IsUnique'::text function_tested,
        'Test default, double precision'::text description,
        TT_IsUnique(1.3::text, 'public'::text, 'test_lookuptable3'::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.13'::text number,
+SELECT '10.17'::text number,
        'TT_IsUnique'::text function_tested,
        'Test default, int'::text description,
        TT_IsUnique(3::text, 'public'::text, 'test_lookuptable2'::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.14'::text number,
+SELECT '10.18'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, text, missing value'::text description,
        TT_IsUnique('**AX'::text, 'public'::text, 'test_lookuptable1'::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 18 - TT_MapText
+-- Test 11 - TT_MatchTable (lookup table variant)
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text', 
+                                                                 'lookupTableName', 'text', 
+                                                                 'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '11.5'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test text, pass'::text description,
+       TT_MatchTable('RA'::text, 'public'::text, 'test_lookuptable1'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.6'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test text, fail'::text description,
+       TT_MatchTable('RAA'::text, 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.7'::text number,
+       'TT_MatchTable'::text function_tested,
+       'val NULL text'::text description,
+       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.8'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test double precision, pass'::text description,
+       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.9'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test double precision, fail'::text description,
+       TT_MatchTable(1.5::text, 'public'::text, 'test_lookuptable3'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.10'::text number,
+       'TT_MatchTable'::text function_tested,
+       'NULL val double precision'::text description,
+       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable3'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.11'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test integer, pass'::text description,
+       TT_MatchTable(1::text, 'public'::text, 'test_lookuptable2'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.12'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test integer, fail'::text description,
+       TT_MatchTable(5::text, 'public'::text, 'test_lookuptable2'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.13'::text number,
+       'TT_MatchTable'::text function_tested,
+       'NULL val integer'::text description,
+       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable2'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.14'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Test ignoreCase when false'::text description,
+       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.15'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test double precision, pass, ignore case false'::text description,
+       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, FALSE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.16'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Test ignoreCase when true'::text description,
+       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '11.17'::text number,
+       'TT_MatchTable'::text function_tested,
+       'Simple test double precision, pass, ingore case true'::text description,
+       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, TRUE::text) passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 12 - TT_MatchList (list variant)
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (3 tests)
+SELECT (TT_TestNullAndWrongTypeParams(12, 'TT_MatchList', ARRAY['lst', 'stringlist', 
+                                                               'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '12.4'::text number,
+       'TT_MatchList'::text function_tested,
+       'String good value'::text description,
+       TT_MatchList('1'::text, '{''1'', ''2'', ''3''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.5'::text number,
+       'TT_MatchList'::text function_tested,
+       'String bad value'::text description,
+       TT_MatchList('1'::text, '{''4'', ''5'', ''6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.6'::text number,
+       'TT_MatchList'::text function_tested,
+       'String Null val'::text description,
+       TT_MatchList(NULL::text, '{''1'', 2'', ''3''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.7'::text number,
+       'TT_MatchList'::text function_tested,
+       'String, empty string in list, good value'::text description,
+       TT_MatchList('1'::text, '{''a'', ''2'', ''3'', ''1''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.8'::text number,
+       'TT_MatchList'::text function_tested,
+       'String, empty string in list, bad value'::text description,
+       TT_MatchList('4'::text, '{'''', ''2'', ''3'', ''1''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.9'::text number,
+       'TT_MatchList'::text function_tested,
+       'String, val is empty string, good value'::text description,
+       TT_MatchList(''::text, '{'''', ''1'', ''2'', ''3''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.10'::text number,
+       'TT_MatchList'::text function_tested,
+       'String, val is empty string, bad value'::text description,
+       TT_MatchList(''::text, '{''1'', ''2'', ''3''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.11'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision good value'::text description,
+       TT_MatchList(1.5::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.12'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision bad value'::text description,
+       TT_MatchList(1.1::text, '{''1.5'', ''1.4'', ''1.6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.13'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision empty string in list, good value'::text description,
+       TT_MatchList(1.5::text, '{'''', ''1.5'', ''1.6''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.14'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision empty string in list, bad value'::text description,
+       TT_MatchList(1.5::text, '{'''', ''1.7'', ''1.6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.15'::text number,
+       'TT_MatchList'::text function_tested,
+       'Integer good value'::text description,
+       TT_MatchList(5::text, '{''5'', ''4'', ''6''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.16'::text number,
+       'TT_MatchList'::text function_tested,
+       'Integer bad value'::text description,
+       TT_MatchList(1::text, '{''5'', ''4'', ''6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.17'::text number,
+       'TT_MatchList'::text function_tested,
+       'Integer empty string in list, good value'::text description,
+       TT_MatchList(5::text, '{'''', ''5'', ''6''}'::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.18'::text number,
+       'TT_MatchList'::text function_tested,
+       'Integer empty string in list, bad value'::text description,
+       TT_MatchList(1::text, '{'''', ''2'', ''6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.19'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test ignoreCase, true, val lower'::text description,
+       TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.20'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test ignoreCase, true, list lower'::text description,
+       TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.21'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test ignoreCase, false, val lower'::text description,
+       TT_MatchList('a'::text, '{''A'', ''B'', ''C''}'::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.22'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test ignoreCase, false, list lower'::text description,
+       TT_MatchList('A'::text, '{''a'', ''b'', ''c''}'::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.23'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision test ignore case TRUE'::text description,
+       TT_MatchList(1.5::text, '{''1.5'', ''1.7'', ''1.6''}'::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.24'::text number,
+       'TT_MatchList'::text function_tested,
+       'Double precision test ignore case FALSE'::text description,
+       TT_MatchList(1.5::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+-- Test 13 - TT_False
+---------------------------------------------------------
+UNION ALL
+SELECT '13.1'::text number,
+       'TT_False'::text function_tested,
+       'Test'::text description,
+       TT_False() IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 14 - TT_True
+---------------------------------------------------------
+UNION ALL
+SELECT '14.1'::text number,
+       'TT_True'::text function_tested,
+       'Simple test'::text description,
+       TT_True() passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 15 - TT_GeoIsValid
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (1 tests)
+SELECT (TT_TestNullAndWrongTypeParams(15, 'TT_GeoIsValid', ARRAY['fix', 'boolean'])).*
+UNION ALL
+SELECT '15.3'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Valid geometry'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.4'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix=false'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.5'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix=true'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.6'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'Invalid geometry, fix default to true'::text description,
+       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.7'::text number,
+       'TT_GeoIsValid'::text function_tested,
+       'NULL geometry, fix=false'::text description,
+       TT_GeoIsValid(NULL::text) IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 16 - TT_GeoIntersects
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (3 tests)
+SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_GeoIntersects', 
+                                      ARRAY['intersectSchemaName', 'text',
+                                            'intersectTableName', 'text',
+                                            'geoCol', 'text'])).*
+UNION ALL
+SELECT '16.4'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'No overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.5'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'One overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.6'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'Three overlap'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '16.7'::text number,
+       'TT_GeoIntersects'::text function_tested,
+       'Invalid geometry'::text description,
+       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 17 - TT_NotNullEmptyOr
+---------------------------------------------------------
+UNION ALL
+SELECT '17.1'::text number,
+       'TT_NotNullEmptyOr'::text function_tested,
+       'All empty'::text description,
+       TT_NotNullEmptyOr('{'''','''','''',''''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.2'::text number,
+       'TT_NotNullEmptyOr'::text function_tested,
+       'One val'::text description,
+       TT_NotNullEmptyOr('{'''',''d'','''',''''}') IS TRUE passed
+---------------------------------------------------------
+
+---------------------------------------------------------
+-- Test 18 - TT_IsIntSubstring
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(18, 'TT_IsIntSubstring', 
+                                      ARRAY['start_char', 'int',
+                                            'for_length', 'int'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '18.5'::text number,
+       'TT_IsIntSubstring'::text function_tested,
+       'NULL value'::text description,
+       TT_IsIntSubstring(NULL::text, 4::text, 1::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.6'::text number,
+       'TT_IsIntSubstring'::text function_tested,
+       'Good string'::text description,
+       TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.7'::text number,
+       'TT_IsIntSubstring'::text function_tested,
+       'Bad string'::text description,
+       TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
+---------------------------------------------------------
+--------------- Translation functions -------------------
+---------------------------------------------------------
+-- Test 101 - TT_CopyText
+---------------------------------------------------------
+UNION ALL
+SELECT '101.1'::text number,
+       'TT_CopyText'::text function_tested,
+       'Text usage'::text description,
+       TT_CopyText('copytest'::text) = 'copytest'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '101.2'::text number,
+       'TT_CopyText'::text function_tested,
+       'Empty string usage'::text description,
+       TT_CopyText(''::text) = ''::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '101.3'::text number,
+       'TT_CopyText'::text function_tested,
+       'Null'::text description,
+       TT_CopyText(NULL::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 102 - TT_CopyDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '102.1'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Double usage'::text description,
+       TT_CopyDouble('1.111'::text) = 1.111::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.2'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Null'::text description,
+       TT_CopyDouble(NULL::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 103 - TT_CopyInt
+---------------------------------------------------------
+UNION ALL
+SELECT '103.1'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage'::text description,
+       TT_CopyInt('1'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '103.2'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with zero decimal'::text description,
+       TT_CopyInt('1.0'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '103.3'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with decimal round down'::text description,
+       TT_CopyInt('1.2'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '103.4'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Int usage from double with decimal round up'::text description,
+       TT_CopyInt('1.5'::text) = 2::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '103.5'::text number,
+       'TT_CopyInt'::text function_tested,
+       'Null'::text description,
+       TT_CopyInt(NULL::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 104 - TT_LookupText
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (5 tests)
+SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText', 
+                                      ARRAY['lookupSchemaName', 'text',
+                                            'lookupTableName', 'text',
+                                            'lookupCol', 'text',
+                                            'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '104.6'::text number,
+       'TT_LookupText'::text function_tested,
+       'Text usage'::text description,
+       TT_LookupText('a'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) = 'ACB'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '104.7'::text number,
+       'TT_LookupText'::text function_tested,
+       'NULL val'::text description,
+       TT_LookupText(NULL::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '104.8'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test ignore case, true'::text description,
+       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'ACB'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '104.9'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test ignore case, false'::text description,
+       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, FALSE::text) IS NULL passed
+       UNION ALL
+---------------------------------------------------------
+SELECT '104.10'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test ignore case, true flipped case'::text description,
+       TT_LookupText('aa'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'abcde'::text passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 105 - TT_LookupDouble
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (5 tests)
+SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble', 
+                                      ARRAY['lookupSchemaName', 'text',
+                                            'lookupTableName', 'text',
+                                            'lookupCol', 'text',
+                                            'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '105.6'::text number,
+       'TT_LookupDouble'::text function_tested,
+       'Double precision usage'::text description,
+       TT_LookupDouble('a'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) = 1.1::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '105.7'::text number,
+       'TT_LookupDouble'::text function_tested,
+       'NULL val'::text description,
+       TT_LookupDouble(NULL::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '105.8'::text number,
+       'TT_LookupDouble'::text function_tested,
+       'Test ignore case, true'::text description,
+       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, TRUE::text) = 1.1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '105.9'::text number,
+       'TT_LookupDouble'::text function_tested,
+       'Test ignore case, false'::text description,
+       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, FALSE::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 106 - TT_LookupInt
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (5 tests)
+SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt', 
+                                      ARRAY['lookupSchemaName', 'text',
+                                            'lookupTableName', 'text',
+                                            'lookupCol', 'text',
+                                            'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '106.6'::text number,
+       'TT_LookupInt'::text function_tested,
+       'Int usage'::text description,
+       TT_LookupInt('a'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '106.7'::text number,
+       'TT_LookupInt'::text function_tested,
+       'NULL val'::text description,
+       TT_LookupInt(NULL::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '106.8'::text number,
+       'TT_LookupInt'::text function_tested,
+       'Test ignore case, true'::text description,
+       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, TRUE::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '106.9'::text number,
+       'TT_LookupInt'::text function_tested,
+       'Test ignore case, false'::text description,
+       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, FALSE::text) IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 107 - TT_MapText
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(18, 'TT_MapText', 
+SELECT (TT_TestNullAndWrongTypeParams(107, 'TT_MapText', 
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'stringlist',
                                             'ignoreCase', 'boolean'])).*
 UNION ALL
-SELECT '18.7'::text number,
+SELECT '107.7'::text number,
        'TT_MapText'::text function_tested,
        'Test text list, text list'::text description,
        TT_MapText('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''a'',''b'',''c'',''d''}'::text) = 'a'::text passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.8'::text number,
+SELECT '107.8'::text number,
        'TT_MapText'::text function_tested,
        'Test double precision list, text list'::text description,
        TT_MapText(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''A'',''B'',''C'',''D''}'::text) = 'A' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.9'::text number,
+SELECT '107.9'::text number,
        'TT_MapText'::text function_tested,
        'Test int list, text list'::text description,
        TT_MapText(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''A'',''B'',''C'',''D''}'::text) = 'B' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.10'::text number,
+SELECT '107.10'::text number,
        'TT_MapText'::text function_tested,
        'Test Null val'::text description,
        TT_IsError('SELECT TT_MapText(NULL::text, ''{''A'',''B'',''C'',''D''}''::text, ''{''a'',''b'',''c'',''d''}''::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.11'::text number,
+SELECT '107.11'::text number,
        'TT_MapText'::text function_tested,
        'Test caseIgnore, true'::text description,
        TT_MapText('a'::text, '{''A'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text, TRUE::text) = 'aa' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.12'::text number,
+SELECT '107.12'::text number,
        'TT_MapText'::text function_tested,
        'Test caseIgnore, false'::text description,
        TT_MapText('a'::text, '{''A'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text, FALSE::text) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 19 - TT_PadConcat
+-- Test 108 - TT_MapDouble
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(19, 'TT_PadConcat', 
+SELECT (TT_TestNullAndWrongTypeParams(108, 'TT_MapDouble', 
+                                      ARRAY['mapVals', 'stringlist',
+                                            'targetVals', 'doublelist',
+                                            'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '108.7'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test text list, double precision list'::text description,
+       TT_MapDouble('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1'::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '108.8'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test double precision list, double precision list'::text description,
+       TT_MapDouble(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1.11'',''2.22'',''3.33'',''4.44''}'::text) = '1.11'::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '108.9'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test int list, double precision list'::text description,
+       TT_MapDouble(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '2.2'::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '108.10'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test Null val'::text description,
+       TT_IsError('SELECT TT_MapDouble(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''1.1'',''2.2'',''3.3'',''4.4''}''::text);') != 'FALSE' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 109 - TT_MapInt
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (6 tests)
+SELECT (TT_TestNullAndWrongTypeParams(109, 'TT_MapInt', 
+                                      ARRAY['mapVals', 'stringlist',
+                                            'targetVals', 'intlist',
+                                            'ignoreCase', 'boolean'])).*
+UNION ALL
+SELECT '109.7'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test text list, int list'::text description,
+       TT_MapInt('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.8'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test double precision list, int list'::text description,
+       TT_MapInt(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.9'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test int list, int list'::text description,
+       TT_MapInt(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''5'',''6'',''7'',''8''}'::text) = '6'::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.10'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test Null val'::text description,
+       TT_IsError('SELECT TT_MapInt(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''5'',''6'',''7'',''8''}''::text);') != 'FALSE' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 110 - TT_Pad
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(110, 'TT_Pad', 
+                                      ARRAY['targetLength', 'int',
+                                            'padChar', 'char',
+                                            'trunc', 'boolean'])).*
+UNION ALL
+SELECT '110.5'::text number,
+       'TT_Pad'::text function_tested,
+       'Basic test'::text description,
+       TT_Pad('species1'::text, 10::text, 'X'::text) = 'XXspecies1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.6'::text number,
+       'TT_Pad'::text function_tested,
+       'Basic int test'::text description,
+       TT_Pad(12345::text, 10::text, '0'::text) = '0000012345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.7'::text number,
+       'TT_Pad'::text function_tested,
+       'Basic double precision test'::text description,
+       TT_Pad(1.234::text, 10::text, '0'::text) = '000001.234' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.8'::text number,
+       'TT_Pad'::text function_tested,
+       'Empty string'::text description,
+       TT_Pad(''::text, 10::text, 'x'::text) = 'xxxxxxxxxx' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.9'::text number,
+       'TT_Pad'::text function_tested,
+       'String longer than pad length, trunc TRUE'::text description,
+       TT_Pad('123456'::text, 5::text, '0'::text) = '12345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.10'::text number,
+       'TT_Pad'::text function_tested,
+       'String longer than pad length, trunc FALSE'::text description,
+       TT_Pad('123456'::text, 5::text, '0'::text, FALSE::text) = '123456' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.11'::text number,
+       'TT_Pad'::text function_tested,
+       'Int longer than pad length'::text description,
+       TT_Pad(123456789::text, 5::text, 'x'::text) = '12345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.12'::text number,
+       'TT_Pad'::text function_tested,
+       'Test, double precision, trim'::text description,
+       TT_Pad(1.3456789::text, 5::text, 'x'::text) = '1.345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.13'::text number,
+       'TT_Pad'::text function_tested,
+       'Test default, int'::text description,
+       TT_Pad(12345678::text, 10::text, 'x'::text) = 'xx12345678' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.14'::text number,
+       'TT_Pad'::text function_tested,
+       'Test default, double precision'::text description,
+       TT_Pad(1.345678::text, 5::text, 'x'::text) = '1.345' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.15'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, pad_char > 1'::text description,
+       TT_IsError('SELECT TT_Pad(1::text, 10::text, ''22''::text);') != 'FALSE' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.16'::text number,
+       'TT_Pad'::text function_tested,
+       'Test error, null val'::text description,
+       TT_Pad(NULL::text, 3::text, 'x'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '110.17'::text number,
+       'TT_Pad'::text function_tested,
+       'Test negative padding length'::text description,
+       TT_IsError('SELECT TT_Pad(''aaa''::text, ''-3''::text, ''x''::text)'::text) = 'ERROR in TT_Pad(): targetLength is smaller than 0' passed
+---------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+-- Test 111 - TT_Concat
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(111, 'TT_Concat', 
+                                      ARRAY['sep', 'text'])).*
+UNION ALL
+SELECT '111.2'::text number,
+       'TT_Concat'::text function_tested,
+       'Basic usage'::text description,
+       TT_Concat('{''cas'', ''id'', ''test''}'::text, '-'::text) = 'cas-id-test' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '111.3'::text number,
+       'TT_Concat'::text function_tested,
+       'Basic usage with numbers and symbols'::text description,
+       TT_Concat('{''001'', ''--0--'', ''tt.tt''}'::text, '-'::text) = '001---0---tt.tt' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '111.4'::text number,
+       'TT_Concat'::text function_tested,
+       'Sep is null'::text description,
+       TT_IsError('SELECT TT_Concat(''{''''cas'''', ''''id'''', ''''test''''}''::text, NULL::text);') != 'FALSE' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 112 - TT_PadConcat
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (6 tests)
+SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat', 
                                       ARRAY['length', 'intlist',
                                             'pad', 'charlist',
                                             'sep', 'char',
                                             'upperCase', 'boolean',
                                             'includeEmpty', 'boolean'])).*
 UNION ALL
-SELECT '19.11'::text number,
+SELECT '112.11'::text number,
        'TT_PadConcat'::text function_tested,
        'Test with spaces and uppercase'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'', ''15'', ''10'', ''10'', ''7''}', '{''x'', ''x'', ''x'', ''0'', ''0''}'::text, '-'::text, TRUE::text) = 'AB06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.12'::text number,
+SELECT '112.12'::text number,
        'TT_PadConcat'::text function_tested,
        'Test without spaces and not uppercase'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.13'::text number,
+SELECT '112.13'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value'::text description,
        TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxxxxxxxxxxx-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.14'::text number,
+SELECT '112.14'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty length'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'','''',''10'',''7''}'', ''{''x'',''x'',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.15'::text number,
+SELECT '112.15'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty pad'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.16'::text number,
+SELECT '112.16'::text number,
        'TT_PadConcat'::text function_tested,
        'Uneven val, length, pad strings'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.17'::text number,
+SELECT '112.17'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value, includeEmpty FALSE'::text description,
        TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, TRUE::text, FALSE::text) = 'AB06-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '19.18'::text number,
+SELECT '112.18'::text number,
        'TT_PadConcat'::text function_tested,
        'Zero length'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''0'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06--xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 20 - TT_CopyDouble
+-- Test 118 - TT_NothingText
 ---------------------------------------------------------
 UNION ALL
-SELECT '20.1'::text number,
-       'TT_CopyDouble'::text function_tested,
-       'Double usage'::text description,
-       TT_CopyDouble('1.111'::text) = 1.111::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '20.2'::text number,
-       'TT_CopyDouble'::text function_tested,
-       'Null'::text description,
-       TT_CopyDouble(NULL::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 21 - TT_CopyInt
----------------------------------------------------------
-UNION ALL
-SELECT '21.1'::text number,
-       'TT_CopyInt'::text function_tested,
-       'Int usage'::text description,
-       TT_CopyInt('1'::text) = 1::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '21.2'::text number,
-       'TT_CopyInt'::text function_tested,
-       'Int usage from double with zero decimal'::text description,
-       TT_CopyInt('1.0'::text) = 1::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '21.3'::text number,
-       'TT_CopyInt'::text function_tested,
-       'Int usage from double with decimal round down'::text description,
-       TT_CopyInt('1.2'::text) = 1::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '21.4'::text number,
-       'TT_CopyInt'::text function_tested,
-       'Int usage from double with decimal round up'::text description,
-       TT_CopyInt('1.5'::text) = 2::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '21.5'::text number,
-       'TT_CopyInt'::text function_tested,
-       'Null'::text description,
-       TT_CopyInt(NULL::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 22 - TT_MapDouble
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(22, 'TT_MapDouble', 
-                                      ARRAY['mapVals', 'stringlist',
-                                            'targetVals', 'doublelist',
-                                            'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '22.7'::text number,
-       'TT_MapDouble'::text function_tested,
-       'Test text list, double precision list'::text description,
-       TT_MapDouble('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1'::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '22.8'::text number,
-       'TT_MapDouble'::text function_tested,
-       'Test double precision list, double precision list'::text description,
-       TT_MapDouble(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1.11'',''2.22'',''3.33'',''4.44''}'::text) = '1.11'::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '22.9'::text number,
-       'TT_MapDouble'::text function_tested,
-       'Test int list, double precision list'::text description,
-       TT_MapDouble(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '2.2'::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '22.10'::text number,
-       'TT_MapDouble'::text function_tested,
-       'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapDouble(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''1.1'',''2.2'',''3.3'',''4.4''}''::text);') != 'FALSE' passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 23 - TT_MapInt
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(22, 'TT_MapInt', 
-                                      ARRAY['mapVals', 'stringlist',
-                                            'targetVals', 'intlist',
-                                            'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '23.7'::text number,
-       'TT_MapInt'::text function_tested,
-       'Test text list, int list'::text description,
-       TT_MapInt('A'::text, '{''A'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '23.8'::text number,
-       'TT_MapInt'::text function_tested,
-       'Test double precision list, int list'::text description,
-       TT_MapInt(1.1::text, '{''1.1'',''1.2'',''1.3'',''1.4''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '23.9'::text number,
-       'TT_MapInt'::text function_tested,
-       'Test int list, int list'::text description,
-       TT_MapInt(2::text, '{''1'',''2'',''3'',''4''}'::text, '{''5'',''6'',''7'',''8''}'::text) = '6'::int passed
----------------------------------------------------------
-UNION ALL
-SELECT '23.10'::text number,
-       'TT_MapInt'::text function_tested,
-       'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapInt(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''5'',''6'',''7'',''8''}''::text);') != 'FALSE' passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 24 - TT_LookupDouble
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(24, 'TT_LookupDouble', 
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
-                                            'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '24.6'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Double precision usage'::text description,
-       TT_LookupDouble('a'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) = 1.1::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '24.7'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupDouble(NULL::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '24.8'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, TRUE::text) = 1.1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '24.9'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, FALSE::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 25 - TT_LookupInt
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(25, 'TT_LookupInt', 
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
-                                            'ignoreCase', 'boolean'])).*
-UNION ALL
-SELECT '25.6'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Int usage'::text description,
-       TT_LookupInt('a'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) = 1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '25.7'::text number,
-       'TT_LookupInt'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupInt(NULL::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '25.8'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, TRUE::text) = 1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '25.9'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, FALSE::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 26 - TT_True
----------------------------------------------------------
-UNION ALL
-SELECT '26.1'::text number,
-       'TT_True'::text function_tested,
-       'Simple test'::text description,
-       TT_True() passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 27 - TT_NothingText
----------------------------------------------------------
-UNION ALL
-SELECT '27.1'::text number,
+SELECT '118.1'::text number,
        'TT_NothingText'::text function_tested,
        'Simple test'::text description,
        TT_NothingText() IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 28 - TT_NothingDouble
+-- Test 119 - TT_NothingDouble
 ---------------------------------------------------------
 UNION ALL
-SELECT '28.1'::text number,
+SELECT '119.1'::text number,
        'TT_NothingDouble'::text function_tested,
        'Simple test'::text description,
        TT_NothingDouble() IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 29 - TT_NothingInt
+-- Test 120 - TT_NothingInt
 ---------------------------------------------------------
 UNION ALL
-SELECT '29.1'::text number,
+SELECT '120.1'::text number,
        'TT_NothingInt'::text function_tested,
        'Simple test'::text description,
        TT_NothingInt() IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 30 - TT_GeoIsValid
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (1 tests)
-SELECT (TT_TestNullAndWrongTypeParams(30, 'TT_GeoIsValid', ARRAY['fix', 'boolean'])).*
-UNION ALL
-SELECT '30.3'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Valid geometry'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '30.4'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix=false'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '30.5'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix=true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '30.6'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix default to true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '30.7'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'NULL geometry, fix=false'::text description,
-       TT_GeoIsValid(NULL::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 31 - TT_GeoIntersectionText
+-- Test 121 - TT_GeoIntersectionText
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(31, 'TT_GeoIntersectionText', 
+SELECT (TT_TestNullAndWrongTypeParams(121, 'TT_GeoIntersectionText', 
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
                                             'returnCol', 'text',
                                             'method', 'text'])).*
 UNION ALL
-SELECT '31.6'::text number,
+SELECT '121.6'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'One intersect'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'ninety' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.7'::text number,
+SELECT '121.7'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'Area test, two intersects'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 5, 5 5, 5 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'ninety' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.8'::text number,
+SELECT '121.8'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'Area test, three intersects'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'twothousandone' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.9'::text number,
+SELECT '121.9'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'lowestVal test, three intersects'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'LOWEST_VALUE') = '1990' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.10'::text number,
+SELECT '121.10'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'highestVal test, three intersects'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = '2001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.11'::text number,
+SELECT '121.11'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'No overlap error'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(25 25, 25 26, 26 26, 26 25, 25 25)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.12'::text number,
+SELECT '121.12'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'Invalid method'::text description,
        TT_IsError('SELECT TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(5 5, 5 6, 6 6, 6 5, 5 5)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''YEARtext'', ''area2'')') = 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '31.13'::text number,
+SELECT '121.13'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'Invalid geo'::text description,
        TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = '1999' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 32 - TT_GeoIntersectionInt
+-- Test 122 - TT_GeoIntersectionDouble
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(32, 'TT_GeoIntersectionInt', 
+SELECT (TT_TestNullAndWrongTypeParams(122, 'TT_GeoIntersectionDouble', 
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
                                             'returnCol', 'text',
                                             'method', 'text'])).*
 UNION ALL
-SELECT '32.6'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'One intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 1990 passed
----------------------------------------------------------
-UNION ALL
-SELECT '32.7'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'Area test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 2001 passed
----------------------------------------------------------
-UNION ALL
-SELECT '32.8'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'lowestVal test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'LOWEST_VALUE') = 1990 passed
----------------------------------------------------------
-UNION ALL
-SELECT '32.9'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'highestVal test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = 2001 passed
----------------------------------------------------------
-UNION ALL
-SELECT '32.10'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'No overlap error'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 33 - TT_GeoIntersectionDouble
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(33, 'TT_GeoIntersectionDouble', 
-                                      ARRAY['intersectSchemaName', 'text',
-                                            'intersectTableName', 'text',
-                                            'geoCol', 'text',
-                                            'returnCol', 'text',
-                                            'method', 'text'])).*
-UNION ALL
-SELECT '33.6'::text number,
+SELECT '122.6'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'One intersect'::text description,
        TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') = 19.90 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '33.7'::text number,
+SELECT '122.7'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'Area test, three intersect'::text description,
        TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') = 20.01 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '33.8'::text number,
+SELECT '122.8'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'lowestVal test, three intersect'::text description,
        TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'LOWEST_VALUE') = 19.90 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '33.9'::text number,
+SELECT '122.9'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'highestVal test, three intersect'::text description,
        TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'HIGHEST_VALUE') = 20.01 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '33.10'::text number,
+SELECT '122.10'::text number,
        'TT_GeoIntersectionDouble'::text function_tested,
        'No overlap error'::text description,
        TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 34 - TT_GeoIntersects
+-- Test 123 - TT_GeoIntersectionInt
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (3 tests)
-SELECT (TT_TestNullAndWrongTypeParams(34, 'TT_GeoIntersects', 
+-- test all NULLs and wrong types (5 tests)
+SELECT (TT_TestNullAndWrongTypeParams(123, 'TT_GeoIntersectionInt', 
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
-                                            'geoCol', 'text'])).*
+                                            'geoCol', 'text',
+                                            'returnCol', 'text',
+                                            'method', 'text'])).*
 UNION ALL
-SELECT '34.4'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'No overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '34.5'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'One overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+SELECT '123.6'::text number,
+       'TT_GeoIntersectionInt'::text function_tested,
+       'One intersect'::text description,
+       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 1990 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '34.6'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'Three overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
+SELECT '123.7'::text number,
+       'TT_GeoIntersectionInt'::text function_tested,
+       'Area test, three intersect'::text description,
+       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 2001 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '34.7'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'Invalid geometry'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 35 - TT_NotNullEmptyOr
+SELECT '123.8'::text number,
+       'TT_GeoIntersectionInt'::text function_tested,
+       'lowestVal test, three intersect'::text description,
+       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'LOWEST_VALUE') = 1990 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '35.1'::text number,
-       'TT_NotNullEmptyOr'::text function_tested,
-       'All empty'::text description,
-       TT_NotNullEmptyOr('{'''','''','''',''''}') IS FALSE passed
+SELECT '123.9'::text number,
+       'TT_GeoIntersectionInt'::text function_tested,
+       'highestVal test, three intersect'::text description,
+       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = 2001 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '35.2'::text number,
-       'TT_NotNullEmptyOr'::text function_tested,
-       'One val'::text description,
-       TT_NotNullEmptyOr('{'''',''d'','''',''''}') IS TRUE passed
+SELECT '123.10'::text number,
+       'TT_GeoIntersectionInt'::text function_tested,
+       'No overlap error'::text description,
+       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 36 - TT_IsIntSubstring
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(36, 'TT_IsIntSubstring', 
-                                      ARRAY['start_char', 'int',
-                                            'for_length', 'int'])).*
+-- Test 124 - TT_GeoMakeValid
 ---------------------------------------------------------
 UNION ALL
-SELECT '36.5'::text number,
-       'TT_IsIntSubstring'::text function_tested,
-       'NULL value'::text description,
-       TT_IsIntSubstring(NULL::text, 4::text, 1::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '36.6'::text number,
-       'TT_IsIntSubstring'::text function_tested,
-       'Good string'::text description,
-       TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '36.7'::text number,
-       'TT_IsIntSubstring'::text function_tested,
-       'Bad string'::text description,
-       TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 37 - TT_GeoMakeValid
----------------------------------------------------------
-UNION ALL
-SELECT '37.1'::text number,
+SELECT '124.1'::text number,
        'TT_GeoMakeValid'::text function_tested,
        'Good geo'::text description,
        ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 10,10 10,0 0)))' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '37.2'::text number,
+SELECT '124.2'::text number,
        'TT_GeoMakeValid'::text function_tested,
        'Bad geo'::text description,
        ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
