@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -214,17 +214,22 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
-  val text
+  argStr text
 )
 RETURNS boolean AS $$
+  DECLARE
+    args text[];
   BEGIN
-    IF val IS NULL THEN
+    IF argStr IS NULL THEN
       RETURN FALSE;
-    ELSIF val ~ '{.+}' THEN
-      RETURN TRUE;
     ELSE
-      RETURN FALSE;
-    END IF;
+	  BEGIN
+	    args = TT_ParseStringList(argStr);
+	    RETURN TRUE;
+	  EXCEPTION WHEN OTHERS THEN
+	    RETURN FALSE;
+	  END;
+	END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------

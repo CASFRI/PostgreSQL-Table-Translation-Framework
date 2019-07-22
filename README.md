@@ -366,6 +366,9 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
 
 If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper funciton file.
 
+# Dependency Table Validation
+Some helper functions use dependency tables to facilitate validation or translations. Examples include lookup tables for functions such as MatchTable() and LookupText(), and intersect tables for spatial functions such as GeoIntersects() and GeoIntersectionText(). These dependency tables need to be valid in order for the helper functions to work correctly. We can use the validation functionality of the translation engine to achieve this by creating validation-only translation tables. Each row of the validation-only translation table implement one validation rule to be run on the dependency table. For example a validation of an intersect table may be to check that all the geometries are valid. The validation rule for this row would use GeoIsValid(). Since we only care about the validation, we can simply use a translation rule such as copyText('PASS') for each row. When we run the psedo-translation table on the dependency table through the engine, any rows failing a validation will produce an error code, all passing rows will return 'PASS'. We can then fix any invalid rows before running the main translation using the dependency table. An example of a pseudo-translation table can be seen in the [CASFRI v5](https://github.com/edwardsmarc/CASFRI/blob/master/dependencyvalidation/tables/ab_photoyear_validation.csv) project.
+
 # Credit
 **Pierre Racine** - Center for forest research, University Laval.
 

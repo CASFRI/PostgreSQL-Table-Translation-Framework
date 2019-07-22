@@ -30,4 +30,5 @@ DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
 DROP FUNCTION IF EXISTS TT_FullFunctionName(name, name);
 DROP FUNCTION IF EXISTS TT_Debug();
 DROP FUNCTION IF EXISTS TT_IsError(text);
+DROP FUNCTION IF EXISTS TT_RepackStringList(text[]);
 DROP TYPE IF EXISTS TT_RuleDef;
