@@ -1,4 +1,4 @@
-﻿------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -219,26 +219,17 @@ CREATE OR REPLACE FUNCTION TT_IsStringList(
 RETURNS boolean AS $$
   DECLARE
     args text[];
-    arg text;
   BEGIN
     IF argStr IS NULL THEN
       RETURN FALSE;
-    ELSIF argStr ~ '{.+}' THEN -- must have {}
-      FOR args IN SELECT regexp_matches(btrim(argStr, '{}'), '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|""|'''')', 'g') LOOP
-        arg = args[1];
-        RAISE NOTICE '%', arg;
-        IF arg !~ '''[^'']+''|"[^"]+"|""|''''' THEN -- must be a quoted string...
-          IF arg !~ '^[^''"][-_\w\s]*' THEN -- or an unquoted word with - and _
-            RETURN FALSE;
-          ELSIF arg ~ '\s' THEN -- if unquoted word must not have space
-            RETURN FALSE;
-          END IF;
-        END IF;
-      END LOOP;
     ELSE
-      RETURN FALSE;
-    END IF;
-    RETURN TRUE; -- if nothing failed return true
+	  BEGIN
+	    args = TT_ParseStringList(argStr);
+	    RETURN TRUE;
+	  EXCEPTION WHEN OTHERS THEN
+	    RETURN FALSE;
+	  END;
+	END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
