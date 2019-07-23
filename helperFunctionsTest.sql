@@ -159,14 +159,6 @@ SELECT 'd'::text, 'CCC'::text, NULL::int, 5.5::double precision, NULL::boolean
 UNION ALL
 SELECT 'AA'::text, 'abcde'::text, NULL::int, 5.5::double precision, NULL::boolean;
 -----------------------------------------------------------
-DROP TABLE IF EXISTS photo_test;
-CREATE TABLE photo_test AS
-SELECT ST_GeometryFromText('MULTIPOLYGON(((0 0, 0 7, 7 7, 7 0, 0 0)))', 4268) AS the_geom, 1990::text AS YEAR, 'ninety'::text AS YEARtext, 19.90::text AS dbl
-UNION ALL
-SELECT ST_GeometryFromText('MULTIPOLYGON(((0 0, 0 2, 2 2, 2 0, 0 0)))', 4268), 1999::text, 'ninetynine'::text, 19.99::text
-UNION ALL
-SELECT ST_GeometryFromText('MULTIPOLYGON(((6 6, 6 15, 15 15, 15 6, 6 6)))', 4268), 2001::text, 'twothousandone'::text, 20.01::text;
-
 -----------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
 -- only failing tests
@@ -192,10 +184,8 @@ WITH test_nb AS (
     SELECT 'TT_MatchList'::text,              12,         25         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
-    SELECT 'TT_GeoIsValid'::text,             15,          7         UNION ALL
-    SELECT 'TT_GeoIntersects'::text,          16,          7         UNION ALL
-    SELECT 'TT_NotNullEmptyOr'::text,         17,          2         UNION ALL
-    SELECT 'TT_IsIntSubstring'::text,         18,          7         UNION ALL
+    SELECT 'TT_NotNullEmptyOr'::text,         15,          2         UNION ALL
+    SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -211,11 +201,7 @@ WITH test_nb AS (
     SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
-    SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-    SELECT 'TT_GeoIntersectionText'::text,   121,         13         UNION ALL
-    SELECT 'TT_GeoIntersectionDouble'::text, 122,         10         UNION ALL
-    SELECT 'TT_GeoIntersectionInt'::text,    123,         10         UNION ALL
-    SELECT 'TT_GeoMakeValid'::text,          124,          2         
+    SELECT 'TT_NothingInt'::text,            120,          1         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1089,85 +1075,16 @@ SELECT '14.1'::text number,
        TT_True() passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 15 - TT_GeoIsValid
+-- Test 15 - TT_NotNullEmptyOr
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (1 tests)
-SELECT (TT_TestNullAndWrongTypeParams(15, 'TT_GeoIsValid', ARRAY['fix', 'boolean'])).*
-UNION ALL
-SELECT '15.3'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Valid geometry'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text, TRUE::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.4'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix=false'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.5'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix=true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.6'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'Invalid geometry, fix default to true'::text description,
-       TT_GeoIsValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.7'::text number,
-       'TT_GeoIsValid'::text function_tested,
-       'NULL geometry, fix=false'::text description,
-       TT_GeoIsValid(NULL::text) IS FALSE passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 16 - TT_GeoIntersects
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (3 tests)
-SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_GeoIntersects', 
-                                      ARRAY['intersectSchemaName', 'text',
-                                            'intersectTableName', 'text',
-                                            'geoCol', 'text'])).*
-UNION ALL
-SELECT '16.4'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'No overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.5'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'One overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.6'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'Three overlap'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.7'::text number,
-       'TT_GeoIntersects'::text function_tested,
-       'Invalid geometry'::text description,
-       TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 17 - TT_NotNullEmptyOr
----------------------------------------------------------
-UNION ALL
-SELECT '17.1'::text number,
+SELECT '15.1'::text number,
        'TT_NotNullEmptyOr'::text function_tested,
        'All empty'::text description,
        TT_NotNullEmptyOr('{'''','''','''',''''}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '17.2'::text number,
+SELECT '15.2'::text number,
        'TT_NotNullEmptyOr'::text function_tested,
        'One val'::text description,
        TT_NotNullEmptyOr('{'''',''d'','''',''''}') IS TRUE passed
@@ -1178,24 +1095,24 @@ SELECT '17.2'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(18, 'TT_IsIntSubstring', 
+SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_IsIntSubstring', 
                                       ARRAY['start_char', 'int',
                                             'for_length', 'int'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.5'::text number,
+SELECT '16.5'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'NULL value'::text description,
        TT_IsIntSubstring(NULL::text, 4::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.6'::text number,
+SELECT '16.6'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Good string'::text description,
        TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '18.7'::text number,
+SELECT '16.7'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Bad string'::text description,
        TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
@@ -1686,162 +1603,6 @@ SELECT '120.1'::text number,
        'TT_NothingInt'::text function_tested,
        'Simple test'::text description,
        TT_NothingInt() IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 121 - TT_GeoIntersectionText
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(121, 'TT_GeoIntersectionText', 
-                                      ARRAY['intersectSchemaName', 'text',
-                                            'intersectTableName', 'text',
-                                            'geoCol', 'text',
-                                            'returnCol', 'text',
-                                            'method', 'text'])).*
-UNION ALL
-SELECT '121.6'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'One intersect'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'ninety' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.7'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'Area test, two intersects'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 5, 5 5, 5 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'ninety' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.8'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'Area test, three intersects'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') = 'twothousandone' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.9'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'lowestVal test, three intersects'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'LOWEST_VALUE') = '1990' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.10'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'highestVal test, three intersects'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = '2001' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.11'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'No overlap error'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(25 25, 25 26, 26 26, 26 25, 25 25)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA') IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.12'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'Invalid method'::text description,
-       TT_IsError('SELECT TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(5 5, 5 6, 6 6, 6 5, 5 5)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''YEARtext'', ''area2'')') = 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"' passed
----------------------------------------------------------
-UNION ALL
-SELECT '121.13'::text number,
-       'TT_GeoIntersectionText'::text function_tested,
-       'Invalid geo'::text description,
-       TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = '1999' passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 122 - TT_GeoIntersectionDouble
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(122, 'TT_GeoIntersectionDouble', 
-                                      ARRAY['intersectSchemaName', 'text',
-                                            'intersectTableName', 'text',
-                                            'geoCol', 'text',
-                                            'returnCol', 'text',
-                                            'method', 'text'])).*
-UNION ALL
-SELECT '122.6'::text number,
-       'TT_GeoIntersectionDouble'::text function_tested,
-       'One intersect'::text description,
-       TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') = 19.90 passed
----------------------------------------------------------
-UNION ALL
-SELECT '122.7'::text number,
-       'TT_GeoIntersectionDouble'::text function_tested,
-       'Area test, three intersect'::text description,
-       TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') = 20.01 passed
----------------------------------------------------------
-UNION ALL
-SELECT '122.8'::text number,
-       'TT_GeoIntersectionDouble'::text function_tested,
-       'lowestVal test, three intersect'::text description,
-       TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'LOWEST_VALUE') = 19.90 passed
----------------------------------------------------------
-UNION ALL
-SELECT '122.9'::text number,
-       'TT_GeoIntersectionDouble'::text function_tested,
-       'highestVal test, three intersect'::text description,
-       TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'HIGHEST_VALUE') = 20.01 passed
----------------------------------------------------------
-UNION ALL
-SELECT '122.10'::text number,
-       'TT_GeoIntersectionDouble'::text function_tested,
-       'No overlap error'::text description,
-       TT_GeoIntersectionDouble(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'dbl', 'GREATEST_AREA') IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 123 - TT_GeoIntersectionInt
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(123, 'TT_GeoIntersectionInt', 
-                                      ARRAY['intersectSchemaName', 'text',
-                                            'intersectTableName', 'text',
-                                            'geoCol', 'text',
-                                            'returnCol', 'text',
-                                            'method', 'text'])).*
-UNION ALL
-SELECT '123.6'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'One intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 1990 passed
----------------------------------------------------------
-UNION ALL
-SELECT '123.7'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'Area test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') = 2001 passed
----------------------------------------------------------
-UNION ALL
-SELECT '123.8'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'lowestVal test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'LOWEST_VALUE') = 1990 passed
----------------------------------------------------------
-UNION ALL
-SELECT '123.9'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'highestVal test, three intersect'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 15, 15 15, 15 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'HIGHEST_VALUE') = 2001 passed
----------------------------------------------------------
-UNION ALL
-SELECT '123.10'::text number,
-       'TT_GeoIntersectionInt'::text function_tested,
-       'No overlap error'::text description,
-       TT_GeoIntersectionInt(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(20 20, 20 21, 21 21, 21 20, 20 20)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA') IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 124 - TT_GeoMakeValid
----------------------------------------------------------
-UNION ALL
-SELECT '124.1'::text number,
-       'TT_GeoMakeValid'::text function_tested,
-       'Good geo'::text description,
-       ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 10, 10 10, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 10,10 10,0 0)))' passed
----------------------------------------------------------
-UNION ALL
-SELECT '124.2'::text number,
-       'TT_GeoMakeValid'::text function_tested,
-       'Bad geo'::text description,
-       ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
 ---------------------------------------------------------
 ) AS b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

@@ -22,7 +22,6 @@ DROP FUNCTION IF EXISTS TT_IsStringList(text);
 DROP FUNCTION IF EXISTS TT_IsDoubleList(text);
 DROP FUNCTION IF EXISTS TT_IsIntList(text);
 DROP FUNCTION IF EXISTS TT_IsCharList(text);
-DROP FUNCTION IF EXISTS TT_IsGeometry(text);
 DROP FUNCTION IF EXISTS TT_Between(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_Between(text, text, text);
 DROP FUNCTION IF EXISTS TT_GreaterThan(text, text, text);
@@ -39,11 +38,6 @@ DROP FUNCTION IF EXISTS TT_MatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchList(text, text);
 DROP FUNCTION IF EXISTS TT_False();
 DROP FUNCTION IF EXISTS TT_True();
-DROP FUNCTION IF EXISTS TT_GeoIsValid(text, text);
-DROP FUNCTION IF EXISTS TT_GeoIsValid(text);
-DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_NotNullEmptyOr(text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
 
@@ -76,14 +70,6 @@ DROP FUNCTION IF EXISTS TT_Concat(text, text);
 DROP FUNCTION IF EXISTS TT_NothingText();
 DROP FUNCTION IF EXISTS TT_NothingDouble();
 DROP FUNCTION IF EXISTS TT_NothingInt();
-DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GeoMakeValid(text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
