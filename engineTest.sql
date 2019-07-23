@@ -618,7 +618,7 @@ UNION ALL
 SELECT '13.2'::text number,
        'TT_IsCastableTo'::text function_tested,
        'Bad test'::text description,
-       TT_IsCastableTo('11a', 'int') passed
+       TT_IsCastableTo('11a', 'int') IS FALSE passed
 --------------------------------------------------------
 
 ) b 
