@@ -47,6 +47,34 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsCastableTo
+--
+--   val text
+--   targetType text
+--
+--   RETURNS boolean
+--
+-- Can value be cast to target type
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_IsCastableTo(text, text);
+CREATE OR REPLACE FUNCTION TT_IsCastableTo(
+  val name,
+  targetType name
+)
+RETURNS boolean AS $$
+  DECLARE
+	  query text;
+	BEGIN
+    query = 'SELECT ' || '''' || val || '''' || '::' || targetType || ';';
+    EXECUTE query;
+		RETURN TRUE;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_FullTableName
 --
 --   schemaName name - Name of the schema.
@@ -706,13 +734,9 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
 
         -- check error code can be cast to attribute type, catch error with EXCEPTION
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
-        BEGIN
-          query = 'SELECT ' || '''' || rule.errorcode || '''' || '::' || targetAttributeType || ';';
-          IF debug THEN RAISE NOTICE 'TT_ValidateTTable DD query = %', query;END IF;
-          EXECUTE query;
-        EXCEPTION WHEN OTHERS THEN
-          RAISE EXCEPTION '% % : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, rule.errorcode, targetAttributeType, rule.fctName;
-        END;
+        IF NOT TT_IsCastableTo(rule.errorcode, targetAttributeType) THEN
+				  RAISE EXCEPTION '% % : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, rule.errorcode, targetAttributeType, rule.fctName;
+        END IF;
       END LOOP;
 
       -- check translation function exists
@@ -729,13 +753,9 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       -- If not null, check translation error code can be cast to attribute type
       IF translationRule.errorcode IS NOT NULL THEN
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', targetAttributeType, translationRule.errorcode;END IF;
-        BEGIN
-          query = 'SELECT ' || '''' || translationRule.errorcode || '''' || '::' || targetAttributeType || ';';
-          IF debug THEN RAISE NOTICE 'TT_ValidateTTable GG query = %', query;END IF;
-          EXECUTE query;
-        EXCEPTION WHEN OTHERS THEN
+        IF NOT TT_IsCastableTo(translationRule.errorcode, targetAttributeType) THEN
           RAISE EXCEPTION '% % : Error code (%) cannot be cast to the target attribute type (%) for translation rule %().', error_msg_start, row.rule_id, translationRule.errorcode, targetAttributeType, translationRule.fctName;
-        END;
+        END IF;
       END IF;
 
       RETURN NEXT;

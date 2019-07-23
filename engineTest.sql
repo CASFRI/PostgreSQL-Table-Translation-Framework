@@ -191,7 +191,8 @@ WITH test_nb AS (
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
     SELECT 'TT_RepackStringList'::text,             11,          2         UNION ALL
-    SELECT 'TT_ParseStringList'::text,              12,          7
+    SELECT 'TT_ParseStringList'::text,              12,          7         UNION ALL
+	  SELECT 'TT_IsCastableTo'::text,                 13,          2
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -607,6 +608,19 @@ SELECT '12.7'::text number,
        'Test strip argument'::text description,
        TT_ParseStringList('{''string1'',"string 2"}', TRUE) = '{string1,"string 2"}' passed
 --------------------------------------------------------
+UNION ALL
+SELECT '13.1'::text number,
+       'TT_IsCastableTo'::text function_tested,
+       'Good test'::text description,
+       TT_IsCastableTo('11', 'int') passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.2'::text number,
+       'TT_IsCastableTo'::text function_tested,
+       'Bad test'::text description,
+       TT_IsCastableTo('11a', 'int') passed
+--------------------------------------------------------
+
 ) b 
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
 ORDER BY maj_num::int, min_num::int
