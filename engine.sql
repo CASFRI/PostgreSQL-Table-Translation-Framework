@@ -806,7 +806,7 @@ RETURNS text AS $f$
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || fctNameSuf || '(name, name, name, name, text[], boolean, int, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || fctNameSuf || '(name, name, text[], boolean, int, boolean, boolean);';
     EXECUTE query;
 
     -- Build the list of attribute types
