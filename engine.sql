@@ -39,8 +39,8 @@ CREATE OR REPLACE FUNCTION TT_Debug(
 RETURNS boolean AS $$
   DECLARE
   BEGIN
-    RETURN current_setting('tt.debug');
-    EXCEPTION WHEN OTHERS THEN
+    RETURN current_setting('tt.debug')::boolean;
+    EXCEPTION WHEN OTHERS THEN -- if tt.debug is not set
       RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -58,8 +58,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_IsCastableTo(text, text);
 CREATE OR REPLACE FUNCTION TT_IsCastableTo(
-  val name,
-  targetType name
+  val text,
+  targetType text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -799,7 +799,7 @@ RETURNS text AS $f$
       translationTable = translationTableSchema;
       translationTableSchema = 'public';
     END IF;
-    IF translationTable IS NULL or translationTable = '' THEN
+    IF translationTable IS NULL OR translationTable = '' THEN
       RETURN NULL;
     END IF;
     -- Validate the translation table
@@ -816,8 +816,6 @@ RETURNS text AS $f$
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
                sourceTableSchema name,
                sourceTable name,
-               translationTableSchema name DEFAULT NULL,
-               translationTable name DEFAULT NULL,
                targetAttributeList text[] DEFAULT NULL,
                stopOnInvalid boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
@@ -827,9 +825,9 @@ RETURNS text AS $f$
              RETURNS TABLE (' || paramlist || ') AS $$
              BEGIN
                RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema, 
-                                                        sourceTable, 
-                                                        translationTableSchema, 
-                                                        translationTable, 
+                                                        sourceTable, ' ||
+                                                        '''' || translationTableSchema || ''', ' || 
+                                                        '''' || translationTable || ''', 
                                                         targetAttributeList, 
                                                         stopOnInvalid, 
                                                         logFrequency, 
@@ -844,7 +842,7 @@ RETURNS text AS $f$
 $f$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------------------------------------------------------
--- TT_Translate
+-- _TT_Translate
 --
 --   sourceTableSchema name      - Name of the schema containing the source table.
 --   sourceTable name            - Name of the source table.
@@ -868,8 +866,8 @@ $f$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
   sourceTable name,
-  translationTableSchema name DEFAULT NULL,
-  translationTable name DEFAULT NULL,
+  translationTableSchema name,
+  translationTable name,
   targetAttributeList text[] DEFAULT NULL,
   stopOnInvalid boolean DEFAULT FALSE,
   logFrequency int DEFAULT 500,

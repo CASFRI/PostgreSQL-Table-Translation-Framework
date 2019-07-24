@@ -186,7 +186,7 @@ WITH test_nb AS (
     SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          7         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
-    SELECT 'TT_Prepare'::text,                       7,          4         UNION ALL
+    SELECT 'TT_Prepare'::text,                       7,          6         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
@@ -466,25 +466,37 @@ UNION ALL
 SELECT '7.1'::text number,
        'TT_Prepare'::text function_tested,
        'Basic test, check if created function exists'::text description,
-        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_FctExists('translate', ARRAY['name', 'name', 'name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+        TT_FctExists('translate', ARRAY['name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
        'TT_Prepare'::text function_tested,
        'Test without parameters'::text description,
-        TT_FctExists('translate') passed
+        TT_FctExists('translate') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.4'::text number,
        'TT_Prepare'::text function_tested,
        'Test upper and lower case caracters'::text description,
-        TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) passed
+        TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.5'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without schema name'::text description,
+        TT_Prepare('test_translationtable') = 'TT_Translate' IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.6'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test suffix'::text description,
+        TT_Prepare('public', 'test_translationtable', '_01') = 'TT_Translate_01' IS TRUE passed
 --------------------------------------------------------
 -- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------
