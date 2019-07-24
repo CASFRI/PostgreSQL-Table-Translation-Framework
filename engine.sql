@@ -818,6 +818,7 @@ RETURNS text AS $f$
     query text;
     paramlist text[];
     refParamlist text[];
+    i integer;
   BEGIN
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
@@ -840,7 +841,11 @@ RETURNS text AS $f$
       ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
         RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has more attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
       ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
-        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes names or types are different from reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;        
+        FOR i IN 1..cardinality(paramlist) LOOP
+          IF paramlist[i] != refParamlist[i] THEN
+            RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes ''%'' is different from ''%'' in reference table ''%''...', translationTableSchema, translationTable, translationTable, paramlist[i], refParamlist[i], refTranslationTable;        
+          END IF;
+        END LOOP;
       END IF;
     END IF;
 
