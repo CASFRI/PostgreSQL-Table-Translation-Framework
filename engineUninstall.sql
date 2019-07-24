@@ -12,7 +12,11 @@
 -------------------------------------------------------------------------------
 SELECT TT_DropAllTranslateFct();
 DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, int, boolean, boolean);
-DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
+DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
+DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
+DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
+DROP FUNCTION IF EXISTS TT_Prepare(name, text);
+DROP FUNCTION IF EXISTS TT_Prepare(name);
 DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);

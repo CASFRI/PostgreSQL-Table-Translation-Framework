@@ -74,6 +74,27 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------- 
+-- TT_LowerArr 
+-- Lowercase text array (often to compare them while ignoring case)
+------------------------------------------------------------ 
+--DROP FUNCTION IF EXISTS TT_LowerArr(text[]); 
+CREATE OR REPLACE FUNCTION TT_LowerArr( 
+  arr text[] DEFAULT NULL 
+) 
+RETURNS text[] AS $$ 
+  DECLARE 
+    newArr text[] = ARRAY[]::text[]; 
+  BEGIN 
+    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN 
+      RETURN ARRAY[]::text[]; 
+    END IF; 
+    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr; 
+    RETURN newArr; 
+  END; 
+$$ LANGUAGE plpgsql VOLATILE STRICT; 
+-------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 -- TT_FullTableName
 --
@@ -784,36 +805,50 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- of the actual translation funtion enabling the package to return rows of 
 -- arbitrary typed rows.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, name);
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
-  translationTable name DEFAULT NULL,
-  fctNameSuf name DEFAULT ''
+  translationTable name,
+  fctNameSuf text,
+  refTranslationTableSchema name,
+  refTranslationTable name
 )
 RETURNS text AS $f$
   DECLARE 
     query text;
-    paramlist text;
+    paramlist text[];
+    refParamlist text[];
   BEGIN
-    IF translationTable IS NULL THEN
-      translationTable = translationTableSchema;
-      translationTableSchema = 'public';
-    END IF;
-    IF translationTable IS NULL OR translationTable = '' THEN
+    IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
     END IF;
+    
     -- Validate the translation table
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
-    -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || fctNameSuf || '(name, name, text[], boolean, int, boolean, boolean);';
-    EXECUTE query;
-
-    -- Build the list of attribute types
-    query = 'SELECT string_agg(targetAttribute || '' '' || targetAttributeType, '', '' ORDER BY rule_id::int) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
+    -- Build the list of attribute names and types for the target table
+    query = 'SELECT array_agg(targetAttribute || '' '' || targetAttributeType ORDER BY rule_id::int) FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ';';
     EXECUTE query INTO STRICT paramlist;
 
-    query = 'CREATE OR REPLACE FUNCTION TT_Translate' || fctNameSuf || '(
+    IF TT_NotEmpty(refTranslationTableSchema) AND TT_NotEmpty(refTranslationTable) THEN
+      -- Build the list of attribute names and types for the reference table
+      query = 'SELECT array_agg(targetAttribute || '' '' || targetAttributeType ORDER BY rule_id::int) FROM ' || TT_FullTableName(refTranslationTableSchema, refTranslationTable) || ';';
+      EXECUTE query INTO STRICT refParamlist;
+      
+      IF cardinality(paramlist) < cardinality(refParamlist) THEN
+        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has less attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
+      ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
+        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has more attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
+      ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
+        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes names or types are different from reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;        
+      END IF;
+    END IF;
+
+    -- Drop any existing TT_Translate function with the same suffix
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, text[], boolean, int, boolean, boolean);';
+    EXECUTE query;
+
+    query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
                sourceTableSchema name,
                sourceTable name,
                targetAttributeList text[] DEFAULT NULL,
@@ -822,7 +857,7 @@ RETURNS text AS $f$
                resume boolean DEFAULT FALSE,
                ignoreDescUpToDateWithRules boolean DEFAULT FALSE
              )
-             RETURNS TABLE (' || paramlist || ') AS $$
+             RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
              BEGIN
                RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema, 
                                                         sourceTable, ' ||
@@ -832,16 +867,49 @@ RETURNS text AS $f$
                                                         stopOnInvalid, 
                                                         logFrequency, 
                                                         resume, 
-                                                        ignoreDescUpToDateWithRules) AS t(' || paramlist || ');
+                                                        ignoreDescUpToDateWithRules) AS t(' || array_to_string(paramlist, ', ') || ');
                RETURN;
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
     EXECUTE query;
-    RETURN 'TT_Translate' || fctNameSuf;
+    RETURN 'TT_Translate' || coalesce(fctNameSuf, '');
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
-
--------------------------------------------------------------------------------
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  refTranslationTable name
+)
+RETURNS text AS $$
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text
+)
+RETURNS text AS $$
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTable name,
+  fctNameSuf text
+)
+RETURNS text AS $$
+  SELECT TT_Prepare('public', translationTable, fctNameSuf, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTable name
+)
+RETURNS text AS $$
+  SELECT TT_Prepare('public', translationTable, NULL::text, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------------------------
 -- _TT_Translate
 --
 --   sourceTableSchema name      - Name of the schema containing the source table.

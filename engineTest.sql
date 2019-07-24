@@ -91,27 +91,6 @@ RETURNS text AS $$
     RETURN SQLERRM;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-------------------------------------------------------------------------------- 
--- TT_LowerArr 
--- Function needed by TT_FctExist below. 
------------------------------------------------------------- 
---DROP FUNCTION IF EXISTS TT_LowerArr(text[]); 
-CREATE OR REPLACE FUNCTION TT_LowerArr( 
-  arr text[] DEFAULT NULL 
-) 
-RETURNS text[] AS $$ 
-  DECLARE 
-    newArr text[] = ARRAY[]::text[]; 
-  BEGIN 
-    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN 
-      RETURN ARRAY[]::text[]; 
-    END IF; 
-    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr; 
-    RETURN newArr; 
-  END; 
-$$ LANGUAGE plpgsql VOLATILE STRICT; 
--------------------------------------------------------------------------------
-
 -------------------------------------------------------------------------------
 -- TT_FctExist 
 -- Function to test if a function exists. 
@@ -186,7 +165,7 @@ WITH test_nb AS (
     SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          7         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
-    SELECT 'TT_Prepare'::text,                       7,          6         UNION ALL
+    SELECT 'TT_Prepare'::text,                       7,          8         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
     SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
@@ -490,13 +469,25 @@ UNION ALL
 SELECT '7.5'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_Prepare('test_translationtable') = 'TT_Translate' IS TRUE passed
+        TT_Prepare('test_translationtable') = 'TT_Translate' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.6'::text number,
        'TT_Prepare'::text function_tested,
        'Test suffix'::text description,
-        TT_Prepare('public', 'test_translationtable', '_01') = 'TT_Translate_01' IS TRUE passed
+        TT_Prepare('public', 'test_translationtable', '_01') = 'TT_Translate_01' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.7'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test with ref translation table having less'::text description,
+        TT_IsError('SELECT TT_Prepare(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'ERROR in TT_Prepare() when processing public.test_translationtable: ''test_translationtable'' has more attributes than reference table ''test_translationtable2''...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '7.8'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test with identical ref translation table'::text description,
+        TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'TT_Translate_01' passed
 --------------------------------------------------------
 -- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------
