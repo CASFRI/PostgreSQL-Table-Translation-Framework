@@ -825,6 +825,66 @@ RETURNS boolean AS $$
     RETURN TT_IsInt(substring(val from _start_char for _for_length));
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+-- TT_SubstringBetween(text, text, text)
+--
+-- val text - input string
+-- start_char text - start character to take substring from
+-- for_length text - length of substring to take
+-- min text - lower between bound
+-- max text - upper between bound
+-- includeMin text - boolean for including lower bound
+-- includeMax text - boolean for including upper bound	
+--
+-- Take substring and test with TT_Between()
+-- e.g. TT_SubstringBetween('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_SubstringBetween(
+  val text,
+	start_char text,
+  for_length text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _start_char int;
+    _for_length int;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_SubstringBetween',
+                              ARRAY['start_char', start_char, 'int',
+                                    'for_length', for_length, 'int',
+																	  'min', min, 'numeric', 
+                                    'max', max, 'numeric', 
+                                    'includeMin', includeMin, 'boolean', 
+                                    'includeMax', includeMax, 'boolean']);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+    
+    -- validate source value (return FALSE)
+    IF val IS NULL THEN
+      RETURN FALSE;
+    END IF;
+
+    -- process
+    RETURN TT_Between(substring(val from _start_char for _for_length), min, max, includeMin, includeMax);
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_SubstringBetween(
+  val text,
+	start_char text,
+  for_length text,
+  min text,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT TT_SubstringBetween(val, start_char, for_length, min, max, TRUE::text, TRUE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

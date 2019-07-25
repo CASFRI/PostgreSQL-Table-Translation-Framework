@@ -40,6 +40,8 @@ DROP FUNCTION IF EXISTS TT_False();
 DROP FUNCTION IF EXISTS TT_True();
 DROP FUNCTION IF EXISTS TT_NotNullEmptyOr(text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
+DROP FUNCTION IF EXISTS TT_SubstringBetween(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_SubstringBetween(text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);

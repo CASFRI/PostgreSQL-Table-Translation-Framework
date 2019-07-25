@@ -186,6 +186,7 @@ WITH test_nb AS (
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_NotNullEmptyOr'::text,         15,          2         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
+	  SELECT 'TT_SubstringBetween'::text,       17,         16         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -1109,13 +1110,49 @@ UNION ALL
 SELECT '16.6'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Good string'::text description,
-       TT_IsIntSubstring('2001-01-02'::text, 4::text, 1::text) IS TRUE passed
+       TT_IsIntSubstring('2001-01-02'::text, 1::text, 4::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '16.7'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Bad string'::text description,
-       TT_IsIntSubstring('200-01-02'::text, 4::text, 1::text) IS FALSE passed
+       TT_IsIntSubstring('200-01-02'::text, 1::text, 4::text) IS FALSE passed
+---------------------------------------------------------
+-- Test 17 - TT_SubstringBetween
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (12 tests)
+SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_SubstringBetween',
+                                      ARRAY['start_char', 'int',
+                                            'for_length', 'int',
+																						'min', 'numeric', 
+                                            'max', 'numeric', 
+                                            'includeMin', 'boolean', 
+                                            'includeMax', 'boolean'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '17.13'::text number,
+       'TT_SubstringBetween'::text function_tested,
+       'Pass test'::text description,
+       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.14'::text number,
+       'TT_SubstringBetween'::text function_tested,
+       'Fail test'::text description,
+       TT_SubstringBetween('200-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.15'::text number,
+       'TT_SubstringBetween'::text function_tested,
+       'Default include test'::text description,
+       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '17.16'::text number,
+       'TT_SubstringBetween'::text function_tested,
+       'Include false test'::text description,
+       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text, FALSE::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------
