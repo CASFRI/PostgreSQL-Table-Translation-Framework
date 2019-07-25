@@ -78,16 +78,17 @@ Translation tables have one row per target attribute and they must contain these
  7. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
  
 * Multiple validation rules can be seperated with a semi-colon.
-* Error codes to be returned by the engine if validation rules return FALSE should follow a '|' at the end of the helper function parameters (e.g. notNull({sp1_per}|-8888)). Validation error codes are always required and must be of the same type as the target attribute. Error codes can optionally be provided for translation functions too. If the translation returns a NULL, the engine will return the user provided error code, or the default values of TRANSLATION_ERROR for text types or -3333 for numeric types.
+* Error codes, to be returned by the engine if validation rules return FALSE, should follow a vertical bar ('|') after the list of helper function parameters (e.g. notNull({sp1_per}|-8888)). Validation error codes are always required and must be of the same type as the target attribute. Error codes can optionally be provided for translation functions too. If the translation helper function returns NULL following a processing error, the engine will return the user provided error code, or the default values of 'TRANSLATION_ERROR' for text types or -3333 for numeric types.
+* It is possible to configure the engine to stop on any validation or translation error. 
 
-Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process. The engine checks that:
+Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process with a message explaining the problem. The engine checks that:
 
-* no null values exists (all cells must have a value)
-* target attribute names do not contain invalid characters (e.g. spaces or accents)
-* target attribute types are valid PostgreSQL types (integer, text, boolean, etc...)
-* helper functions for validation and translation rules exist and have the propre number of parameters and types
-* the flag indicating if the description is in sync with the validation/translation rules is set to TRUE
-* the return type of the translation functions match the targetAttributeType specified in the translation table
+* no null values exists (all cells must have a value),
+* target attribute names do not contain invalid characters (e.g. spaces or accents),
+* target attribute types are valid PostgreSQL types (integer, text, boolean, etc...),
+* helper functions for validation and translation rules exist and have the propre number of parameters and types,
+* the flag indicating if the description is in sync with the validation/translation rules is set to TRUE,
+* the return type of the translation functions match the targetAttributeType specified in the translation table.
 
 **Example translation table**
 
