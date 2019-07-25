@@ -152,7 +152,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
 -- only failing tests
---SELECT * FROM (
+SELECT * FROM (
 -----------------------------------------------------------
 -- The first table in the next WITH statement list all the function tested
 -- with the number of test for each. It must be adjusted for every new test.
@@ -405,19 +405,22 @@ UNION ALL
 SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name is invalid.' passed
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') = 
+                     'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name (CROWN CLOSURE UPPER) is invalid.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test wrong translation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule copyInt().' passed
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);')
+                = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER) : Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule copyInt().' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test NULL validation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable3''::text);') = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Error code is NULL or empty for validation rule notNull().' passed
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable3''::text);')
+                = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER) : Error code is NULL or empty for validation rule notNull().' passed
 ---------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
@@ -445,13 +448,13 @@ UNION ALL
 SELECT '7.1'::text number,
        'TT_Prepare'::text function_tested,
        'Basic test, check if created function exists'::text description,
-        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'text[]', 'boolean', 'boolean', 'integer', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_FctExists('translate', ARRAY['name', 'name', 'text[]', 'boolean', 'integer', 'boolean', 'boolean']) passed
+        TT_FctExists('translate', ARRAY['name', 'name', 'text[]', 'boolean', 'boolean', 'integer', 'boolean', 'boolean']) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
@@ -463,7 +466,7 @@ UNION ALL
 SELECT '7.4'::text number,
        'TT_Prepare'::text function_tested,
        'Test upper and lower case caracters'::text description,
-        TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'tExt[]', 'boolean', 'intEger', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('Public', 'translate', ARRAY['Name', 'name', 'tExt[]', 'boolean', 'boolean', 'intEger', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.5'::text number,
@@ -629,5 +632,5 @@ ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
 -- to display only failing tests...
---) foo WHERE NOT passed
+) foo WHERE NOT passed
 ;
