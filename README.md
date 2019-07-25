@@ -42,13 +42,20 @@ The current version is 0.0.2-beta and is available for download at https://githu
 
 *Target table* - The table created by the translation process.
 
-*Translation table* - User created table read by the translation engine and defining the structure of the target table, the validation rules and the translation rules.
-
-*Lookup table* - User created table of lookup values used by some helper functions to convert source values into target values.
-
 *Source attribute/value* - The attribute or value stored in the source table.
 
 *Target attribute/value* - The attribute or value to be stored in the translated target table.
+
+*Translation table* - User created table read by the translation engine and defining the structure of the target table, the validation rules and the translation rules.
+
+*Translation row* - One row of the translation table.
+
+*Validation rule* - The set of validation helper functions used to validating the sources values of an attribute. There is one set of validation rule per row in the translation table.
+
+*Translation rule* - The translation helper functions used to translate the sources values to the target attribute. There is only one translation rule per translation row in the translation table.
+
+*Lookup table* - User created table of lookup values used by some helper functions to convert source values into target values.
+
 
 # What are translation tables and how to write them?
 
