@@ -538,6 +538,7 @@ SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_Between',
                                             'max', 'numeric', 
                                             'includeMin', 'boolean', 
                                             'includeMax', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '7.9'::text number,
        'TT_Between'::text function_tested,
@@ -666,6 +667,7 @@ UNION ALL
 SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_GreaterThan', 
                                       ARRAY['lowerBound', 'numeric', 
                                             'inclusive', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '8.5'::text number,
        'TT_GreaterThan'::text function_tested,
@@ -710,6 +712,7 @@ UNION ALL
 SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_LessThan', 
                                       ARRAY['upperBound', 'numeric', 
                                             'inclusive', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_LessThan'::text function_tested,
@@ -755,6 +758,7 @@ SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_IsUnique',
                                       ARRAY['lookupSchemaName', 'text', 
                                             'lookupTableName', 'text', 
                                             'occurrences', 'int'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '10.5'::text number,
        'TT_IsUnique'::text function_tested,
@@ -847,6 +851,7 @@ UNION ALL
 SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text', 
                                                                  'lookupTableName', 'text', 
                                                                  'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '11.5'::text number,
        'TT_MatchTable'::text function_tested,
@@ -932,6 +937,7 @@ UNION ALL
 -- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(12, 'TT_MatchList', ARRAY['lst', 'stringlist', 
                                                                'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '12.5'::text number,
        'TT_MatchList'::text function_tested,
@@ -1234,6 +1240,7 @@ SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '104.6'::text number,
        'TT_LookupText'::text function_tested,
@@ -1274,6 +1281,7 @@ SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '105.6'::text number,
        'TT_LookupDouble'::text function_tested,
@@ -1308,6 +1316,7 @@ SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '106.6'::text number,
        'TT_LookupInt'::text function_tested,
@@ -1341,6 +1350,7 @@ SELECT (TT_TestNullAndWrongTypeParams(107, 'TT_MapText',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'stringlist',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '107.7'::text number,
        'TT_MapText'::text function_tested,
@@ -1386,6 +1396,7 @@ SELECT (TT_TestNullAndWrongTypeParams(108, 'TT_MapDouble',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'doublelist',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '108.7'::text number,
        'TT_MapDouble'::text function_tested,
@@ -1419,6 +1430,7 @@ SELECT (TT_TestNullAndWrongTypeParams(109, 'TT_MapInt',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'intlist',
                                             'ignoreCase', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '109.7'::text number,
        'TT_MapInt'::text function_tested,
@@ -1452,6 +1464,7 @@ SELECT (TT_TestNullAndWrongTypeParams(110, 'TT_Pad',
                                       ARRAY['targetLength', 'int',
                                             'padChar', 'char',
                                             'trunc', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '110.5'::text number,
        'TT_Pad'::text function_tested,
@@ -1537,6 +1550,7 @@ UNION ALL
 -- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(111, 'TT_Concat', 
                                       ARRAY['sep', 'text'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '111.2'::text number,
        'TT_Concat'::text function_tested,
@@ -1566,6 +1580,7 @@ SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat',
                                             'sep', 'char',
                                             'upperCase', 'boolean',
                                             'includeEmpty', 'boolean'])).*
+---------------------------------------------------------
 UNION ALL
 SELECT '112.11'::text number,
        'TT_PadConcat'::text function_tested,
