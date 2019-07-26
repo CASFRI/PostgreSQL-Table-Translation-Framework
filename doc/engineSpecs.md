@@ -85,34 +85,27 @@ table.
 <td style="text-align: left;">trans.translation01</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">targetAttributeList</td>
-<td style="text-align: left;">List of target table attributes.</td>
-<td style="text-align: left;">“;” separated list of attribute names</td>
-<td style="text-align: left;">no default value, mandatory</td>
-<td style="text-align: left;">Name; Address; Street;</td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">stopOnInvalid</td>
 <td style="text-align: left;">Globally determine if the engine should stop when a validation rule fails. This is mainly to validate and fix the source table when it is possible. When set to FALSE, validation rules can still be individually set so that the engine stop when when they resolve to FALSE.</td>
 <td style="text-align: left;">TRUE/FALSE</td>
 <td style="text-align: left;">TRUE</td>
 <td style="text-align: left;">FALSE</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">logFrequency</td>
 <td style="text-align: left;">Number of lines at which to log the translation progress. Used by the translation engine to know from where to resume a following execution.</td>
 <td style="text-align: left;">int</td>
 <td style="text-align: left;">500</td>
 <td style="text-align: left;">100</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">resume</td>
 <td style="text-align: left;">Resume from last execution.</td>
 <td style="text-align: left;">TRUE/FALSE</td>
 <td style="text-align: left;">TRUE</td>
 <td style="text-align: left;">FALSE</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">ignoreDescUpToDateWithRules</td>
 <td style="text-align: left;">Have the translation engine ignore descUpToDateWithRules flags set to FALSE. To be used in case one wants to process all the rules even when some are not up to date with their textual description. This flag should always be set to FALSE when producing an official version of the target table.</td>
 <td style="text-align: left;">TRUE/FALSE</td>

@@ -627,8 +627,6 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   translationTableSchema name - Name of the schema containing the translation 
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   targetAttributeList text[]  - List of attribute definition to be found in 
---                                 the table.
 --   checkExistence              - boolean flag indicating whether validation
 --                                 and translation function existence should
 --                                 be checked.
@@ -848,13 +846,12 @@ RETURNS text AS $f$
     END IF;
 
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, text[], boolean, int, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, boolean, boolean, int, boolean, boolean);';
     EXECUTE query;
 
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
                sourceTableSchema name,
                sourceTable name,
-               targetAttributeList text[] DEFAULT NULL,
                stopOnInvalidSource boolean DEFAULT FALSE,
                stopOnTranslationError boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
@@ -867,7 +864,6 @@ RETURNS text AS $f$
                                                         sourceTable, ' ||
                                                         '''' || translationTableSchema || ''', ' || 
                                                         '''' || translationTable || ''', 
-                                                        targetAttributeList, 
                                                         stopOnInvalidSource,
                                                         stopOnTranslationError,
                                                         logFrequency, 
@@ -922,8 +918,6 @@ $$ LANGUAGE sql VOLATILE;
 --   translationTableSchema name - Name of the schema containing the translation 
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   targetAttributeList ARRAY   - List of target atribute expected in the
---                                 translation table.
 --   stopOnInvalidSource         - Flag indicating if the engine should stop when
 --                                 a source value is declared invalid
 --   stopOnTranslationError      - Flag indicating if the engine should stop when
@@ -937,13 +931,12 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, boolean, int, boolean, boolean);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, boolean, boolean, int, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
   sourceTable name,
   translationTableSchema name,
   translationTable name,
-  targetAttributeList text[] DEFAULT NULL,
   stopOnInvalidSource boolean DEFAULT FALSE,
   stopOnTranslationError boolean DEFAULT FALSE,
   logFrequency int DEFAULT 500,
