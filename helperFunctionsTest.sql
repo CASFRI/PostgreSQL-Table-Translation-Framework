@@ -176,9 +176,9 @@ WITH test_nb AS (
     SELECT 'TT_IsInt'::text,                   4,         11         UNION ALL
     SELECT 'TT_IsNumeric'::text,               5,          7         UNION ALL
     SELECT 'TT_IsBoolean'::text,               6,          8         UNION ALL
-    SELECT 'TT_Between'::text,                 7,         28         UNION ALL
-    SELECT 'TT_GreaterThan'::text,             8,         10         UNION ALL
-    SELECT 'TT_LessThan'::text,                9,         10         UNION ALL
+    SELECT 'TT_IsBetween'::text,               7,         28         UNION ALL
+    SELECT 'TT_IsGreaterThan'::text,           8,         10         UNION ALL
+    SELECT 'TT_IsLessThan'::text,              9,         10         UNION ALL
     SELECT 'TT_IsUnique'::text,               10,         18         UNION ALL
     SELECT 'TT_MatchTable'::text,             11,         17         UNION ALL
     SELECT 'TT_MatchList'::text,              12,         25         UNION ALL
@@ -186,7 +186,7 @@ WITH test_nb AS (
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_NotNullEmptyOr'::text,         15,          2         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
-	  SELECT 'TT_SubstringBetween'::text,       17,         16         UNION ALL
+	  SELECT 'TT_IsBetweenSubstring'::text,     17,         16         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -529,11 +529,11 @@ SELECT '6.8'::text number,
        TT_IsBoolean('2a') = FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 7 - TT_Between
+-- Test 7 - TT_IsBetween
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (8 tests)
-SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_Between',
+SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_IsBetween',
                                       ARRAY['min', 'numeric', 
                                             'max', 'numeric', 
                                             'includeMin', 'boolean', 
@@ -541,213 +541,213 @@ SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_Between',
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.9'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, good value'::text description,
-       TT_Between(50::text, 0::text, 100::text) IS TRUE passed
+       TT_IsBetween(50::text, 0::text, 100::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.10'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, failed higher'::text description,
-       TT_Between(150::text, 0::text, 100::text) IS FALSE passed
+       TT_IsBetween(150::text, 0::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.11'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, failed lower'::text description,
-       TT_Between(5::text, 10::text, 100::text) IS FALSE passed
+       TT_IsBetween(5::text, 10::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.12'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, NULL val'::text description,
-       TT_Between(NULL::text, 0::text, 100::text) IS FALSE passed
+       TT_IsBetween(NULL::text, 0::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.13'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'double precision, good value'::text description,
-       TT_Between(50.5::text, 0::text, 100::text) IS TRUE passed
+       TT_IsBetween(50.5::text, 0::text, 100::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.14'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'double precision, failed higher'::text description,
-       TT_Between(150.5::text, 0::text, 100::text) IS FALSE passed
+       TT_IsBetween(150.5::text, 0::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.15'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'double precision, failed lower'::text description,
-       TT_Between(5.5::text, 10::text, 100::text) IS FALSE passed
+       TT_IsBetween(5.5::text, 10::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.16'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, test inclusive lower'::text description,
-       TT_Between(0::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
+       TT_IsBetween(0::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.17'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, test inclusive higher'::text description,
-       TT_Between(100::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
+       TT_IsBetween(100::text, 0::text, 100::text, TRUE::text, TRUE::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.18'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, test inclusive lower false'::text description,
-       TT_Between(0::text, 0::text, 100::text, FALSE::text, TRUE::text) IS FALSE passed
+       TT_IsBetween(0::text, 0::text, 100::text, FALSE::text, TRUE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.19'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Integer, test inclusive higher false'::text description,
-       TT_Between(100::text, 0::text, 100::text, TRUE::text, FALSE::text) IS FALSE passed
+       TT_IsBetween(100::text, 0::text, 100::text, TRUE::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.20'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Non-valid val'::text description,
-       TT_Between('1a'::text, 0::text, 100::text) IS FALSE passed
+       TT_IsBetween('1a'::text, 0::text, 100::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.21'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'min equal to max'::text description,
-       TT_IsError('SELECT TT_Between(0::text, 100::text, 100::text);'::text) = 'ERROR in TT_Between(): min is equal to max' passed
+       TT_IsError('SELECT TT_IsBetween(0::text, 100::text, 100::text);'::text) = 'ERROR in TT_IsBetween(): min is equal to max' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.22'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'min higher than max'::text description,
-       TT_IsError('SELECT TT_Between(0::text, 150::text, 100::text);'::text) = 'ERROR in TT_Between(): min is greater than max' passed
+       TT_IsError('SELECT TT_IsBetween(0::text, 150::text, 100::text);'::text) = 'ERROR in TT_IsBetween(): min is greater than max' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.23'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Text includeMin'::text description,
-       TT_Between(0::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
+       TT_IsBetween(0::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.24'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Text includeMax'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
+       TT_IsBetween(100::text, 0::text, 100::text, 'TRUE', 'TRUE') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.25'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Numeric includeMin false'::text description,
-       TT_Between(0::text, 0::text, 100::text, '0', 'TRUE') IS FALSE passed
+       TT_IsBetween(0::text, 0::text, 100::text, '0', 'TRUE') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.26'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Numeric includeMin true'::text description,
-       TT_Between(0::text, 0::text, 100::text, '1', 'TRUE') IS TRUE passed
+       TT_IsBetween(0::text, 0::text, 100::text, '1', 'TRUE') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.27'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Numeric includeMax false'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', '0') IS FALSE passed
+       TT_IsBetween(100::text, 0::text, 100::text, 'TRUE', '0') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '7.28'::text number,
-       'TT_Between'::text function_tested,
+       'TT_IsBetween'::text function_tested,
        'Numeric includeMax true'::text description,
-       TT_Between(100::text, 0::text, 100::text, 'TRUE', '1') IS TRUE passed
+       TT_IsBetween(100::text, 0::text, 100::text, 'TRUE', '1') IS TRUE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 8 - TT_GreaterThan
+-- Test 8 - TT_IsGreaterThan
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_GreaterThan', 
+SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_IsGreaterThan', 
                                       ARRAY['lowerBound', 'numeric', 
                                             'inclusive', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.5'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'Integer, good value'::text description,
-       TT_GreaterThan(11::text, 10::text) IS TRUE passed
+       TT_IsGreaterThan(11::text, 10::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.6'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'Integer, bad value'::text description,
-       TT_GreaterThan(9::text, 10::text) IS FALSE passed
+       TT_IsGreaterThan(9::text, 10::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.7'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'Double precision, good value'::text description,
-       TT_GreaterThan(10.3::text, 10.2::text) IS TRUE passed
+       TT_IsGreaterThan(10.3::text, 10.2::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.8'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'Double precision, bad value'::text description,
-       TT_GreaterThan(10.1::text, 10.2::text) IS FALSE passed
+       TT_IsGreaterThan(10.1::text, 10.2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.9'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'Inclusive false'::text description,
-       TT_GreaterThan(10::text, 10.0::text, FALSE::text) IS FALSE passed
+       TT_IsGreaterThan(10::text, 10.0::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '8.10'::text number,
-       'TT_GreaterThan'::text function_tested,
+       'TT_IsGreaterThan'::text function_tested,
        'NULL val'::text description,
-       TT_GreaterThan(NULL::text, 10.1::text) IS FALSE passed
+       TT_IsGreaterThan(NULL::text, 10.1::text) IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 9 - TT_LessThan
+-- Test 9 - TT_IsLessThan
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_LessThan', 
+SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_IsLessThan', 
                                       ARRAY['upperBound', 'numeric', 
                                             'inclusive', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'Integer, good value'::text description,
-       TT_LessThan(9::text, 10::text) passed
+       TT_IsLessThan(9::text, 10::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'Integer, bad value'::text description,
-       TT_LessThan(11::text, 10::text) IS FALSE passed
+       TT_IsLessThan(11::text, 10::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.7'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'Double precision, good value'::text description,
-       TT_LessThan(10.1::text, 10.7::text) passed
+       TT_IsLessThan(10.1::text, 10.7::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.8'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'Double precision, bad value'::text description,
-       TT_LessThan(9.9::text, 9.5::text) IS FALSE passed
+       TT_IsLessThan(9.9::text, 9.5::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.9'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'Inclusive false'::text description,
-       TT_LessThan(10.1::text, 10.1::text, FALSE::text) IS FALSE passed
+       TT_IsLessThan(10.1::text, 10.1::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '9.10'::text number,
-       'TT_LessThan'::text function_tested,
+       'TT_IsLessThan'::text function_tested,
        'NULL val'::text description,
-       TT_LessThan(NULL::text, 10.1::text, TRUE::text) IS FALSE passed
+       TT_IsLessThan(NULL::text, 10.1::text, TRUE::text) IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 10 - TT_IsUnique
@@ -1124,11 +1124,11 @@ SELECT '16.7'::text number,
        'Bad string'::text description,
        TT_IsIntSubstring('200-01-02'::text, 1::text, 4::text) IS FALSE passed
 ---------------------------------------------------------
--- Test 17 - TT_SubstringBetween
+-- Test 17 - TT_IsBetweenSubstring
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (12 tests)
-SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_SubstringBetween',
+SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_IsBetweenSubstring',
                                       ARRAY['start_char', 'int',
                                             'for_length', 'int',
 																						'min', 'numeric', 
@@ -1138,27 +1138,27 @@ SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_SubstringBetween',
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.13'::text number,
-       'TT_SubstringBetween'::text function_tested,
+       'TT_IsBetweenSubstring'::text function_tested,
        'Pass test'::text description,
-       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) passed
+       TT_IsBetweenSubstring('2001-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.14'::text number,
-       'TT_SubstringBetween'::text function_tested,
+       'TT_IsBetweenSubstring'::text function_tested,
        'Fail test'::text description,
-       TT_SubstringBetween('200-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) IS FALSE passed
+       TT_IsBetweenSubstring('200-01-02'::text, 1::text, 4::text, 2000::text, 2002::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.15'::text number,
-       'TT_SubstringBetween'::text function_tested,
+       'TT_IsBetweenSubstring'::text function_tested,
        'Default include test'::text description,
-       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text) passed
+       TT_IsBetweenSubstring('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '17.16'::text number,
-       'TT_SubstringBetween'::text function_tested,
+       'TT_IsBetweenSubstring'::text function_tested,
        'Include false test'::text description,
-       TT_SubstringBetween('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text, FALSE::text, FALSE::text) IS FALSE passed
+       TT_IsBetweenSubstring('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text, FALSE::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------

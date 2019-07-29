@@ -30,7 +30,7 @@ CREATE TABLE test_translationtable AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules
@@ -38,7 +38,7 @@ UNION ALL
 SELECT '2' rule_id,
        'CROWN_CLOSURE_LOWER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -48,7 +48,7 @@ CREATE TABLE test_translationtable2 AS
 SELECT '1' rule_id,
        'CROWN CLOSURE UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -58,7 +58,7 @@ CREATE TABLE test_translationtable3 AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'notNull(crown_closure|);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -68,7 +68,7 @@ CREATE TABLE test_translationtable4 AS
 SELECT '1' rule_id,
        'CROWN_CLOSURE_UPPER'::text targetAttribute,
        'integer'::text targetAttributeType,
-       'notNull(crown_closure|-3333);between(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
+       'notNull(crown_closure|-3333);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
        'copyInt(crown_closure|WRONG_TYPE)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
@@ -366,7 +366,7 @@ UNION ALL
 SELECT '4.8'::text number,
        'TT_ParseRules'::text function_tested,
        'Test what''s in the test translation table'::text description,
-        array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('between', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
+        array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
 FROM public.test_translationtable
 ---------------------------------------------------------
 -- Test 5 - TT_ValidateTTable
@@ -376,7 +376,7 @@ SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -398,7 +398,7 @@ SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
         array_agg(rec)::text = 
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(between,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -440,7 +440,7 @@ UNION ALL
 SELECT '6.3'::text number,
        'TT_TextFctExists'::text function_tested,
        'Basic test'::text description,
-        TT_TextFctExists('Between', '3') passed
+        TT_TextFctExists('isbetween', '3') passed
 --------------------------------------------------------
 -- Test 7 - TT_Prepare
 --------------------------------------------------------
@@ -498,7 +498,7 @@ UNION ALL
 SELECT '8.1'::text number,
        'TT_TextFctReturnType'::text function_tested,
        'Basic test'::text description,
-        TT_TextFctReturnType('between', 3) = 'boolean' passed
+        TT_TextFctReturnType('isbetween', 3) = 'boolean' passed
 --------------------------------------------------------
 -- Test 9 - TT_TextFctEval
 --------------------------------------------------------
@@ -506,7 +506,7 @@ UNION ALL
 SELECT '9.1'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic test'::text description,
-        TT_TextFctEval('between', '{crown_closure,''0.0'',''2.0''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
+        TT_TextFctEval('isbetween', '{crown_closure,''0.0'',''2.0''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.2'::text number,
@@ -518,25 +518,25 @@ UNION ALL
 SELECT '9.3'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong function name'::text description,
-        TT_Iserror('SELECT TT_TextFctEval(''xbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE : Helper function xbetween(text,text,text) does not exist.' passed
+        TT_Iserror('SELECT TT_TextFctEval(''xisbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE : Helper function xisbetween(text,text,text) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_IsError('SELECT TT_TextFctEval(''between'', ''{crown_closure, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_Between(): max is not a numeric value' passed
+        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closure, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_IsBetween(): max is not a numeric value' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_TextFctEval('between', '{crown_closureX, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
+        TT_TextFctEval('isbetween', '{crown_closureX, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong but compatible return type'::text description,
-        TT_TextFctEval('between', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
+        TT_TextFctEval('isbetween', '{crown_closure, 0.0, 2.0}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::int, TRUE) = 1 passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.7'::text number,

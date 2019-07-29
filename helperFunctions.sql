@@ -355,7 +355,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Between
+-- TT_IsBetween
 --
 -- val text - Value to test
 -- min text - Minimum
@@ -367,9 +367,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Return FALSE otherwise.
 -- Return FALSE if val is NULL.
 -- Return error if min, max, includeMin or includeMax are NULL.
--- e.g. TT_Between(5, 0, 100)
+-- e.g. TT_IsBetween(5, 0, 100)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_Between(
+CREATE OR REPLACE FUNCTION TT_IsBetween(
   val text,
   min text,
   max text,
@@ -385,7 +385,7 @@ RETURNS boolean AS $$
     _includeMax boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_Between',
+    PERFORM TT_ValidateParams('TT_IsBetween',
                               ARRAY['min', min, 'numeric', 
                                     'max', max, 'numeric', 
                                     'includeMin', includeMin, 'boolean', 
@@ -396,9 +396,9 @@ RETURNS boolean AS $$
     _includeMax = includeMax::boolean;
     
     IF _min = _max THEN
-      RAISE EXCEPTION 'ERROR in TT_Between(): min is equal to max';
+      RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is equal to max';
     ELSIF _min > _max THEN
-      RAISE EXCEPTION 'ERROR in TT_Between(): min is greater than max';
+      RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is greater than max';
     END IF;
     
     -- validate source value (return FALSE)
@@ -420,18 +420,18 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_Between(
+CREATE OR REPLACE FUNCTION TT_IsBetween(
   val text,
   min text,
   max text
 )
 RETURNS boolean AS $$
-  SELECT TT_Between(val, min, max, TRUE::text, TRUE::text);
+  SELECT TT_IsBetween(val, min, max, TRUE::text, TRUE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_GreaterThan
+-- TT_IsGreaterThan
 --
 --  val text - Value to test.
 --  lowerBound text - lower bound to test against.
@@ -442,9 +442,9 @@ $$ LANGUAGE sql VOLATILE;
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
 --  Return error if lowerBound or inclusive are NULL.
---  e.g. TT_GreaterThan(5, 0, TRUE)
+--  e.g. TT_IsGreaterThan(5, 0, TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_GreaterThan(
+CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
    val text,
    lowerBound text,
    inclusive text
@@ -456,7 +456,7 @@ RETURNS boolean AS $$
     _inclusive boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_GreaterThan',
+    PERFORM TT_ValidateParams('TT_IsGreaterThan',
                               ARRAY['lowerBound', lowerBound, 'numeric', 
                                     'inclusive', inclusive, 'boolean']);
     _lowerBound = lowerBound::double precision;
@@ -477,17 +477,17 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_GreaterThan(
+CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
   val text,
   lowerBound text
 )
 RETURNS boolean AS $$
-  SELECT TT_GreaterThan(val, lowerBound, TRUE::text)
+  SELECT TT_IsGreaterThan(val, lowerBound, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_LessThan
+-- TT_IsLessThan
 --
 --  val text - Value to test.
 --  upperBound text - upper bound to test against.
@@ -498,9 +498,9 @@ $$ LANGUAGE sql VOLATILE;
 --  Return FALSE otherwise.
 --  Return FALSE if val is NULL.
 --  Return error if upperBound or inclusive are NULL.
---  e.g. TT_LessThan(1, 5, TRUE)
+--  e.g. TT_IsLessThan(1, 5, TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_LessThan(
+CREATE OR REPLACE FUNCTION TT_IsLessThan(
    val text,
    upperBound text,
    inclusive text
@@ -512,7 +512,7 @@ RETURNS boolean AS $$
     _inclusive boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_LessThan',
+    PERFORM TT_ValidateParams('TT_IsLessThan',
                               ARRAY['upperBound', upperBound, 'numeric', 
                                     'inclusive', inclusive, 'boolean']);
     _upperBound = upperBound::double precision;
@@ -533,12 +533,12 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_LessThan(
+CREATE OR REPLACE FUNCTION TT_IsLessThan(
   val text,
   upperBound text
 )
 RETURNS boolean AS $$
-  SELECT TT_LessThan(val, upperBound, TRUE::text)
+  SELECT TT_IsLessThan(val, upperBound, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -827,7 +827,7 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------------------------------------------------------
--- TT_SubstringBetween(text, text, text)
+-- TT_IsBetweenSubstring(text, text, text)
 --
 -- val text - input string
 -- start_char text - start character to take substring from
@@ -837,10 +837,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- includeMin text - boolean for including lower bound
 -- includeMax text - boolean for including upper bound	
 --
--- Take substring and test with TT_Between()
--- e.g. TT_SubstringBetween('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
+-- Take substring and test with TT_IsBetween()
+-- e.g. TT_IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_SubstringBetween(
+CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
 	start_char text,
   for_length text,
@@ -855,7 +855,7 @@ RETURNS boolean AS $$
     _for_length int;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_SubstringBetween',
+    PERFORM TT_ValidateParams('TT_IsBetweenSubstring',
                               ARRAY['start_char', start_char, 'int',
                                     'for_length', for_length, 'int',
 																	  'min', min, 'numeric', 
@@ -871,11 +871,11 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    RETURN TT_Between(substring(val from _start_char for _for_length), min, max, includeMin, includeMax);
+    RETURN TT_IsBetween(substring(val from _start_char for _for_length), min, max, includeMin, includeMax);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_SubstringBetween(
+CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
 	start_char text,
   for_length text,
@@ -883,7 +883,7 @@ CREATE OR REPLACE FUNCTION TT_SubstringBetween(
   max text
 )
 RETURNS boolean AS $$
-  SELECT TT_SubstringBetween(val, start_char, for_length, min, max, TRUE::text, TRUE::text);
+  SELECT TT_IsBetweenSubstring(val, start_char, for_length, min, max, TRUE::text, TRUE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
