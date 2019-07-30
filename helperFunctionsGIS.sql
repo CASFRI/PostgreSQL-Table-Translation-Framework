@@ -210,7 +210,7 @@ $$ LANGUAGE sql VOLATILE;
 -- intersectSchemaName text - schema for the intersect table
 -- intersectTableName text - table to intersect
 -- geoCol text - geometry column from intersect table
--- returnCol text - column conatining the values to return
+-- returnCol text - column containing the values to return
 -- method text - intersect method if multiple intersecting polygons (only have area method for text)
 --    GREATEST_AREA - return value from intersecting polygon with largest area
 --    LOWEST_VALUE - return lowest value
@@ -234,8 +234,14 @@ RETURNS text AS $$
   DECLARE
     _intersectSchemaName name;
     _intersectTableName name;
-    count int;
     _the_geom geometry;
+    query text;
+    geoRow RECORD;
+    maxArea double precision = 0;
+    maxAreaVal text;
+    maxVal text;
+    minVal text;
+    count int = 0;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
@@ -259,30 +265,34 @@ RETURNS text AS $$
     
     -- process
     -- get table of returnCol values and intersecting areas for all intersecting polygons
-    -- this table will have columns return_value and int_area representing the values from returnCol and the intersect areas respectively
-    EXECUTE 'DROP TABLE IF EXISTS int_temp; CREATE TEMP TABLE int_temp AS SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection(''' || _the_geom::text || '''::geometry, ' || geoCol || ')) AS int_area 
+    query = 'SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection($1, ' || geoCol || ')) AS int_area 
     FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
-    ' WHERE ST_Intersects(''' || the_geom::text || '''::geometry, ' || geoCol || ');';
-
-    EXECUTE 'SELECT count(*) FROM int_temp;' INTO count;
-
+    ' WHERE ST_Intersects($1, ' || geoCol || ');';
+    
+    FOR geoRow IN EXECUTE query USING _the_geom LOOP
+      IF geoRow.int_area > maxArea THEN
+        maxArea = geoRow.int_area;
+        maxAreaVal = geoRow.return_value::text;
+      END IF;
+      IF maxVal IS NULL OR geoRow.return_value::text > maxVal THEN
+        maxVal = geoRow.return_value::text;
+      END IF;
+      IF minVal IS NULL OR geoRow.return_value::text < minVal THEN
+        minVal = geoRow.return_value::text;
+      END IF;
+      count = count + 1;
+    END LOOP;
+    
     -- return value based on count and method
-    IF count = 0 THEN
-      RAISE NOTICE 'No intersecting polygons for geometry: %', the_geom;
-      RETURN NULL;
-    ELSIF count = 1 THEN
-      -- return the value
-      RETURN return_value FROM int_temp;
-    ELSIF count > 1 AND method = 'GREATEST_AREA' THEN
-      -- return val from intersect with largest area
-      RETURN return_value FROM int_temp ORDER BY int_area DESC LIMIT 1;
-    ELSIF count > 1 AND method = 'LOWEST_VALUE' THEN
-      -- return lowest val
-      RETURN return_value FROM int_temp ORDER BY return_value LIMIT 1;
-    ELSIF count > 1 AND method = 'HIGHEST_VALUE' THEN
-      -- return highest val
-      RETURN return_value FROM int_temp ORDER BY return_value DESC LIMIT 1;
-    END IF;
+    RETURN CASE WHEN count = 0 THEN
+                     NULL
+                WHEN method = 'GREATEST_AREA' THEN
+                     maxAreaVal
+                WHEN method = 'LOWEST_VALUE' THEN
+                     minVal
+                ELSE
+                     maxVAl
+           END;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
