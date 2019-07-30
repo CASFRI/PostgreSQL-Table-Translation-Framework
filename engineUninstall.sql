@@ -11,7 +11,7 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 SELECT TT_DropAllTranslateFct();
-DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, text[], boolean, boolean, int, boolean, boolean);
+DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, boolean, boolean, int, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
