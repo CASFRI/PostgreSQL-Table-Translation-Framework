@@ -568,7 +568,7 @@ RETURNS text AS $$
     FOREACH arg in ARRAY args LOOP
             
       IF arg IS NULL THEN
-        result = result || '''NULL''' || ',';
+        result = result || 'NULL' || ',';
       ELSE
         -- remove any quotes and wrap everything in single quotes
   	    result = result || '''''' || btrim(btrim(arg,''''),'"') || '''''' || ',';
