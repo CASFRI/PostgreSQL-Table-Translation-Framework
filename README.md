@@ -30,8 +30,10 @@ The current version is 0.0.2-beta and is available for download at https://githu
   2. the helperFunctions.sql file,
   3. the helperFunctionsTest.sql file. All tests should pass (the "passed" column should be TRUE for all tests).
   4. the engineTest.sql file. All tests should pass.
+  5. if required, the helperFunctionsGIS.sql file.
+  6. If required, the helperFunctionsGISTest.sql file. All tests should pass.
   
-* **Uninstallation -** You can uninstall all the functions by running the helperFunctionsUninstall.sql and the engineUninstall.sql files.
+* **Uninstallation -** You can uninstall all the functions by running the helperFunctionsUninstall.sql, the the helperFunctionsGISUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
 *Translation engine* - The PL/pgSQL code implementing the PostgreSQL Table Translation Framework.
