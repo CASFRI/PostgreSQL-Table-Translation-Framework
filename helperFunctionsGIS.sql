@@ -333,7 +333,8 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   method text
 )
 RETURNS double precision AS $$
-  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionDouble')::double precision;
+  SELECT CASE WHEN TT_IsNumeric(txtVal) THEN txtVal::double precision ELSE NULL END
+  FROM (SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionDouble') txtVal) foo;
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
@@ -361,7 +362,8 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   method text
 )
 RETURNS integer AS $$
-  SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionInt')::int;
+  SELECT CASE WHEN TT_IsInt(txtVal) THEN txtVal::int ELSE NULL END
+  FROM (SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionInt') txtVal) foo;
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
