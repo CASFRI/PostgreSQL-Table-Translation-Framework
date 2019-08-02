@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 ------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION TT_TestNullAndWrongTypeParams(
   baseNumber int,
   fctName text,
   params text[]
-) 
+)
 RETURNS TABLE(number text, function_tested text, description text, passed boolean) AS $$
   DECLARE
     query text;
@@ -66,12 +66,12 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
       END LOOP;
       -- remove the last comma.
       query = left(query, char_length(query) - 2);
-      
+
       query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
 RAISE NOTICE 'query = %', query;
       EXECUTE query INTO passed;
       RETURN NEXT;
-      
+
       -- test wrong type (not necessary to test text as everything is valid text)
       IF params[(i - 1) * 2 + 2] != 'text' THEN
       subnbr = subnbr + 1;
@@ -162,7 +162,7 @@ UNION ALL
 SELECT 'AA'::text, 'abcde'::text, NULL::int, 5.5::double precision, NULL::boolean;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- Comment out the following line and the last one of the file to display 
+-- Comment out the following line and the last one of the file to display
 -- only failing tests
 SELECT * FROM (
 -----------------------------------------------------------
@@ -188,8 +188,8 @@ WITH test_nb AS (
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_NotNullEmptyOr'::text,         15,          2         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
-	  SELECT 'TT_IsBetweenSubstring'::text,     17,         16         UNION ALL
-	  SELECT 'TT_IsName'::text,                 18,          5         UNION ALL
+    SELECT 'TT_IsBetweenSubstring'::text,     17,         16         UNION ALL
+    SELECT 'TT_IsName'::text,                 18,          5         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -205,7 +205,7 @@ WITH test_nb AS (
     SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
-    SELECT 'TT_NothingInt'::text,            120,          1         
+    SELECT 'TT_NothingInt'::text,            120,          1
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -214,11 +214,11 @@ FROM test_nb
 ORDER BY maj_num, min_num
 )
 SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,
-       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' || 
+       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' ||
                 b.function_tested || ' in the initial table...') AS function_tested,
-       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') description, 
-       NOT passed IS NULL AND 
-          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND 
+       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') description,
+       NOT passed IS NULL AND
+          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND
           (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed
 FROM test_series AS a FULL OUTER JOIN (
 
@@ -313,7 +313,7 @@ UNION ALL
 SELECT '2.8'::text number,
        'TT_NotEmpty'::text function_tested,
        'NULL char'::text description,
-       TT_NotEmpty(NULL::char(3)) IS FALSE passed 
+       TT_NotEmpty(NULL::char(3)) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '2.9'::text number,
@@ -537,9 +537,9 @@ SELECT '6.8'::text number,
 UNION ALL
 -- test all NULLs and wrong types (8 tests)
 SELECT (TT_TestNullAndWrongTypeParams(7, 'TT_IsBetween',
-                                      ARRAY['min', 'numeric', 
-                                            'max', 'numeric', 
-                                            'includeMin', 'boolean', 
+                                      ARRAY['min', 'numeric',
+                                            'max', 'numeric',
+                                            'includeMin', 'boolean',
                                             'includeMax', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -667,8 +667,8 @@ SELECT '7.28'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_IsGreaterThan', 
-                                      ARRAY['lowerBound', 'numeric', 
+SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_IsGreaterThan',
+                                      ARRAY['lowerBound', 'numeric',
                                             'inclusive', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -712,8 +712,8 @@ SELECT '8.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_IsLessThan', 
-                                      ARRAY['upperBound', 'numeric', 
+SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_IsLessThan',
+                                      ARRAY['upperBound', 'numeric',
                                             'inclusive', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -757,9 +757,9 @@ SELECT '9.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_IsUnique', 
-                                      ARRAY['lookupSchemaName', 'text', 
-                                            'lookupTableName', 'text', 
+SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_IsUnique',
+                                      ARRAY['lookupSchemaName', 'text',
+                                            'lookupTableName', 'text',
                                             'occurrences', 'int'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -851,8 +851,8 @@ SELECT '10.18'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text', 
-                                                                 'lookupTableName', 'text', 
+SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text',
+                                                                 'lookupTableName', 'text',
                                                                  'ignoreCase', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -938,7 +938,7 @@ SELECT '11.17'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(12, 'TT_MatchList', ARRAY['lst', 'stringlist', 
+SELECT (TT_TestNullAndWrongTypeParams(12, 'TT_MatchList', ARRAY['lst', 'stringlist',
                                                                'ignoreCase', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -1105,7 +1105,7 @@ SELECT '15.2'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_IsIntSubstring', 
+SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_IsIntSubstring',
                                       ARRAY['start_char', 'int',
                                             'for_length', 'int'])).*
 ---------------------------------------------------------
@@ -1134,9 +1134,9 @@ UNION ALL
 SELECT (TT_TestNullAndWrongTypeParams(17, 'TT_IsBetweenSubstring',
                                       ARRAY['start_char', 'int',
                                             'for_length', 'int',
-																						'min', 'numeric', 
-                                            'max', 'numeric', 
-                                            'includeMin', 'boolean', 
+                                            'min', 'numeric',
+                                            'max', 'numeric',
+                                            'includeMin', 'boolean',
                                             'includeMax', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -1270,7 +1270,7 @@ SELECT '103.5'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText', 
+SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText',
                                       ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
@@ -1311,7 +1311,7 @@ SELECT '104.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble', 
+SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble',
                                       ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
@@ -1346,7 +1346,7 @@ SELECT '105.9'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt', 
+SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt',
                                       ARRAY['lookupSchemaName', 'text',
                                             'lookupTableName', 'text',
                                             'lookupCol', 'text',
@@ -1381,7 +1381,7 @@ SELECT '106.9'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(107, 'TT_MapText', 
+SELECT (TT_TestNullAndWrongTypeParams(107, 'TT_MapText',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'stringlist',
                                             'ignoreCase', 'boolean'])).*
@@ -1427,7 +1427,7 @@ SELECT '107.12'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(108, 'TT_MapDouble', 
+SELECT (TT_TestNullAndWrongTypeParams(108, 'TT_MapDouble',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'doublelist',
                                             'ignoreCase', 'boolean'])).*
@@ -1461,7 +1461,7 @@ SELECT '108.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(109, 'TT_MapInt', 
+SELECT (TT_TestNullAndWrongTypeParams(109, 'TT_MapInt',
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'intlist',
                                             'ignoreCase', 'boolean'])).*
@@ -1495,7 +1495,7 @@ SELECT '109.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(110, 'TT_Pad', 
+SELECT (TT_TestNullAndWrongTypeParams(110, 'TT_Pad',
                                       ARRAY['targetLength', 'int',
                                             'padChar', 'char',
                                             'trunc', 'boolean'])).*
@@ -1583,7 +1583,7 @@ SELECT '110.17'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(111, 'TT_Concat', 
+SELECT (TT_TestNullAndWrongTypeParams(111, 'TT_Concat',
                                       ARRAY['sep', 'text'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -1609,7 +1609,7 @@ SELECT '111.4'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat', 
+SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat',
                                       ARRAY['length', 'intlist',
                                             'pad', 'charlist',
                                             'sep', 'char',
@@ -1691,7 +1691,7 @@ SELECT '120.1'::text number,
        'Simple test'::text description,
        TT_NothingInt() IS NULL passed
 ---------------------------------------------------------
-) AS b 
+) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,

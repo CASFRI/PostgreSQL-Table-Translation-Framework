@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
@@ -63,11 +63,11 @@ CREATE OR REPLACE FUNCTION TT_IsCastableTo(
 )
 RETURNS boolean AS $$
   DECLARE
-	  query text;
-	BEGIN
+    query text;
+  BEGIN
     query = 'SELECT ' || '''' || val || '''' || '::' || targetType || ';';
     EXECUTE query;
-		RETURN TRUE;
+    RETURN TRUE;
   EXCEPTION WHEN OTHERS THEN
     RETURN FALSE;
   END;
@@ -107,25 +107,25 @@ RETURNS text AS $$
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------- 
--- TT_LowerArr 
+-------------------------------------------------------------------------------
+-- TT_LowerArr
 -- Lowercase text array (often to compare them while ignoring case)
------------------------------------------------------------- 
---DROP FUNCTION IF EXISTS TT_LowerArr(text[]); 
-CREATE OR REPLACE FUNCTION TT_LowerArr( 
-  arr text[] DEFAULT NULL 
-) 
-RETURNS text[] AS $$ 
-  DECLARE 
-    newArr text[] = ARRAY[]::text[]; 
-  BEGIN 
-    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN 
-      RETURN ARRAY[]::text[]; 
-    END IF; 
-    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr; 
-    RETURN newArr; 
-  END; 
-$$ LANGUAGE plpgsql VOLATILE STRICT; 
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_LowerArr(text[]);
+CREATE OR REPLACE FUNCTION TT_LowerArr(
+  arr text[] DEFAULT NULL
+)
+RETURNS text[] AS $$
+  DECLARE
+    newArr text[] = ARRAY[]::text[];
+  BEGIN
+    IF NOT arr IS NULL AND arr = ARRAY[]::text[] THEN
+      RETURN ARRAY[]::text[];
+    END IF;
+    SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr;
+    RETURN newArr;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -226,12 +226,12 @@ $$ LANGUAGE plpgsql;
 --
 --   RETURNS boolean
 --
--- Returns TRUE if fctString exists as a function in the catalog with the 
+-- Returns TRUE if fctString exists as a function in the catalog with the
 -- specified function name and number of arguments. Only works for helper
 -- functions accepting text arguments only.
 ------------------------------------------------------------
 -- Self contained example:
--- 
+--
 -- SELECT TT_TextFctExists('TT_NotNull', 1)
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_TextFctExists(text, int);
@@ -333,10 +333,10 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_ParseStringList
 --
--- Parses list of strings into an array. 
+-- Parses list of strings into an array.
 -- Can take a simple string, will convert it to a string array.
 --
--- strip boolean - strips surrounding quotes from any strings. Used in helper functions when 
+-- strip boolean - strips surrounding quotes from any strings. Used in helper functions when
 -- parsing values.
 --
 -- e.g. TT_ParseStringList('col2, "string2", "", ""')
@@ -372,7 +372,7 @@ RETURNS text[] AS $$
       FOR i IN 1..cardinality(result) LOOP
         result[i] = btrim(result[i],'"');
       END LOOP;
-    END IF;    
+    END IF;
     RETURN result;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -381,10 +381,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_RepackStringList
 --
--- Convert a text array into a text array string (that can be reparsed by 
+-- Convert a text array into a text array string (that can be reparsed by
 -- TT_ParseStringList).
 --
--- When the array is composed of only one string, return as text (not as text 
+-- When the array is composed of only one string, return as text (not as text
 -- array string )
 -------------------------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_RepackStringList(text[]);
@@ -405,7 +405,7 @@ RETURNS text AS $$
     IF cardinality(args) > 1 OR (cardinality(args) = 1 AND args[1] IS NULL) THEN
       result = '{';
     END IF;
-    
+
     FOREACH arg in ARRAY args LOOP
       IF debug THEN RAISE NOTICE 'TT_RepackStringList 11 arg=%', arg;END IF;
       IF arg IS NULL THEN
@@ -423,7 +423,7 @@ RETURNS text AS $$
     END LOOP;
     -- remove the last comma and space, and close the array
     result = left(result, char_length(result) - 1);
-    
+
     -- close the array string only when a true array or when only item is NULL
     IF cardinality(args) > 1 OR (cardinality(args) = 1 AND args[1] IS NULL) THEN
       result = result || '}';
@@ -437,14 +437,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_TextFctEval_old
 --
---  - fctName text          - Name of the function to evaluate. Will always be prefixed 
+--  - fctName text          - Name of the function to evaluate. Will always be prefixed
 --                            with "TT_".
---  - arg text[]            - Array of argument values to pass to the function. 
---                            Generally includes one or two column names to get replaced 
+--  - arg text[]            - Array of argument values to pass to the function.
+--                            Generally includes one or two column names to get replaced
 --                            with values from the vals argument.
 --  - vals jsonb            - Replacement values passed as a jsonb object (since
 --                            PostgresQL does not allow passing RECORDs to functions).
---  - returnType anyelement - Determines the type of the returned value 
+--  - returnType anyelement - Determines the type of the returned value
 --                            (declared generically as anyelement).
 --  - checkExistence        - Should the function check the existence of the helper
 --                            function using TT_TextFctExists. TT_ValidateTTable also
@@ -453,13 +453,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 --    RETURNS anyelement
 --
--- Evaluate a function given its name, some arguments and replacement values. 
+-- Evaluate a function given its name, some arguments and replacement values.
 -- All arguments matching the name of a value found in the jsonb vals structure
--- are replaced with this value. returnType determines the return type of this 
+-- are replaced with this value. returnType determines the return type of this
 -- pseudo-type function.
 --
 -- Column values and strings are returned as text strings
--- String lists are returned as a comma separated list of single quoted strings 
+-- String lists are returned as a comma separated list of single quoted strings
 -- wrapped in {}. e.g. {'val1', 'val2'}
 --
 -- This version passes all vals as type text when running helper functions.
@@ -485,7 +485,7 @@ RETURNS anyelement AS $$
   BEGIN
     -- This function returns a polymorphic type (the one provided in the returnType input argument)
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
-    
+
     -- fctName should never be NULL
     IF fctName IS NULL OR (checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)))) THEN
       IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
@@ -507,7 +507,7 @@ RETURNS anyelement AS $$
           repackArray = array_append(repackArray, argValNested);
         ELSE
           -- if column name not in source table, return as string.
-          -- we can now remove the surrounding single quotes from the string 
+          -- we can now remove the surrounding single quotes from the string
           -- since we have processed column names
           repackArray = array_append(repackArray, TT_UnSingleQuote(argNested));
         END IF;
@@ -567,7 +567,7 @@ $$ LANGUAGE sql STRICT VOLATILE;
 --
 --  RETURNS TT_RuleDef[]
 --
--- Parse a rule string into function name, arguments, error code and 
+-- Parse a rule string into function name, arguments, error code and
 -- stopOnInvalid flag.
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
@@ -604,7 +604,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_ValidateTTable
 --
---   translationTableSchema name - Name of the schema containing the translation 
+--   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
 --   checkExistence              - boolean flag indicating whether validation
@@ -615,15 +615,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Parse and validate the translation table. It must fullfil a number of conditions:
 --
---   - each of those attribute names should be shorter than 64 charaters and 
+--   - each of those attribute names should be shorter than 64 charaters and
 --     contain no spaces,
 --
---   - helper function names should match existing functions and their parameters 
+--   - helper function names should match existing functions and their parameters
 --     should be in the right format,
 --
 --   - there should be no null or empty values in the translation table,
 --
---   - the return type of translation rules and the type of the error code should 
+--   - the return type of translation rules and the type of the error code should
 --     both match the attribute type,
 --
 --   - targetAttribute name should be valid with no special characters
@@ -665,53 +665,53 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
 
       -- rule_id should be integer, not null, not empty string
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
-      IF NOT TT_NotEmpty(row.rule_id) THEN 
+      IF NOT TT_NotEmpty(row.rule_id) THEN
         RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';
       END IF;
-      IF NOT TT_IsInt(row.rule_id) THEN 
+      IF NOT TT_IsInt(row.rule_id) THEN
         RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;
       END IF;
 
       -- targetAttribute should not be null or empty string, should be word with underscore allowed but no special characters
-      IF NOT TT_NotEmpty(row.targetAttribute) THEN 
+      IF NOT TT_NotEmpty(row.targetAttribute) THEN
         RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;
       END IF;
-      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN 
+      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN
         RAISE EXCEPTION '% % : Target attribute name (%) is invalid.', error_msg_start, row.rule_id, row.targetAttribute;
       END IF;
       targetAttribute = row.targetAttribute;
 
       -- targetAttributeType should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      IF NOT TT_NotEmpty(row.targetAttributeType) THEN 
+      IF NOT TT_NotEmpty(row.targetAttributeType) THEN
         RAISE EXCEPTION '% % (%) : Target attribute type is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
       END IF;
       targetAttributeType = row.targetAttributeType;
 
       -- validationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      IF NOT TT_NotEmpty(row.validationRules) THEN 
+      IF NOT TT_NotEmpty(row.validationRules) THEN
         RAISE EXCEPTION '% % (%) : Validation rules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
       END IF;
       validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
 
       -- translationRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      IF NOT TT_NotEmpty(row.translationRules) THEN 
+      IF NOT TT_NotEmpty(row.translationRules) THEN
         RAISE EXCEPTION '% % (%) : Translation rule is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
       END IF;
       translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
 
       -- description should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      IF NOT TT_NotEmpty(row.description) THEN 
+      IF NOT TT_NotEmpty(row.description) THEN
         RAISE EXCEPTION '% % (%) : Description is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
       END IF;
       description = coalesce(row.description, '');
 
       -- descUpToDateWithRules should not be null or empty
       IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
-      IF NOT TT_NotEmpty(row.descUpToDateWithRules) THEN 
+      IF NOT TT_NotEmpty(row.descUpToDateWithRules) THEN
         RAISE EXCEPTION '% % (%) : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
       END IF;
       descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;
@@ -734,7 +734,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
         -- check error code can be cast to attribute type, catch error with EXCEPTION
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
         IF NOT TT_IsCastableTo(rule.errorcode, targetAttributeType) THEN
-				  RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.errorcode, targetAttributeType, rule.fctName;
+          RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.errorcode, targetAttributeType, rule.fctName;
         END IF;
       END LOOP;
 
@@ -748,7 +748,7 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
       IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
         RAISE EXCEPTION '% % (%) : Translation rule return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, targetAttribute, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0));
       END IF;
-			
+
       -- If not null, check translation error code can be cast to attribute type
       IF translationRule.errorcode IS NOT NULL AND NOT TT_IsCastableTo(translationRule.errorcode, targetAttributeType) THEN
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', targetAttributeType, translationRule.errorcode;END IF;
@@ -766,19 +766,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Prepare
 --
---   translationTableSchema name - Name of the schema containing the translation 
+--   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   fctName name                - Name of the function to create. Default to 
+--   fctName name                - Name of the function to create. Default to
 --                                 'TT_Translate'.
 --
 --   RETURNS text                - Name of the function created.
 --
 -- Create the base translation function to execute when tranlating. This
--- function exists in order to palliate the fact that PostgreSQL does not allow 
--- creating functions able to return SETOF rows of arbitrary variable types. 
--- The function created by this function "freeze" and declare the return type 
--- of the actual translation funtion enabling the package to return rows of 
+-- function exists in order to palliate the fact that PostgreSQL does not allow
+-- creating functions able to return SETOF rows of arbitrary variable types.
+-- The function created by this function "freeze" and declare the return type
+-- of the actual translation funtion enabling the package to return rows of
 -- arbitrary typed rows.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
@@ -790,7 +790,7 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
   refTranslationTable name
 )
 RETURNS text AS $f$
-  DECLARE 
+  DECLARE
     query text;
     paramlist text[];
     refParamlist text[];
@@ -799,7 +799,7 @@ RETURNS text AS $f$
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
     END IF;
-    
+
     -- Validate the translation table
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
@@ -811,7 +811,7 @@ RETURNS text AS $f$
       -- Build the list of attribute names and types for the reference table
       query = 'SELECT array_agg(targetAttribute || '' '' || targetAttributeType ORDER BY rule_id::int) FROM ' || TT_FullTableName(refTranslationTableSchema, refTranslationTable) || ';';
       EXECUTE query INTO STRICT refParamlist;
-      
+
       IF cardinality(paramlist) < cardinality(refParamlist) THEN
         RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has less attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
       ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
@@ -819,7 +819,7 @@ RETURNS text AS $f$
       ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
         FOR i IN 1..cardinality(paramlist) LOOP
           IF paramlist[i] != refParamlist[i] THEN
-            RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes ''%'' is different from ''%'' in reference table ''%''...', translationTableSchema, translationTable, translationTable, paramlist[i], refParamlist[i], refTranslationTable;        
+            RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes ''%'' is different from ''%'' in reference table ''%''...', translationTableSchema, translationTable, translationTable, paramlist[i], refParamlist[i], refTranslationTable;
           END IF;
         END LOOP;
       END IF;
@@ -840,14 +840,14 @@ RETURNS text AS $f$
              )
              RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
              BEGIN
-               RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema, 
+               RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema,
                                                         sourceTable, ' ||
-                                                        '''' || translationTableSchema || ''', ' || 
-                                                        '''' || translationTable || ''', 
+                                                        '''' || translationTableSchema || ''', ' ||
+                                                        '''' || translationTable || ''',
                                                         stopOnInvalidSource,
                                                         stopOnTranslationError,
-                                                        logFrequency, 
-                                                        resume, 
+                                                        logFrequency,
+                                                        resume,
                                                         ignoreDescUpToDateWithRules) AS t(' || array_to_string(paramlist, ', ') || ');
                RETURN;
              END;
@@ -895,7 +895,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 --   sourceTableSchema name      - Name of the schema containing the source table.
 --   sourceTable name            - Name of the source table.
---   translationTableSchema name - Name of the schema containing the translation 
+--   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
 --   stopOnInvalidSource         - Flag indicating if the engine should stop when
@@ -904,7 +904,7 @@ $$ LANGUAGE sql VOLATILE;
 --                                 the translation rule result into a NULL value
 --   logFrequency                - Number of line to report progress in the log file.
 --   resume                      - Resume from last execution when set to TRUE.
---   ignoreDescUpToDateWithRules - Ignore the translation table flag indicating that 
+--   ignoreDescUpToDateWithRules - Ignore the translation table flag indicating that
 --                                 rules are not up to date with their descriptions.
 --
 --   RETURNS SETOF RECORDS
@@ -949,7 +949,7 @@ RETURNS SETOF RECORD AS $$
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourceRow=%', jsonbRow;END IF;
-       
+
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
        FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, _checkExistence) LOOP
@@ -982,7 +982,7 @@ RETURNS SETOF RECORD AS $$
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            BEGIN
              EXECUTE query
-             USING (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow 
+             USING (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
              RAISE NOTICE '%', SQLERRM;
@@ -990,7 +990,7 @@ RETURNS SETOF RECORD AS $$
            END;
 
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
-           
+
            IF finalVal IS NULL THEN
              IF stopOnTranslationError THEN
                RAISE EXCEPTION 'STOP ON TRANSLATION ERROR: Translation error in %() at row #% while translating target attribute ''%''...', (translationRow.translationRule).fctName, rownb, translationRow.targetAttribute;
@@ -1011,7 +1011,7 @@ RETURNS SETOF RECORD AS $$
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationRow.targetAttributeType || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationRow.targetAttributeType=%, finalQuery=%', finalVal, translationRow.targetAttributeType, finalQuery;END IF;
        END LOOP; -- FOR TRANSLATION ROW
-       
+
        -- Execute the final query building the returned RECORD
        finalQuery = left(finalQuery, char_length(finalQuery) - 1);
        IF debug THEN RAISE NOTICE '_TT_Translate BB finalQuery=%', finalQuery;END IF;

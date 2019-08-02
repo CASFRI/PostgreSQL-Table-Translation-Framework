@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 --
@@ -22,7 +22,7 @@ UNION ALL
 SELECT ST_GeometryFromText('MULTIPOLYGON(((6 6, 6 15, 15 15, 15 6, 6 6)))', 4268), 2001::text, 'twothousandone'::text, 20.01::text;
 
 -----------------------------------------------------------
--- Comment out the following line and the last one of the file to display 
+-- Comment out the following line and the last one of the file to display
 -- only failing tests
 SELECT * FROM (
 -----------------------------------------------------------
@@ -38,7 +38,7 @@ WITH test_nb AS (
     SELECT 'TT_GeoIntersectionText'::text,      101,         13         UNION ALL
     SELECT 'TT_GeoIntersectionDouble'::text,    102,         10         UNION ALL
     SELECT 'TT_GeoIntersectionInt'::text,       103,         10         UNION ALL
-    SELECT 'TT_GeoMakeValid'::text,             104,         2         
+    SELECT 'TT_GeoMakeValid'::text,             104,         2
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -47,11 +47,11 @@ FROM test_nb
 ORDER BY maj_num, min_num
 )
 SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,
-       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' || 
+       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' ||
                 b.function_tested || ' in the initial table...') AS function_tested,
-       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') description, 
-       NOT passed IS NULL AND 
-          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND 
+       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') description,
+       NOT passed IS NULL AND
+          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND
           (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed
 FROM test_series AS a FULL OUTER JOIN (
 
@@ -99,7 +99,7 @@ SELECT '1.6'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (3 tests)
-SELECT (TT_TestNullAndWrongTypeParams(2, 'TT_GeoIntersects', 
+SELECT (TT_TestNullAndWrongTypeParams(2, 'TT_GeoIntersects',
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text'])).*
@@ -133,7 +133,7 @@ SELECT '2.7'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(101, 'TT_GeoIntersectionText', 
+SELECT (TT_TestNullAndWrongTypeParams(101, 'TT_GeoIntersectionText',
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
@@ -192,7 +192,7 @@ SELECT '101.13'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(102, 'TT_GeoIntersectionDouble', 
+SELECT (TT_TestNullAndWrongTypeParams(102, 'TT_GeoIntersectionDouble',
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
@@ -233,7 +233,7 @@ SELECT '102.10'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (5 tests)
-SELECT (TT_TestNullAndWrongTypeParams(103, 'TT_GeoIntersectionInt', 
+SELECT (TT_TestNullAndWrongTypeParams(103, 'TT_GeoIntersectionInt',
                                       ARRAY['intersectSchemaName', 'text',
                                             'intersectTableName', 'text',
                                             'geoCol', 'text',
@@ -284,7 +284,7 @@ SELECT '104.2'::text number,
        'Bad geo'::text description,
        ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
 ---------------------------------------------------------
-) AS b 
+) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,

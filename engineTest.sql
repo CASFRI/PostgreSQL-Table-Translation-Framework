@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ DROP TABLE IF EXISTS test_sourcetable1;
 CREATE TABLE test_sourcetable1 AS
 SELECT 'a'::text id, 1 crown_closure
 UNION ALL
-SELECT 'b'::text, 3 
+SELECT 'b'::text, 3
 UNION ALL
 SELECT 'c'::text, 101;
 
@@ -62,7 +62,7 @@ SELECT '1' rule_id,
        'copyInt(crown_closure)'::text translationRules,
        'Test'::text description,
        'TRUE' descUpToDateWithRules;
-			 
+
 DROP TABLE IF EXISTS test_translationtable4;
 CREATE TABLE test_translationtable4 AS
 SELECT '1' rule_id,
@@ -92,65 +92,65 @@ RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
--- TT_FctExist 
--- Function to test if a function exists. 
------------------------------------------------------------- 
--- Self contained example: 
+-- TT_FctExist
+-- Function to test if a function exists.
+------------------------------------------------------------
+-- Self contained example:
 --
--- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'}) 
------------------------------------------------------------- 
---DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]); 
-CREATE OR REPLACE FUNCTION TT_FctExists( 
-  schemaName name, 
-  fctName name, 
-  argTypes text[] DEFAULT NULL 
-) 
-RETURNS boolean AS $$ 
-  DECLARE 
-    cnt int = 0; 
-    debug boolean = TT_Debug(); 
-  BEGIN 
-    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF; 
-    fctName = 'tt_' || fctName; 
-    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN 
-      schemaName = ''; 
-    END IF; 
-    IF schemaName != '' THEN 
-      fctName = schemaName || '.' || fctName; 
-    END IF; 
-    IF fctName IS NULL THEN 
-      RETURN NULL; 
-    END IF; 
-    IF fctName = '' OR fctName = '.' THEN 
-      RETURN FALSE; 
-    END IF; 
-    fctName = lower(fctName); 
-    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF; 
-    SELECT count(*) 
-    FROM pg_proc 
+-- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'})
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]);
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  schemaName name,
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  DECLARE
+    cnt int = 0;
+    debug boolean = TT_Debug();
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
+    fctName = 'tt_' || fctName;
+    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    IF fctName = '' OR fctName = '.' THEN
+      RETURN FALSE;
+    END IF;
+    fctName = lower(fctName);
+    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF;
+    SELECT count(*)
+    FROM pg_proc
     WHERE schemaName = '' AND argTypes IS NULL AND proname = fctName OR
-          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')' 
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
     INTO cnt;
 
-    IF cnt > 0 THEN 
-      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF; 
-      RETURN TRUE; 
-    END IF; 
-    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF; 
-    RETURN FALSE; 
-  END; 
-$$ LANGUAGE plpgsql VOLATILE; 
+    IF cnt > 0 THEN
+      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF;
+      RETURN TRUE;
+    END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF;
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 ---------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_FctExists( 
-  fctName name, 
-  argTypes text[] DEFAULT NULL 
-) 
-RETURNS boolean AS $$ 
-  SELECT TT_FctExists(''::name, fctName, argTypes) 
-$$ LANGUAGE sql VOLATILE; 
-------------------------------------------------------------------------------- 
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  SELECT TT_FctExists(''::name, fctName, argTypes)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
--- Comment out the following line and the last one of the file to display 
+-------------------------------------------------------------------------------
+-- Comment out the following line and the last one of the file to display
 -- only failing tests
 SELECT * FROM (
 -----------------------------------------------------------
@@ -170,7 +170,7 @@ WITH test_nb AS (
     SELECT 'TT_TextFctEval'::text,                   9,         16         UNION ALL
     SELECT 'TT_ParseStringList'::text,             10,         36         UNION ALL
     SELECT 'TT_RepackStringList'::text,             11,         37         UNION ALL
-    SELECT 'TT_IsCastableTo'::text,                 12,          2         
+    SELECT 'TT_IsCastableTo'::text,                 12,          2
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -179,11 +179,11 @@ FROM test_nb
 ORDER BY maj_num, min_num
 )
 SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,
-       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' || 
+       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' ||
                 b.function_tested || ' in the initial table...') AS function_tested,
-       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') AS description, 
-       NOT passed IS NULL AND 
-          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND 
+       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') AS description,
+       NOT passed IS NULL AND
+          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND
           (regexp_split_to_array(number, '\.'))[2] = min_num AND passed AS passed
 FROM test_series AS a FULL OUTER JOIN (
 ---------------------------------------------------------
@@ -378,7 +378,7 @@ UNION ALL
 SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
-        array_agg(rec)::text = 
+        array_agg(rec)::text =
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
@@ -400,7 +400,7 @@ UNION ALL
 SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
-        array_agg(rec)::text = 
+        array_agg(rec)::text =
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
@@ -408,7 +408,7 @@ UNION ALL
 SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') = 
+       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') =
                      'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name (CROWN CLOSURE UPPER) is invalid.' passed
 --------------------------------------------------------
 UNION ALL
@@ -1067,7 +1067,7 @@ SELECT '12.2'::text number,
        'Bad test'::text description,
        TT_IsCastableTo('11a', 'int') IS FALSE passed
 --------------------------------------------------------
-) AS b 
+) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
