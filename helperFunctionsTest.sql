@@ -9,9 +9,11 @@
 -- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
---
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 SET lc_messages TO 'en_US.UTF-8';
+
+SET tt.debug TO TRUE;
+SET tt.debug TO FALSE;
 
 -- Create a generic NULL and wrong type tester function
 CREATE OR REPLACE FUNCTION TT_TestNullAndWrongTypeParams(
@@ -158,8 +160,8 @@ UNION ALL
 SELECT 'd'::text, 'CCC'::text, NULL::int, 5.5::double precision, NULL::boolean
 UNION ALL
 SELECT 'AA'::text, 'abcde'::text, NULL::int, 5.5::double precision, NULL::boolean;
------------------------------------------------------------
------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Comment out the following line and the last one of the file to display 
 -- only failing tests
 SELECT * FROM (
@@ -187,6 +189,7 @@ WITH test_nb AS (
     SELECT 'TT_NotNullEmptyOr'::text,         15,          2         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
 	  SELECT 'TT_IsBetweenSubstring'::text,     17,         16         UNION ALL
+	  SELECT 'TT_IsName'::text,                 18,          5         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -1160,6 +1163,38 @@ SELECT '17.16'::text number,
        'Include false test'::text description,
        TT_IsBetweenSubstring('2001-01-02'::text, 1::text, 4::text, 2001::text, 2002::text, FALSE::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
+-- Test 18 - TT_IsName
+---------------------------------------------------------
+UNION ALL
+SELECT '18.1'::text number,
+       'TT_IsName'::text function_tested,
+       'basic name with underscore and accent'::text description,
+       TT_IsName('my_tablée') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.2'::text number,
+       'TT_IsName'::text function_tested,
+       'basic invalid name'::text description,
+       TT_IsName('1aa_') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.3'::text number,
+       'TT_IsName'::text function_tested,
+       'begin with underscore'::text description,
+       TT_IsName('_1aa') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.4'::text number,
+       'TT_IsName'::text function_tested,
+       'underscore alone'::text description,
+       TT_IsName('_') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.5'::text number,
+       'TT_IsName'::text function_tested,
+       'with space'::text description,
+       TT_IsName('my table') IS FALSE passed
+---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------
 -- Test 101 - TT_CopyText
@@ -1661,4 +1696,7 @@ ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
 -- to display only failing tests...
-) foo WHERE NOT passed OR passed IS NULL;
+) foo WHERE NOT passed OR passed IS NULL
+-- Comment out this line to display only test number
+--OR ((regexp_split_to_array(number, '\.'))[1])::int = 12
+;

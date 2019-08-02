@@ -167,23 +167,26 @@ WITH test_nb AS (
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          8         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
-    SELECT 'TT_TextFctEval'::text,                   9,          9         UNION ALL
-    SELECT '_TT_Translate'::text,                   10,          0         UNION ALL
-    SELECT 'TT_RepackStringList'::text,             11,          2         UNION ALL
-    SELECT 'TT_ParseStringList'::text,              12,          7         UNION ALL
-	  SELECT 'TT_IsCastableTo'::text,                 13,          2
+    SELECT 'TT_TextFctEval'::text,                   9,         16         UNION ALL
+    SELECT 'TT_ParseStringList'::text,             10,         36         UNION ALL
+    SELECT 'TT_RepackStringList'::text,             11,         37         UNION ALL
+    SELECT 'TT_IsCastableTo'::text,                 12,          2         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
-SELECT function_tested, maj_num, generate_series(1, nb_test)::text min_num 
+SELECT function_tested, maj_num, nb_test, generate_series(1, nb_test)::text min_num
 FROM test_nb
+ORDER BY maj_num, min_num
 )
-SELECT coalesce(maj_num || '.' || min_num, b.number) number,
-       coalesce(a.function_tested, 'ERROR: Insufficient number of test for ' || 
-                b.function_tested || ' in the initial table...') function_tested,
-       description, 
-       NOT passed IS NULL AND (regexp_split_to_array(number, '\.'))[2] = min_num AND passed passed
-FROM test_series a FULL OUTER JOIN (
+SELECT coalesce(maj_num || '.' || min_num, b.number) AS number,
+       coalesce(a.function_tested, 'ERROR: Insufficient number of tests for ' || 
+                b.function_tested || ' in the initial table...') AS function_tested,
+       coalesce(description, 'ERROR: Too many tests (' || nb_test || ') for ' || a.function_tested || ' in the initial table...') AS description, 
+       NOT passed IS NULL AND 
+          (regexp_split_to_array(number, '\.'))[1] = maj_num::text AND 
+          (regexp_split_to_array(number, '\.'))[2] = min_num AND passed AS passed
+FROM test_series AS a FULL OUTER JOIN (
+---------------------------------------------------------
 
 ---------------------------------------------------------
 -- Test 1 - TT_FullTableName
@@ -233,7 +236,7 @@ SELECT '2.2'::text number,
        TT_FullFunctionName(NULL, 'test') = 'tt_test' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '1.3'::text number,
+SELECT '2.3'::text number,
        'TT_FullFunctionName'::text function_tested,
        'Both NULL parameters'::text description,
         TT_FullFunctionName(NULL, NULL) IS NULL passed
@@ -298,25 +301,25 @@ UNION ALL
 SELECT '3.8'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test stringLists with string'::text description,
-        TT_ParseArgs('{''string 1'', ''string,2''}') = ARRAY['{''string 1'',''string,2''}'] passed
+        TT_ParseArgs('{''string 1'', ''string,2''}') = ARRAY['{''string 1'', ''string,2''}'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.9'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test stringList of colnames'::text description,
-        TT_ParseArgs('{cola, col_b}') = ARRAY['{cola,col_b}'] passed
+        TT_ParseArgs('{cola, col_b}') = ARRAY['{cola, col_b}']
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.10'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test mixed stringList'::text description,
-        TT_ParseArgs('{cola, ''string 1''}') = ARRAY['{cola,''string 1''}'] passed
+        TT_ParseArgs('{cola, ''string 1''}') = ARRAY['{cola, ''string 1''}'] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '3.11'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test two stringLists and strings and col names'::text description,
-        TT_ParseArgs('col_a, {col_b, ''str1''}, {''str2'', colC}, ''str 3''') = ARRAY['col_a','{col_b,''str1''}','{''str2'',colC}','''str 3'''] passed
+        TT_ParseArgs('col_a, {col_b, ''str1''}, {''str2'', colC}, ''str 3''') = ARRAY['col_a', '{col_b, ''str1''}', '{''str2'', colC}', '''str 3'''] passed
 ---------------------------------------------------------
 -- Test 4 - TT_ParseRules
 ---------------------------------------------------------
@@ -342,13 +345,13 @@ UNION ALL
 SELECT '4.4'::text number,
        'TT_ParseRules'::text function_tested,
        'Test empty function'::text description,
-        TT_ParseRules('test1()') = ARRAY[('test1', '{}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.5'::text number,
        'TT_ParseRules'::text function_tested,
        'Test many empty functions'::text description,
-        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', '{}', NULL, FALSE)::TT_RuleDef, ('test2', '{}', NULL, FALSE)::TT_RuleDef, ('test3', '{}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef, ('test2', NULL, NULL, FALSE)::TT_RuleDef, ('test3', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
@@ -512,7 +515,7 @@ UNION ALL
 SELECT '9.2'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic NULLs'::text description,
-        TT_Iserror('SELECT TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') = 'query string argument of EXECUTE is null' passed
+        TT_Iserror('SELECT TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') = 'ERROR IN TRANSLATION TABLE : Helper function <NULL>(<NULL>) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.3'::text number,
@@ -556,81 +559,520 @@ SELECT '9.9'::text number,
        'Comma separated string, mixed column names and strings'::text description,
         TT_TextFctEval('Concat', '{"{id,''b'',crown_closure}",''-''}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) = 'a-b-1' passed
 --------------------------------------------------------
--- Test 11 - TT_RepackStringList
+UNION ALL
+SELECT '9.10'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'NULL parameters for a function not taking parameters'::text description,
+        TT_TextFctEval('NothingText', NULL, to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::text, TRUE) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.11'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'NULL parameters and NULL values for a function not taking parameters'::text description,
+        TT_TextFctEval('NothingText', NULL, NULL, NULL::text, TRUE) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.12'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'function taking a string with a string beginning with a space'::text description,
+        TT_TextFctEval('CopyText', '{aa}'::text[], NULL, NULL::text, TRUE) = 'aa' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.13'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'function taking a string with a string beginning with a space'::text description,
+        TT_TextFctEval('CopyText', '{ aa }'::text[], NULL, NULL::text, TRUE) = 'aa' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.14'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'function taking a string with a string beginning with a space'::text description,
+        TT_TextFctEval('CopyText', '{'' aa ''}'::text[], NULL, NULL::text, TRUE) = ' aa ' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.15'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'function taking a string with a string beginning with a space'::text description,
+        TT_TextFctEval('CopyText', '{ src }'::text[], to_jsonb((SELECT r FROM (SELECT ' bb ' src) r)), NULL::text, TRUE) = ' bb ' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '9.16'::text number,
+       'TT_TextFctEval'::text function_tested,
+       'function taking a string with a string beginning with a space'::text description,
+        TT_TextFctEval('CopyText', '{'' src ''}'::text[], to_jsonb((SELECT r FROM (SELECT ' bb ' src) r)), NULL::text, TRUE) = ' src ' passed
+--------------------------------------------------------
+-- TT_ParseStringList
+--------------------------------------------------------
+UNION ALL
+SELECT '10.1'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'No parameters'::text description,
+       TT_ParseStringList() IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.2'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'NULL parameter'::text description,
+       TT_ParseStringList(NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.3'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'NULL string'::text description,
+       TT_ParseStringList('NULL') = '{"NULL"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.4'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'NULL string'::text description,
+       TT_ParseStringList('{NULL}') = '{NULL}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.5'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'String and NULL string'::text description,
+       TT_ParseStringList('{aa, NULL}') = '{aa, NULL}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.6'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string without quotes, spaces are trimmed'::text description,
+       TT_ParseStringList(' a a ') = '{"a a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.7'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string without quotes with comma'::text description,
+       TT_ParseStringList('a b ,a') = '{"a b ,a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.8'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'single quoted string with comma'::text description,
+       TT_ParseStringList('''a ,a''') = '{"''a ,a''"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.9'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with comma'::text description,
+       TT_ParseStringList('"a ,a"') = '{"a ,a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.10'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with spaces and comma'::text description,
+       TT_ParseStringList('" a ,a "') = '{" a ,a "}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.11'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with doubled single quote'::text description,
+       TT_ParseStringList('"a ''a"') = '{"a ''a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.12'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with doubled single quote and double quotes'::text description,
+       TT_ParseStringList('"a ''a", "b ''b"') = '{"a ''a\", \"b ''b"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.13'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string looking like a stringlist but is a string because quoted'::text description,
+       TT_ParseStringList('"{ a ,b ,c ,d }"') = '{"{ a ,b ,c ,d }"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.14'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string with escaped double quote'::text description,
+       TT_ParseStringList('a "a') = '{"a \"a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.15'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string with escaped double quote'::text description,
+       TT_ParseStringList('a \"a') = '{"a \\\"a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.16'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with non-escaped double quote'::text description,
+       TT_ParseStringList('"a "a"') = '{"a \"a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.17'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'double quoted string with escaped double quote'::text description,
+       TT_ParseStringList('"a \"a"') = '{"a \\\"a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.18'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'basic stringlist'::text description,
+       TT_ParseStringList('{ a ,b ,c ,d }') = '{a,b,c,d}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.19'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'basic stringlist surrounded by spaces'::text description,
+       TT_ParseStringList(' { a ,b ,c ,d } ') = '{a,b,c,d}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.20'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with one double quoted string and one single quoted string'::text description,
+       TT_ParseStringList('{ a ," b ",c ,'' d '' }') = '{a," b ",c,"'' d ''"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.21'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with one single quoted string and one double quoted string'::text description,
+       TT_ParseStringList('{''str 1'', "str 2"}') = '{"''str 1''","str 2"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.22'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with two quoted strings with comma'::text description,
+       TT_ParseStringList('{" a ,b" ,"c ,d "}') = '{" a ,b","c ,d "}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.23'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with two quoted strings with single quotes'::text description,
+       TT_ParseStringList('{"a ''a", "b ''b"}') = '{"a ''a","b ''b"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.24'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with two double quoted strings, one with double quotes inside'::text description,
+       TT_ParseStringList('{"a \"b" ," , a"}') = '{"a \"b"," , a"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.25'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with one double quoted strings with double quotes inside and one unquoted string with space'::text description,
+       TT_ParseStringList('{"a \"b" , a b}') = '{"a \"b","a b"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.26'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'stringlist with one single quoted strings with one single quoted strings with double quotes inside'::text description,
+       TT_ParseStringList('{a a, ''b \"b''}') = '{"a a","''b \"b''"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.27'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - two strings'::text description,
+       TT_ParseStringList('{''str 1'', "str @-_= //2"}') = '{"''str 1''","str @-_= //2"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.28'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - two column names'::text description,
+       TT_ParseStringList('{column_A, column-B}') = '{column_A,column-B}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.29'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - one single quoted string and one column name'::text description,
+       TT_ParseStringList('{''string 1'', column_A}') = '{''string 1'',column_A}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.30'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - two column names'::text description,
+       TT_ParseStringList('{''string 1 ''}') = '{''string 1 ''}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.31'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_ParseStringList('{column_A}') = '{column_A}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.32'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_ParseStringList('{column A}') = '{column A}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.33'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_ParseStringList('{''string1'',"string 2"}', TRUE) = '{string1,"string 2"}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.34'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'malformed string array'::text description,
+       TT_IsError('SELECT TT_ParseStringList(''{''''string1'''',}'');') = 'malformed array literal: "{''string1'',}"' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.35'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'integer array'::text description,
+       TT_ParseStringList('{-134, 4567}') = '{-134,4567}'::text[] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '10.36'::text number,
+       'TT_ParseStringList'::text function_tested,
+       'string with single quotes'::text description,
+       TT_ParseStringList(''' a ,a ''') = '{"'' a ,a ''"}'::text[] passed
+--------------------------------------------------------
+-- TT_RepackStringList test
 --------------------------------------------------------
 UNION ALL
 SELECT '11.1'::text number,
        'TT_RepackStringList'::text function_tested,
-       'Basic test'::text description,
-        TT_RepackStringList(ARRAY['''str1''', '''str 2''', 'col_A']) = '''{''''str1'''',''''str 2'''',''''col_A''''}'''::text passed
+       'No parameters'::text description,
+       TT_RepackStringList() IS NULL passed
 --------------------------------------------------------
 UNION ALL
 SELECT '11.2'::text number,
        'TT_RepackStringList'::text function_tested,
-       'Special char test'::text description,
-        TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2''']) = '''{''''str 1 --'''',''''str@/\:2''''}'''::text passed
+       'NULL parameter'::text description,
+       TT_RepackStringList(NULL) IS NULL passed
 --------------------------------------------------------
--- Test 12 - TT_ParseStringList
+UNION ALL
+SELECT '11.3'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'NULL string'::text description,
+       --TT_RepackStringList('{"NULL"}'::text[]) = '"NULL"' passed
+       TT_RepackStringList('{"NULL"}'::text[]) = 'NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.4'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'NULL string'::text description,
+       TT_RepackStringList('{NULL}'::text[]) = '{NULL}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.5'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'String and NULL string'::text description,
+       TT_RepackStringList('{aa, NULL}'::text[]) = '{"aa",NULL}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.6'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string without quotes, spaces are trimmed'::text description,
+       --TT_RepackStringList('{"a a"}'::text[]) = '"a a"' passed
+       TT_RepackStringList('{"a a"}'::text[]) = 'a a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.7'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string without quotes with comma'::text description,
+       --TT_RepackStringList('{"a b ,a"}'::text[]) = '"a b ,a"' passed
+       TT_RepackStringList('{"a b ,a"}'::text[]) = 'a b ,a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.8'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'single quoted string with comma'::text description,
+       --TT_RepackStringList('{"''a ,a''"}'::text[]) = '"''a ,a''"' passed
+       TT_RepackStringList('{"''a ,a''"}'::text[]) = '''a ,a''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.9'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with comma'::text description,
+       --TT_RepackStringList('{"a ,a"}'::text[]) = '"a ,a"' passed
+       TT_RepackStringList('{"a ,a"}'::text[]) = 'a ,a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.10'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with spaces and comma'::text description,
+       --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
+       TT_RepackStringList('{" a ,a "}'::text[]) = ' a ,a ' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.11'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with doubled single quote'::text description,
+       --TT_RepackStringList('{"a ''a"}'::text[]) = '"a ''a"' passed
+       TT_RepackStringList('{"a ''a"}'::text[]) = 'a ''a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.12'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with doubled single quote and double quotes'::text description,
+       --TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[]) = '"a ''a", "b ''b"' passed
+       TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[]) = 'a ''a", "b ''b' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.13'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string looking like a stringlist but is a string because quoted'::text description,
+       --TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[]) = '"{ a ,b ,c ,d }"' passed
+       TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[]) = '{ a ,b ,c ,d }' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.14'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string with escaped double quote'::text description,
+       TT_RepackStringList('{"a \"a"}'::text[]) = 'a "a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.15'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string with escaped double quote'::text description,
+       TT_RepackStringList('{"a \\\"a"}'::text[]) = 'a \"a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.16'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with non-escaped double quote'::text description,
+       TT_RepackStringList('{"a \"a"}'::text[]) = 'a "a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.17'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with escaped double quote'::text description,
+       TT_RepackStringList('{"a \\\"a"}'::text[]) = 'a \"a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.18'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'basic stringlist'::text description,
+       TT_RepackStringList('{a,b,c,d}'::text[]) = '{"a","b","c","d"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.19'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'basic stringlist surrounded by spaces'::text description,
+       TT_RepackStringList('{a,b,c,d}'::text[]) = '{"a","b","c","d"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.20'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one double quoted string and one single quoted string'::text description,
+       TT_RepackStringList('{a," b ",c,"'' d ''"}'::text[]) = '{"a"," b ","c","'' d ''"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.21'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one single quoted string and one double quoted string'::text description,
+       TT_RepackStringList('{"''str 1''","str 2"}'::text[]) = '{"''str 1''","str 2"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.22'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two quoted strings with comma'::text description,
+       TT_RepackStringList('{" a ,b","c ,d "}'::text[]) = '{" a ,b","c ,d "}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.23'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two quoted strings with single quotes'::text description,
+       TT_RepackStringList('{"a ''a","b ''b"}'::text[]) = '{"a ''a","b ''b"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.24'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two double quoted strings, one with double quotes inside'::text description,
+       TT_RepackStringList('{"a \"b"," , a"}'::text[]) = '{"a \"b"," , a"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.25'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one double quoted strings with double quotes inside and one unquoted string with space'::text description,
+       TT_RepackStringList('{"a \"b","a b"}'::text[]) = '{"a \"b","a b"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.26'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one single quoted strings with one single quoted strings with double quotes inside'::text description,
+       TT_RepackStringList('{"a a","''b \"b''"}'::text[]) = '{"a a","''b \"b''"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.27'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two strings'::text description,
+       TT_RepackStringList('{"''str 1''","str @-_= //2"}'::text[]) = '{"''str 1''","str @-_= //2"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.28'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two column names'::text description,
+       TT_RepackStringList('{column_A,column-B}'::text[]) = '{"column_A","column-B"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.29'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one single quoted string and one column name'::text description,
+       TT_RepackStringList('{''string 1'',column_A}'::text[]) = '{"''string 1''","column_A"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.30'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two column names'::text description,
+       TT_RepackStringList('{''string 1 ''}'::text[]) = '''string 1 ''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.31'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_RepackStringList('{column_A}'::text[]) = 'column_A' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.32'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_RepackStringList('{column A}'::text[]) = 'column A' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.33'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_RepackStringList('{string1,"string 2"}'::text[]) = '{"string1","string 2"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.34'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name'::text description,
+       TT_RepackStringList('{-134,4567}'::text[]) = '{"-134","4567"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.35'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two single quotes strings and one column name'::text description,
+       TT_RepackStringList(ARRAY['''str1''', '''str 2''', 'col_A']) = '{"''str1''","''str 2''","col_A"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.36'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two single quotes strings and one column name'::text description,
+       TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2''']) = '{"''str 1 --''","''str@/\\:2''"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.37'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with spaces and comma'::text description,
+       --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
+       TT_RepackStringList('{"'' a ,a ''"}') = ''' a ,a ''' passed
+--------------------------------------------------------
+-- TT_IsCastableTo
 --------------------------------------------------------
 UNION ALL
 SELECT '12.1'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse strings'::text description,
-       TT_ParseStringList('{''str 1'', "str @-_= //2"}') = '{''str 1'',\"str @-_= //2\"}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.2'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse column names'::text description,
-       TT_ParseStringList('{column_A, column-B}') = '{column_A,column-B}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.3'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse strings and column names'::text description,
-       TT_ParseStringList('{''string 1'', column_A}') = '{''string 1'',column_A}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.4'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse one string'::text description,
-       TT_ParseStringList('{''string 1 ''}') = '{''string 1 ''}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.5'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse one column name'::text description,
-       TT_ParseStringList('{column_A}') = '{column_A}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.6'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Parse invalid column name'::text description,
-       TT_IsError('SELECT TT_ParseStringList(''{column A}'')') = 'column A: COLUMN NAME CONTAINS SPACES' passed
---------------------------------------------------------
-UNION ALL
-SELECT '12.7'::text number,
-       'TT_ParseStringList'::text function_tested,
-       'Test strip argument'::text description,
-       TT_ParseStringList('{''string1'',"string 2"}', TRUE) = '{string1,"string 2"}' passed
---------------------------------------------------------
-UNION ALL
-SELECT '13.1'::text number,
        'TT_IsCastableTo'::text function_tested,
        'Good test'::text description,
        TT_IsCastableTo('11', 'int') passed
 --------------------------------------------------------
 UNION ALL
-SELECT '13.2'::text number,
+SELECT '12.2'::text number,
        'TT_IsCastableTo'::text function_tested,
        'Bad test'::text description,
        TT_IsCastableTo('11a', 'int') IS FALSE passed
 --------------------------------------------------------
-
-) b 
-ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num) 
+) AS b 
+ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
 -- This last line has to be commented out, with the line at the beginning,
 -- to display only failing tests...
-) foo WHERE NOT passed
+) foo WHERE NOT passed OR passed IS NULL
+-- Comment out this line to display only test number
+--OR ((regexp_split_to_array(number, '\.'))[1])::int = 12
 ;

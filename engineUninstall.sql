@@ -36,4 +36,7 @@ DROP FUNCTION IF EXISTS TT_Debug();
 DROP FUNCTION IF EXISTS TT_IsError(text);
 DROP FUNCTION IF EXISTS TT_RepackStringList(text[]);
 DROP FUNCTION IF EXISTS TT_IsCastableTo(text, text);
+DROP FUNCTION IF EXISTS TT_EscapeDoubleQuotesAndBackslash(text);
+DROP FUNCTION IF EXISTS TT_EscapeSingleQuotes(text);
+DROP FUNCTION IF EXISTS TT_UnsingleQuote(text);
 DROP TYPE IF EXISTS TT_RuleDef;

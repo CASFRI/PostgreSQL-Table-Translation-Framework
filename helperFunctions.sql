@@ -181,9 +181,24 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsName
+--
+-- Return TRUE if val is a PostGreSQL name
+-- e.g. TT_IsName('val')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsName(
+  argStr text
+)
+RETURNS boolean AS $$
+  SELECT CASE WHEN argStr IS NULL THEN FALSE ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' END
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_IsStringList
 --
--- Return TRUE if val is a string list
+-- Return TRUE if val is a stringlist with more than one string.
+-- If it has only one string then the user should use a normal string.
 -- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
@@ -196,13 +211,17 @@ RETURNS boolean AS $$
     IF argStr IS NULL THEN
       RETURN FALSE;
     ELSE
-	  BEGIN
-	    args = TT_ParseStringList(argStr);
-	    RETURN TRUE;
-	  EXCEPTION WHEN OTHERS THEN
-	    RETURN FALSE;
-	  END;
-	END IF;
+    BEGIN
+      args = TT_ParseStringList(argStr);
+      IF cardinality(args) > 1 THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    EXCEPTION WHEN OTHERS THEN
+      -- if parsing failed with an error return false
+      RETURN FALSE;
+    END;
+  END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
