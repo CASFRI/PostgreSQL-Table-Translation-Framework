@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ RETURNS boolean AS $$
       RETURN replace(val, ' ', '') != '';
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE; 
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -319,7 +319,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_ValidateParams(
   fctName text,
   params text[]
-) 
+)
 RETURNS void AS $$
   DECLARE
     i integer;
@@ -334,11 +334,11 @@ RETURNS void AS $$
       paramName = params[(i - 1) * 3 + 1];
       paramVal  = params[(i - 1) * 3 + 2];
       paramType = params[(i - 1) * 3 + 3];
-      IF paramType != 'int' AND 
-         paramType != 'numeric' AND 
-         paramType != 'text' AND 
-         paramType != 'char' AND 
-         paramType != 'boolean' AND 
+      IF paramType != 'int' AND
+         paramType != 'numeric' AND
+         paramType != 'text' AND
+         paramType != 'char' AND
+         paramType != 'boolean' AND
          paramType != 'stringlist' AND
          paramType != 'doublelist' AND
          paramType != 'intlist' AND
@@ -402,27 +402,27 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsBetween',
-                              ARRAY['min', min, 'numeric', 
-                                    'max', max, 'numeric', 
-                                    'includeMin', includeMin, 'boolean', 
+                              ARRAY['min', min, 'numeric',
+                                    'max', max, 'numeric',
+                                    'includeMin', includeMin, 'boolean',
                                     'includeMax', includeMax, 'boolean']);
     _min = min::double precision;
     _max = max::double precision;
     _includeMin = includeMin::boolean;
     _includeMax = includeMax::boolean;
-    
+
     IF _min = _max THEN
       RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is equal to max';
     ELSIF _min > _max THEN
       RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is greater than max';
     END IF;
-    
+
     -- validate source value (return FALSE)
     IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
-    
+
     -- process
     IF _includeMin = FALSE AND _includeMax = FALSE THEN
       RETURN _val > _min AND _val < _max;
@@ -473,11 +473,11 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsGreaterThan',
-                              ARRAY['lowerBound', lowerBound, 'numeric', 
+                              ARRAY['lowerBound', lowerBound, 'numeric',
                                     'inclusive', inclusive, 'boolean']);
     _lowerBound = lowerBound::double precision;
     _inclusive = inclusive::boolean;
-   
+
     -- validate source value (return FALSE)
     IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
@@ -529,11 +529,11 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsLessThan',
-                              ARRAY['upperBound', upperBound, 'numeric', 
+                              ARRAY['upperBound', upperBound, 'numeric',
                                     'inclusive', inclusive, 'boolean']);
     _upperBound = upperBound::double precision;
     _inclusive = inclusive::boolean;
-    
+
     -- validate source value (return FALSE)
     IF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
@@ -585,7 +585,7 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsUnique',
-                              ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
                                     'lookupTableName', lookupTableName, 'text',
                                     'occurrences', occurrences, 'int']);
     _lookupSchemaName = lookupSchemaName::name;
@@ -649,7 +649,7 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchTable',
-                              ARRAY['lookupSchemaName', lookupSchemaName, 'text', 
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
                                     'lookupTableName', lookupTableName, 'text',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
@@ -660,8 +660,8 @@ RETURNS boolean AS $$
     IF val IS NULL THEN
       RETURN FALSE;
     END IF;
-    
-    -- process    
+
+    -- process
     IF _ignoreCase = FALSE THEN
       query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
@@ -718,12 +718,12 @@ RETURNS boolean AS $$
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
-    
+
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
     END IF;
-    
+
     -- process
     IF _ignoreCase = FALSE THEN
       _lst = TT_ParseStringList(lst, TRUE);
@@ -831,7 +831,7 @@ RETURNS boolean AS $$
                                     'for_length', for_length, 'int']);
     _start_char = start_char::int;
     _for_length = for_length::int;
-    
+
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
@@ -851,14 +851,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- min text - lower between bound
 -- max text - upper between bound
 -- includeMin text - boolean for including lower bound
--- includeMax text - boolean for including upper bound	
+-- includeMax text - boolean for including upper bound
 --
 -- Take substring and test with TT_IsBetween()
 -- e.g. TT_IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
-	start_char text,
+  start_char text,
   for_length text,
   min text,
   max text,
@@ -874,13 +874,13 @@ RETURNS boolean AS $$
     PERFORM TT_ValidateParams('TT_IsBetweenSubstring',
                               ARRAY['start_char', start_char, 'int',
                                     'for_length', for_length, 'int',
-																	  'min', min, 'numeric', 
-                                    'max', max, 'numeric', 
-                                    'includeMin', includeMin, 'boolean', 
+                                    'min', min, 'numeric',
+                                    'max', max, 'numeric',
+                                    'includeMin', includeMin, 'boolean',
                                     'includeMax', includeMax, 'boolean']);
     _start_char = start_char::int;
     _for_length = for_length::int;
-    
+
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       RETURN FALSE;
@@ -893,7 +893,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
-	start_char text,
+  start_char text,
   for_length text,
   min text,
   max text
@@ -1008,12 +1008,12 @@ RETURNS text AS $$
     IF val IS NULL THEN
       RETURN NULL;
     END IF;
-    
+
     -- process
-    query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || 
+    query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
             CASE WHEN _ignoreCase IS TRUE THEN
                    ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ')'
-                 ELSE 
+                 ELSE
                    ' WHERE source_val = ' || quote_literal(val)
             END || ';';
 
@@ -1190,7 +1190,7 @@ RETURNS text AS $$
     IF val IS NULL THEN
       RETURN FALSE;
     END IF;
-    
+
     -- process
     IF _ignoreCase = FALSE THEN
       _mapVals = TT_ParseStringList(mapVals, TRUE);
@@ -1254,7 +1254,7 @@ RETURNS double precision AS $$
     IF val IS NULL THEN
       RETURN FALSE;
     END IF;
-    
+
     -- process
     IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
@@ -1314,7 +1314,7 @@ RETURNS int AS $$
     IF val IS NULL THEN
       RETURN NULL;
     END IF;
-    
+
     -- process
     IF _ignoreCase = FALSE THEN
       RETURN (_targetVals)[array_position(_mapVals, val)];
@@ -1342,7 +1342,7 @@ $$ LANGUAGE sql VOLATILE;
 -- targetLength text - total characters of output string.
 -- padChar text - character to pad with - Defaults to 'x'.
 --
--- Pads if val length is smaller than target, trims if val 
+-- Pads if val length is smaller than target, trims if val
 -- length is longer than target.
 -- padChar should always be a single character.
 -- e.g. TT_Pad('tab1', 10, 'x')
@@ -1367,16 +1367,16 @@ RETURNS text AS $$
                                     'trunc', trunc, 'boolean']);
     _targetLength = targetLength::int;
     _trunc = trunc::boolean;
-    
+
     IF _targetLength < 0 THEN
       RAISE EXCEPTION 'ERROR in TT_Pad(): targetLength is smaller than 0';
     END IF;
-    
+
     -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
       RETURN NULL;
     END If;
-    
+
     -- process
     pad_length = _targetLength - TT_Length(val);
     IF pad_length > 0 THEN
@@ -1422,7 +1422,7 @@ RETURNS text AS $$
     IF NOT TT_IsStringList(val) THEN
       RETURN NULL;
     END IF;
-    
+
     -- process
     RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
   END;
@@ -1475,7 +1475,7 @@ RETURNS text AS $$
 
     _lengths = TT_ParseStringList(length, TRUE);
     _pads = TT_ParseStringList(pad, TRUE);
-    
+
     -- check length of _lengths matches and _pads match
     IF array_length(_vals, 1) != array_length(_pads, 1) THEN
       RAISE EXCEPTION 'ERROR in number TT_PadConcat(): length and pad elements do not match';
@@ -1485,7 +1485,7 @@ RETURNS text AS $$
     IF NOT TT_IsStringList(val) THEN
       RETURN NULL;
     END IF;
-    
+
     IF _upperCase = TRUE THEN
       _vals = TT_ParseStringList(upper(val), TRUE);
     ELSE
@@ -1501,7 +1501,7 @@ RETURNS text AS $$
     -- for each val in array, pad and merge to comma separated string
     _result = '{';
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF _vals[i] = '' AND _includeEmpty = FALSE THEN 
+      IF _vals[i] = '' AND _includeEmpty = FALSE THEN
         -- do nothing
       ELSE
         _result = _result || '''' || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ''',';
@@ -1530,7 +1530,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_NothingText
 --
 -- Returns NULL, for text target attributes.
--- Note this function is designed only be used with validation function TT_False() 
+-- Note this function is designed only be used with validation function TT_False()
 -- and therefore should never be evaluated by the engine.
 -- e.g. TT_NothingText()
 ------------------------------------------------------------
@@ -1544,7 +1544,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_NothingDouble
 --
 -- Returns NULL, for double precision target attributes.
--- Note this function is designed only be used with validation function TT_False() 
+-- Note this function is designed only be used with validation function TT_False()
 -- and therefore should never be evaluated by the engine.
 -- e.g. TT_NothingDouble()
 ------------------------------------------------------------
@@ -1558,7 +1558,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_NothingInt
 --
 -- Returns NULL, for int target attributes.
--- Note this function is designed only be used with validation function TT_False() 
+-- Note this function is designed only be used with validation function TT_False()
 -- and therefore should never be evaluated by the engine.
 -- e.g. TT_NothingText()
 ------------------------------------------------------------

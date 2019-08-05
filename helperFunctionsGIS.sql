@@ -6,7 +6,7 @@
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
 --
--- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>, 
+-- Copyright (C) 2018-2020 Pierre Racine <pierre.racine@sbf.ulaval.ca>,
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- the_geom text - the geometry value to validate
 -- fix text - default true. Should invalid geometries be fixed
--- 
+--
 -- Return true if the geometry is valid
 -- If invalid and fix is True, first try to fix with ST_MakeValid(), then with
 -- ST_Buffer. If still invalid print the reason with ST_IsValidReason().
@@ -109,7 +109,7 @@ $$ LANGUAGE sql VOLATILE;
 -- intersectSchemaName text - schema for the intersect table
 -- intersectTableName text - table to intersect
 -- geoCol text - geometry column from intersect table
--- 
+--
 -- Return True if the test geometry intersects any polygons in the intersect table
 --
 -- e.g. TT_GeoIntersects(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom')
@@ -144,7 +144,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
     _the_geom = the_geom::geometry;
-  
+
     -- process
     IF NOT ST_IsValid(_the_geom) THEN
       IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
@@ -215,7 +215,7 @@ $$ LANGUAGE sql VOLATILE;
 --    GREATEST_AREA - return value from intersecting polygon with largest area
 --    LOWEST_VALUE - return lowest value
 --    HIGHEST_VALUE - return highest value
--- 
+--
 -- Return the text value from the intersecting polygon
 --
 -- e.g. TT_GeoIntersectionText(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'GREATEST_AREA')
@@ -256,19 +256,19 @@ RETURNS text AS $$
     IF NOT method = any('{"GREATEST_AREA", "LOWEST_VALUE", "HIGHEST_VALUE"}') THEN
       RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"';
     END IF;
-    
+
     -- validate source value (return NULL if not valid)
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
     _the_geom = TT_GeoMakeValid(the_geom);
-    
+
     -- process
     -- get table of returnCol values and intersecting areas for all intersecting polygons
-    query = 'SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection($1, ' || geoCol || ')) AS int_area 
+    query = 'SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection($1, ' || geoCol || ')) AS int_area
     FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
     ' WHERE ST_Intersects($1, ' || geoCol || ');';
-    
+
     FOR geoRow IN EXECUTE query USING _the_geom LOOP
       IF geoRow.int_area > maxArea THEN
         maxArea = geoRow.int_area;
@@ -282,7 +282,7 @@ RETURNS text AS $$
       END IF;
       count = count + 1;
     END LOOP;
-    
+
     -- return value based on count and method
     RETURN CASE WHEN count = 0 THEN
                      NULL
@@ -381,7 +381,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_GeoMakeValid
 --
 -- the_geom text - the geometry value to validate
--- 
+--
 -- If geometry valid, returns geometry
 -- If geometry invalid, returns fixed geometry
 -- If geometry cannot be fixed, returns NULL
@@ -407,7 +407,7 @@ RETURNS geometry AS $$
     _the_geom = the_geom::geometry;
 
     -- if already valid, return the geometry
-    IF ST_IsValid(_the_geom) THEN 
+    IF ST_IsValid(_the_geom) THEN
       RETURN _the_geom;
     END IF;
 
