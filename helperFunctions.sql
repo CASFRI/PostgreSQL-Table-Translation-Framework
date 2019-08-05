@@ -213,10 +213,7 @@ RETURNS boolean AS $$
     ELSE
     BEGIN
       args = TT_ParseStringList(argStr);
-      IF cardinality(args) > 1 THEN
-        RETURN TRUE;
-      END IF;
-      RETURN FALSE;
+      RETURN TRUE;
     EXCEPTION WHEN OTHERS THEN
       -- if parsing failed with an error return false
       RETURN FALSE;

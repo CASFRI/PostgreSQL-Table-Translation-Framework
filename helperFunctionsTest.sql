@@ -84,8 +84,10 @@ RAISE NOTICE 'query = %', query;
             -- test an invalid value
             query = query || CASE WHEN paramType = 'int' OR paramType = 'numeric' THEN
                                        '''''1a'''', '
-                                  WHEN paramType = 'char' OR paramType = 'stringlist' OR paramType = 'doublelist' OR paramType = 'intlist'  OR paramType = 'charlist'THEN
+                                  WHEN paramType = 'char' THEN
                                        '''''aa''''::text, '
+                                  WHEN paramType = 'stringlist' OR paramType = 'doublelist' OR paramType = 'intlist'  OR paramType = 'charlist'THEN
+                                       '''''{''''''''string1'''''''',}'''', '
                                   ELSE -- boolean
                                        '2::text, '
                              END;
