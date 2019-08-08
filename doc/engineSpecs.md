@@ -193,7 +193,7 @@ table.
 **First Scenario - Fixing source table errors**
 
 -   The first scenario is when one wants to fix invalid values in the
-    source table before they are translated by the target table.
+    source table before they are translated to the target table.
 -   In this scenario there is no need to provide invalidation (error)
     codes in the translation table since the source table will
     continuously be fixed during the translation table coding process
