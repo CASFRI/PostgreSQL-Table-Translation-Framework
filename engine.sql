@@ -435,7 +435,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_TextFctEval_old
+-- TT_TextFctEval
 --
 --  - fctName text          - Name of the function to evaluate. Will always be prefixed
 --                            with "TT_".
@@ -607,9 +607,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   checkExistence              - boolean flag indicating whether validation
---                                 and translation function existence should
---                                 be checked.
+--   validate                    - boolean flag indicating whether translation 
+--                               - table attributes should be validated.
 --
 --   RETURNS boolean             - TRUE if the translation table is valid.
 --
@@ -633,11 +632,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
-  translationTableSchema name DEFAULT NULL,
-  translationTable name DEFAULT NULL,
-  checkExistence boolean DEFAULT TRUE
+  translationTableSchema name,
+  translationTable name,
+  validate boolean DEFAULT TRUE
 )
-RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef, description text, descUpToDateWithRules boolean) AS $$
+RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef) AS $$
   DECLARE
     row RECORD;
     query text;
@@ -646,121 +645,131 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
     error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
-    IF translationTable IS NULL THEN
-      translationTable = translationTableSchema;
-      translationTableSchema = 'public';
-    END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 11';END IF;
-    IF translationTable IS NULL or translationTable = '' THEN
+    IF translationTable IS NULL OR translationTable = '' THEN
       RETURN;
     END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
 
     -- loop through each row in the translation table
-    query = 'SELECT rule_id::text, targetAttribute::text, targetAttributeType::text, validationRules::text, translationRules::text, description::text, descUpToDateWithRules::text FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY to_number(rule_id::text, ''999999'');';
+    query = 'SELECT rule_id::text, 
+                    targetAttribute::text, 
+                    targetAttributeType::text, 
+                    validationRules::text, 
+                    translationRules::text, 
+                    description::text, 
+                    descUpToDateWithRules::text
+             FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY to_number(rule_id::text, ''999999'');';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
-
       -- validate attributes and assign values
-
-      -- rule_id should be integer, not null, not empty string
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
-      IF NOT TT_NotEmpty(row.rule_id) THEN
-        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';
-      END IF;
-      IF NOT TT_IsInt(row.rule_id) THEN
-        RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;
-      END IF;
-
-      -- targetAttribute should not be null or empty string, should be word with underscore allowed but no special characters
-      IF NOT TT_NotEmpty(row.targetAttribute) THEN
-        RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;
-      END IF;
-      IF NOT row.targetAttribute ~ '^(\d|\w)+$' THEN
-        RAISE EXCEPTION '% % : Target attribute name (%) is invalid.', error_msg_start, row.rule_id, row.targetAttribute;
-      END IF;
       targetAttribute = row.targetAttribute;
-
-      -- targetAttributeType should not be null or empty
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
-      IF NOT TT_NotEmpty(row.targetAttributeType) THEN
-        RAISE EXCEPTION '% % (%) : Target attribute type is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
-      END IF;
       targetAttributeType = row.targetAttributeType;
-
-      -- validationRules should not be null or empty
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
-      IF NOT TT_NotEmpty(row.validationRules) THEN
-        RAISE EXCEPTION '% % (%) : Validation rules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
-      END IF;
       validationRules = (TT_ParseRules(row.validationRules))::TT_RuleDef[];
-
-      -- translationRules should not be null or empty
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
-      IF NOT TT_NotEmpty(row.translationRules) THEN
-        RAISE EXCEPTION '% % (%) : Translation rule is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
-      END IF;
       translationRule = ((TT_ParseRules(row.translationRules))[1])::TT_RuleDef;
+      --description = coalesce(row.description, '');
+      --descUpToDateWithRules should not be null or empty
+      --descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;
 
-      -- description should not be null or empty
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
-      IF NOT TT_NotEmpty(row.description) THEN
-        RAISE EXCEPTION '% % (%) : Description is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
-      END IF;
-      description = coalesce(row.description, '');
-
-      -- descUpToDateWithRules should not be null or empty
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
-      IF NOT TT_NotEmpty(row.descUpToDateWithRules) THEN
-        RAISE EXCEPTION '% % (%) : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
-      END IF;
-      descUpToDateWithRules = (row.descUpToDateWithRules)::boolean;
-
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
-      -- check validation functions exist, error code is not null, and error code can be cast to target attribute type
-      FOREACH rule IN ARRAY validationRules LOOP
-
-        -- check function exists
-        IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
-        IF checkExistence AND NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
-          RAISE EXCEPTION '% % (%) : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, targetAttribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
+      IF validate THEN
+        -- rule_id should be integer, not null, not empty string
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
+        IF NOT TT_NotEmpty(row.rule_id) THEN
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';
+        END IF;
+        IF NOT TT_IsInt(row.rule_id) THEN
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;
         END IF;
 
-        -- check error code is not null
-        IF NOT TT_NotEmpty(rule.errorcode) THEN
-          RAISE EXCEPTION '% % (%) : Error code is NULL or empty for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.fctName;
+        -- targetAttribute should not be null or empty string, should be word with underscore allowed but no special characters
+        IF NOT TT_NotEmpty(row.targetAttribute) THEN
+          RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;
+        END IF;
+        IF NOT TT_IsName(row.targetAttribute) THEN -- ~ '^(\d|\w)+$' THEN
+          RAISE EXCEPTION '% % : Target attribute name (%) is invalid.', error_msg_start, row.rule_id, row.targetAttribute;
         END IF;
 
-        -- check error code can be cast to attribute type, catch error with EXCEPTION
-        IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
-        IF NOT TT_IsCastableTo(rule.errorcode, targetAttributeType) THEN
-          RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.errorcode, targetAttributeType, rule.fctName;
+        -- targetAttributeType should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
+        IF NOT TT_NotEmpty(row.targetAttributeType) THEN
+          RAISE EXCEPTION '% % (%) : Target attribute type is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
         END IF;
-      END LOOP;
 
-      -- check translation function exists
-      IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
-      IF checkExistence AND NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) THEN
-        RAISE EXCEPTION '% % (%) : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, targetAttribute, translationRule.fctName, btrim(repeat('text,', coalesce(cardinality(translationRule.args), 0)), ',');
+        -- validationRules should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
+        IF NOT TT_NotEmpty(row.validationRules) THEN
+          RAISE EXCEPTION '% % (%) : Validation rules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
+        END IF;
+
+        -- translationRules should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
+        IF NOT TT_NotEmpty(row.translationRules) THEN
+          RAISE EXCEPTION '% % (%) : Translation rule is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
+        END IF;
+
+        -- description should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
+        IF NOT TT_NotEmpty(row.description) THEN
+          RAISE EXCEPTION '% % (%) : Description is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
+        END IF;
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
+        IF NOT TT_NotEmpty(row.descUpToDateWithRules) THEN
+          RAISE EXCEPTION '% % (%) : DescUpToDateWithRules is NULL or empty.', error_msg_start, row.rule_id, targetAttribute;
+        END IF;
+
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
+        -- check validation functions exist, error code is not null, and error code can be cast to target attribute type
+        FOREACH rule IN ARRAY validationRules LOOP
+
+          -- check function exists
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
+          IF NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
+            RAISE EXCEPTION '% % (%) : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, targetAttribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
+          END IF;
+
+          -- check error code is not null
+          IF NOT TT_NotEmpty(rule.errorcode) THEN
+            RAISE EXCEPTION '% % (%) : Error code is NULL or empty for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.fctName;
+          END IF;
+
+          -- check error code can be cast to attribute type, catch error with EXCEPTION
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', targetAttributeType, rule.errorcode;END IF;
+          IF NOT TT_IsCastableTo(rule.errorcode, targetAttributeType) THEN
+            RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, row.targetAttribute, rule.errorcode, targetAttributeType, rule.fctName;
+          END IF;
+        END LOOP;
+
+        -- check translation function exists
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translationRule.fctName, translationRule.args;END IF;
+        IF NOT TT_TextFctExists(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) THEN
+          RAISE EXCEPTION '% % (%) : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, targetAttribute, translationRule.fctName, btrim(repeat('text,', coalesce(cardinality(translationRule.args), 0)), ',');
+        END IF;
+
+        -- check translation rule return type matches target attribute type
+        IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
+          RAISE EXCEPTION '% % (%) : Translation rule return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, targetAttribute, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0));
+        END IF;
+
+        -- If not null, check translation error code can be cast to attribute type
+        IF translationRule.errorcode IS NOT NULL AND NOT TT_IsCastableTo(translationRule.errorcode, targetAttributeType) THEN
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', targetAttributeType, translationRule.errorcode;END IF;
+          RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for translation rule %().', error_msg_start, row.rule_id, targetAttribute, translationRule.errorcode, targetAttributeType, translationRule.fctName;
+        END IF;
       END IF;
-
-      -- check translation rule return type matches target attribute type
-      IF NOT TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0)) = targetAttributeType THEN
-        RAISE EXCEPTION '% % (%) : Translation rule return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, targetAttribute, targetAttributeType, TT_TextFctReturnType(translationRule.fctName, coalesce(cardinality(translationRule.args), 0));
-      END IF;
-
-      -- If not null, check translation error code can be cast to attribute type
-      IF translationRule.errorcode IS NOT NULL AND NOT TT_IsCastableTo(translationRule.errorcode, targetAttributeType) THEN
-        IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', targetAttributeType, translationRule.errorcode;END IF;
-        RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for translation rule %().', error_msg_start, row.rule_id, targetAttribute, translationRule.errorcode, targetAttributeType, translationRule.fctName;
-      END IF;
-
       RETURN NEXT;
     END LOOP;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_ValidateTTable(
+  translationTable name,
+  validate boolean DEFAULT TRUE
+)
+RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef) AS $$
+  SELECT TT_ValidateTTable('public', translationTable, validate);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -936,15 +945,13 @@ RETURNS SETOF RECORD AS $$
     jsonbRow jsonb;
     rownb int = 1;
     debug boolean = TT_Debug();
-    _checkExistence boolean;
+    validate boolean = TRUE;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
-    -- Set variable so TT_ValidateTTable only checks for functions on the first row
-    _checkExistence = TRUE;
     FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
@@ -952,7 +959,7 @@ RETURNS SETOF RECORD AS $$
 
        finalQuery = 'SELECT';
        -- Iterate over each translation table row. One row per output attribute
-       FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, _checkExistence) LOOP
+       FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, validate) LOOP
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationRow=%', translationRow;END IF;
          -- Iterate over each validation rule
          isValid = TRUE;
@@ -961,7 +968,7 @@ RETURNS SETOF RECORD AS $$
              IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
              -- Evaluate the rule and catch errors
              BEGIN
-               isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, FALSE);
+               isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
              EXCEPTION WHEN OTHERS THEN
                RAISE NOTICE '%', SQLERRM;
                RAISE EXCEPTION 'STOP ON INVALID RULE PARAMETER: Invalid parameter value passed to %() at row #% while validating source values for target attribute ''%''. Revise your translation table...', rule.fctName, rownb, translationRow.targetAttribute;
@@ -978,7 +985,7 @@ RETURNS SETOF RECORD AS $$
          END LOOP; -- FOR EACH RULE
          -- If all validation rule passed, execute the translation rule
          IF isValid THEN
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.targetAttributeType || ', FALSE);';
+           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.targetAttributeType || ', ' || validate || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            BEGIN
              EXECUTE query
@@ -1018,7 +1025,7 @@ RETURNS SETOF RECORD AS $$
        EXECUTE finalQuery INTO translatedRow;
        RETURN NEXT translatedRow;
 
-       _checkExistence = FALSE; --only check existence of helper function on first source row
+       validate = FALSE; --only validate on first iteration
        rownb = rownb + 1;
     END LOOP; -- FOR sourceRow
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;

@@ -379,7 +379,7 @@ SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text =
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -387,7 +387,7 @@ SELECT '5.2'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test for NULL'::text description,
         array_agg(rec)::text IS NULL passed
-FROM (SELECT TT_ValidateTTable() rec) foo
+FROM (SELECT TT_ValidateTTable(NULL) rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.3'::text number,
@@ -401,13 +401,13 @@ SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
         array_agg(rec)::text =
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\",Test,t)"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
-       'Basic test'::text description,
+       'Invalid target attribute name'::text description,
        TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') =
                      'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name (CROWN CLOSURE UPPER) is invalid.' passed
 --------------------------------------------------------
