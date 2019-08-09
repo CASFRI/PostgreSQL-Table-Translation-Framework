@@ -18,6 +18,7 @@ DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
 DROP FUNCTION IF EXISTS TT_Prepare(name, text);
 DROP FUNCTION IF EXISTS TT_Prepare(name);
 DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
+DROP FUNCTION IF EXISTS TT_ValidateTTable(name, boolean);
 DROP FUNCTION IF EXISTS TT_ParseRules(text);
 DROP FUNCTION IF EXISTS TT_ParseArgs(text);
 DROP FUNCTION IF EXISTS TT_ParseStringList(text, boolean);
