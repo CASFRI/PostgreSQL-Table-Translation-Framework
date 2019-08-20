@@ -1,11 +1,10 @@
 ##### Table of Contents  
-[Introduction](#Introduction)  
-[Directory Structure](#DirStructure)  
+[Introduction](#introduction)  
+[Directory Structure](#dirstructure)  
 
 
-
-<a name="Introduction"/>
-## Introduction
+<a name="introduction"/>
+##### Introduction
 The PostgreSQL Table Translation Framework allows PostgreSQL users to validate and translate a source table into a new target table  using validation and translation rules. This framework simplifies the writing of complex SQL queries attempting to achieve the same goal. It serves as an in-database transform engine in an Extract, Load, Transform (ELT) process (a variant of the popular ETL process) where most of the transformation is done inside the database. Future versions should provide logging and resuming allowing a fast workflow to create, edit, test, and generate translation tables.
 
 The primary components of the framework are:
@@ -14,8 +13,9 @@ The primary components of the framework are:
 * A user produced translation table defining the structure of the target table and all validation and the translation rules.
 * Optionally, some user produced value lookup tables that accompany the translation table.
 
-<a name="DirStructure"/>
-## Directory Structure
+<a name="dirstructure"/>
+
+# Directory Structure
 <pre>
 ./             .sql files for loading, testing, and uninstalling the engine and helper functions.
 
