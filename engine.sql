@@ -87,6 +87,7 @@ RETURNS text AS $$
     query text;
     logInc int = 1;
     logTableName text;
+    action text = 'Creating';
   BEGIN
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     IF TT_FullTableName(schemaName, logTableName) = 'public._log_001' THEN
@@ -98,7 +99,8 @@ RETURNS text AS $$
         logInc = logInc + 1;
         logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
       END LOOP;
-    ELSE
+    ELSIF TT_TableExists(schemaName, logTableName) THEN
+      action = 'Overwriting';
       query = 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, logTableName) || ';';
       BEGIN
         EXECUTE query;
@@ -109,7 +111,7 @@ RETURNS text AS $$
     
     query = 'CREATE TABLE ' || TT_FullTableName(schemaName, logTableName) || ' (' ||
             'logID SERIAL, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int);';
-    RAISE NOTICE 'TT_LogInit: Creating log table ''%''...', TT_FullTableName(schemaName, logTableName);
+    RAISE NOTICE 'TT_LogInit: % log table ''%''...', action, TT_FullTableName(schemaName, logTableName);
     BEGIN
       EXECUTE query;
     EXCEPTION WHEN OTHERS THEN
@@ -191,7 +193,9 @@ RETURNS SETOF text AS $$
     res RECORD;
   BEGIN
     FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
-               FROM information_schema.tables WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName LOOP
+               FROM information_schema.tables 
+               WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName
+               ORDER BY table_name LOOP
       EXECUTE res.query;
       RETURN NEXT res.query;
     END LOOP;
@@ -1050,6 +1054,7 @@ RETURNS text AS $f$
                stopOnInvalidSource boolean DEFAULT FALSE,
                stopOnTranslationError boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
+               incrementLog boolean DEFAULT TRUE,
                resume boolean DEFAULT FALSE,
                ignoreDescUpToDateWithRules boolean DEFAULT FALSE
              )
@@ -1063,6 +1068,7 @@ RETURNS text AS $f$
                                                         stopOnInvalidSource,
                                                         stopOnTranslationError,
                                                         logFrequency,
+                                                        incrementLog,
                                                         resume,
                                                         ignoreDescUpToDateWithRules) AS t(' || array_to_string(paramlist, ', ') || ');
                RETURN;
@@ -1127,7 +1133,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, int, boolean, boolean);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, int, boolean, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
   sourceTable name,
@@ -1137,6 +1143,7 @@ CREATE OR REPLACE FUNCTION _TT_Translate(
   stopOnInvalidSource boolean DEFAULT FALSE,
   stopOnTranslationError boolean DEFAULT FALSE,
   logFrequency int DEFAULT 500,
+  incrementLog boolean DEFAULT TRUE,
   resume boolean DEFAULT FALSE,
   ignoreDescUpToDateWithRules boolean DEFAULT FALSE
 )
@@ -1167,7 +1174,7 @@ RETURNS SETOF RECORD AS $$
     IF sourceRowIdColumn IS NULL THEN
       RAISE NOTICE '_TT_Translate: sourceRowIdColumn is NULL so no logging with be performed...';
     ELSE
-      logTableSuffix = TT_LogInit(translationTableSchema, translationTable);
+      logTableSuffix = TT_LogInit(translationTableSchema, translationTable, incrementLog);
       IF logTableSuffix = 'FALSE' THEN
         RAISE EXCEPTION '_TT_Translate ERROR: Loging initialization failed.';
       END IF;
