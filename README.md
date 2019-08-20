@@ -214,8 +214,8 @@ SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_ta
 # Main Translation Functions Reference
 Two groups of function are of interest here:
 
-* the two functions necessary to translate a table: TT_Prepare() and TT_Translate()
-* the function necessary to work with logigging tables: TT_LogInit(), TT_LogShow() and TT_DeleteAllLogs().
+* functions necessary to translate a table: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
+* functions necessary to work with logging tables: TT_LogShow() and TT_DeleteAllLogs().
 
 * **TT_Prepare**(name translationTableSchema,
                  name translationTable,
@@ -236,6 +236,21 @@ Two groups of function are of interest here:
                          boolean ignoreDescUpToDateWithRules[default FALSE])
     * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type PROGRESS happen every 'logFrequency' rows. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
+
+* **TT_DropAllTranslateFct**()
+    * Delete all translation functions prepared with TT_Prepare().
+    * e.g. SELECT TT_DropAllTranslateFct();
+
+* **TT_LogShow**(name schemaName,
+                 name tableName,
+                 text logNb[default NULL])
+    * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
+    * e.g. SELECT * FROM TT_LogShow('translation', 'ab06_avi01_lyr', 1); 
+
+* **TT_DeleteAllLog**(name schemaName,
+                      name tableName)
+    * Delete all logging table associated with the specified translation table.
+    * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
 
 # Helper Function Syntax and Reference
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
