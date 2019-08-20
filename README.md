@@ -184,7 +184,7 @@ SELECT * FROM TT_LogShow();
 
 If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_LogShow().
 
-You can get rid of all log table with the TT_DeleteAllLogs() function:
+You can get rid of all log tables with the TT_DeleteAllLogs() function:
 
 ```sql
 SELECT TT_DeleteAllLogs();
