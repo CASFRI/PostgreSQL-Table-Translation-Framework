@@ -36,7 +36,7 @@ The current version is 0.0.2-beta and is available for download at https://githu
 * **Uninstallation -** You can uninstall all the functions by running the helperFunctionsUninstall.sql, the the helperFunctionsGISUninstall.sql and the engineUninstall.sql files.
 
 # Vocabulary
-*Translation engine* - The PL/pgSQL code implementing the PostgreSQL Table Translation Framework.
+*Translation engine/function* - The PL/pgSQL code implementing the PostgreSQL Table Translation Framework. Can also refer more precisely to the translation function TT_Translate() which is the core of the translation process.
 
 *Helper function* - A set of PL/pgSQL functions used in the translation table to facilitate validation of source values and their translation to target values.
 
@@ -71,7 +71,7 @@ The translation table implements two very different steps:
 
 Translation tables have one row per target attribute and they must contain these seven columns:
 
- 1. **rule_id** - Incrementing unique integer identifier used for ordering target attributes in target table.
+ 1. **rule_id** - Incremental unique integer identifier used for ordering target attributes in target table.
  2. **targetAttribute** - The name of the target attribute to be created in the target table.
  3. **targetAttributeType** - The data type of the target attribute.
  4. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
@@ -139,19 +139,56 @@ By default the prepared function will always be named TT_Translate(). If you are
 
 If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables.
 
-# How to control warning, error and logging?
-Logging is activated as soon as you provide the name of a unique ID column for the source table as the third parameter to your TT_Translate() function:
+# How to control errors, warnings and logging?
+
+**Errors -** Errors able to stop the engine are of two natures: 1) badly written parameters passed to helper functions in the translation table and 2) problems occurring while executing an imperfectly written translation helper function. The first case will always happen at the very beginning of a translation and will unconditionally stop the engine with a meaningful error message. It is up to the writer of the translation file to fix it in order to avoid the error. The second case might happen at any moment during the translation. Even after hours... This is why you can control if the engine should stop or not with the 'stopOnTranslationError' TT_Translate() parameter. If 'stopOnTranslationError' is set to FALSE (default behavior), the engine will log this type of error every time it encounters one. It hence become only a warning and does not stop the engine.
+
+**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule. You can control if the engine should stop as soon as this happen with the 'stopOnInvalidSource' TT_Translate() parameter. If 'stopOnInvalidSource' is set to FALSE (default behavior), the engine will log these warnings in the log table. You can hence translate a source table in its entirety (which can takes hours or days) without errors and get a final report of invalidated values only at the end of the whole process. You can then fix the source table or the translation table accordingly and restart the translation process.
+
+At the beginning of the process of writing a translation table, you can also set 'stopOnTranslationError' or 'stopOnInvalidSource' to TRUE in order to implement a faster "write, test, fix, retest" cycle. Two translation scenarios are possible in this case.
+
+**Fixing source value scenario -** In a scenario where you are fixing the source data, you would repeat this cycle until all source values pass the validation rules and you could hence leave those two parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine would not stop anymore.
+
+**Fixing translation file scenario -** In an alternative scenario where you do not want to modify the source table and prefer the engine to replace invalid values with custom errors (defined in the translation table), leaving 'stopOnInvalidSource' to TRUE would make the engine to stop every time a source value is invalidated, preventing the process to complete. This is not optimal. In this scenario it is preferable to keep the global 'stopOnInvalidSource' parameter to FALSE and set 'stopOnInvalid' at the validation rule level by putting 'TRUE' right after the error code. When you are happy with the validation rules and error codes set for a first attribute, you can just remove the 'TRUE' for this attribute and the engine will not stop anymore when invalidation occurs. It will replace the value with the error code instead and log the invalidation in the log table. You can then set 'TRUE' for the next attribute or validation rule and go on until you are happy with all the validation rules and error codes.
+
+**Logging -** Logging is activated as soon as you provide the name of a unique ID column for the source table as the third parameter to your TT_Translate() function:
 
 ```sql
 CREATE TABLE target_table AS
 SELECT * FROM TT_Translate(sourceTableSchema, sourceTable, sourceRowIdColumn);
 ```
 
+A logging table has the following attributes:
+
+1. **log_id** - Incremental unique integer identifier of the log entry.
+2. **logtime** - Date and hour stamp  of the log entry.
+3. **logtype** - 'PROGRESS', 'INVALIDATION' or 'TRANSLATION_ERROR'.
+4. **firstrowid** - First source row ID of this group of entry of the same type.
+5. **message** - Detailed logging emssage.
+6. **currentrownb** - Number of the row being processed when this log entry was created. Different from 'firstrowid' which is more like an identifier.
+7, **count** - Number of row pertaining to this log entry. Equal to logFrequecy for 'PROGRESS' entries. Equal to the number of identical invalidation or error for 'INVALIDATION' and 'TRANSLATION_ERROR' entries.
+
+Invalidation and translation errors, since they can happen millions of time in some translation projects, do not generate one line per error. The count attribute of the logging table is instead incremented for every identical errors of those types.
+
 A logging table will be created beside the translation table for which the translation function was created (with TT_Prepare()). This table will have the same name as the translation table but suffixed with '_log_00X'.
 
-By default, every time you execute the translation function, a new log table is created with an incremental name. You can disable this behavior by 
+By default, every time you execute the translation function, a new log table is created with an incremental name. You can disable this behavior by settting the 'incrementLog' parameter to FALSE. In this case any the log table number '001' will be created or overwritten if it already exists.
 
-'sourceRowIdColumn' is necessary for logging to be enabled. It is used in the logging tabel to refer to the source table row where logging events happen. If you do not provide 'sourceRowIdColumn' to TT_Translate() logging will simply not happen.
+'sourceRowIdColumn' is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column,  the first source table row having triggered this type of log entry. If you do not provide 'sourceRowIdColumn' to TT_Translate() logging will simply not happen.
+
+When 'incrementLog' is set to TRUE and you execute TT_Translate() often, you can end up with many log table. You can list the last one using the TT_LogShow() function:
+
+```sql
+SELECT * FROM TT_LogShow();
+```
+
+If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_LogShow().
+
+You can get rid of all log table with the TT_DeleteAllLogs() function:
+
+```sql
+SELECT TT_DeleteAllLogs();
+```
 
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
@@ -214,8 +251,8 @@ SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_ta
 # Main Translation Functions Reference
 Two groups of function are of interest here:
 
-* functions necessary to translate a table: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
-* functions necessary to work with logging tables: TT_LogShow() and TT_DeleteAllLogs().
+* functions associated with the translation process: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
+* functions useful to work with logging tables: TT_LogShow() and TT_DeleteAllLogs().
 
 * **TT_Prepare**(name translationTableSchema,
                  name translationTable,
@@ -247,7 +284,7 @@ Two groups of function are of interest here:
     * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
     * e.g. SELECT * FROM TT_LogShow('translation', 'ab06_avi01_lyr', 1); 
 
-* **TT_DeleteAllLog**(name schemaName,
+* **TT_DeleteAllLogs**(name schemaName,
                       name tableName)
     * Delete all logging table associated with the specified translation table.
     * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
@@ -260,7 +297,7 @@ Helper functions are of two types: validation helper functions are used in the *
 Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. 
 
 Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
-1. Strings
+**1. Strings**
     - Any arguments wrapped in single or double quotes is interpreted by the engine as a string and passed as-is to the helper function.
     - e.g. CopyText('a string')
       - this would simply return the string 'a string' for every row in the translation.
@@ -268,7 +305,8 @@ Helper function parameters are grouped into three classes, each of which have a 
       - e.g. CopyText('string\\'s')
     - Empty strings can be passed as arguments using '' or "".
     - Since helper functions only accept arguments as type text, any numeric or boolean values should also be input as strings. The helper function will convert them to the correct type when it runs (e.g. Between(percent_column, '0', '100', 'TRUE', 'TRUE')).
-2. Source table column names
+
+**2. Source table column names**
     - Any word not wrapped in quotes is interpreted as a column name.
     - Column names can include "\_" and "-" but no other special characters and no spaces are allowed. Invalid column names stop the engine.
     - When the engine encounters a valid column name, it searches the source table for that column and returns the corresponding value for the row being processed. This value is then passed as an argument to the helper function.
@@ -276,7 +314,8 @@ Helper function parameters are grouped into three classes, each of which have a 
       - this would return the text value from column_A in the source table for each row being translated.
     - If the column name is not found as a column in the source table, it is processed as a string.
     - Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'targetSp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the targetSp column in the public.species_lookup table.
-3. String lists
+
+**3. String lists**
     - Some helper functions can take a variable number of inputs. Concatenation functions are an example.
     - Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
     - String lists can contain both strings and column names following the rules described above.
