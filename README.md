@@ -137,7 +137,21 @@ The TT_Translate() function returns the translated target table. It is designed 
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '_02') will prepare the TT_Translate_02() function). You would normally provide a different suffix for each of your translation tables.
 
-If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables. 
+If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. Future releases of the framework will provide a logging and a resuming mechanism which will ease the development of translation tables.
+
+# How to control warning, error and logging?
+Logging is activated as soon as you provide the name of a unique ID column for the source table as the third parameter to your TT_Translate() function:
+
+```sql
+CREATE TABLE target_table AS
+SELECT * FROM TT_Translate(sourceTableSchema, sourceTable, sourceRowIdColumn);
+```
+
+A logging table will be created beside the translation table for which the translation function was created (with TT_Prepare()). This table will have the same name as the translation table but suffixed with '_log_00X'.
+
+By default, every time you execute the translation function, a new log table is created with an incremental name. You can disable this behavior by 
+
+'sourceRowIdColumn' is necessary for logging to be enabled. It is used in the logging tabel to refer to the source table row where logging events happen. If you do not provide 'sourceRowIdColumn' to TT_Translate() logging will simply not happen.
 
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
@@ -197,8 +211,33 @@ SELECT TT_Prepare('public', 'translation_table');
 CREATE TABLE target_table AS
 SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
 ```
+# Main Translation Functions Reference
+Two groups of function are of interest here:
 
-# Helper Function Syntax
+* the two functions necessary to translate a table: TT_Prepare() and TT_Translate()
+* the function necessary to work with logigging tables: TT_LogInit(), TT_LogShow() and TT_DeleteAllLogs().
+
+* **TT_Prepare**(name translationTableSchema,
+                 name translationTable,
+                 text fctNameSuf[default ''],
+                 name refTranslationTableSchema[default NULL],
+                 name refTranslationTable[default NULL])
+    * Prepare a translation function based on attributes found in the provided translation table and cross validated with an optional reference translation table. The default name of the prepared funtion can be altered by providing a 'fctNameSuf' suffix.
+    * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
+
+* **TT_TranslateSuffix**(name sourceTableSchema,
+                         name sourceTable,
+                         name sourceRowIdColumn[default NULL],
+                         boolean stopOnInvalidSource[default FALSE],
+                         boolean stopOnTranslationError[default FALSE],
+                         int logFrequency[default 500],
+                         boolean incrementLog[default TRUE],
+                         boolean resume[default FALSE],
+                         boolean ignoreDescUpToDateWithRules[default FALSE])
+    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type PROGRESS happen every 'logFrequency' rows. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
+    * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
+
+# Helper Function Syntax and Reference
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
 Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If multiple validation helper functions are provided they should be seperated by semi colons, they will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translationRules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table. Translation helper functions can optionally include a user defined error code.
