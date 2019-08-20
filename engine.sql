@@ -109,7 +109,7 @@ RETURNS text AS $$
     
     query = 'CREATE TABLE ' || TT_FullTableName(schemaName, logTableName) || ' (' ||
             'logID SERIAL, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int);';
-    RAISE NOTICE 'TT_LogInit: Creating log table''%''...', TT_FullTableName(schemaName, logTableName);
+    RAISE NOTICE 'TT_LogInit: Creating log table ''%''...', TT_FullTableName(schemaName, logTableName);
     BEGIN
       EXECUTE query;
     EXCEPTION WHEN OTHERS THEN
@@ -1046,7 +1046,7 @@ RETURNS text AS $f$
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
                sourceTableSchema name,
                sourceTable name,
-               sourceTableIdColumn name,
+               sourceTableIdColumn name DEFAULT NULL,
                stopOnInvalidSource boolean DEFAULT FALSE,
                stopOnTranslationError boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
@@ -1164,17 +1164,20 @@ RETURNS SETOF RECORD AS $$
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
 
     -- initialize logging table
-    logTableSuffix = TT_LogInit(translationTableSchema, translationTable);
-    IF logTableSuffix = 'FALSE' THEN
-      RAISE EXCEPTION '_TT_Translate ERROR: Loging initialization failed.';
-    END IF;
-                         
+    IF sourceRowIdColumn IS NULL THEN
+      RAISE NOTICE '_TT_Translate: sourceRowIdColumn is NULL so no logging with be performed...';
+    ELSE
+      logTableSuffix = TT_LogInit(translationTableSchema, translationTable);
+      IF logTableSuffix = 'FALSE' THEN
+        RAISE EXCEPTION '_TT_Translate ERROR: Loging initialization failed.';
+      END IF;
+    END IF;                 
     FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
 
        -- identify the first rowid for logging
-       IF currentRowNb % logFrequency = 1 THEN
+       IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency = 1 THEN
          lastFirstRowID = jsonbRow->>sourceRowIdColumn;
        END IF;
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourceRow=%', jsonbRow;END IF;
@@ -1248,7 +1251,7 @@ RETURNS SETOF RECORD AS $$
        RETURN NEXT translatedRow;
        
        -- log progress
-       IF currentRowNb % logFrequency = 0 THEN
+       IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency = 0 THEN
          PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
                 'PROGRESS', lastFirstRowID, 'Progress...', currentRowNb, logFrequency);
        END IF;
