@@ -47,6 +47,211 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_TableExists
+--
+-- schemaName text
+-- tableName text
+--
+-- Return boolean (success or failure)
+--
+-- Determine if a table exists.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_TableExists(text, text);
+CREATE OR REPLACE FUNCTION TT_TableExists(
+  schemaName text,
+  tableName text
+)
+RETURNS boolean AS $$
+    SELECT NOT to_regclass(TT_FullTableName(schemaName, tableName)) IS NULL;
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------]
+
+-------------------------------------------------------------------------------
+-- TT_LogInit
+--
+-- schemaName text
+-- tableName text
+-- increment boolean
+--
+-- Return the suffix of the created log table. 'FALSE' if creation failed.
+-- Create a new or overwrite former log table and initialize a new one.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean);
+CREATE OR REPLACE FUNCTION TT_LogInit(
+  schemaName text,
+  tableName text,
+  increment boolean DEFAULT TRUE
+)
+RETURNS text AS $$
+  DECLARE
+    query text;
+    logInc int = 1;
+    logTableName text;
+  BEGIN
+    logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+    IF TT_FullTableName(schemaName, logTableName) = 'public._log_001' THEN
+      RAISE EXCEPTION 'TT_LogInit ERROR: Invalid translation table name';
+    END IF;
+    IF increment THEN
+      -- find an available table name
+      WHILE TT_TableExists(schemaName, logTableName) LOOP
+        logInc = logInc + 1;
+        logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+      END LOOP;
+    ELSE
+      query = 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, logTableName) || ';';
+      BEGIN
+        EXECUTE query;
+      EXCEPTION WHEN OTHERS THEN
+        RETURN 'FALSE';
+      END;
+    END IF;
+    
+    query = 'CREATE TABLE ' || TT_FullTableName(schemaName, logTableName) || ' (' ||
+            'logID SERIAL, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int);';
+    RAISE NOTICE 'TT_LogInit: Creating log table''%''...', TT_FullTableName(schemaName, logTableName);
+    BEGIN
+      EXECUTE query;
+    EXCEPTION WHEN OTHERS THEN
+      RETURN 'FALSE';
+    END;
+    RETURN '_log_' || TT_Pad(logInc::text, 3::text, '0');
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LogShow
+--
+-- schemaName text
+-- tableName text
+--
+-- Return the last log table for the provided translation table.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_LogShow(text, text, int);
+CREATE OR REPLACE FUNCTION TT_LogShow(
+  schemaName text,
+  tableName text,
+  logNb int DEFAULT NULL
+)
+RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int) AS $$
+  DECLARE
+    query text;
+    logInc int = 1;
+    logTableName text;
+    suffix text;
+  BEGIN
+    IF NOT logNb IS NULL THEN
+      logInc = logNb;
+    END IF;
+    suffix = '_log_' || TT_Pad(logInc::text, 3::text, '0');
+    logTableName = tableName || suffix;
+    IF TT_FullTableName(schemaName, logTableName) = 'public.' || suffix THEN
+      RAISE EXCEPTION 'TT_LogShow ERROR: Invalid translation table name or number...';
+    END IF;
+    IF logNb IS NULL THEN
+      -- find the last log table name
+      WHILE TT_TableExists(schemaName, logTableName) LOOP
+        logInc = logInc + 1;
+        logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+      END LOOP;
+      -- if logInc = 1 means no log table exists
+      IF logInc = 1 THEN
+        RAISE EXCEPTION 'TT_LogShow ERROR: No translation log to show for this translation table...';
+      END IF;
+      logInc = logInc - 1;
+    ELSE
+      IF NOT TT_TableExists(schemaName, logTableName) THEN
+        RAISE EXCEPTION 'TT_LogShow ERROR: Translation log does not exist...';
+      END IF;
+    END IF;
+    logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+    RAISE NOTICE 'TT_LogShow: Displaying log table ''%''', logTableName;
+    query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ';';
+    RETURN QUERY EXECUTE query;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_DeleteAllLogs
+--
+-- schemaName text
+-- tableName text
+--
+-- Delete all log table associated with the target table.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
+CREATE OR REPLACE FUNCTION TT_DeleteAllLogs(
+  schemaName text,
+  tableName text
+)
+RETURNS SETOF text AS $$
+  DECLARE
+    res RECORD;
+  BEGIN
+    FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
+               FROM information_schema.tables WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName LOOP
+      EXECUTE res.query;
+      RETURN NEXT res.query;
+    END LOOP;
+    RETURN;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Log
+--
+-- schemaName text  - Schema name of the logging table
+-- tableName text   - Logging table name
+-- suffix text      - Suffix of the logging table name
+-- logType text     - Type of logging entry (PROGRESS, INVALIDATION)
+-- firstRowId text  - rowID of the first source triggering the logging entry.
+-- message text     - Message to log
+-- currentRowNb int - Number of the row being processed
+-- coiunt int       - Number of rows associated with this log entry
+--
+-- Return boolean  -- Succees or failure.
+-- Log an entry in the log table.
+-- The log table has the following structure:
+--   logid integer NOT NULL DEFAULT nextval('source_log_001_logid_seq'::regclass),
+--   logtime timestamp,
+--   logtype text,
+--   firstrowid text,
+--   message text,
+--   currentrownb int,
+--   count integer
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
+CREATE OR REPLACE FUNCTION TT_Log(
+  schemaName text,
+  tableName text,
+  suffix text,
+  logType text,
+  firstRowId text,
+  message text,
+  currentRowNb int,
+  count int
+)
+RETURNS boolean AS $$
+  DECLARE
+    query text;
+  BEGIN
+    IF upper(logType) = 'PROGRESS' THEN
+      query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' VALUES (' ||
+         'DEFAULT, now(), ''PROGRESS'', $1, $2, $3, $4);';
+      EXECUTE query USING firstRowId, message, currentRowNb, count;
+      RETURN TRUE;
+    ELSE
+      RAISE EXCEPTION 'TT_Log ERROR: Invalid logType (%)', logType;
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_IsCastableTo
 --
 --   val text
@@ -207,7 +412,7 @@ RETURNS SETOF text AS $$
   DECLARE
     res RECORD;
   BEGIN
-    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text query
+    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text || ';' query
                FROM pg_proc WHERE left(proname, 12) = 'tt_translate' AND pg_function_is_visible(oid) LOOP
       EXECUTE res.query;
       RETURN NEXT res.query;
@@ -835,12 +1040,13 @@ RETURNS text AS $f$
     END IF;
 
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, boolean, boolean, int, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, int, boolean, boolean);';
     EXECUTE query;
 
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
                sourceTableSchema name,
                sourceTable name,
+               sourceTableIdColumn name,
                stopOnInvalidSource boolean DEFAULT FALSE,
                stopOnTranslationError boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
@@ -850,9 +1056,10 @@ RETURNS text AS $f$
              RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
              BEGIN
                RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema,
-                                                        sourceTable, ' ||
+                                                        sourceTable,
+                                                        sourceTableIdColumn, ' ||
                                                         '''' || translationTableSchema || ''', ' ||
-                                                        '''' || translationTable || ''',
+                                                        '''' || translationTable || ''', 
                                                         stopOnInvalidSource,
                                                         stopOnTranslationError,
                                                         logFrequency,
@@ -920,10 +1127,11 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, boolean, boolean, int, boolean, boolean);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, int, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
   sourceTable name,
+  sourceRowIdColumn name,
   translationTableSchema name,
   translationTable name,
   stopOnInvalidSource boolean DEFAULT FALSE,
@@ -943,18 +1151,32 @@ RETURNS SETOF RECORD AS $$
     finalVal text;
     isValid boolean;
     jsonbRow jsonb;
-    rownb int = 1;
+    currentRowNb int = 1;
     debug boolean = TT_Debug();
     validate boolean = TRUE;
+    lastFirstRowID text;
+    logTableSuffix text;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- Create the log table. TODO
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
+
+    -- initialize logging table
+    logTableSuffix = TT_LogInit(translationTableSchema, translationTable);
+    IF logTableSuffix = 'FALSE' THEN
+      RAISE EXCEPTION '_TT_Translate ERROR: Loging initialization failed.';
+    END IF;
+                         
     FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
        -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
+
+       -- identify the first rowid for logging
+       IF currentRowNb % logFrequency = 1 THEN
+         lastFirstRowID = jsonbRow->>sourceRowIdColumn;
+       END IF;
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourceRow=%', jsonbRow;END IF;
 
        finalQuery = 'SELECT';
@@ -971,7 +1193,7 @@ RETURNS SETOF RECORD AS $$
                isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
              EXCEPTION WHEN OTHERS THEN
                RAISE NOTICE '%', SQLERRM;
-               RAISE EXCEPTION 'STOP ON INVALID RULE PARAMETER: Invalid parameter value passed to %() at row #% while validating source values for target attribute ''%''. Revise your translation table...', rule.fctName, rownb, translationRow.targetAttribute;
+               RAISE EXCEPTION 'STOP ON INVALID RULE PARAMETER: Invalid parameter value passed to %() at row #% while validating source values for target attribute ''%''. Revise your translation table...', rule.fctName, currentRowNb, translationRow.targetAttribute;
              END;
              IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
              -- initialize the final value
@@ -979,7 +1201,7 @@ RETURNS SETOF RECORD AS $$
              --IF debug THEN RAISE NOTICE '_TT_Translate 55 rule is % %', CASE WHEN isValid THEN 'VALID' ELSE 'INVALID' END, rule;
              -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
              IF NOT isValid AND (rule.stopOnInvalid OR stopOnInvalidSource)THEN
-               RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: Invalid source value passed to %() at row #% while validating source values for target attribute ''%''...', rule.fctName, rownb, translationRow.targetAttribute;
+               RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: Invalid source value passed to %() at row #% while validating source values for target attribute ''%''...', rule.fctName, currentRowNb, translationRow.targetAttribute;
              END IF;
            END IF;
          END LOOP; -- FOR EACH RULE
@@ -993,14 +1215,14 @@ RETURNS SETOF RECORD AS $$
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
              RAISE NOTICE '%', SQLERRM;
-             RAISE EXCEPTION 'STOP ON INVALID TRANSLATION PARAMETER: Invalid parameter value passed to %() at row #% while translating target attribute ''%''. Revise your translation table...', (translationRow.translationRule).fctName, rownb, translationRow.targetAttribute;
+             RAISE EXCEPTION 'STOP ON INVALID TRANSLATION PARAMETER: Invalid parameter value passed to %() at row #% while translating target attribute ''%''. Revise your translation table...', (translationRow.translationRule).fctName, currentRowNb, translationRow.targetAttribute;
            END;
 
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
 
            IF finalVal IS NULL THEN
              IF stopOnTranslationError THEN
-               RAISE EXCEPTION 'STOP ON TRANSLATION ERROR: Translation error in %() at row #% while translating target attribute ''%''...', (translationRow.translationRule).fctName, rownb, translationRow.targetAttribute;
+               RAISE EXCEPTION 'STOP ON TRANSLATION ERROR: Translation error in %() at row #% while translating target attribute ''%''...', (translationRow.translationRule).fctName, currentRowNb, translationRow.targetAttribute;
              ELSE
                IF (translationRow.translationRule).errorCode IS NULL THEN -- if no error code provided, use the defaults
                  IF translationRow.targetAttributeType IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
@@ -1024,9 +1246,15 @@ RETURNS SETOF RECORD AS $$
        IF debug THEN RAISE NOTICE '_TT_Translate BB finalQuery=%', finalQuery;END IF;
        EXECUTE finalQuery INTO translatedRow;
        RETURN NEXT translatedRow;
-
-       validate = FALSE; --only validate on first iteration
-       rownb = rownb + 1;
+       
+       -- log progress
+       IF currentRowNb % logFrequency = 0 THEN
+         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+                'PROGRESS', lastFirstRowID, 'Progress...', currentRowNb, logFrequency);
+       END IF;
+       --only validate translation table on first iteration
+       validate = FALSE;
+       currentRowNb = currentRowNb + 1;
     END LOOP; -- FOR sourceRow
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;
     RETURN;

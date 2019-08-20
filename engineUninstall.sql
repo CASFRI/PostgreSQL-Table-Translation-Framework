@@ -11,7 +11,7 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 SELECT TT_DropAllTranslateFct();
-DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, boolean, boolean, int, boolean, boolean);
+DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, int, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
@@ -40,4 +40,9 @@ DROP FUNCTION IF EXISTS TT_IsCastableTo(text, text);
 DROP FUNCTION IF EXISTS TT_EscapeDoubleQuotesAndBackslash(text);
 DROP FUNCTION IF EXISTS TT_EscapeSingleQuotes(text);
 DROP FUNCTION IF EXISTS TT_UnsingleQuote(text);
+DROP FUNCTION IF EXISTS TT_TableExists(text, text);
+DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean);
+DROP FUNCTION IF EXISTS TT_LogShow(text, text);
+DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
+DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
 DROP TYPE IF EXISTS TT_RuleDef;
