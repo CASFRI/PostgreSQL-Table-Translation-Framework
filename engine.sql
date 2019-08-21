@@ -984,11 +984,14 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Prepare
 --
---   translationTableSchema name - Name of the schema containing the translation
---                                 table.
---   translationTable name       - Name of the translation table.
---   fctName name                - Name of the function to create. Default to
---                                 'TT_Translate'.
+--   translationTableSchema name    - Name of the schema containing the 
+--                                    translation table.
+--   translationTable name          - Name of the translation table.
+--   fctName name                   - Name of the function to create. Default to
+--                                    'TT_Translate'.
+--   refTranslationTableSchema name - Name of the schema containing the reference 
+--                                    translation table.
+--   refTranslationTable name       - Name of the reference translation table.
 --
 --   RETURNS text                - Name of the function created.
 --
@@ -1117,17 +1120,25 @@ $$ LANGUAGE sql VOLATILE;
 --
 --   sourceTableSchema name      - Name of the schema containing the source table.
 --   sourceTable name            - Name of the source table.
+--   sourceRowIdColumn name      - Name of the source unique identifier column used 
+--                                 for logging.
 --   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
---   stopOnInvalidSource         - Flag indicating if the engine should stop when
+--   stopOnInvalidSource         - Boolean indicating if the engine should stop when
 --                                 a source value is declared invalid
---   stopOnTranslationError      - Flag indicating if the engine should stop when
+--   stopOnTranslationError      - Boolean indicating if the engine should stop when
 --                                 the translation rule result into a NULL value
---   logFrequency                - Number of line to report progress in the log file.
---   resume                      - Resume from last execution when set to TRUE.
---   ignoreDescUpToDateWithRules - Ignore the translation table flag indicating that
---                                 rules are not up to date with their descriptions.
+--   logFrequency int            - Number of line to report progress in the log table.
+--                                 Default to 500.
+--   incrementLog                - Boolean indicating if log table names should be 
+--                                 incremented or not. Default to TRUE.
+--   resume                      - Boolean indicating if translation should resume 
+--                                 from last execution. Default to FALSE.
+--   ignoreDescUpToDateWithRules - Boolean indicating if translation engine should 
+--                                 ignore rules that are not up to date with their 
+--                                 descriptions and resume translation. Stop the 
+--                                 translation engine otherwise. Default to FALSE.
 --
 --   RETURNS SETOF RECORDS
 --
