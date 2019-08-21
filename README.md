@@ -241,13 +241,20 @@ UNION ALL
 SELECT 2, 'LP', 60;
 ```
 
-Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name, translation table schema and translation table name to TT_Translate.
+Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name and source column ID name to TT_Translate.
 ```sql
 SELECT TT_Prepare('public', 'translation_table');
 
 CREATE TABLE target_table AS
-SELECT * FROM TT_Translate('public', 'source_example', 'public', 'translation_table');
+SELECT * FROM TT_Translate('public', 'source_example', 'ID');
 ```
+
+Since you provided a unique identifier column name, a log was generated. You can then check this log like this:
+
+```sql
+SELECT * FROM TT_LogShow('public', 'translation_table');
+```
+
 # Main Translation Functions Reference
 Two groups of function are of interest here:
 
