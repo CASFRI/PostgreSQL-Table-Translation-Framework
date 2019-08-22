@@ -22,18 +22,26 @@
 
 -- TT_NotNULL
 --
---  val text - Value to test.
+--  val text (string list) - Value(s) to test. Can be one or many.
 --
--- Return TRUE if val is not NULL.
--- Return FALSE if val is NULL.
+-- Return TRUE if all vals are not NULL.
+-- Return FALSE if any val is NULL.
 -- e.g. TT_NotNULL('a')
+-- e.g. TT_NotNull({'a', 'b', 'c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNULL(
-  val text
+  vals text
 )
 RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
   BEGIN
-    RETURN val IS NOT NULL;
+    IF vals IS NULL THEN
+      RETURN FALSE;
+    ELSE
+      _vals = TT_ParseStringList(vals, TRUE);
+      RETURN array_position(_vals, NULL) IS NULL;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -695,8 +703,8 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MatchList
 --
--- val text (stringList) - value to test.
--- lst text - string containing comma separated vals.
+-- val text - value to test.
+-- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 --
 -- Is val in lst?

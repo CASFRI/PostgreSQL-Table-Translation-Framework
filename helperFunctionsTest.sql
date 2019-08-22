@@ -264,6 +264,36 @@ SELECT '1.6'::text number,
        'Test if empty string'::text description,
        TT_NotNull(''::text) passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '1.7'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with values'::text description,
+       TT_NotNull('{''a'',''b''}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.8'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with one NULL'::text description,
+       TT_NotNull('{''a'',NULL}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.9'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with all NULL'::text description,
+       TT_NotNull('{NULL,NULL}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.10'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with one NULL'::text description,
+       TT_NotNull('{NULL}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.11'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with one value'::text description,
+       TT_NotNull('{test}'::text) passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 2 - TT_NotEmpty
 -- Should test for empty strings with spaces (e.g.'   ')
