@@ -47,6 +47,71 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_FullTableName
+--
+--   schemaName name - Name of the schema.
+--   tableName name  - Name of the table.
+--
+--   RETURNS text    - Full name of the table.
+--
+-- Return a well quoted, full table name, including the schema.
+-- The schema default to 'public' if not provided.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
+CREATE OR REPLACE FUNCTION TT_FullTableName(
+  schemaName name,
+  tableName name
+)
+RETURNS text AS $$
+  DECLARE
+    newSchemaName text = '';
+  BEGIN
+    IF length(schemaName) > 0 THEN
+      newSchemaName = schemaName;
+    ELSE
+      newSchemaName = 'public';
+    END IF;
+    RETURN quote_ident(newSchemaName) || '.' || quote_ident(tableName);
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_FullFunctionName
+--
+--   schemaName name - Name of the schema.
+--   fctName name    - Name of the function.
+--
+--   RETURNS text    - Full name of the table.
+--
+-- Return a full function name, including the schema.
+-- The schema default to 'public' if not provided.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FullFunctionName(name, name);
+CREATE OR REPLACE FUNCTION TT_FullFunctionName(
+  schemaName name,
+  fctName name
+)
+RETURNS text AS $$
+  DECLARE
+  BEGIN
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    fctName = 'tt_' || lower(fctName);
+    schemaName = lower(schemaName);
+    IF schemaName = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    RETURN fctName;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_TableExists
 --
 -- schemaName text
@@ -117,6 +182,8 @@ RETURNS text AS $$
     EXCEPTION WHEN OTHERS THEN
       RETURN 'FALSE';
     END;
+    query = 'CREATE UNIQUE INDEX ON ' || TT_FullTableName(schemaName, logTableName) || ' (message);';
+    EXECUTE query;
     RETURN '_log_' || TT_Pad(logInc::text, 3::text, '0');
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -169,7 +236,7 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
     END IF;
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     RAISE NOTICE 'TT_LogShow: Displaying log table ''%''', logTableName;
-    query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ';';
+    query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
     RETURN QUERY EXECUTE query;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -214,7 +281,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- firstRowId text  - rowID of the first source triggering the logging entry.
 -- message text     - Message to log
 -- currentRowNb int - Number of the row being processed
--- coiunt int       - Number of rows associated with this log entry
+-- count int        - Number of rows associated with this log entry
 --
 -- Return boolean  -- Succees or failure.
 -- Log an entry in the log table.
@@ -234,9 +301,9 @@ CREATE OR REPLACE FUNCTION TT_Log(
   suffix text,
   logType text,
   firstRowId text,
-  message text,
+  msg text,
   currentRowNb int,
-  count int
+  count int DEFAULT NULL
 )
 RETURNS boolean AS $$
   DECLARE
@@ -245,14 +312,20 @@ RETURNS boolean AS $$
     IF upper(logType) = 'PROGRESS' THEN
       query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' VALUES (' ||
          'DEFAULT, now(), ''PROGRESS'', $1, $2, $3, $4);';
-      EXECUTE query USING firstRowId, message, currentRowNb, count;
+      EXECUTE query USING firstRowId, msg, currentRowNb, count;
+      RETURN TRUE;
+    ELSIF upper(logType) = 'INVALIDATION' THEN
+        query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' AS tbl VALUES (' ||
+                'DEFAULT, now(), ''INVALIDATION'', $1, $2, $3, $4) ' ||
+                'ON CONFLICT (message) DO UPDATE SET count = tbl.count + 1;';
+        EXECUTE query USING firstRowId, msg, currentRowNb, 1;
       RETURN TRUE;
     ELSE
       RAISE EXCEPTION 'TT_Log ERROR: Invalid logType (%)', logType;
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -335,71 +408,6 @@ RETURNS text[] AS $$
     RETURN newArr;
   END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_FullTableName
---
---   schemaName name - Name of the schema.
---   tableName name  - Name of the table.
---
---   RETURNS text    - Full name of the table.
---
--- Return a well quoted, full table name, including the schema.
--- The schema default to 'public' if not provided.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_FullTableName(name, name);
-CREATE OR REPLACE FUNCTION TT_FullTableName(
-  schemaName name,
-  tableName name
-)
-RETURNS text AS $$
-  DECLARE
-    newSchemaName text = '';
-  BEGIN
-    IF length(schemaName) > 0 THEN
-      newSchemaName = schemaName;
-    ELSE
-      newSchemaName = 'public';
-    END IF;
-    RETURN quote_ident(newSchemaName) || '.' || quote_ident(tableName);
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_FullFunctionName
---
---   schemaName name - Name of the schema.
---   fctName name    - Name of the function.
---
---   RETURNS text    - Full name of the table.
---
--- Return a full function name, including the schema.
--- The schema default to 'public' if not provided.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_FullFunctionName(name, name);
-CREATE OR REPLACE FUNCTION TT_FullFunctionName(
-  schemaName name,
-  fctName name
-)
-RETURNS text AS $$
-  DECLARE
-  BEGIN
-    IF fctName IS NULL THEN
-      RETURN NULL;
-    END IF;
-    fctName = 'tt_' || lower(fctName);
-    schemaName = lower(schemaName);
-    IF schemaName = 'public' OR schemaName IS NULL THEN
-      schemaName = '';
-    END IF;
-    IF schemaName != '' THEN
-      fctName = schemaName || '.' || fctName;
-    END IF;
-    RETURN fctName;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1116,6 +1124,8 @@ RETURNS text AS $$
   SELECT TT_Prepare('public', translationTable, NULL::text, NULL::name, NULL::name);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 -- _TT_Translate
 --
 --   sourceTableSchema name      - Name of the schema containing the source table.
@@ -1174,10 +1184,10 @@ RETURNS SETOF RECORD AS $$
     validate boolean = TRUE;
     lastFirstRowID text;
     logTableSuffix text;
+    logMsg text;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
-    -- Create the log table. TODO
     -- FOR each row of the source table
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
 
@@ -1191,7 +1201,7 @@ RETURNS SETOF RECORD AS $$
       END IF;
     END IF;                 
     FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
-       -- Convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
+       -- convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
 
        -- identify the first rowid for logging
@@ -1201,28 +1211,34 @@ RETURNS SETOF RECORD AS $$
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourceRow=%', jsonbRow;END IF;
 
        finalQuery = 'SELECT';
-       -- Iterate over each translation table row. One row per output attribute
+       -- iterate over each translation table row. One row per output attribute
        FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, validate) LOOP
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationRow=%', translationRow;END IF;
-         -- Iterate over each validation rule
+         -- iterate over each validation rule
          isValid = TRUE;
          FOREACH rule IN ARRAY translationRow.validationRules LOOP
            IF isValid THEN
              IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
-             -- Evaluate the rule and catch errors
+             -- evaluate the rule and catch errors
              BEGIN
                isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
              EXCEPTION WHEN OTHERS THEN
-               RAISE NOTICE '%', SQLERRM;
                RAISE EXCEPTION 'STOP ON INVALID RULE PARAMETER: Invalid parameter value passed to %() at row #% while validating source values for target attribute ''%''. Revise your translation table...', rule.fctName, currentRowNb, translationRow.targetAttribute;
              END;
              IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
              -- initialize the final value
              finalVal = rule.errorCode;
              --IF debug THEN RAISE NOTICE '_TT_Translate 55 rule is % %', CASE WHEN isValid THEN 'VALID' ELSE 'INVALID' END, rule;
-             -- Stop now if invalid and stopOnInvalid is set to true for this validation rule
-             IF NOT isValid AND (rule.stopOnInvalid OR stopOnInvalidSource)THEN
-               RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: Invalid source value passed to %() at row #% while validating source values for target attribute ''%''...', rule.fctName, currentRowNb, translationRow.targetAttribute;
+             IF NOT isValid THEN
+               -- stop now if invalid and stopOnInvalid is set to true for this validation rule
+               IF rule.stopOnInvalid OR stopOnInvalidSource THEN
+                 RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: Invalid source value passed to %() at row #% while validating source values for target attribute ''%''...', rule.fctName, currentRowNb, translationRow.targetAttribute;
+               ELSE
+--RAISE NOTICE '_TT_Translate 11';
+                 logMsg = rule.fctName || '(' || rule.args::text || ') at ''' || translationRow.targetAttribute || '''';
+                 PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+                                'INVALIDATION', lastFirstRowID, logMsg, currentRowNb);
+               END IF;
              END IF;
            END IF;
          END LOOP; -- FOR EACH RULE
@@ -1271,7 +1287,7 @@ RETURNS SETOF RECORD AS $$
        -- log progress
        IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency = 0 THEN
          PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
-                'PROGRESS', lastFirstRowID, 'Progress...', currentRowNb, logFrequency);
+                'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
        END IF;
        --only validate translation table on first iteration
        validate = FALSE;

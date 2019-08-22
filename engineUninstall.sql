@@ -42,7 +42,7 @@ DROP FUNCTION IF EXISTS TT_EscapeSingleQuotes(text);
 DROP FUNCTION IF EXISTS TT_UnsingleQuote(text);
 DROP FUNCTION IF EXISTS TT_TableExists(text, text);
 DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean);
-DROP FUNCTION IF EXISTS TT_LogShow(text, text);
+DROP FUNCTION IF EXISTS TT_LogShow(text, text, int);
 DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
 DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
 DROP TYPE IF EXISTS TT_RuleDef;
