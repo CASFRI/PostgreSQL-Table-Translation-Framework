@@ -30,18 +30,19 @@
 -- e.g. TT_NotNull({'a', 'b', 'c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNULL(
-  vals text
+  val text
 )
 RETURNS boolean AS $$
   DECLARE
-    _vals text[];
+    _val text[];
   BEGIN
-    IF vals IS NULL THEN
+    -- validate source value (return FALSE)
+    IF NOT TT_IsStringList(val) THEN
       RETURN FALSE;
-    ELSE
-      _vals = TT_ParseStringList(vals, TRUE);
-      RETURN array_position(_vals, NULL) IS NULL;
     END IF;
+
+    _val = TT_ParseStringList(val, TRUE);
+    RETURN array_position(_val, NULL) IS NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -57,17 +58,22 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- e.g. TT_IsNull({'a', 'b', 'c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNull(
-  vals text
+  val text
 )
 RETURNS boolean AS $$
   DECLARE
-    _vals text[];
+    _val text[];
   BEGIN
-    IF vals IS NULL THEN
+    IF val IS NULL THEN
       RETURN TRUE;
     ELSE
-      _vals = TT_ParseStringList(vals, TRUE);
-      RETURN NOT bool_or(TT_NotNull(x)) FROM unnest(_vals) x;
+      -- validate source value (return FALSE)
+      IF NOT TT_IsStringList(val) THEN
+        RETURN FALSE;
+      END IF;
+      
+      _val = TT_ParseStringList(val, TRUE);
+      RETURN NOT bool_or(TT_NotNull(x)) FROM unnest(_val) x;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;

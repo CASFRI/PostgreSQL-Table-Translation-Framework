@@ -13,6 +13,7 @@
 
 -- validation helper functions
 DROP FUNCTION IF EXISTS TT_NotNull(text);
+DROP FUNCTION IF EXISTS TT_IsNull(text);
 DROP FUNCTION IF EXISTS TT_NotEmpty(text);
 DROP FUNCTION IF EXISTS TT_IsInt(text);
 DROP FUNCTION IF EXISTS TT_IsNumeric(text);
