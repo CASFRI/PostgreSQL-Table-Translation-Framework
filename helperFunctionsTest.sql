@@ -174,7 +174,7 @@ SELECT * FROM (
 -- by returning nothing.
 WITH test_nb AS (
     -- Validation functions
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num,  6 nb_test UNION ALL
+    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 11 nb_test UNION ALL
     SELECT 'TT_NotEmpty'::text,                2,         11         UNION ALL
     SELECT 'TT_Length'::text,                  3,          5         UNION ALL
     SELECT 'TT_IsInt'::text,                   4,         11         UNION ALL
@@ -192,6 +192,7 @@ WITH test_nb AS (
     SELECT 'TT_IsIntSubstring'::text,         16,          7         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         16         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          5         UNION ALL
+    SELECT 'TT_IsNull'::text,                 19,         13         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -1226,6 +1227,89 @@ SELECT '18.5'::text number,
        'TT_IsName'::text function_tested,
        'with space'::text description,
        TT_IsName('my table') IS FALSE passed
+
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 19 - TT_IsNull
+---------------------------------------------------------
+UNION ALL
+SELECT '19.1'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if text'::text description,
+       TT_IsNull('test'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.2'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if boolean'::text description,
+       TT_IsNull(true::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.3'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if double precision'::text description,
+       TT_IsNull(9.99::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.4'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if integer'::text description,
+       TT_IsNull(999::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.5'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if null text'::text description,
+       TT_IsNull(NULL::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.6'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test if empty string'::text description,
+       TT_IsNull(''::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.7'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with values'::text description,
+       TT_IsNull('{''a'',''b''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.8'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with one NULL'::text description,
+       TT_IsNull('{''a'',NULL}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.9'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with all NULL'::text description,
+       TT_IsNull('{NULL,NULL}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.10'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with one NULL'::text description,
+       TT_IsNull('{NULL}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.11'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with one value'::text description,
+       TT_IsNull('{test}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.12'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with one NULL string'::text description,
+       TT_IsNull('{NULL,''NULL''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.13'::text number,
+       'TT_IsNull'::text function_tested,
+       'Test string list with one NULL string'::text description,
+       TT_IsNull('{"NULL"}'::text) IS FALSE passed
+  
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------

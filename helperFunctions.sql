@@ -47,6 +47,33 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_IsNULL
+--
+--  val text (string list) - Value(s) to test. Can be one or many.
+--
+-- Return TRUE if all vals are NULL.
+-- Return FALSE if any val is not NULL.
+-- e.g. TT_IsNULL('a')
+-- e.g. TT_IsNull({'a', 'b', 'c'})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsNull(
+  vals text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
+  BEGIN
+    IF vals IS NULL THEN
+      RETURN TRUE;
+    ELSE
+      _vals = TT_ParseStringList(vals, TRUE);
+      RETURN NOT bool_or(TT_NotNull(x)) FROM unnest(_vals) x;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
 --  val text - value to test
