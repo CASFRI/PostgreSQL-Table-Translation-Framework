@@ -176,13 +176,13 @@ By default, every time you execute the translation function, a new log table is 
 
 'sourceRowIdColumn' is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column,  the first source table row having triggered this type of log entry. If you do not provide 'sourceRowIdColumn' to TT_Translate() logging will be turned off.
 
-When 'incrementLog' is set to TRUE and you execute TT_Translate() often, you can end up with many log tables. You can list the last one using the TT_LogShow() function:
+When 'incrementLog' is set to TRUE and you execute TT_Translate() often, you can end up with many log tables. You can list the last one using the TT_ShowLastLog() function:
 
 ```sql
-SELECT * FROM TT_LogShow();
+SELECT * FROM TT_ShowLastLog();
 ```
 
-If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_LogShow().
+If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_ShowLastLog().
 
 You can get rid of all log tables with the TT_DeleteAllLogs() function:
 
@@ -252,14 +252,14 @@ SELECT * FROM TT_Translate('public', 'source_example', 'ID');
 Since you provided a unique identifier column name, a log was generated. You can then check this log like this:
 
 ```sql
-SELECT * FROM TT_LogShow('public', 'translation_table');
+SELECT * FROM TT_ShowLastLog('public', 'translation_table');
 ```
 
 # Main Translation Functions Reference
 Two groups of function are of interest here:
 
 * functions associated with the translation process: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
-* functions useful to work with logging tables: TT_LogShow() and TT_DeleteAllLogs().
+* functions useful to work with logging tables: TT_ShowLastLog() and TT_DeleteAllLogs().
 
 * **TT_Prepare**(name translationTableSchema,
                  name translationTable,
@@ -285,11 +285,11 @@ Two groups of function are of interest here:
     * Delete all translation functions prepared with TT_Prepare().
     * e.g. SELECT TT_DropAllTranslateFct();
 
-* **TT_LogShow**(name schemaName,
+* **TT_ShowLastLog**(name schemaName,
                  name tableName,
                  text logNb[default NULL])
     * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
-    * e.g. SELECT * FROM TT_LogShow('translation', 'ab06_avi01_lyr', 1); 
+    * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
 * **TT_DeleteAllLogs**(name schemaName,
                       name tableName)
