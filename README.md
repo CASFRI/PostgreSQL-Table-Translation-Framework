@@ -160,7 +160,7 @@ SELECT * FROM TT_Translate(sourceTableSchema, sourceTable, sourceRowIdColumn);
 
 A logging table has the following attributes:
 
-1. **log_id** - Incremental unique integer identifier of the log entry.
+1. **logid** - Incremental unique integer identifier of the log entry.
 2. **logtime** - Date and hour stamp  of the log entry.
 3. **logtype** - 'PROGRESS', 'INVALIDATION' or 'TRANSLATION_ERROR'.
 4. **firstrowid** - In the case of a group of matching entries, the first source row ID of the group.
@@ -179,16 +179,18 @@ By default, every time you execute the translation function, a new log table is 
 When 'incrementLog' is set to TRUE and you execute TT_Translate() often, you can end up with many log tables. You can list the last one using the TT_ShowLastLog() function:
 
 ```sql
-SELECT * FROM TT_ShowLastLog();
+SELECT * FROM TT_ShowLastLog(translationTableSchema, translationTable);
 ```
 
 If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_ShowLastLog().
 
-You can get rid of all log tables with the TT_DeleteAllLogs() function:
+You can delete all log tables associated with a translation table with the TT_DeleteAllLogs() function:
 
 ```sql
-SELECT TT_DeleteAllLogs();
+SELECT TT_DeleteAllLogs(translationTableSchema, translationTable);
 ```
+
+You can delete all log tables in the schema if you omit the 'translationTable' parameter.
 
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.

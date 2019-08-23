@@ -190,15 +190,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_LogShow
+-- TT_ShowLastLog
 --
 -- schemaName text
 -- tableName text
 --
 -- Return the last log table for the provided translation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_LogShow(text, text, int);
-CREATE OR REPLACE FUNCTION TT_LogShow(
+--DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, int);
+CREATE OR REPLACE FUNCTION TT_ShowLastLog(
   schemaName text,
   tableName text,
   logNb int DEFAULT NULL
@@ -216,7 +216,7 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
     suffix = '_log_' || TT_Pad(logInc::text, 3::text, '0');
     logTableName = tableName || suffix;
     IF TT_FullTableName(schemaName, logTableName) = 'public.' || suffix THEN
-      RAISE EXCEPTION 'TT_LogShow ERROR: Invalid translation table name or number...';
+      RAISE EXCEPTION 'TT_ShowLastLog ERROR: Invalid translation table name or number...';
     END IF;
     IF logNb IS NULL THEN
       -- find the last log table name
@@ -226,16 +226,16 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
       END LOOP;
       -- if logInc = 1 means no log table exists
       IF logInc = 1 THEN
-        RAISE EXCEPTION 'TT_LogShow ERROR: No translation log to show for this translation table...';
+        RAISE EXCEPTION 'TT_ShowLastLog ERROR: No translation log to show for this translation table...';
       END IF;
       logInc = logInc - 1;
     ELSE
       IF NOT TT_TableExists(schemaName, logTableName) THEN
-        RAISE EXCEPTION 'TT_LogShow ERROR: Translation log does not exist...';
+        RAISE EXCEPTION 'TT_ShowLastLog ERROR: Translation log does not exist...';
       END IF;
     END IF;
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
-    RAISE NOTICE 'TT_LogShow: Displaying log table ''%''', logTableName;
+    RAISE NOTICE 'TT_ShowLastLog: Displaying log table ''%''', logTableName;
     query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
     RETURN QUERY EXECUTE query;
   END;
@@ -253,19 +253,29 @@ $$ LANGUAGE plpgsql VOLATILE;
 --DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
 CREATE OR REPLACE FUNCTION TT_DeleteAllLogs(
   schemaName text,
-  tableName text
+  tableName text DEFAULT NULL
 )
 RETURNS SETOF text AS $$
   DECLARE
     res RECORD;
   BEGIN
-    FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
-               FROM information_schema.tables 
-               WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName
-               ORDER BY table_name LOOP
-      EXECUTE res.query;
-      RETURN NEXT res.query;
-    END LOOP;
+    IF tableName IS NULL THEN
+      FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
+                 FROM information_schema.tables 
+                 WHERE right(table_name, 8) ~ '_log_[0-9][0-9][0-9]'
+                 ORDER BY table_name LOOP
+        EXECUTE res.query;
+        RETURN NEXT res.query;
+      END LOOP;
+    ELSE
+      FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
+                 FROM information_schema.tables 
+                 WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName
+                 ORDER BY table_name LOOP
+        EXECUTE res.query;
+        RETURN NEXT res.query;
+      END LOOP;
+    END IF;
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -473,9 +483,10 @@ RETURNS boolean AS $$
     SELECT count(*)
     FROM pg_proc
     WHERE proname = fctName AND coalesce(cardinality(proargnames), 0) = argLength
+    LIMIT 1
     INTO cnt;
 
-    IF cnt > 0 THEN
+    IF cnt = 1 THEN
       IF debug THEN RAISE NOTICE 'TT_TextFctExists END TRUE';END IF;
       RETURN TRUE;
     END IF;
@@ -652,6 +663,98 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_TextFctQuery
+--
+--  - fctName text  - Name of the function to evaluate. Will always be prefixed
+--                    with "TT_".
+--  - arg text[]    - Array of argument values to pass to the function.
+--                    Generally includes one or two column names to get replaced
+--                    with values from the vals argument.
+--  - vals jsonb    - Replacement values passed as a jsonb object (since
+--
+--    RETURNS text
+--
+-- Replace column names with source values and return a complete query string.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_TextFctQuery(text, text[], jsonb, boolean, boolean, boolean);
+CREATE OR REPLACE FUNCTION TT_TextFctQuery(
+  fctName text,
+  args text[],
+  vals jsonb,
+  replace boolean DEFAULT TRUE,
+  escape boolean DEFAULT TRUE,
+  valuesOnly boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  DECLARE
+    queryStr text = '';
+    arg text;
+    argCnt int;
+    argNested text;
+    argValNested text;
+    repackArray text[];
+    debug boolean = TT_Debug();
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_TextFctQuery BEGIN fctName=%, args=%, vals=%', fctName, args::text, vals::text;END IF;
+    IF NOT valuesOnly THEN
+      queryStr = fctName;
+    ELSE
+      replace = TRUE;
+    END IF;
+    queryStr = queryStr || '(';
+    argCnt = 0;
+    IF debug THEN RAISE NOTICE 'TT_TextFctQuery 11 queryStr=%', queryStr;END IF;
+
+    FOREACH arg IN ARRAY coalesce(args, ARRAY[]::text[]) LOOP
+      repackArray = ARRAY[]::text[];
+      IF debug THEN RAISE NOTICE 'TT_TextFctQuery 22 cardinality(repackArray)=%', cardinality(repackArray);END IF;
+      -- add a comma if it's not the first argument
+      FOREACH argNested IN ARRAY TT_ParseStringList(arg) LOOP
+        IF debug THEN RAISE NOTICE 'TT_TextFctQuery 33';END IF;
+        IF replace AND TT_IsName(argNested) AND vals ? argNested THEN
+          argValNested = vals->>argNested;
+          repackArray = array_append(repackArray, argValNested);
+          IF debug THEN RAISE NOTICE 'TT_TextFctQuery 44 argValNested=%', argValNested;END IF;
+          IF valuesOnly THEN
+            IF argCnt != 0 THEN
+              queryStr = queryStr || ', ';
+            END IF;
+            queryStr = queryStr || argNested || 
+                       CASE WHEN argValNested IS NULL THEN '=NULL'
+                            ELSE '=''' || TT_EscapeSingleQuotes(argValNested) || '''' END;
+            IF debug THEN RAISE NOTICE 'TT_TextFctQuery 55 queryStr=%', queryStr;END IF;
+          END IF;
+        ELSE
+          IF debug THEN RAISE NOTICE 'TT_TextFctQuery 66 argNested=%', argNested;END IF;
+          -- if column name not in source table, return as string.
+          -- we can now remove the surrounding single quotes from the string
+          -- since we have processed column names
+          repackArray = array_append(repackArray, TT_UnSingleQuote(argNested));
+        END IF;
+      END LOOP;
+      IF debug THEN RAISE NOTICE 'TT_TextFctQuery 77 queryStr=%', queryStr;END IF;
+      IF NOT valuesOnly THEN
+        IF argCnt != 0 THEN
+          queryStr = queryStr || ', ';
+        END IF;
+        IF escape THEN
+          queryStr = queryStr || '''' || TT_EscapeSingleQuotes(TT_RepackStringList(repackArray)) || '''::text';
+        ELSE
+          queryStr = queryStr || TT_RepackStringList(repackArray);
+        END IF;
+      END IF;
+      IF debug THEN RAISE NOTICE 'TT_TextFctQuery 88 queryStr=%', queryStr;END IF;
+      argCnt = argCnt + 1;
+    END LOOP;
+    queryStr = queryStr || ')';
+
+    IF debug THEN RAISE NOTICE 'TT_TextFctQuery END queryStr=%', queryStr;END IF;
+    RETURN queryStr;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_TextFctEval
 --
 --  - fctName text          - Name of the function to evaluate. Will always be prefixed
@@ -691,12 +794,7 @@ CREATE OR REPLACE FUNCTION TT_TextFctEval(
 )
 RETURNS anyelement AS $$
   DECLARE
-    arg text;
-    argCnt int;
-    ruleQuery text;
-    argNested text;
-    argValNested text;
-    repackArray text[];
+    queryStr text;
     result ALIAS FOR $0;
     debug boolean = TT_Debug();
   BEGIN
@@ -709,33 +807,11 @@ RETURNS anyelement AS $$
       RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, btrim(repeat('text,', cardinality(args)),',');
     END IF;
 
-    ruleQuery = 'SELECT tt_' || fctName || '(';
-    argCnt = 0;
-    FOREACH arg IN ARRAY coalesce(args, ARRAY[]::text[]) LOOP
-      repackArray = ARRAY[]::text[];
-      IF debug THEN RAISE NOTICE 'TT_TextFctEval 22 cardinality(repackArray)=%', cardinality(repackArray);END IF;
-      -- add a comma if it's not the first argument
-      IF argCnt != 0 THEN
-        ruleQuery = ruleQuery || ', ';
-      END IF;
-      FOREACH argNested IN ARRAY TT_ParseStringList(arg) LOOP
-        IF TT_IsName(argNested) AND vals ? argNested THEN
-          argValNested = vals->>argNested;
-          repackArray = array_append(repackArray, argValNested);
-        ELSE
-          -- if column name not in source table, return as string.
-          -- we can now remove the surrounding single quotes from the string
-          -- since we have processed column names
-          repackArray = array_append(repackArray, TT_UnSingleQuote(argNested));
-        END IF;
-      END LOOP;
-      ruleQuery = ruleQuery || '''' || TT_EscapeSingleQuotes(TT_RepackStringList(repackArray)) || '''::text';
-      IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 ruleQuery=%', ruleQuery;END IF;
-      argCnt = argCnt + 1;
-    END LOOP;
-    ruleQuery = ruleQuery || ')::' || pg_typeof(result);
-    IF debug THEN RAISE NOTICE 'TT_TextFctEval 55 ruleQuery=%', ruleQuery;END IF;
-    EXECUTE ruleQuery INTO STRICT result;
+    IF debug THEN RAISE NOTICE 'TT_TextFctEval 22 fctName=%, args=%', fctName, cardinality(args);END IF;
+    queryStr = 'SELECT TT_' || TT_TextFctQuery(fctName, args, vals) || '::' || pg_typeof(result);
+
+    IF debug THEN RAISE NOTICE 'TT_TextFctEval 33 queryStr=%', queryStr;END IF;
+    EXECUTE queryStr INTO STRICT result;
     IF debug THEN RAISE NOTICE 'TT_TextFctEval END result=%', result;END IF;
     RETURN result;
   END;
@@ -1055,7 +1131,7 @@ RETURNS text AS $f$
     END IF;
 
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, int, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, int, boolean, boolean, boolean);';
     EXECUTE query;
 
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
@@ -1230,14 +1306,19 @@ RETURNS SETOF RECORD AS $$
              finalVal = rule.errorCode;
              --IF debug THEN RAISE NOTICE '_TT_Translate 55 rule is % %', CASE WHEN isValid THEN 'VALID' ELSE 'INVALID' END, rule;
              IF NOT isValid THEN
+               logMsg = TT_TextFctQuery(rule.fctName, rule.args, jsonbRow, FALSE, FALSE, TRUE);
+               logMsg = 'Rule ''' || TT_TextFctQuery(rule.fctName, rule.args, jsonbRow, FALSE, FALSE, FALSE) ||
+                        ''' invalidated' || CASE WHEN logMsg IS NULL OR logMsg = '()' THEN '' ELSE ' values ' || logMsg END ||
+                        ' for attribute ''' || translationRow.targetAttribute || 
+                        ''' and reported error code ''' || finalVal || '''...';
                -- stop now if invalid and stopOnInvalid is set to true for this validation rule
                IF rule.stopOnInvalid OR stopOnInvalidSource THEN
-                 RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: Invalid source value passed to %() at row #% while validating source values for target attribute ''%''...', rule.fctName, currentRowNb, translationRow.targetAttribute;
-               ELSE
---RAISE NOTICE '_TT_Translate 11';
-                 logMsg = rule.fctName || '(' || rule.args::text || ') at ''' || translationRow.targetAttribute || '''';
+                 RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: At row #%. %', currentRowNb, logMsg;
+               ELSIF NOT sourceRowIdColumn IS NULL THEN
                  PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
                                 'INVALIDATION', lastFirstRowID, logMsg, currentRowNb);
+               ELSE
+                 RAISE NOTICE 'INVALID SOURCE VALUE: At row #%. %', currentRowNb, logMsg;
                END IF;
              END IF;
            END IF;
@@ -1251,7 +1332,6 @@ RETURNS SETOF RECORD AS $$
              USING (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
-             RAISE NOTICE '%', SQLERRM;
              RAISE EXCEPTION 'STOP ON INVALID TRANSLATION PARAMETER: Invalid parameter value passed to %() at row #% while translating target attribute ''%''. Revise your translation table...', (translationRow.translationRule).fctName, currentRowNb, translationRow.targetAttribute;
            END;
 
