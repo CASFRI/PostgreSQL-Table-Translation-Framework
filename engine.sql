@@ -1373,6 +1373,12 @@ RETURNS SETOF RECORD AS $$
        validate = FALSE;
        currentRowNb = currentRowNb + 1;
     END LOOP; -- FOR sourceRow
+    -- log progress
+    currentRowNb = currentRowNb - 1;
+    IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency != 0 THEN
+      PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+              'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, currentRowNb % logFrequency);
+    END IF;
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;
     RETURN;
   END;
