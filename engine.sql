@@ -324,9 +324,9 @@ RETURNS boolean AS $$
          'DEFAULT, now(), ''PROGRESS'', $1, $2, $3, $4);';
       EXECUTE query USING firstRowId, msg, currentRowNb, count;
       RETURN TRUE;
-    ELSIF upper(logType) = 'INVALIDATION' THEN
+    ELSIF upper(logType) = 'INVALID_VALUE' OR upper(logType) = 'TRANSLATION_ERROR' THEN
         query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' AS tbl VALUES (' ||
-                'DEFAULT, now(), ''INVALIDATION'', $1, $2, $3, $4) ' ||
+                'DEFAULT, now(), ''' || upper(logType) || ''', $1, $2, $3, $4) ' ||
                 'ON CONFLICT (message) DO UPDATE SET count = tbl.count + 1;';
         EXECUTE query USING firstRowId, msg, currentRowNb, 1;
       RETURN TRUE;
@@ -676,14 +676,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Replace column names with source values and return a complete query string.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_TextFctQuery(text, text[], jsonb, boolean, boolean, boolean);
+--DROP FUNCTION IF EXISTS TT_TextFctQuery(text, text[], jsonb, boolean, boolean);
 CREATE OR REPLACE FUNCTION TT_TextFctQuery(
   fctName text,
   args text[],
   vals jsonb,
-  replace boolean DEFAULT TRUE,
   escape boolean DEFAULT TRUE,
-  valuesOnly boolean DEFAULT FALSE
+  varName boolean DEFAULT FALSE
 )
 RETURNS text AS $$
   DECLARE
@@ -693,15 +692,11 @@ RETURNS text AS $$
     argNested text;
     argValNested text;
     repackArray text[];
+    isStrList boolean;
     debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctQuery BEGIN fctName=%, args=%, vals=%', fctName, args::text, vals::text;END IF;
-    IF NOT valuesOnly THEN
-      queryStr = fctName;
-    ELSE
-      replace = TRUE;
-    END IF;
-    queryStr = queryStr || '(';
+    queryStr = fctName || '(';
     argCnt = 0;
     IF debug THEN RAISE NOTICE 'TT_TextFctQuery 11 queryStr=%', queryStr;END IF;
 
@@ -709,39 +704,37 @@ RETURNS text AS $$
       repackArray = ARRAY[]::text[];
       IF debug THEN RAISE NOTICE 'TT_TextFctQuery 22 cardinality(repackArray)=%', cardinality(repackArray);END IF;
       -- add a comma if it's not the first argument
+      IF argCnt != 0 THEN
+        queryStr = queryStr || ', ';
+      END IF;
+      isStrList = TT_IsStringList(arg, TRUE);
       FOREACH argNested IN ARRAY TT_ParseStringList(arg) LOOP
         IF debug THEN RAISE NOTICE 'TT_TextFctQuery 33';END IF;
-        IF replace AND TT_IsName(argNested) AND vals ? argNested THEN
+        IF TT_IsName(argNested) AND vals ? argNested THEN
           argValNested = vals->>argNested;
+          IF varName THEN
+            argValNested = argNested || CASE WHEN argValNested IS NULL THEN '=NULL'
+                                             ELSE '=''' || TT_EscapeSingleQuotes(argValNested) || '''' END;
+          END IF;
           repackArray = array_append(repackArray, argValNested);
           IF debug THEN RAISE NOTICE 'TT_TextFctQuery 44 argValNested=%', argValNested;END IF;
-          IF valuesOnly THEN
-            IF argCnt != 0 THEN
-              queryStr = queryStr || ', ';
-            END IF;
-            queryStr = queryStr || argNested || 
-                       CASE WHEN argValNested IS NULL THEN '=NULL'
-                            ELSE '=''' || TT_EscapeSingleQuotes(argValNested) || '''' END;
-            IF debug THEN RAISE NOTICE 'TT_TextFctQuery 55 queryStr=%', queryStr;END IF;
-          END IF;
         ELSE
-          IF debug THEN RAISE NOTICE 'TT_TextFctQuery 66 argNested=%', argNested;END IF;
+          IF debug THEN RAISE NOTICE 'TT_TextFctQuery 55 argNested=%', argNested;END IF;
           -- if column name not in source table, return as string.
           -- we can now remove the surrounding single quotes from the string
           -- since we have processed column names
-          repackArray = array_append(repackArray, TT_UnSingleQuote(argNested));
+          IF varName AND NOT isStrList THEN
+            repackArray = array_append(repackArray, argNested);
+          ELSE
+            repackArray = array_append(repackArray, TT_UnSingleQuote(argNested));
+          END IF;
         END IF;
       END LOOP;
-      IF debug THEN RAISE NOTICE 'TT_TextFctQuery 77 queryStr=%', queryStr;END IF;
-      IF NOT valuesOnly THEN
-        IF argCnt != 0 THEN
-          queryStr = queryStr || ', ';
-        END IF;
-        IF escape THEN
-          queryStr = queryStr || '''' || TT_EscapeSingleQuotes(TT_RepackStringList(repackArray)) || '''::text';
-        ELSE
-          queryStr = queryStr || TT_RepackStringList(repackArray);
-        END IF;
+      IF debug THEN RAISE NOTICE 'TT_TextFctQuery 66 queryStr=%', queryStr;END IF;
+      IF escape THEN
+        queryStr = queryStr || '''' || TT_EscapeSingleQuotes(TT_RepackStringList(repackArray)) || '''::text';
+      ELSE
+        queryStr = queryStr || TT_RepackStringList(repackArray);
       END IF;
       IF debug THEN RAISE NOTICE 'TT_TextFctQuery 88 queryStr=%', queryStr;END IF;
       argCnt = argCnt + 1;
@@ -881,7 +874,7 @@ RETURNS TT_RuleDef[] AS $$
                                                 '\|?\s*' ||      -- a vertical bar followed by any spaces
                                                 '([^;,|]+)?' ||  -- the error code
                                                 ',?\s*' ||       -- a comma followed by any spaces
-                                                '(TRUE|FALSE)?\)'-- TRUE or FALSE
+                                                '([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])?\)'-- TRUE or FALSE
                                                 , 'g') LOOP
       ruleDef.fctName = rules[1];
       ruleDef.args = TT_ParseArgs(rules[2]);
@@ -1166,6 +1159,7 @@ RETURNS text AS $f$
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
@@ -1176,6 +1170,7 @@ RETURNS text AS $$
   SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
@@ -1185,12 +1180,13 @@ RETURNS text AS $$
   SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
-  translationTable name,
-  fctNameSuf text
+  translationTableSchema name,
+  translationTable name
 )
 RETURNS text AS $$
-  SELECT TT_Prepare('public', translationTable, fctNameSuf, NULL::name, NULL::name);
+  SELECT TT_Prepare(translationTableSchema, translationTable, NULL, NULL::name, NULL::name);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Prepare(
@@ -1199,6 +1195,67 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
 RETURNS text AS $$
   SELECT TT_Prepare('public', translationTable, NULL::text, NULL::name, NULL::name);
 $$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+-- TT_ReportError
+------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_ReportError(text, name, name, name, text, text[], jsonb, text, text, int, text, boolean, boolean);
+CREATE OR REPLACE FUNCTION TT_ReportError(
+  errorType text,
+  translationTableSchema name,
+  translationTable name,
+  logTableSuffix name,
+  fctName text, 
+  args text[], 
+  jsonbRow jsonb, 
+  targetAttribute text,
+  errorCode text,
+  currentRowNb int,
+  lastFirstRowID text,
+  stopOnInvalidLocal boolean,
+  stopOnInvalidGlobal boolean
+)
+RETURNS SETOF RECORD AS $$
+  DECLARE
+    logMsg text := '';
+    localGlobal text;
+  BEGIN
+     IF errorType IN ('INVALID_PARAMETER', 'INVALID_TRANSLATION_PARAMETER') THEN
+       logMsg = logMsg || 'Invalid parameter value passed to rule ''' || TT_TextFctQuery(fctName, args, jsonbRow, FALSE, TRUE) ||
+                ''' for attribute ''' || targetAttribute  '''. Revise your translation table...';
+       IF errorType = 'INVALID_PARAMETER' THEN
+         logMsg = 'STOP ON INVALID PARAMETER: ' ||  logMsg;
+       ELSE
+         logMsg = 'STOP ON INVALID TRANSLATION PARAMETER: ' ||  logMsg;
+       END IF;
+       RAISE EXCEPTION '%', logMsg;
+     ELSIF errorType IN ('INVALID_VALUE', 'TRANSLATION_ERROR') THEN
+       logMsg = 'Rule ''' || TT_TextFctQuery(fctName, args, jsonbRow, FALSE, TRUE) ||
+                ''' failed for attribute ''' || targetAttribute || 
+                ''' and reported error code ''' || errorCode || '''...';
+       IF stopOnInvalidLocal OR stopOnInvalidGlobal THEN
+         IF stopOnInvalidLocal THEN
+           localGlobal = 'LOCAL';
+         ELSE
+           localGlobal = 'GLOBAL';
+         END IF;
+         IF errorType  = 'INVALID_VALUE' THEN
+           RAISE EXCEPTION '% STOP ON INVALID SOURCE VALUE at row #%: %', localGlobal, currentRowNb, logMsg;
+         ELSE
+           RAISE EXCEPTION '% STOP ON TRANSLATION ERROR at row #%: %', localGlobal, currentRowNb, logMsg;
+         END IF;
+       ELSIF NOT logTableSuffix IS NULL THEN
+         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+                        errorType, lastFirstRowID, logMsg, currentRowNb);
+       ELSE
+         RAISE NOTICE '% at row #%: %', errorType, currentRowNb, logMsg;
+       END IF;
+     ELSE
+       RAISE EXCEPTION 'TT_ReportError: Invalid error type...';
+     END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1269,7 +1326,7 @@ RETURNS SETOF RECORD AS $$
 
     -- initialize logging table
     IF sourceRowIdColumn IS NULL THEN
-      RAISE NOTICE '_TT_Translate: sourceRowIdColumn is NULL so no logging with be performed...';
+      RAISE NOTICE '_TT_Translate: sourceRowIdColumn is NULL. No logging with be performed...';
     ELSE
       logTableSuffix = TT_LogInit(translationTableSchema, translationTable, incrementLog);
       IF logTableSuffix = 'FALSE' THEN
@@ -1281,7 +1338,7 @@ RETURNS SETOF RECORD AS $$
        jsonbRow = to_jsonb(sourceRow);
 
        -- identify the first rowid for logging
-       IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency = 1 THEN
+       IF NOT logTableSuffix IS NULL AND currentRowNb % logFrequency = 1 THEN
          lastFirstRowID = jsonbRow->>sourceRowIdColumn;
        END IF;
        IF debug THEN RAISE NOTICE '_TT_Translate 11 sourceRow=%', jsonbRow;END IF;
@@ -1293,37 +1350,28 @@ RETURNS SETOF RECORD AS $$
          -- iterate over each validation rule
          isValid = TRUE;
          FOREACH rule IN ARRAY translationRow.validationRules LOOP
-           IF isValid THEN
-             IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
-             -- evaluate the rule and catch errors
-             BEGIN
-               isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
-             EXCEPTION WHEN OTHERS THEN
-               RAISE EXCEPTION 'STOP ON INVALID RULE PARAMETER: Invalid parameter value passed to %() at row #% while validating source values for target attribute ''%''. Revise your translation table...', rule.fctName, currentRowNb, translationRow.targetAttribute;
-             END;
-             IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
-             -- initialize the final value
-             finalVal = rule.errorCode;
-             --IF debug THEN RAISE NOTICE '_TT_Translate 55 rule is % %', CASE WHEN isValid THEN 'VALID' ELSE 'INVALID' END, rule;
-             IF NOT isValid THEN
-               logMsg = TT_TextFctQuery(rule.fctName, rule.args, jsonbRow, FALSE, FALSE, TRUE);
-               logMsg = 'Rule ''' || TT_TextFctQuery(rule.fctName, rule.args, jsonbRow, FALSE, FALSE, FALSE) ||
-                        ''' invalidated' || CASE WHEN logMsg IS NULL OR logMsg = '()' THEN '' ELSE ' values ' || logMsg END ||
-                        ' for attribute ''' || translationRow.targetAttribute || 
-                        ''' and reported error code ''' || finalVal || '''...';
-               -- stop now if invalid and stopOnInvalid is set to true for this validation rule
-               IF rule.stopOnInvalid OR stopOnInvalidSource THEN
-                 RAISE EXCEPTION 'STOP ON INVALID SOURCE VALUE: At row #%. %', currentRowNb, logMsg;
-               ELSIF NOT sourceRowIdColumn IS NULL THEN
-                 PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
-                                'INVALIDATION', lastFirstRowID, logMsg, currentRowNb);
-               ELSE
-                 RAISE NOTICE 'INVALID SOURCE VALUE: At row #%. %', currentRowNb, logMsg;
-               END IF;
-             END IF;
+           EXIT WHEN NOT isValid; -- exit the loop as soon as one rule is invalidated
+           IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
+           -- evaluate the rule and catch errors
+           BEGIN
+             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
+           EXCEPTION WHEN OTHERS THEN
+             PERFORM TT_ReportError('INVALID_PARAMETER', translationTableSchema, translationTable, logTableSuffix,
+                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, NULL,
+                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
+           END;
+           IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
+
+           -- initialize the final value
+           finalVal = rule.errorCode;
+           IF NOT isValid THEN
+             PERFORM TT_ReportError('INVALID_VALUE', translationTableSchema, translationTable, logTableSuffix,
+                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, finalVal,
+                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
            END IF;
-         END LOOP; -- FOR EACH RULE
-         -- If all validation rule passed, execute the translation rule
+         END LOOP; -- FOREACH rule
+
+         -- if all validation rule passed, execute the translation rule
          IF isValid THEN
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.targetAttributeType || ', ' || validate || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
@@ -1332,25 +1380,27 @@ RETURNS SETOF RECORD AS $$
              USING (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
-             RAISE EXCEPTION 'STOP ON INVALID TRANSLATION PARAMETER: Invalid parameter value passed to %() at row #% while translating target attribute ''%''. Revise your translation table...', (translationRow.translationRule).fctName, currentRowNb, translationRow.targetAttribute;
+             PERFORM TT_ReportError('INVALID_TRANSLATION_PARAMETER', translationTableSchema, translationTable, logTableSuffix,
+                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, NULL,
+                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
            END;
 
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
 
            IF finalVal IS NULL THEN
-             IF stopOnTranslationError THEN
-               RAISE EXCEPTION 'STOP ON TRANSLATION ERROR: Translation error in %() at row #% while translating target attribute ''%''...', (translationRow.translationRule).fctName, currentRowNb, translationRow.targetAttribute;
-             ELSE
-               IF (translationRow.translationRule).errorCode IS NULL THEN -- if no error code provided, use the defaults
-                 IF translationRow.targetAttributeType IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
-                   finalVal = 'TRANSLATION_ERROR';
-                 ELSE
-                   finalVal = -3333;
-                 END IF;
-               ELSE -- if translation error code provided, return it
-                 finalVal = (translationRow.translationRule).errorCode;
+             -- determine the proper error code
+             IF (translationRow.translationRule).errorCode IS NULL THEN -- if no error code provided, use the defaults
+               IF translationRow.targetAttributeType IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
+                 finalVal = 'TRANSLATION_ERROR';
+               ELSE
+                 finalVal = -3333;
                END IF;
+             ELSE -- if translation error code provided, return it
+               finalVal = (translationRow.translationRule).errorCode;
              END IF;
+             PERFORM TT_ReportError('TRANSLATION_ERROR', translationTableSchema, translationTable, logTableSuffix,
+                            (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow, translationRow.targetAttribute, finalVal,
+                            currentRowNb, lastFirstRowID, (translationRow.translationRule).stopOnInvalid, stopOnInvalidSource);
            END IF;
          END IF;
          -- Built the return query while computing values
@@ -1365,7 +1415,7 @@ RETURNS SETOF RECORD AS $$
        RETURN NEXT translatedRow;
        
        -- log progress
-       IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency = 0 THEN
+       IF NOT logTableSuffix IS NULL AND currentRowNb % logFrequency = 0 THEN
          PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
                 'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
        END IF;
@@ -1375,7 +1425,7 @@ RETURNS SETOF RECORD AS $$
     END LOOP; -- FOR sourceRow
     -- log progress
     currentRowNb = currentRowNb - 1;
-    IF NOT sourceRowIdColumn IS NULL AND currentRowNb % logFrequency != 0 THEN
+    IF NOT logTableSuffix IS NULL AND currentRowNb % logFrequency != 0 THEN
       PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
               'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, currentRowNb % logFrequency);
     END IF;
