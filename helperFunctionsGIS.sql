@@ -87,10 +87,8 @@ RETURNS boolean AS $$
       RETURN TRUE;
     ELSIF _fix AND ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
       RETURN TRUE;
-    ELSE
-      RAISE NOTICE 'TT_GeoIsValid(): invalid geometry, reason: %', ST_IsValidReason(_the_geom);
-      RETURN FALSE;
     END IF;
+    RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -423,8 +421,7 @@ RETURNS geometry AS $$
       RETURN _the_geom_buffer;
     END IF;
 
-    -- if attempts fail, return NULL and report the issue
-    RAISE NOTICE 'Geometry cannot be validated: %', the_geom;
+    -- if attempts fail, return NULL 
     RETURN NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
