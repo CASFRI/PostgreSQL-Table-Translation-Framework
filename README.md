@@ -337,9 +337,15 @@ One feature of the translation engine is that the return type of a translation f
 # Provided Helper Functions
 ## Validation Functions
 
-* **NotNull**(any srcVal)
-    * Returns TRUE if srcVal is not NULL. Returns FALSE if srcVal is NULL. Paired with most translation functions to make sure input values are available.
+* **NotNull**(stringList srcVal)
+    * Returns TRUE if all srcVal's are not NULL. Returns FALSE if any srcVal is NULL. Paired with most translation functions to make sure input values are available. Can use single or multiple srcVal's.
     * e.g. NotNull('a')
+    * e.g. NotNull({'a', 'b', 'c'})
+
+* **IsNull**(stringList srcVal)
+    * Returns TRUE if all srcVal's are NULL. Returns FALSE if any srcVal is not NULL. Paired with some complex translation functions dependant on multiple columns. Can use single or multiple srcVal's.
+    * e.g. IsNull('a')
+    * e.g. IsNull({'a', 'b', 'c'})
 
 * **NotEmpty**(text srcVal)
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
