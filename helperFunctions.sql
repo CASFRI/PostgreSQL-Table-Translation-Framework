@@ -122,21 +122,31 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_IsInt
 --
 --  val text - value to test.
+--  acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 --  Does value represent integer? (e.g. 1 or 1.0)
---  NULL values return FALSE
+--  NULL values return FALSE unless acceptNull = TRUE
 --  Strings with numeric characters and '.' will be evaluated
 --  Strings with anything else (e.g. letter characters) return FALSE.
 --  e.g. TT_IsInt('1.0')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   val text
+   val text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision;
+    _acceptNull boolean;
   BEGIN
-    IF val IS NULL THEN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_IsInt',
+                              ARRAY['acceptNull', acceptNull, 'boolean']);
+    _acceptNull = acceptNull::boolean;
+    
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
       BEGIN
@@ -148,25 +158,42 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsInt(
+  val text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsInt(val, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_IsNumeric
 --
 --  val text - Value to test.
+--  acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 --  Can value be cast to double precision? (e.g. 1.1, 1, '1.5')
---  NULL values return FALSE
+--  NULL values return FALSE unless acceptNull = TRUE
 --  e.g. TT_IsNumeric('1.1')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
-   val text
+   val text,
+   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision;
+    _acceptNull boolean;
   BEGIN
-    IF val IS NULL THEN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_IsNumeric',
+                              ARRAY['acceptNull', acceptNull, 'boolean']);
+    _acceptNull = acceptNull::boolean;
+    
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     ELSE
       BEGIN
@@ -178,6 +205,13 @@ RETURNS boolean AS $$
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsNumeric(
+  val text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsNumeric(val, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -187,8 +221,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- e.g. TT_IsBoolean('TRUE')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsBoolean(
-  val text
-)
+  val text)
 RETURNS boolean AS $$
   DECLARE
     _val boolean;
@@ -419,10 +452,11 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- max text - Maximum
 -- includeMin - is min inclusive? Default True
 -- includeMax - is max inclusive? Default True
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Return TRUE if val is between min and max.
 -- Return FALSE otherwise.
--- Return FALSE if val is NULL.
+-- Return FALSE if val is NULL unless acceptNull = TRUE.
 -- Return error if min, max, includeMin or includeMax are NULL.
 -- e.g. TT_IsBetween(5, 0, 100)
 ------------------------------------------------------------
@@ -431,7 +465,8 @@ CREATE OR REPLACE FUNCTION TT_IsBetween(
   min text,
   max text,
   includeMin text,
-  includeMax text
+  includeMax text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -440,17 +475,20 @@ RETURNS boolean AS $$
     _max double precision;
     _includeMin boolean;
     _includeMax boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsBetween',
                               ARRAY['min', min, 'numeric',
                                     'max', max, 'numeric',
                                     'includeMin', includeMin, 'boolean',
-                                    'includeMax', includeMax, 'boolean']);
+                                    'includeMax', includeMax, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _min = min::double precision;
     _max = max::double precision;
     _includeMin = includeMin::boolean;
     _includeMax = includeMax::boolean;
+    _acceptNull = acceptNull::boolean;
 
     IF _min = _max THEN
       RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is equal to max';
@@ -458,8 +496,10 @@ RETURNS boolean AS $$
       RAISE EXCEPTION 'ERROR in TT_IsBetween(): min is greater than max';
     END IF;
 
-    -- validate source value (return FALSE)
-    IF NOT TT_IsNumeric(val) THEN
+    -- validate source value
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
@@ -480,10 +520,21 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_IsBetween(
   val text,
   min text,
+  max text,
+  includeMin text,
+  includeMax text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsBetween(val, min, max, includeMin, includeMax, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsBetween(
+  val text,
+  min text,
   max text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsBetween(val, min, max, TRUE::text, TRUE::text);
+  SELECT TT_IsBetween(val, min, max, TRUE::text, TRUE::text, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -493,34 +544,41 @@ $$ LANGUAGE sql VOLATILE;
 --  val text - Value to test.
 --  lowerBound text - lower bound to test against.
 --  inclusive text - is lower bound inclusive? Default TRUE.
+--  acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 --  Return TRUE if val >= lowerBound and inclusive = TRUE.
 --  Return TRUE if val > lowerBound and inclusive = FALSE.
 --  Return FALSE otherwise.
---  Return FALSE if val is NULL.
+--  Return FALSE if val is NULL unless acceptNull = TRUE.
 --  Return error if lowerBound or inclusive are NULL.
 --  e.g. TT_IsGreaterThan(5, 0, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
    val text,
    lowerBound text,
-   inclusive text
+   inclusive text,
+   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision;
     _lowerBound double precision;
     _inclusive boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsGreaterThan',
                               ARRAY['lowerBound', lowerBound, 'numeric',
-                                    'inclusive', inclusive, 'boolean']);
+                                    'inclusive', inclusive, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _lowerBound = lowerBound::double precision;
     _inclusive = inclusive::boolean;
+    _acceptNull = acceptNull::boolean;
 
-    -- validate source value (return FALSE)
-    IF NOT TT_IsNumeric(val) THEN
+    -- validate source value
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
@@ -536,10 +594,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
   val text,
+  lowerBound text,
+  inclusive text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsGreaterThan(val, lowerBound, inclusive, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
+  val text,
   lowerBound text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsGreaterThan(val, lowerBound, TRUE::text)
+  SELECT TT_IsGreaterThan(val, lowerBound, TRUE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -549,34 +616,41 @@ $$ LANGUAGE sql VOLATILE;
 --  val text - Value to test.
 --  upperBound text - upper bound to test against.
 --  inclusive text - is upper bound inclusive? Default True.
+--  acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 --  Return TRUE if val <= upperBound and inclusive = TRUE.
 --  Return TRUE if val < upperBound and inclusive = FALSE.
 --  Return FALSE otherwise.
---  Return FALSE if val is NULL.
+--  Return FALSE if val is NULL unless acceptNull = TRUE.
 --  Return error if upperBound or inclusive are NULL.
 --  e.g. TT_IsLessThan(1, 5, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsLessThan(
    val text,
    upperBound text,
-   inclusive text
+   inclusive text,
+   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _val double precision;
     _upperBound double precision;
     _inclusive boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsLessThan',
                               ARRAY['upperBound', upperBound, 'numeric',
-                                    'inclusive', inclusive, 'boolean']);
+                                    'inclusive', inclusive, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _upperBound = upperBound::double precision;
     _inclusive = inclusive::boolean;
+    _acceptNull = acceptNull::boolean;
 
-    -- validate source value (return FALSE)
-    IF NOT TT_IsNumeric(val) THEN
+    -- validate source value
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
     _val = val::double precision;
@@ -592,10 +666,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsLessThan(
   val text,
+  upperBound text,
+  inclusive text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsLessThan(val, upperBound, inclusive, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsLessThan(
+  val text,
   upperBound text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsLessThan(val, upperBound, TRUE::text)
+  SELECT TT_IsLessThan(val, upperBound, TRUE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -606,6 +689,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupSchemaName text - schema name holding lookup table.
 -- lookupTableName text - lookup table name.
 -- occurrences - text defaults to 1
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- if number of occurences of val in source_val of schema.table equals occurences, return true.
 -- e.g. TT_IsUnique('BS', 'public', 'bc08', 1)
@@ -614,7 +698,8 @@ CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  occurrences text
+  occurrences text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -623,18 +708,23 @@ RETURNS boolean AS $$
     _occurrences int;
     query text;
     return boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsUnique',
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text',
                                     'lookupTableName', lookupTableName, 'text',
-                                    'occurrences', occurrences, 'int']);
+                                    'occurrences', occurrences, 'int',
+                                    'acceptNull', acceptNull, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
     _lookupTableName = lookupTableName::name;
     _occurrences = occurrences::int;
+    _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF val IS NULL THEN
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     END IF;
 
@@ -648,10 +738,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
   lookupSchemaName text,
+  lookupTableName text,
+  occurrences text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, occurrences, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsUnique(
+  val text,
+  lookupSchemaName text,
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, 1::text)
+  SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, 1::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsUnique(
@@ -659,7 +759,7 @@ CREATE OR REPLACE FUNCTION TT_IsUnique(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsUnique(val, 'public', lookupTableName, 1::text)
+  SELECT TT_IsUnique(val, 'public', lookupTableName, 1::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -670,6 +770,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lookupSchemaName text - schema name holding lookup table.
 -- lookupTableName text - lookup table.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- if val is present in source_val of schema.lookup table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
@@ -678,7 +779,8 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  ignoreCase text
+  ignoreCase text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -687,18 +789,23 @@ RETURNS boolean AS $$
     _ignoreCase boolean;
     query text;
     return boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchTable',
                               ARRAY['lookupSchemaName', lookupSchemaName, 'text',
                                     'lookupTableName', lookupTableName, 'text',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
     _lookupTableName = lookupTableName::name;
     _ignoreCase = ignoreCase::boolean;
+    _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF val IS NULL THEN
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     END IF;
 
@@ -718,6 +825,16 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
+  lookupTableName text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, ignoreCase, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTable(
+  val text,
+  lookupSchemaName text,
   lookupTableName text
 )
 RETURNS boolean AS $$
@@ -729,7 +846,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, 'public', lookupTableName, FALSE::text)
+  SELECT TT_MatchTable(val, 'public', lookupTableName, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -739,6 +856,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - value to test.
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Is val in lst?
 -- val followed by string of test values
@@ -747,21 +865,27 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
-  ignoreCase text
+  ignoreCase text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _lst text[];
     _ignoreCase boolean;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchList',
                               ARRAY['lst', lst, 'stringlist',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
+    _acceptNull = acceptNull::boolean;
 
-    -- validate source value (return FALSE)
-    IF val IS NULL THEN
+    -- validate source value
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     END IF;
 
@@ -778,10 +902,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
+  lst text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION TT_MatchList(
+  val text,
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -814,44 +948,91 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_NotNULLEmptyOr
+-- TT_CountNotNull()
 --
--- val text - comma separated list of values to test.
+-- val text - string list of values to test.
+-- count int - number of notNulls to test against
+-- exact boolean - should number of notNulls match count exactly?
+-- testEmpty boolean - should we test for empty strings as well?
 --
--- Return TRUE if at least one value is not NULL or empty strings.
--- Return FALSE if all values are NULL or empty strings.
--- e.g. TT_NotNULLEmptyOr({'a','b','c'})
+-- Return TRUE if exact = TRUE and number of notNulls matches count exactly.
+-- Return FALSE if exact = FALSE and number of notNulls is greater than or 
+-- equal to count.
+-- If testEmpty = TRUE, it counts both the NULL values and any empty strings
+-- in val.
+--
+-- e.g. TT_CountNotNull({'a','b','c'}, 3, TRUE, FALSE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_NotNULLEmptyOr(
-  val text
+CREATE OR REPLACE FUNCTION TT_CountNotNull(
+  val text,
+  count text,
+  exact text,
+  testEmpty text
 )
 RETURNS boolean AS $$
   DECLARE
     _vals text[];
+    _count int;
+    _exact boolean;
+    _testEmpty boolean;
   BEGIN
     -- validate source value (return FALSE)
     IF NOT TT_IsStringList(val) THEN
       RETURN FALSE;
     END IF;
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_CountNotNull',
+                              ARRAY['count', count, 'int',
+                                    'exact', exact, 'boolean',
+                                   'testEmpty', testEmpty, 'boolean']);
+    _count = count::int;
+    _exact = exact::boolean;
+    _testEmpty = testEmpty::boolean;
 
     -- process
     _vals = TT_ParseStringList(val, TRUE);
-    FOREACH val in ARRAY _vals LOOP
-      IF TT_NotNULL(val) AND TT_NOTEmpty(val) THEN
-        RETURN TRUE;
+    IF _testEmpty THEN -- note tt_notempty returns false for both NULL and ''
+      IF _exact THEN
+        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotEmpty(x)) = _count;
+      ELSE
+        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotEmpty(x)) >= _count;
       END IF;
-    END LOOP;
-    RETURN FALSE;
+    ELSE
+      IF _exact THEN
+        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotNull(x)) = _count;
+      ELSE
+        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotNull(x)) >= _count;
+      END IF;
+    END IF;
+    RETURN _notNullCount;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
--------------------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION TT_CountNotNull(
+  val text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_CountNotNull(val, count, exact, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_CountNotNull(
+  val text,
+  count text
+)
+RETURNS boolean AS $$
+  SELECT TT_CountNotNull(val, count, TRUE::text, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text)
 --
 -- val text - input string
 -- start_char - start character to take substring from
 -- for_length - length of substring to take
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Take substring and test isInt
 -- e.g. TT_IsIntSubstring('2001-01-01', 1, 4)
@@ -859,22 +1040,28 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
   start_char text,
-  for_length text
+  for_length text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _start_char int;
     _for_length int;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsIntSubstring',
                               ARRAY['start_char', start_char, 'int',
-                                    'for_length', for_length, 'int']);
+                                    'for_length', for_length, 'int',
+                                    'acceptNull', acceptNull, 'boolean']);
     _start_char = start_char::int;
     _for_length = for_length::int;
+    _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF val IS NULL THEN
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     END IF;
 
@@ -883,6 +1070,14 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
+  val text,
+  start_char text,
+  for_length text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsIntSubstring(val, start_char, for_length, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsBetweenSubstring(text, text, text)
 --
@@ -893,6 +1088,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- max text - upper between bound
 -- includeMin text - boolean for including lower bound
 -- includeMax text - boolean for including upper bound
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Take substring and test with TT_IsBetween()
 -- e.g. TT_IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
@@ -904,12 +1100,14 @@ CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   min text,
   max text,
   includeMin text,
-  includeMax text
+  includeMax text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _start_char int;
     _for_length int;
+    _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsBetweenSubstring',
@@ -918,12 +1116,16 @@ RETURNS boolean AS $$
                                     'min', min, 'numeric',
                                     'max', max, 'numeric',
                                     'includeMin', includeMin, 'boolean',
-                                    'includeMax', includeMax, 'boolean']);
+                                    'includeMax', includeMax, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
     _start_char = start_char::int;
     _for_length = for_length::int;
+    _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF val IS NULL THEN
+    IF _acceptNull AND val IS NULL THEN
+      RETURN TRUE;
+    ELSIF val IS NULL THEN
       RETURN FALSE;
     END IF;
 
@@ -931,6 +1133,19 @@ RETURNS boolean AS $$
     RETURN TT_IsBetween(substring(val from _start_char for _for_length), min, max, includeMin, includeMax);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
+  val text,
+  start_char text,
+  for_length text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsBetweenSubstring(val, start_char, for_length, min, max, includeMin, includeMin, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
