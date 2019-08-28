@@ -271,12 +271,12 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsStringList
 --
--- Return TRUE if val is a stringlist with more than one string.
--- If it has only one string then the user should use a normal string.
+-- Return TRUE if val is a stringlist (or a simple string if strict = TRUE)
 -- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
-  argStr text
+  argStr text,
+  strict boolean DEFAULt FALSE
 )
 RETURNS boolean AS $$
   DECLARE
@@ -285,14 +285,17 @@ RETURNS boolean AS $$
     IF argStr IS NULL THEN
       RETURN FALSE;
     ELSE
-    BEGIN
-      args = TT_ParseStringList(argStr);
-      RETURN TRUE;
-    EXCEPTION WHEN OTHERS THEN
-      -- if parsing failed with an error return false
-      RETURN FALSE;
-    END;
-  END IF;
+      BEGIN
+        args = TT_ParseStringList(argStr);
+        IF strict AND cardinality(args) = 1 THEN
+          RETURN FALSE;
+        END IF;
+        RETURN TRUE;
+      EXCEPTION WHEN OTHERS THEN
+        -- if parsing failed with an error return false
+        RETURN FALSE;
+      END;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
