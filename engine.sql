@@ -156,7 +156,7 @@ RETURNS text AS $$
   BEGIN
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     IF TT_FullTableName(schemaName, logTableName) = 'public._log_001' THEN
-      RAISE EXCEPTION 'TT_LogInit ERROR: Invalid translation table name';
+      RAISE EXCEPTION 'TT_LogInit() ERROR: Invalid translation table name...';
     END IF;
     IF increment THEN
       -- find an available table name
@@ -176,13 +176,13 @@ RETURNS text AS $$
     
     query = 'CREATE TABLE ' || TT_FullTableName(schemaName, logTableName) || ' (' ||
             'logID SERIAL, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int);';
-    RAISE NOTICE 'TT_LogInit: % log table ''%''...', action, TT_FullTableName(schemaName, logTableName);
+    RAISE NOTICE 'TT_LogInit(): % log table ''%''...', action, TT_FullTableName(schemaName, logTableName);
     BEGIN
       EXECUTE query;
     EXCEPTION WHEN OTHERS THEN
       RETURN 'FALSE';
     END;
-    query = 'CREATE UNIQUE INDEX ON ' || TT_FullTableName(schemaName, logTableName) || ' (message);';
+    query = 'CREATE UNIQUE INDEX ON ' || TT_FullTableName(schemaName, logTableName) || ' (md5(message));';
     EXECUTE query;
     RETURN '_log_' || TT_Pad(logInc::text, 3::text, '0');
   END;
@@ -216,7 +216,7 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
     suffix = '_log_' || TT_Pad(logInc::text, 3::text, '0');
     logTableName = tableName || suffix;
     IF TT_FullTableName(schemaName, logTableName) = 'public.' || suffix THEN
-      RAISE EXCEPTION 'TT_ShowLastLog ERROR: Invalid translation table name or number...';
+      RAISE EXCEPTION 'TT_ShowLastLog() ERROR: Invalid translation table name or number...';
     END IF;
     IF logNb IS NULL THEN
       -- find the last log table name
@@ -226,16 +226,16 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
       END LOOP;
       -- if logInc = 1 means no log table exists
       IF logInc = 1 THEN
-        RAISE EXCEPTION 'TT_ShowLastLog ERROR: No translation log to show for this translation table...';
+        RAISE EXCEPTION 'TT_ShowLastLog() ERROR: No translation log to show for this translation table...';
       END IF;
       logInc = logInc - 1;
     ELSE
       IF NOT TT_TableExists(schemaName, logTableName) THEN
-        RAISE EXCEPTION 'TT_ShowLastLog ERROR: Translation log does not exist...';
+        RAISE EXCEPTION 'TT_ShowLastLog() ERROR: Translation log table ''%.%'' does not exist...', schemaName, logTableName;
       END IF;
     END IF;
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
-    RAISE NOTICE 'TT_ShowLastLog: Displaying log table ''%''', logTableName;
+    RAISE NOTICE 'TT_ShowLastLog(): Displaying log table ''%''', logTableName;
     query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
     RETURN QUERY EXECUTE query;
   END;
@@ -327,11 +327,11 @@ RETURNS boolean AS $$
     ELSIF upper(logType) = 'INVALID_VALUE' OR upper(logType) = 'TRANSLATION_ERROR' THEN
         query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' AS tbl VALUES (' ||
                 'DEFAULT, now(), ''' || upper(logType) || ''', $1, $2, $3, $4) ' ||
-                'ON CONFLICT (message) DO UPDATE SET count = tbl.count + 1;';
+                'ON CONFLICT (md5(message)) DO UPDATE SET count = tbl.count + 1;';
         EXECUTE query USING firstRowId, msg, currentRowNb, 1;
       RETURN TRUE;
     ELSE
-      RAISE EXCEPTION 'TT_Log ERROR: Invalid logType (%)', logType;
+      RAISE EXCEPTION 'TT_Log() ERROR: Invalid logType (%)...', logType;
       RETURN FALSE;
     END IF;
   END;
@@ -1111,13 +1111,13 @@ RETURNS text AS $f$
       EXECUTE query INTO STRICT refParamlist;
 
       IF cardinality(paramlist) < cardinality(refParamlist) THEN
-        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has less attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
+        RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' has less attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
       ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
-        RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' has more attributes than reference table ''%''...', translationTableSchema, translationTable, translationTable, refTranslationTable;
+        RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' has more attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
       ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
         FOR i IN 1..cardinality(paramlist) LOOP
           IF paramlist[i] != refParamlist[i] THEN
-            RAISE EXCEPTION 'ERROR in TT_Prepare() when processing %.%: ''%'' attributes ''%'' is different from ''%'' in reference table ''%''...', translationTableSchema, translationTable, translationTable, paramlist[i], refParamlist[i], refTranslationTable;
+            RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' attribute ''%'' is different from reference table ''%.%'' attribute ''%''...', translationTableSchema, translationTable, paramlist[i], refTranslationTableSchema, refTranslationTable, refParamlist[i];
           END IF;
         END LOOP;
       END IF;
@@ -1252,7 +1252,7 @@ RETURNS SETOF RECORD AS $$
          RAISE NOTICE '% at row #%: %', errorType, currentRowNb, logMsg;
        END IF;
      ELSE
-       RAISE EXCEPTION 'TT_ReportError: Invalid error type...';
+       RAISE EXCEPTION 'TT_ReportError() ERROR: Invalid error type...';
      END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -1330,7 +1330,7 @@ RETURNS SETOF RECORD AS $$
     ELSE
       logTableSuffix = TT_LogInit(translationTableSchema, translationTable, incrementLog);
       IF logTableSuffix = 'FALSE' THEN
-        RAISE EXCEPTION '_TT_Translate ERROR: Loging initialization failed.';
+        RAISE EXCEPTION '_TT_Translate ERROR: Logging initialization failed...';
       END IF;
     END IF;                 
     FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) LOOP
