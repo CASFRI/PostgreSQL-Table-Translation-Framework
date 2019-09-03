@@ -306,33 +306,42 @@ Helper functions are of two types: validation helper functions are used in the *
 Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. 
 
 Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
+
 **1. Strings**
-    - Any arguments wrapped in single or double quotes is interpreted by the engine as a string and passed as-is to the helper function.
-    - e.g. CopyText('a string')
-      - this would simply return the string 'a string' for every row in the translation.
-    - Strings can contain any characters, and escaping of single quotes is supported using \\'.
-      - e.g. CopyText('string\\'s')
-    - Empty strings can be passed as arguments using '' or "".
-    - Since helper functions only accept arguments as type text, any numeric or boolean values should also be input as strings. The helper function will convert them to the correct type when it runs (e.g. Between(percent_column, '0', '100', 'TRUE', 'TRUE')).
+  * Any arguments wrapped in single or double quotes is interpreted by the engine as a string and passed as-is to the helper function.
+    * e.g. CopyText('a string')
+    * This would simply return the string 'a string' for every row in the translation.
+  * Strings can contain any characters, and escaping of single quotes is supported using \\'.
+    * e.g. CopyText('string\\'s')
+  * Empty strings can be passed as arguments using '' or "".
+  * Since helper functions only accept arguments as type text, any numeric or boolean values should also be input as strings. The helper function will convert them to the correct type when it runs (e.g. Between(percent_column, '0', '100', 'TRUE', 'TRUE')).
 
 **2. Source table column names**
-    - Any word not wrapped in quotes is interpreted as a column name.
-    - Column names can include "\_" and "-" but no other special characters and no spaces are allowed. Invalid column names stop the engine.
-    - When the engine encounters a valid column name, it searches the source table for that column and returns the corresponding value for the row being processed. This value is then passed as an argument to the helper function.
-    - e.g. CopyText(column_A)
-      - this would return the text value from column_A in the source table for each row being translated.
-    - If the column name is not found as a column in the source table, it is processed as a string.
-    - Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'targetSp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the targetSp column in the public.species_lookup table.
+  * Any word not wrapped in quotes is interpreted as a column name.
+  * Column names can include "\_" and "-" but no other special characters and no spaces are allowed. Invalid column names stop the engine.
+  * When the engine encounters a valid column name, it searches the source table for that column and returns the corresponding value for the row being processed. This value is then passed as an argument to the helper function.
+    * e.g. CopyText(column_A)
+    * This would return the text value from column_A in the source table for each row being translated.
+  * If the column name is not found as a column in the source table, it is processed as a string.
+  * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'targetSp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the targetSp column in the public.species_lookup table.
 
 **3. String lists**
-    - Some helper functions can take a variable number of inputs. Concatenation functions are an example.
-    - Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
-    - String lists can contain both strings and column names following the rules described above.
-    - e.g. Concat({column_A, column_B, 'joined'}, '-')
-      - the Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
-      - This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
+  * Some helper functions can take a variable number of inputs. Concatenation functions are an example.
+  * Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
+  * String lists can contain both strings and column names following the rules described above.
+  * e.g. Concat({column_A, column_B, 'joined'}, '-')
+    * the Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
+    * This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
+
+Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is null. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
+
+CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET)
+
+  * CountNotNull checks that exactly one value is not null and returns the NULL_ERROR if the test fails.
+    * Note that the order of these tests is important. We need to check for nulls before checking values are in the list.
+  * Now we know that col1 and col2 contain one value and one null. We want to test the value using MatchList and ignore the null. We test col1 and col2 using MatchList. The column with the value will be evaluated by MatchList, the column with the NULL will be ignored (i.e. the acceptNull parameter will cause TRUE to be returned). Note that if acceptNull was set to FALSE, the null value would trigger a FALSE to be returned which would fail the validation and return the NOT_IN_SET error. This is not the desired behaviour for this case.
 
 # Provided Helper Functions
 ## Validation Functions
@@ -351,36 +360,36 @@ One feature of the translation engine is that the return type of a translation f
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
     * e.g. NotEmpty('a')
 
-* **IsInt**(text srcVal)
+* **IsInt**(text srcVal, boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
     * e.g. IsInt('1')
 
-* **IsNumeric**(text srcVal) 
+* **IsNumeric**(text srcVal, , boolean acceptNull\[default TRUE\]) 
     * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
     * e.g. IsNumeric('1.1')
    
-* **IsBetween**(numeric srcVal, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\])
+* **IsBetween**(numeric srcVal, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
           
-* **IsGreaterThan**(numeric srcVal, numeric lowerBound, boolean inclusive\[default TRUE\])
+* **IsGreaterThan**(numeric srcVal, numeric lowerBound, boolean inclusive\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. IsGreaterThan(5, 0, TRUE)
 
-* **IsLessThan**(numeric srcVal, numeric upperBound, boolean inclusive\[default TRUE\])
+* **IsLessThan**(numeric srcVal, numeric upperBound, boolean inclusive\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * e.g. IsLessThan(1, 5, TRUE)
 
-* **IsUnique**(text srcVal, text lookupSchemaName\[default 'public'\], text lookupTableName, int occurences\[default 1\])
+* **IsUnique**(text srcVal, text lookupSchemaName\[default 'public'\], text lookupTableName, int occurences\[default 1\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(text srcVal, text lookupSchemaName\[default 'public'\], text lookupTableName, boolean ignoreCase\[default TRUE\])
+* **MatchTable**(text srcVal, text lookupSchemaName\[default 'public'\], text lookupTableName, boolean ignoreCase\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
 
-* **MatchList**(text srcVal, stringList lst, boolean ignoreCase\[default TRUE\])
+* **MatchList**(text srcVal, stringList lst, boolean ignoreCase\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * e.g. Match('a', '{'a','b','c'}', TRUE)
 
@@ -397,11 +406,11 @@ One feature of the translation engine is that the return type of a translation f
     * Return FALSE if all values are NULL or empty strings.
     * e.g. NotNullEmptyOr('{'a','','NULL'}')
  
- * **IsIntSubstring**(text srcVal, int star_char, int for_length)
+ * **IsIntSubstring**(text srcVal, int star_char, int for_length, boolean acceptNull\[default TRUE\])
     * Takes a substring of a text string and tests using IsInt().
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
-  * **IsBetweenSubstring**(text srcVal, int star_char, int for_length, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\])
+  * **IsBetweenSubstring**(text srcVal, int star_char, int for_length, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\], boolean acceptNull\[default TRUE\])
     * Takes a substring of a text string and tests using IsBetween().
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
