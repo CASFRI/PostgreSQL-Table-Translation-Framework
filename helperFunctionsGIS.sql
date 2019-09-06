@@ -425,3 +425,58 @@ RETURNS geometry AS $$
     RETURN NULL;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_GeoArea
+--
+-- the_geom text - the geometry
+--
+-- Calculates area of geometry in km2
+--
+-- e.g. TT_GeoArea(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'))
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoArea(
+  the_geom text
+)
+RETURNS double precision AS $$
+  DECLARE
+    _the_geom geometry;
+  BEGIN
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsGeometry(the_geom) THEN
+      RETURN NULL;
+    END IF;
+    
+    _the_geom = the_geom::geometry;
+    RETURN ST_Area(_the_geom) / 1000000;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_GeoPerimeter
+--
+-- the_geom text - the geometry
+--
+-- Calculates perimeter of geometry in km
+--
+-- e.g. TT_GeoPerimeter(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'))
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoPerimeter(
+  the_geom text
+)
+RETURNS double precision AS $$
+  DECLARE
+    _the_geom geometry;
+  BEGIN
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsGeometry(the_geom) THEN
+      RETURN NULL;
+    END IF;
+    
+    _the_geom = the_geom::geometry;
+    RETURN ST_Perimeter(_the_geom) / 1000;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;

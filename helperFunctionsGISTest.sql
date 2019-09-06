@@ -38,7 +38,9 @@ WITH test_nb AS (
     SELECT 'TT_GeoIntersectionText'::text,      101,         13         UNION ALL
     SELECT 'TT_GeoIntersectionDouble'::text,    102,         10         UNION ALL
     SELECT 'TT_GeoIntersectionInt'::text,       103,         10         UNION ALL
-    SELECT 'TT_GeoMakeValid'::text,             104,         2
+    SELECT 'TT_GeoMakeValid'::text,             104,         2          UNION ALL
+    SELECT 'TT_GeoArea'::text,                  105,         1          UNION ALL
+    SELECT 'TT_GeoPerimeter'::text,             106,         1
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -283,6 +285,24 @@ SELECT '104.2'::text number,
        'TT_GeoMakeValid'::text function_tested,
        'Bad geo'::text description,
        ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 105 - TT_GeoArea
+---------------------------------------------------------
+UNION ALL
+SELECT '105.1'::text number,
+       'TT_GeoArea'::text function_tested,
+       'Area test'::text description,
+       TT_GeoArea(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 1::double precision passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 106 - TT_GeoPerimeter
+---------------------------------------------------------
+UNION ALL
+SELECT '106.1'::text number,
+       'TT_GeoPerimeter'::text function_tested,
+       'Perimeter test'::text description,
+       TT_GeoPerimeter(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 4::double precision passed
 ---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
