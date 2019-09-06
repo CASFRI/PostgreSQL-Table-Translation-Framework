@@ -141,17 +141,12 @@ RETURNS boolean AS $$
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN FALSE;
     END IF;
-    _the_geom = the_geom::geometry;
-
-    -- process
-    IF NOT ST_IsValid(_the_geom) THEN
-      IF ST_IsValid(ST_MakeValid(_the_geom)) THEN
-        _the_geom = ST_MakeValid(_the_geom);
-      ELSIF ST_IsValid(ST_Buffer(_the_geom, 0)) THEN
-        _the_geom = ST_Buffer(_the_geom, 0);
-      ELSE
-        RAISE EXCEPTION 'Geometry cannot be validated: %', the_geom;
-      END IF;
+    
+    _the_geom = TT_GeoMakeValid(the_geom);
+    
+    -- If geometry cannot be made valid, return false
+    IF _the_geom IS NULL THEN
+      RETURN FALSE;
     END IF;
 
     -- query to get count of intersects
@@ -259,7 +254,13 @@ RETURNS text AS $$
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
+    
     _the_geom = TT_GeoMakeValid(the_geom);
+    
+    -- If geometry cannot be made valid, return NULL
+    IF _the_geom IS NULL THEN
+      RETURN NULL;
+    END IF;
 
     -- process
     -- get table of returnCol values and intersecting areas for all intersecting polygons
@@ -449,7 +450,13 @@ RETURNS double precision AS $$
       RETURN NULL;
     END IF;
     
-    _the_geom = the_geom::geometry;
+    _the_geom = TT_GeoMakeValid(the_geom);
+    
+    -- If geometry cannot be made valid, return NULL
+    IF _the_geom IS NULL THEN
+      RETURN NULL;
+    END IF;
+    
     RETURN ST_Area(_the_geom) / 1000000;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -476,7 +483,13 @@ RETURNS double precision AS $$
       RETURN NULL;
     END IF;
     
-    _the_geom = the_geom::geometry;
+    _the_geom = TT_GeoMakeValid(the_geom);
+    
+    -- If geometry cannot be made valid, return NULL
+    IF _the_geom IS NULL THEN
+      RETURN NULL;
+    END IF;
+    
     RETURN ST_Perimeter(_the_geom) / 1000;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
