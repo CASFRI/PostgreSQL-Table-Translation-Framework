@@ -293,7 +293,7 @@ UNION ALL
 SELECT '105.1'::text number,
        'TT_GeoArea'::text function_tested,
        'Area test'::text description,
-       TT_GeoArea(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 1::double precision passed
+       TT_GeoArea(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 100::double precision passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 106 - TT_GeoPerimeter
@@ -302,7 +302,7 @@ UNION ALL
 SELECT '106.1'::text number,
        'TT_GeoPerimeter'::text function_tested,
        'Perimeter test'::text description,
-       TT_GeoPerimeter(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 4::double precision passed
+       TT_GeoPerimeter(ST_GeometryFromText('POLYGON((0 0, 0 1000, 1000 1000, 1000 0, 0 0))')) = 4000::double precision passed
 ---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
