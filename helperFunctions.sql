@@ -131,8 +131,8 @@ $$ LANGUAGE sql VOLATILE;
 --  e.g. TT_IsInt('1.0')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
-   val text,
-   acceptNull text
+  val text,
+  acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -278,7 +278,7 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
   argStr text,
-  strict boolean DEFAULt FALSE
+  strict boolean DEFAULT FALSE
 )
 RETURNS boolean AS $$
   DECLARE
