@@ -132,7 +132,7 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsInt(
    val text,
-  acceptNull text
+   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -144,9 +144,10 @@ RETURNS boolean AS $$
                               ARRAY['acceptNull', acceptNull, 'boolean']);
     _acceptNull = acceptNull::boolean;
     
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     ELSE
       BEGIN
@@ -190,17 +191,18 @@ RETURNS boolean AS $$
     PERFORM TT_ValidateParams('TT_IsNumeric',
                               ARRAY['acceptNull', acceptNull, 'boolean']);
     _acceptNull = acceptNull::boolean;
-    
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    	
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     ELSE
       BEGIN
         _val = val::double precision;
         RETURN TRUE;
       EXCEPTION WHEN OTHERS THEN
-        RETURN FALSE;
+		RETURN FALSE;
       END;
     END IF;
   END;
@@ -500,8 +502,11 @@ RETURNS boolean AS $$
     END IF;
 
     -- validate source value
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
+      RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
@@ -579,8 +584,11 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
+      RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
@@ -651,8 +659,11 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
+      RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
       RETURN FALSE;
     END IF;
@@ -725,9 +736,10 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     END IF;
 
@@ -806,9 +818,10 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     END IF;
 
@@ -886,9 +899,10 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     END IF;
 
@@ -1062,9 +1076,10 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     END IF;
 
@@ -1126,9 +1141,10 @@ RETURNS boolean AS $$
     _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
-    IF _acceptNull AND val IS NULL THEN
-      RETURN TRUE;
-    ELSIF val IS NULL THEN
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
       RETURN FALSE;
     END IF;
 
