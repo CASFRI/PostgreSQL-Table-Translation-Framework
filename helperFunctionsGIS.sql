@@ -457,7 +457,7 @@ RETURNS double precision AS $$
       RETURN NULL;
     END IF;
     
-    RETURN ST_Area(_the_geom) / 1000000;
+    RETURN ST_Area(_the_geom) / 10000;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
@@ -490,6 +490,6 @@ RETURNS double precision AS $$
       RETURN NULL;
     END IF;
     
-    RETURN ST_Perimeter(_the_geom) / 1000;
+    RETURN ST_Perimeter(_the_geom);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
