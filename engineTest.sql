@@ -487,7 +487,7 @@ UNION ALL
 SELECT '7.7'::text number,
        'TT_Prepare'::text function_tested,
        'Test with ref translation table having less'::text description,
-        TT_IsError('SELECT TT_Prepare(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'ERROR in TT_Prepare() when processing public.test_translationtable: ''test_translationtable'' has more attributes than reference table ''test_translationtable2''...' passed
+        TT_IsError('SELECT TT_Prepare(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'TT_Prepare() ERROR: Translation table ''public.test_translationtable'' has more attributes than reference table ''public.test_translationtable2''...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.8'::text number,
@@ -837,14 +837,13 @@ UNION ALL
 SELECT '11.3'::text number,
        'TT_RepackStringList'::text function_tested,
        'NULL string'::text description,
-       --TT_RepackStringList('{"NULL"}'::text[]) = '"NULL"' passed
        TT_RepackStringList('{"NULL"}'::text[]) = 'NULL' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '11.4'::text number,
        'TT_RepackStringList'::text function_tested,
        'NULL string'::text description,
-       TT_RepackStringList('{NULL}'::text[]) = '{NULL}' passed
+       TT_RepackStringList('{NULL}'::text[]) IS NULL passed
 --------------------------------------------------------
 UNION ALL
 SELECT '11.5'::text number,

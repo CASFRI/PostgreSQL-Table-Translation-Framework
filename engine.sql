@@ -626,11 +626,11 @@ RETURNS text AS $$
     debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_RepackStringList 00 cardinality=%', cardinality(args);END IF;
-    IF args IS NULL THEN
+    IF args IS NULL OR (cardinality(args) = 1 AND args[1] IS NULL) THEN
       RETURN NULL;
     END IF;
     -- open the array string only when a true array or when only item is NULL
-    IF cardinality(args) > 1 OR (cardinality(args) = 1 AND args[1] IS NULL) THEN
+    IF cardinality(args) > 1 THEN
       result = '{';
     END IF;
 
@@ -653,7 +653,7 @@ RETURNS text AS $$
     result = left(result, char_length(result) - 1);
 
     -- close the array string only when a true array or when only item is NULL
-    IF cardinality(args) > 1 OR (cardinality(args) = 1 AND args[1] IS NULL) THEN
+    IF cardinality(args) > 1 THEN
       result = result || '}';
     END IF;
     IF debug THEN RAISE NOTICE 'TT_RepackStringList 55 result=%', result;END IF;
@@ -693,6 +693,7 @@ RETURNS text AS $$
     argValNested text;
     repackArray text[];
     isStrList boolean;
+    repackStr text;
     debug boolean = TT_Debug();
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctQuery BEGIN fctName=%, args=%, vals=%', fctName, args::text, vals::text;END IF;
@@ -731,10 +732,11 @@ RETURNS text AS $$
         END IF;
       END LOOP;
       IF debug THEN RAISE NOTICE 'TT_TextFctQuery 66 queryStr=%', queryStr;END IF;
-      IF escape THEN
-        queryStr = queryStr || '''' || TT_EscapeSingleQuotes(TT_RepackStringList(repackArray)) || '''::text';
+      repackStr = TT_RepackStringList(repackArray);
+      IF escape AND NOT repackStr IS NULL THEN
+        queryStr = queryStr || '''' || TT_EscapeSingleQuotes(repackStr) || '''::text';
       ELSE
-        queryStr = queryStr || TT_RepackStringList(repackArray);
+        queryStr = queryStr || coalesce(repackStr, 'NULL');
       END IF;
       IF debug THEN RAISE NOTICE 'TT_TextFctQuery 88 queryStr=%', queryStr;END IF;
       argCnt = argCnt + 1;
