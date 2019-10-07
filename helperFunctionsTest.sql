@@ -191,7 +191,7 @@ WITH test_nb AS (
     SELECT 'TT_CountNotNull'::text,           15,         18         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         19         UNION ALL
-    SELECT 'TT_IsName'::text,                 18,          5         UNION ALL
+    SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
     SELECT 'TT_IsNull'::text,                 19,         13         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -1361,7 +1361,24 @@ SELECT '18.5'::text number,
        'TT_IsName'::text function_tested,
        'with space'::text description,
        TT_IsName('my table') IS FALSE passed
-
+---------------------------------------------------------
+UNION ALL
+SELECT '18.6'::text number,
+       'TT_IsName'::text function_tested,
+       'starting and ending with single quotes'::text description,
+       TT_IsName('''mytable''') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.7'::text number,
+       'TT_IsName'::text function_tested,
+       'test TRUE'::text description,
+       TT_IsName('true') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '18.8'::text number,
+       'TT_IsName'::text function_tested,
+       'test FALSE'::text description,
+       TT_IsName('FALSE') IS FALSE passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 19 - TT_IsNull

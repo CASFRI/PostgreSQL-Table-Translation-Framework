@@ -167,8 +167,8 @@ WITH test_nb AS (
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
     SELECT 'TT_Prepare'::text,                       7,          8         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
-    SELECT 'TT_TextFctEval'::text,                   9,         16         UNION ALL
-    SELECT 'TT_ParseStringList'::text,             10,         36         UNION ALL
+    SELECT 'TT_TextFctEval'::text,                   9,         15         UNION ALL
+    SELECT 'TT_ParseStringList'::text,              10,         36         UNION ALL
     SELECT 'TT_RepackStringList'::text,             11,         37         UNION ALL
     SELECT 'TT_IsCastableTo'::text,                 12,          2
 ),
@@ -527,13 +527,13 @@ UNION ALL
 SELECT '9.4'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong argument type'::text description,
-        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closure, 0, b}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_IsBetween(): max is not a numeric value' passed
+        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closure, 0, ''''b''''}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR in TT_IsBetween(): max is not a numeric value' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_TextFctEval('isbetween', '{crown_closureX, 0, 2}'::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE) IS FALSE passed
+        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closureX, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE: Source attribute ''crown_closureX'', called in function ''isbetween()'', does not exist...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,
@@ -575,28 +575,22 @@ UNION ALL
 SELECT '9.12'::text number,
        'TT_TextFctEval'::text function_tested,
        'function taking a string with a string beginning with a space'::text description,
-        TT_TextFctEval('CopyText', '{aa}'::text[], NULL, NULL::text, TRUE) = 'aa' passed
+        TT_TextFctEval('CopyText', '{''aa''}'::text[], NULL, NULL::text, TRUE) = 'aa' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.13'::text number,
        'TT_TextFctEval'::text function_tested,
        'function taking a string with a string beginning with a space'::text description,
-        TT_TextFctEval('CopyText', '{ aa }'::text[], NULL, NULL::text, TRUE) = 'aa' passed
+        TT_TextFctEval('CopyText', '{'' aa ''}'::text[], NULL, NULL::text, TRUE) = ' aa ' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.14'::text number,
        'TT_TextFctEval'::text function_tested,
        'function taking a string with a string beginning with a space'::text description,
-        TT_TextFctEval('CopyText', '{'' aa ''}'::text[], NULL, NULL::text, TRUE) = ' aa ' passed
---------------------------------------------------------
-UNION ALL
-SELECT '9.15'::text number,
-       'TT_TextFctEval'::text function_tested,
-       'function taking a string with a string beginning with a space'::text description,
         TT_TextFctEval('CopyText', '{ src }'::text[], to_jsonb((SELECT r FROM (SELECT ' bb ' src) r)), NULL::text, TRUE) = ' bb ' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '9.16'::text number,
+SELECT '9.15'::text number,
        'TT_TextFctEval'::text function_tested,
        'function taking a string with a string beginning with a space'::text description,
         TT_TextFctEval('CopyText', '{'' src ''}'::text[], to_jsonb((SELECT r FROM (SELECT ' bb ' src) r)), NULL::text, TRUE) = ' src ' passed

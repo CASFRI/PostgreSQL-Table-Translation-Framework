@@ -266,7 +266,11 @@ CREATE OR REPLACE FUNCTION TT_IsName(
   argStr text
 )
 RETURNS boolean AS $$
-  SELECT CASE WHEN argStr IS NULL THEN FALSE ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' END
+  SELECT CASE WHEN argStr IS NULL OR 
+                   upper(argStr) = 'TRUE' OR 
+                   upper(argStr) = 'FALSE' THEN FALSE 
+              ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' 
+         END
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

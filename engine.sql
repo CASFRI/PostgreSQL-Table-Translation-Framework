@@ -711,17 +711,21 @@ RETURNS text AS $$
       isStrList = TT_IsStringList(arg, TRUE);
       FOREACH argNested IN ARRAY TT_ParseStringList(arg) LOOP
         IF debug THEN RAISE NOTICE 'TT_TextFctQuery 33';END IF;
-        IF TT_IsName(argNested) AND vals ? argNested THEN
-          argValNested = vals->>argNested;
-          IF varName THEN
-            argValNested = argNested || CASE WHEN argValNested IS NULL THEN '=NULL'
-                                             ELSE '=''' || TT_EscapeSingleQuotes(argValNested) || '''' END;
+        IF TT_IsName(argNested) THEN
+          IF vals ? argNested THEN
+            argValNested = vals->>argNested;
+            IF varName THEN
+              argValNested = argNested || CASE WHEN argValNested IS NULL THEN '=NULL'
+                                               ELSE '=''' || TT_EscapeSingleQuotes(argValNested) || '''' END;
+            END IF;
+            repackArray = array_append(repackArray, argValNested);
+            IF debug THEN RAISE NOTICE 'TT_TextFctQuery 44 argValNested=%', argValNested;END IF;
+          ELSE
+            -- if column name not in source table, raise exception
+            RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: Source attribute ''%'', called in function ''%()'', does not exist...', argNested, fctName;
           END IF;
-          repackArray = array_append(repackArray, argValNested);
-          IF debug THEN RAISE NOTICE 'TT_TextFctQuery 44 argValNested=%', argValNested;END IF;
         ELSE
           IF debug THEN RAISE NOTICE 'TT_TextFctQuery 55 argNested=%', argNested;END IF;
-          -- if column name not in source table, return as string.
           -- we can now remove the surrounding single quotes from the string
           -- since we have processed column names
           IF varName AND NOT isStrList THEN
@@ -799,7 +803,7 @@ RETURNS anyelement AS $$
     -- fctName should never be NULL
     IF fctName IS NULL OR (checkExistence AND (NOT TT_TextFctExists(fctName, coalesce(cardinality(args), 0)))) THEN
       IF debug THEN RAISE NOTICE 'TT_TextFctEval 11 fctName=%, args=%', fctName, cardinality(args);END IF;
-      RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE : Helper function %(%) does not exist.', fctName, btrim(repeat('text,', cardinality(args)),',');
+      RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: Helper function %(%) does not exist.', fctName, btrim(repeat('text,', cardinality(args)),',');
     END IF;
 
     IF debug THEN RAISE NOTICE 'TT_TextFctEval 22 fctName=%, args=%', fctName, cardinality(args);END IF;
@@ -1225,7 +1229,7 @@ RETURNS SETOF RECORD AS $$
   BEGIN
      IF errorType IN ('INVALID_PARAMETER', 'INVALID_TRANSLATION_PARAMETER') THEN
        logMsg = logMsg || 'Invalid parameter value passed to rule ''' || TT_TextFctQuery(fctName, args, jsonbRow, FALSE, TRUE) ||
-                ''' for attribute ''' || targetAttribute  '''. Revise your translation table...';
+                ''' for attribute ''' || targetAttribute || '''. Revise your translation table...';
        IF errorType = 'INVALID_PARAMETER' THEN
          logMsg = 'STOP ON INVALID PARAMETER: ' ||  logMsg;
        ELSE
