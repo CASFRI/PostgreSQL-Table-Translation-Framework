@@ -515,13 +515,13 @@ UNION ALL
 SELECT '9.2'::text number,
        'TT_TextFctEval'::text function_tested,
        'Basic NULLs'::text description,
-        TT_Iserror('SELECT TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') = 'ERROR IN TRANSLATION TABLE : Helper function <NULL>(<NULL>) does not exist.' passed
+        TT_Iserror('SELECT TT_TextFctEval(NULL, NULL, NULL, NULL::boolean, NULL)') = 'ERROR IN TRANSLATION TABLE: Helper function <NULL>(<NULL>) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.3'::text number,
        'TT_TextFctEval'::text function_tested,
        'Wrong function name'::text description,
-        TT_Iserror('SELECT TT_TextFctEval(''xisbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE : Helper function xisbetween(text,text,text) does not exist.' passed
+        TT_Iserror('SELECT TT_TextFctEval(''xisbetween'', ''{crown_closure, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE: Helper function xisbetween(text,text,text) does not exist.' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.4'::text number,

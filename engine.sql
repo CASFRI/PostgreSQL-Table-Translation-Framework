@@ -694,7 +694,7 @@ RETURNS text AS $$
     repackArray text[];
     isStrList boolean;
     repackStr text;
-    debug boolean = TT_Debug();
+    debug boolean = FALSE;
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_TextFctQuery BEGIN fctName=%, args=%, vals=%', fctName, args::text, vals::text;END IF;
     queryStr = fctName || '(';
@@ -795,7 +795,7 @@ RETURNS anyelement AS $$
   DECLARE
     queryStr text;
     result ALIAS FOR $0;
-    debug boolean = TT_Debug();
+    debug boolean = FALSE;
   BEGIN
     -- This function returns a polymorphic type (the one provided in the returnType input argument)
     IF debug THEN RAISE NOTICE 'TT_TextFctEval BEGIN fctName=%, args=%, vals=%, returnType=%', fctName, args, vals, returnType;END IF;
@@ -1370,7 +1370,7 @@ RETURNS SETOF RECORD AS $$
 
            -- initialize the final value
            finalVal = rule.errorCode;
-           IF NOT isValid THEN
+           IF NOT isValid AND (rule.stopOnInvalid OR stopOnInvalidSource OR NOT sourceRowIdColumn IS NULL) THEN
              PERFORM TT_ReportError('INVALID_VALUE', translationTableSchema, translationTable, logTableSuffix,
                             rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, finalVal,
                             currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
