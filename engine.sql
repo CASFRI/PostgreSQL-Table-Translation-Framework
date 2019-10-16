@@ -137,15 +137,17 @@ $$ LANGUAGE sql VOLATILE;
 -- schemaName text
 -- tableName text
 -- increment boolean
+-- invalidValuesHandling text
 --
 -- Return the suffix of the created log table. 'FALSE' if creation failed.
 -- Create a new or overwrite former log table and initialize a new one.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean);
+--DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean, text);
 CREATE OR REPLACE FUNCTION TT_LogInit(
   schemaName text,
   tableName text,
-  increment boolean DEFAULT TRUE
+  increment boolean DEFAULT TRUE,
+  invalidValuesHandling text DEFAULT '100'
 )
 RETURNS text AS $$
   DECLARE
@@ -175,14 +177,32 @@ RETURNS text AS $$
     END IF;
     
     query = 'CREATE TABLE ' || TT_FullTableName(schemaName, logTableName) || ' (' ||
-            'logID SERIAL, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int);';
+            'logID SERIAL, logTime timestamp with time zone, logEntryType text, 
+             firstRowId text, message text, currentRowNb int, count int);';
+
+    -- display the name of the logging table being produced
     RAISE NOTICE 'TT_LogInit(): % log table ''%''...', action, TT_FullTableName(schemaName, logTableName);
+    -- display the type of handling for invalid values.
+    IF invalidValuesHandling = 'ALL_OWN_ROW' THEN
+      RAISE NOTICE 'TT_LogInit(): All invalid rows on their own rows...';
+    ELSE
+      IF invalidValuesHandling = 'ALL_GROUPED' THEN
+        RAISE NOTICE 'TT_LogInit(): All invalid rows of the same type grouped into the same row.';
+      ELSE
+        RAISE NOTICE 'TT_LogInit(): Maximum % invalid rows of the same type grouped into the same row...', invalidValuesHandling;
+      END IF;
+    END IF;
     BEGIN
       EXECUTE query;
     EXCEPTION WHEN OTHERS THEN
       RETURN 'FALSE';
     END;
-    query = 'CREATE UNIQUE INDEX ON ' || TT_FullTableName(schemaName, logTableName) || ' (md5(message));';
+
+    -- create an md5 index on the message column
+    query = 'CREATE ' || 
+             CASE WHEN invalidValuesHandling != 'ALL_OWN_ROW' THEN 'UNIQUE ' ELSE '' END || 
+            'INDEX ON ' || TT_FullTableName(schemaName, logTableName) || 
+            ' (md5(message));';
     EXECUTE query;
     RETURN '_log_' || TT_Pad(logInc::text, 3::text, '0');
   END;
@@ -203,7 +223,13 @@ CREATE OR REPLACE FUNCTION TT_ShowLastLog(
   tableName text,
   logNb int DEFAULT NULL
 )
-RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstRowId text, message text, currentRowNb int, count int) AS $$
+RETURNS TABLE (logID int, 
+               logTime timestamp with time zone, 
+               logEntryType text, 
+               firstRowId text, 
+               message text, 
+               currentRowNb int, 
+               count int) AS $$
   DECLARE
     query text;
     logInc int = 1;
@@ -236,7 +262,8 @@ RETURNS TABLE (logID int, logTime timestamp with time zone, logType text, firstR
     END IF;
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     RAISE NOTICE 'TT_ShowLastLog(): Displaying log table ''%''', logTableName;
-    query = 'SELECT * FROM ' || TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
+    query = 'SELECT logID, logTime, logEntryType, firstRowId, message, currentRowNb, count FROM ' || 
+            TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
     RETURN QUERY EXECUTE query;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -287,7 +314,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- schemaName text  - Schema name of the logging table
 -- tableName text   - Logging table name
 -- suffix text      - Suffix of the logging table name
--- logType text     - Type of logging entry (PROGRESS, INVALIDATION)
+-- logEntryType text - Type of logging entry (PROGRESS, INVALIDATION)
 -- firstRowId text  - rowID of the first source triggering the logging entry.
 -- message text     - Message to log
 -- currentRowNb int - Number of the row being processed
@@ -298,18 +325,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- The log table has the following structure:
 --   logid integer NOT NULL DEFAULT nextval('source_log_001_logid_seq'::regclass),
 --   logtime timestamp,
---   logtype text,
+--   logentrytype text,
 --   firstrowid text,
 --   message text,
 --   currentrownb int,
 --   count integer
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
+--DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, text, int, int);
 CREATE OR REPLACE FUNCTION TT_Log(
   schemaName text,
   tableName text,
   suffix text,
-  logType text,
+  invalidValuesHandling text,
+  logEntryType text,
   firstRowId text,
   msg text,
   currentRowNb int,
@@ -319,19 +347,25 @@ RETURNS boolean AS $$
   DECLARE
     query text;
   BEGIN
-    IF upper(logType) = 'PROGRESS' THEN
+    IF upper(logEntryType) = 'PROGRESS' THEN
       query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' VALUES (' ||
          'DEFAULT, now(), ''PROGRESS'', $1, $2, $3, $4);';
       EXECUTE query USING firstRowId, msg, currentRowNb, count;
       RETURN TRUE;
-    ELSIF upper(logType) = 'INVALID_VALUE' OR upper(logType) = 'TRANSLATION_ERROR' THEN
-        query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' AS tbl VALUES (' ||
-                'DEFAULT, now(), ''' || upper(logType) || ''', $1, $2, $3, $4) ' ||
-                'ON CONFLICT (md5(message)) DO UPDATE SET count = tbl.count + 1;';
-        EXECUTE query USING firstRowId, msg, currentRowNb, 1;
+    ELSIF upper(logEntryType) = 'INVALID_VALUE' OR upper(logEntryType) = 'TRANSLATION_ERROR' THEN
+      query = 'INSERT INTO ' || TT_FullTableName(schemaName, tableName || suffix) || ' AS tbl VALUES (' ||
+              'DEFAULT, now(), ''' || upper(logEntryType) || ''', $1, $2, $3, $4) ';
+      IF invalidValuesHandling != 'ALL_OWN_ROW' THEN
+        query = query || 'ON CONFLICT (md5(message)) DO UPDATE SET count = tbl.count + 1';
+        IF invalidValuesHandling != 'ALL_GROUPED' THEN
+          query = query || 'WHERE tbl.count < ' || invalidValuesHandling;
+        END IF;
+      END IF;
+      query = query || ';';
+      EXECUTE query USING firstRowId, msg, currentRowNb, 1;
       RETURN TRUE;
     ELSE
-      RAISE EXCEPTION 'TT_Log() ERROR: Invalid logType (%)...', logType;
+      RAISE EXCEPTION 'TT_Log() ERROR: Invalid logEntryType (%)...', logEntryType;
       RETURN FALSE;
     END IF;
   END;
@@ -928,7 +962,10 @@ CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTable name,
   validate boolean DEFAULT TRUE
 )
-RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules TT_RuleDef[], translationRule TT_RuleDef) AS $$
+RETURNS TABLE (targetAttribute text, 
+               targetAttributeType text, 
+               validationRules TT_RuleDef[], 
+               translationRule TT_RuleDef) AS $$
   DECLARE
     row RECORD;
     query text;
@@ -951,7 +988,8 @@ RETURNS TABLE (targetAttribute text, targetAttributeType text, validationRules T
                     translationRules::text, 
                     description::text, 
                     descUpToDateWithRules::text
-             FROM ' || TT_FullTableName(translationTableSchema, translationTable) || ' ORDER BY to_number(rule_id::text, ''999999'');';
+             FROM ' || TT_FullTableName(translationTableSchema, translationTable) || 
+           ' ORDER BY to_number(rule_id::text, ''999999'');';
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
     FOR row IN EXECUTE query LOOP
       -- validate attributes and assign values
@@ -1130,13 +1168,14 @@ RETURNS text AS $f$
     END IF;
 
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, int, boolean, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, text, boolean, boolean, int, boolean, boolean, boolean);';
     EXECUTE query;
 
     query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
                sourceTableSchema name,
                sourceTable name,
                sourceTableIdColumn name DEFAULT NULL,
+               invalidValuesHandling text DEFAULT ''100'',
                stopOnInvalidSource boolean DEFAULT FALSE,
                stopOnTranslationError boolean DEFAULT FALSE,
                logFrequency int DEFAULT 500,
@@ -1148,7 +1187,8 @@ RETURNS text AS $f$
              BEGIN
                RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema,
                                                         sourceTable,
-                                                        sourceTableIdColumn, ' ||
+                                                        sourceTableIdColumn,
+                                                        invalidValuesHandling, ' ||
                                                         '''' || translationTableSchema || ''', ' ||
                                                         '''' || translationTable || ''', 
                                                         stopOnInvalidSource,
@@ -1206,12 +1246,13 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------------------------
 -- TT_ReportError
 ------------------------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ReportError(text, name, name, name, text, text[], jsonb, text, text, int, text, boolean, boolean);
+--DROP FUNCTION IF EXISTS TT_ReportError(text, name, name, name, text, text, text[], jsonb, text, text, int, text, boolean, boolean);
 CREATE OR REPLACE FUNCTION TT_ReportError(
   errorType text,
   translationTableSchema name,
   translationTable name,
   logTableSuffix name,
+  invalidValuesHandling text,
   fctName text, 
   args text[], 
   jsonbRow jsonb, 
@@ -1252,7 +1293,7 @@ RETURNS SETOF RECORD AS $$
            RAISE EXCEPTION '% STOP ON TRANSLATION ERROR at row #%: %', localGlobal, currentRowNb, logMsg;
          END IF;
        ELSIF NOT logTableSuffix IS NULL THEN
-         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, invalidValuesHandling, 
                         errorType, lastFirstRowID, logMsg, currentRowNb);
        ELSE
          RAISE NOTICE '% at row #%: %', errorType, currentRowNb, logMsg;
@@ -1271,6 +1312,14 @@ $$ LANGUAGE plpgsql VOLATILE;
 --   sourceTable name            - Name of the source table.
 --   sourceRowIdColumn name      - Name of the source unique identifier column used 
 --                                 for logging.
+--   invalidValuesHandling       - Determine how logging handles invalid entries:
+--                               - ALL_GROUPED: log all invalid entries grouped with 
+--                               -              a count (slowest option).
+--                               - ALL_OWN_ROW: log all invalid entries on their own 
+--                               -              row (fastest option).
+--                               - integer (as string): log a limited number of invalid.
+--                               -                      entries grouped with a count.
+--                               - Default is '100'.
 --   translationTableSchema name - Name of the schema containing the translation
 --                                 table.
 --   translationTable name       - Name of the translation table.
@@ -1293,11 +1342,12 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, int, boolean, boolean, boolean);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, text, name, name, boolean, boolean, int, boolean, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   sourceTableSchema name,
   sourceTable name,
   sourceRowIdColumn name,
+  invalidValuesHandling text,
   translationTableSchema name,
   translationTable name,
   stopOnInvalidSource boolean DEFAULT FALSE,
@@ -1334,7 +1384,11 @@ RETURNS SETOF RECORD AS $$
     IF sourceRowIdColumn IS NULL THEN
       RAISE NOTICE '_TT_Translate: sourceRowIdColumn is NULL. No logging with be performed...';
     ELSE
-      logTableSuffix = TT_LogInit(translationTableSchema, translationTable, incrementLog);
+      invalidValuesHandling = upper(invalidValuesHandling);
+      IF NOT invalidValuesHandling IN ('ALL_GROUPED', 'ALL_OWN_ROW') AND NOT TT_IsInt(invalidValuesHandling) THEN
+        RAISE EXCEPTION '_TT_Translate ERROR: Invalid invalidValuesHandling parameter (%). Should be ''ALL_GROUPED'', ''ALL_OWN_ROW'' or a an integer...', invalidValuesHandling;
+      END IF;
+      logTableSuffix = TT_LogInit(translationTableSchema, translationTable, incrementLog, invalidValuesHandling);
       IF logTableSuffix = 'FALSE' THEN
         RAISE EXCEPTION '_TT_Translate ERROR: Logging initialization failed...';
       END IF;
@@ -1362,33 +1416,38 @@ RETURNS SETOF RECORD AS $$
            BEGIN
              isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, validate);
            EXCEPTION WHEN OTHERS THEN
-             PERFORM TT_ReportError('INVALID_PARAMETER', translationTableSchema, translationTable, logTableSuffix,
-                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, NULL,
-                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
+             PERFORM TT_ReportError('INVALID_PARAMETER', translationTableSchema, translationTable, 
+                                    logTableSuffix, invalidValuesHandling, 
+                                    rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, NULL,
+                                    currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
            END;
            IF debug THEN RAISE NOTICE '_TT_Translate 44 isValid=%', isValid;END IF;
 
            -- initialize the final value
            finalVal = rule.errorCode;
            IF NOT isValid AND (rule.stopOnInvalid OR stopOnInvalidSource OR NOT sourceRowIdColumn IS NULL) THEN
-             PERFORM TT_ReportError('INVALID_VALUE', translationTableSchema, translationTable, logTableSuffix,
-                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, finalVal,
-                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
+             PERFORM TT_ReportError('INVALID_VALUE', translationTableSchema, translationTable, 
+                                    logTableSuffix, invalidValuesHandling,
+                                    rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, finalVal,
+                                    currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
            END IF;
          END LOOP; -- FOREACH rule
 
          -- if all validation rule passed, execute the translation rule
          IF isValid THEN
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.targetAttributeType || ', ' || validate || ');';
+           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.targetAttributeType || 
+                   ', ' || validate || ');';
            IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
            BEGIN
              EXECUTE query
              USING (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
-             PERFORM TT_ReportError('INVALID_TRANSLATION_PARAMETER', translationTableSchema, translationTable, logTableSuffix,
-                            rule.fctName, rule.args, jsonbRow, translationRow.targetAttribute, NULL,
-                            currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
+             PERFORM TT_ReportError('INVALID_TRANSLATION_PARAMETER', translationTableSchema, translationTable, 
+                                    logTableSuffix, invalidValuesHandling, 
+                                    (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow, translationRow.targetAttribute, NULL,
+                                    currentRowNb, lastFirstRowID, (translationRow.translationRule).stopOnInvalid, 
+                                    stopOnInvalidSource);
            END;
 
            IF debug THEN RAISE NOTICE '_TT_Translate 88 finalVal=%', finalVal;END IF;
@@ -1404,9 +1463,12 @@ RETURNS SETOF RECORD AS $$
              ELSE -- if translation error code provided, return it
                finalVal = (translationRow.translationRule).errorCode;
              END IF;
-             PERFORM TT_ReportError('TRANSLATION_ERROR', translationTableSchema, translationTable, logTableSuffix,
-                            (translationRow.translationRule).fctName, (translationRow.translationRule).args, jsonbRow, translationRow.targetAttribute, finalVal,
-                            currentRowNb, lastFirstRowID, (translationRow.translationRule).stopOnInvalid, stopOnInvalidSource);
+             PERFORM TT_ReportError('TRANSLATION_ERROR', translationTableSchema, translationTable, 
+                                    logTableSuffix, invalidValuesHandling,
+                                    (translationRow.translationRule).fctName, (translationRow.translationRule).args, 
+                                    jsonbRow, translationRow.targetAttribute, finalVal,
+                                    currentRowNb, lastFirstRowID, (translationRow.translationRule).stopOnInvalid, 
+                                    stopOnInvalidSource);
            END IF;
          END IF;
          -- Built the return query while computing values
@@ -1422,7 +1484,7 @@ RETURNS SETOF RECORD AS $$
        
        -- log progress
        IF NOT logTableSuffix IS NULL AND currentRowNb % logFrequency = 0 THEN
-         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+         PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, invalidValuesHandling, 
                 'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
        END IF;
        --only validate translation table on first iteration
@@ -1432,7 +1494,7 @@ RETURNS SETOF RECORD AS $$
     -- log progress
     currentRowNb = currentRowNb - 1;
     IF NOT logTableSuffix IS NULL AND currentRowNb % logFrequency != 0 THEN
-      PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, 
+      PERFORM TT_Log(translationTableSchema, translationTable, logTableSuffix, invalidValuesHandling,
               'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, currentRowNb % logFrequency);
     END IF;
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;

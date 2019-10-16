@@ -451,13 +451,13 @@ UNION ALL
 SELECT '7.1'::text number,
        'TT_Prepare'::text function_tested,
        'Basic test, check if created function exists'::text description,
-        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'name', 'text', 'boolean', 'boolean', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_FctExists('translate', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('translate', ARRAY['name', 'name', 'name', 'text', 'boolean', 'boolean', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
@@ -469,7 +469,7 @@ UNION ALL
 SELECT '7.4'::text number,
        'TT_Prepare'::text function_tested,
        'Test upper and lower case caracters'::text description,
-        TT_FctExists('Public', 'translate', ARRAY['Name', 'Name', 'name', 'boOlean', 'booLean', 'intEger', 'booleaN', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('Public', 'translate', ARRAY['Name', 'Name', 'name', 'text', 'boOlean', 'booLean', 'intEger', 'booleaN', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.5'::text number,
