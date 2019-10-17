@@ -392,7 +392,7 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(*text* **srcVal**, *text* lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
 
