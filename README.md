@@ -408,78 +408,78 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
     * e.g. True()
     
-* **NotNullEmptyOr**(stringList srcVal)
+* **NotNullEmptyOr**(*stringList* **srcVal**)
     * Return TRUE if at least one value is not NULL or empty strings.
     * Return FALSE if all values are NULL or empty strings.
     * e.g. NotNullEmptyOr('{'a','','NULL'}')
  
- * **IsIntSubstring**(text srcVal, int star_char, int for_length, boolean acceptNull\[default TRUE\])
+ * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsInt().
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
-  * **IsBetweenSubstring**(text srcVal, int star_char, int for_length, numeric min, numeric max, boolean includeMin\[default TRUE\], boolean includeMax\[default TRUE\], boolean acceptNull\[default TRUE\])
+  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsBetween().
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-* **GeoIsValid**(geometry the_geom, boolean fix\[default TRUE\])
-    * Returns True if geometry is valid. If fix is True and geometry is invalid, function will attempt to make a valid geometry and return True if successful. If geometry is invalid returns False. Note that using fix=True does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
+* **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
+    * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
     * e.g. GeoIsValid(POLYGON, TRUE)
     
-* **GeoIntersects**(geometry the_geom, text intersectSchemaName\[default public\], text intersectTableName, geometry geoCol\[default geom\])
-    * Returns True if the_geom intersects with any features in the intersect table. Otherwise returns False. Invalid geometries are validated before running the intersection test.
+* **GeoIntersects**(*geometry* **geom**, *text* **intersectSchemaName**\[default public\], *text* **intersectTableName**, *geometry* **geomCol**\[default geom\])
+    * Returns TRUE if geom intersects with any features in the intersect table. Otherwise returns FALSE. Invalid geometries are validated before running the intersection test.
     * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo)
       
 ## Translation Functions
 
-* **CopyText**(text srcVal)
+* **CopyText**(*text* **srcVal**)
     * Returns srcVal as text without any transformation.
     * e.g. CopyText('sp1')
       
-* **CopyDouble**(numeric srcVal)
+* **CopyDouble**(*numeric* **srcVal**)
     * Returns srcVal as double precision without any transformation.
     * e.g. CopyDouble(1.1)
 
-* **CopyInt**(integer srcVal)
+* **CopyInt**(*integer* **srcVal**)
     * Returns srcVal as integer without any transformation.
     * e.g. CopyInt(1)
       
-* **LookupText**(text srcVal, text lookupSchemaName\[default public\], text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
+* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
     * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. LookupText('sp1', public, species_lookup, targetSp, TRUE)
       
-* **LookupDouble**(text srcVal, text lookupSchemaName\[default public\], text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
+* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
     * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. LookupDouble(5.5, public, species_lookup, sp_percent, TRUE)
 
-* **LookupInt**(text srcVal, text lookupSchemaName\[default public\], text lookupTableName, text lookupCol, boolean ignoreCase\[default TRUE\])
+* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, boolean **ignoreCase**\[default TRUE\])
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
 
-* **MapText**(text srcVal, stringList lst1, stringList lst2, boolean ignoreCase\[default TRUE\])
+* **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE)
       
-* **MapDouble**(text srcVal, stringList lst1, stringList lst2, boolean ignoreCase\[default TRUE\])
+* **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
     * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. MapDouble('A','{'A','B','C'}','{'1.1','1.2','1.3'}', TRUE)
       
-* **MapInt**(text srcVal, stringList lst1, stringList lst2, boolean ignoreCase\[default TRUE\])
+* **MapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
     * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','{'A','B','C'}','{'1','2','3'}', TRUE)
       
-* **Length**(text srcVal)
+* **Length**(*text* **srcVal**)
     * Returns the length of the srcVal string.
     * e.g. Length('12345')
 
-* **Pad**(text srcVal, int targetLength, boolean trunc\[default TRUE\])
+* **Pad**(*text* **srcVal**, *int* **targetLength**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength and trunc = TRUE. Returns srcVal if srcVal length > targetLength and trunc = FALSE. 
     * e.g. Pad('tab1', 10, x, TRUE)
 
-* **Concat**(stringList srcVal, text separator)
+* **Concat**(*stringList* **srcVal**, *text* **separator**)
     * Returns a string of concatenated values, interspersed with a separator. srcVal takes a string list of column names and/or values. 
     * e.g. Concat('{'str1','str2','str3'}', '-')
 
-* **PadConcat**(stringList srcVals, stringList lengths, stringList pads, text separator, boolean upperCase, boolean includeEmpty\[default TRUE\])
+* **PadConcat**(*stringList* **srcVals**, *stringList* **lengths**, *stringList* **pads**, *text* **separator**, *boolean* **upperCase**, *boolean* **includeEmpty**\[default TRUE\])
     * Returns a string of concatenated values, where each value is padded using **Pad()**. Inputs for srcVals, lengths, and pads are comma separated strings where the ith length and pad values correspond to the ith srcVal. If upperCase is TRUE, all characters are converted to upper case, if includeEmpty is FALSE, any empty strings in the srcVals are dropped from the concatenation. 
     * e.g. PadConcat('str1,str2,str3', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
 
@@ -495,19 +495,19 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
     * e.g. NothingInt()
 
-* **GeoIntersectionText**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, text returnCol, text method)
+* **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
     
-* **GeoIntersectionDouble**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, numeric returnCol, text method)
+* **GeoIntersectionDouble**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
     * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, LENGTH, HIGHEST_VALUE)
 
-* **GeoIntersectionInt**(geometry the_geom, text intersectSchemaName, text intersectTableName, geometry geoCol, numeric returnCol, text method)
+* **GeoIntersectionInt**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
     * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, YEAR, LOWEST_VALUE)
 
-* **GeoMakeValid**(geometry the_geom)
+* **GeoMakeValid**(*geometry* **geom**)
     * Returns a valid geometry column. If geometry cannot be validated, returns NULL.
     * e.g. GeoMakeValid(POLYGON)
 
