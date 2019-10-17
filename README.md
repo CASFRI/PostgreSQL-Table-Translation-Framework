@@ -170,7 +170,7 @@ A logging table has the following attributes:
 
 The 'sourceRowIdColumn' parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column, the first source table row having triggered this type of log entry. If 'sourceRowIdColumn' is not provided, logging is disabled.
 
-Invalidation and translation errors can happen millions of time in some translation projects. Log entries of of the same type are grouped together in order to avoid generating a huge number of identical rows in the log table. The 'count' attribute of the logging table reflects the number of time an identical error has happened during the translation process. By default the logging system will log only the first 100 entries of the same type. You can change this behavior by adding a fourth 'dupLogEntriesHandling' parameter to TT_Translate() specifying how to handle duplicate log entries. "ALL_GROUPED" will log all entries (not only the firs 100 ones) grouped togethe, It is the slowest option. "ALL_OWN_ROW" will log each entry into its own row. It is the fastest option but it might result in a huge number of rows in the logging table. Between these two options, you can instead specify a maximum number of entries per similar invalid rows. The default is 100.
+Invalidation and translation errors can happen millions of time in some translation projects. Log entries of of the same type are grouped together in order to avoid generating a huge number of identical rows in the log table. The 'count' attribute of the logging table reflects the number of time an identical error has happened during the translation process. By default the logging system will log only the first 100 entries of the same type. You can change this behavior by adding the 'dupLogEntriesHandling' parameter to TT_Translate() specifying how to handle duplicate log entries. "ALL_GROUPED" will log all entries (not only the first 100 ones) grouped together. It is the slowest option. "ALL_OWN_ROW" will log each entry into its own row. It is the fastest option but it might result in a huge number of rows in the logging table. Between these two options, you can instead specify a maximum number of entries per similar invalid rows as a single quoted integer. The default value for 'dupLogEntriesHandling' is '100'.
 
 Logging tables are created beside the translation table for which the translation function was created (with TT_Prepare()). They have the same name as the translation table but with the '_log_00X' suffix.
 
@@ -271,30 +271,37 @@ Two groups of function are of interest here:
     * Prepare a translation function based on attributes found in the provided translation table and cross validated with an optional reference translation table. The default name of the prepared funtion can be altered by providing a 'fctNameSuf' suffix.
     * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
 
-* **TT_TranslateSuffix**(name sourceTableSchema,  
-                         name sourceTable,  
-                         name sourceRowIdColumn[default NULL],  
-                         boolean stopOnInvalidSource[default FALSE],  
-                         boolean stopOnTranslationError[default FALSE],  
-                         int logFrequency[default 500],  
-                         boolean incrementLog[default TRUE],  
-                         boolean resume[default FALSE],  
-                         boolean ignoreDescUpToDateWithRules[default FALSE])
-    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type PROGRESS happen every 'logFrequency' rows. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
+* **TT_TranslateSuffix(**  
+                         *name **sourceTableSchema**,  
+                         name **sourceTable**,  
+                         name **sourceRowIdColumn**[default NULL],  
+                         boolean **stopOnInvalidSource**[default FALSE],  
+                         boolean **stopOnTranslationError**[default FALSE],  
+                         text **dupLogEntriesHandling**[default '100'],  
+                         int **logFrequency**[default 500],  
+                         boolean **incrementLog**[default TRUE],  
+                         boolean **resume**[default FALSE],  
+                         boolean **ignoreDescUpToDateWithRules**[default FALSE]*  
+                         **)**
+    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUES' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
 
 * **TT_DropAllTranslateFct**()
     * Delete all translation functions prepared with TT_Prepare().
     * e.g. SELECT TT_DropAllTranslateFct();
 
-* **TT_ShowLastLog**(name schemaName,  
-                 name tableName,  
-                 text logNb[default NULL])
+* **TT_ShowLastLog(**  
+                 *name **schemaName**,  
+                 name **tableName**,  
+                 text **logNb**[default NULL]*  
+                 **)**
     * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
     * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
-* **TT_DeleteAllLogs**(name schemaName,  
-                      name tableName)
+* **TT_DeleteAllLogs(**  
+                      *name **schemaName**,  
+                      name **tableName***  
+                      **)**
     * Delete all logging table associated with the specified translation table.
     * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
 
