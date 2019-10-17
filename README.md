@@ -261,11 +261,13 @@ Two groups of function are of interest here:
 * functions associated with the translation process: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
 * functions useful to work with logging tables: TT_ShowLastLog() and TT_DeleteAllLogs().
 
-* **TT_Prepare**(name translationTableSchema,  
+* **TT_Prepare(**  
+                 name translationTableSchema,  
                  name translationTable,  
                  text fctNameSuf[default ''],  
                  name refTranslationTableSchema[default NULL],  
-                 name refTranslationTable[default NULL])
+                 name refTranslationTable[default NULL]  
+                 **)**
     * Prepare a translation function based on attributes found in the provided translation table and cross validated with an optional reference translation table. The default name of the prepared funtion can be altered by providing a 'fctNameSuf' suffix.
     * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
 
