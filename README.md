@@ -272,16 +272,16 @@ Two groups of function are of interest here:
     * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
 
 * **TT_TranslateSuffix(**  
-                         *name* **sourceTableSchema***,*  
-                         *name* **sourceTable***,*  
-                         *name* **sourceRowIdColumn***[default NULL],*  
-                         *boolean* **stopOnInvalidSource***[default FALSE],*  
-                         *boolean* **stopOnTranslationError***[default FALSE],*  
-                         *text* **dupLogEntriesHandling***[default '100'],*  
-                         *int* **logFrequency***[default 500],*  
-                         *boolean* **incrementLog***[default TRUE],*  
-                         *boolean* **resume***[default FALSE],*  
-                         *boolean* **ignoreDescUpToDateWithRules***[default FALSE]*  
+                         *name* **sourceTableSchema**,  
+                         *name* **sourceTable**,  
+                         *name* **sourceRowIdColumn**[default NULL],  
+                         *boolean* **stopOnInvalidSource**[default FALSE],  
+                         *boolean* **stopOnTranslationError**[default FALSE],  
+                         *text* **dupLogEntriesHandling**[default '100'],  
+                         *int* **logFrequency**[default 500],  
+                         *boolean* **incrementLog**[default TRUE],  
+                         *boolean* **resume**[default FALSE],  
+                         *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
                          **)**
     * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUES' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
@@ -291,15 +291,15 @@ Two groups of function are of interest here:
     * e.g. SELECT TT_DropAllTranslateFct();
 
 * **TT_ShowLastLog(**  
-                 *name* **schemaName***,*  
-                 *name* **tableName***,*  
-                 *text* **logNb***[default NULL]*  
+                 *name* **schemaName**,  
+                 *name* **tableName**,  
+                 *text* **logNb**[default NULL]  
                  **)**
     * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
     * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
 * **TT_DeleteAllLogs(**  
-                      *name* **schemaName***,*  
+                      *name* **schemaName**,  
                       *name* **tableName**  
                       **)**
     * Delete all logging table associated with the specified translation table.
