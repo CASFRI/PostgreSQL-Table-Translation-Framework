@@ -162,11 +162,11 @@ A logging table has the following attributes:
 
 1. **logid** - Incremental unique integer identifier of the log entry.
 2. **logtime** - Date and hour stamp  of the log entry.
-3. **logtype** - 'PROGRESS', 'INVALIDATION' or 'TRANSLATION_ERROR'.
+3. **logtype** - 'PROGRESS', 'INVALID_VALUE' or 'TRANSLATION_ERROR'.
 4. **firstrowid** - In the case of a group of matching entries, the first source row ID of the group.
 5. **message** - Detailed logging message.
 6. **currentrownb** - Number of the row being processed when this log entry was created. Different from 'firstrowid' which is an identifier.
-7, **count** - Number of rows pertaining to this log entry group. Equal to logFrequecy for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALIDATION' and 'TRANSLATION_ERROR' entries.
+7, **count** - Number of rows pertaining to this log entry group. Equal to logFrequecy for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALID_VALUE' and 'TRANSLATION_ERROR' entries.
 
 The 'sourceRowIdColumn' parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column, the first source table row having triggered this type of log entry. If 'sourceRowIdColumn' is not provided, logging is disabled.
 
