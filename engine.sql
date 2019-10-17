@@ -184,12 +184,12 @@ RETURNS text AS $$
     RAISE NOTICE 'TT_LogInit(): % log table ''%''...', action, TT_FullTableName(schemaName, logTableName);
     -- display the type of handling for invalid values.
     IF dupLogEntriesHandling = 'ALL_OWN_ROW' THEN
-      RAISE NOTICE 'TT_LogInit(): All invalid rows on their own rows...';
+      RAISE NOTICE 'TT_LogInit(): All invalid and translation error messages in their own rows...';
     ELSE
       IF dupLogEntriesHandling = 'ALL_GROUPED' THEN
-        RAISE NOTICE 'TT_LogInit(): All invalid rows of the same type grouped into the same row.';
+        RAISE NOTICE 'TT_LogInit(): All invalid and translation error messages of the same type grouped in the same row.';
       ELSE
-        RAISE NOTICE 'TT_LogInit(): Maximum % invalid rows of the same type grouped into the same row...', dupLogEntriesHandling;
+        RAISE NOTICE 'TT_LogInit(): Maximum of % invalid or translation error messages of the same type grouped in the same row...', dupLogEntriesHandling;
       END IF;
     END IF;
     BEGIN
