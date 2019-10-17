@@ -299,8 +299,8 @@ Two groups of function are of interest here:
     * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
 * **TT_DeleteAllLogs(**  
-                      *name* **schemaName**,  
-                      name* **tableName**  
+                      *name* schemaName,  
+                      *name* tableName  
                       **)**
     * Delete all logging table associated with the specified translation table.
     * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
