@@ -500,11 +500,11 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
     
 * **GeoIntersectionDouble**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
-    * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
+    * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText()**.
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, LENGTH, HIGHEST_VALUE)
 
 * **GeoIntersectionInt**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
-    * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText**.
+    * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText()**.
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, YEAR, LOWEST_VALUE)
 
 * **GeoMakeValid**(*geometry* **geom**)
