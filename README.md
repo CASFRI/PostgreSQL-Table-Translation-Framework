@@ -264,9 +264,9 @@ Two groups of function are of interest here:
 * **TT_Prepare(**  
                  *name* **translationTableSchema**,  
                  *name* **translationTable**,  
-                 *text* **fctNameSuf***[default '']*,  
-                 *name* **refTranslationTableSchema***[default NULL]*,  
-                 *name* **refTranslationTable***[default NULL]*  
+                 *text* **fctNameSuf**[default ''],  
+                 *name* **refTranslationTableSchema**[default NULL],  
+                 *name* **refTranslationTable**[default NULL]  
                  **)**
     * Prepare a translation function based on attributes found in the provided translation table and cross validated with an optional reference translation table. The default name of the prepared funtion can be altered by providing a 'fctNameSuf' suffix.
     * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
