@@ -261,22 +261,22 @@ Two groups of function are of interest here:
 * functions associated with the translation process: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
 * functions useful to work with logging tables: TT_ShowLastLog() and TT_DeleteAllLogs().
 
-* **TT_Prepare**(name translationTableSchema,
-                 name translationTable,
-                 text fctNameSuf[default ''],
-                 name refTranslationTableSchema[default NULL],
+* **TT_Prepare**(name translationTableSchema,  
+                 name translationTable,  
+                 text fctNameSuf[default ''],  
+                 name refTranslationTableSchema[default NULL],  
                  name refTranslationTable[default NULL])
     * Prepare a translation function based on attributes found in the provided translation table and cross validated with an optional reference translation table. The default name of the prepared funtion can be altered by providing a 'fctNameSuf' suffix.
     * e.g. SELECT TT_Prepare('translation', 'ab16_avi01_lyr', '_ab16_lyr', 'translation', 'ab06_avi01_lyr');
 
-* **TT_TranslateSuffix**(name sourceTableSchema,
-                         name sourceTable,
-                         name sourceRowIdColumn[default NULL],
-                         boolean stopOnInvalidSource[default FALSE],
-                         boolean stopOnTranslationError[default FALSE],
-                         int logFrequency[default 500],
-                         boolean incrementLog[default TRUE],
-                         boolean resume[default FALSE],
+* **TT_TranslateSuffix**(name sourceTableSchema,  
+                         name sourceTable,  
+                         name sourceRowIdColumn[default NULL],  
+                         boolean stopOnInvalidSource[default FALSE],  
+                         boolean stopOnTranslationError[default FALSE],  
+                         int logFrequency[default 500],  
+                         boolean incrementLog[default TRUE],  
+                         boolean resume[default FALSE],  
                          boolean ignoreDescUpToDateWithRules[default FALSE])
     * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type PROGRESS happen every 'logFrequency' rows. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
@@ -285,13 +285,13 @@ Two groups of function are of interest here:
     * Delete all translation functions prepared with TT_Prepare().
     * e.g. SELECT TT_DropAllTranslateFct();
 
-* **TT_ShowLastLog**(name schemaName,
-                 name tableName,
+* **TT_ShowLastLog**(name schemaName,  
+                 name tableName,  
                  text logNb[default NULL])
     * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
     * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
-* **TT_DeleteAllLogs**(name schemaName,
+* **TT_DeleteAllLogs**(name schemaName,  
                       name tableName)
     * Delete all logging table associated with the specified translation table.
     * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
