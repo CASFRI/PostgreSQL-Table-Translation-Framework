@@ -28,50 +28,50 @@ SELECT 'c'::text, 101;
 DROP TABLE IF EXISTS test_translationtable;
 CREATE TABLE test_translationtable AS
 SELECT '1' rule_id,
-       'CROWN_CLOSURE_UPPER'::text targetAttribute,
-       'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure)'::text translationRules,
+       'CROWN_CLOSURE_UPPER'::text target_attribute,
+       'integer'::text target_attribute_type,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validation_rules,
+       'copyInt(crown_closure)'::text translation_rules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules
+       'TRUE' desc_uptodate_with_rules
 UNION ALL
 SELECT '2' rule_id,
-       'CROWN_CLOSURE_LOWER'::text targetAttribute,
-       'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure)'::text translationRules,
+       'CROWN_CLOSURE_LOWER'::text target_attribute,
+       'integer'::text target_attribute_type,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validation_rules,
+       'copyInt(crown_closure)'::text translation_rules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules;
+       'TRUE' desc_uptodate_with_rules;
 
 DROP TABLE IF EXISTS test_translationtable2;
 CREATE TABLE test_translationtable2 AS
 SELECT '1' rule_id,
-       'CROWN CLOSURE UPPER'::text targetAttribute,
-       'integer'::text targetAttributeType,
-       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure)'::text translationRules,
+       'CROWN CLOSURE UPPER'::text target_attribute,
+       'integer'::text target_attribute_type,
+       'notNull(crown_closure|-8888);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validation_rules,
+       'copyInt(crown_closure)'::text translation_rules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules;
+       'TRUE' desc_uptodate_with_rules;
 
 DROP TABLE IF EXISTS test_translationtable3;
 CREATE TABLE test_translationtable3 AS
 SELECT '1' rule_id,
-       'CROWN_CLOSURE_UPPER'::text targetAttribute,
-       'integer'::text targetAttributeType,
-       'notNull(crown_closure|);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure)'::text translationRules,
+       'CROWN_CLOSURE_UPPER'::text target_attribute,
+       'integer'::text target_attribute_type,
+       'notNull(crown_closure|);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validation_rules,
+       'copyInt(crown_closure)'::text translation_rules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules;
+       'TRUE' desc_uptodate_with_rules;
 
 DROP TABLE IF EXISTS test_translationtable4;
 CREATE TABLE test_translationtable4 AS
 SELECT '1' rule_id,
-       'CROWN_CLOSURE_UPPER'::text targetAttribute,
-       'integer'::text targetAttributeType,
-       'notNull(crown_closure|-3333);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validationRules,
-       'copyInt(crown_closure|WRONG_TYPE)'::text translationRules,
+       'CROWN_CLOSURE_UPPER'::text target_attribute,
+       'integer'::text target_attribute_type,
+       'notNull(crown_closure|-3333);isbetween(crown_closure, ''0'', ''100''|-9999)'::text validation_rules,
+       'copyInt(crown_closure|WRONG_TYPE)'::text translation_rules,
        'Test'::text description,
-       'TRUE' descUpToDateWithRules;
+       'TRUE' desc_uptodate_with_rules;
 
 SELECT TT_Prepare('test_translationtable');
 -------------------------------------------------------------------------------
@@ -369,7 +369,7 @@ UNION ALL
 SELECT '4.8'::text number,
        'TT_ParseRules'::text function_tested,
        'Test what''s in the test translation table'::text description,
-        array_agg(TT_ParseRules(validationRules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
+        array_agg(TT_ParseRules(validation_rules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
 FROM public.test_translationtable
 ---------------------------------------------------------
 -- Test 5 - TT_ValidateTTable

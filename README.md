@@ -72,12 +72,12 @@ The translation table implements two very different steps:
 Translation tables have one row per target attribute and they must contain these seven columns:
 
  1. **rule_id** - Incremental unique integer identifier used for ordering target attributes in target table.
- 2. **targetAttribute** - The name of the target attribute to be created in the target table.
- 3. **targetAttributeType** - The data type of the target attribute.
- 4. **validationRules** - A semicolon separated list of validation rules needed to validate the source values before translating.
- 5. **translationRules** - The translation rule to convert source values to target values.
+ 2. **target_attribute** - The name of the target attribute to be created in the target table.
+ 3. **target_attribute_type** - The data type of the target attribute.
+ 4. **validation_rules** - A semicolon separated list of validation rules needed to validate the source values before translating.
+ 5. **translation_rules** - The translation rule to convert source values to target values.
  6. **description** - A text description of the translation taking place.
- 7. **descUpToDateWithRules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
+ 7. **desc_uptodate_with_rules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
  
 * Multiple validation rules can be seperated with a semi-colon.
 * Error codes, to be returned by the engine if validation rules return FALSE, should follow a vertical bar ('|') after the list of helper function parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute. Error codes can optionally be provided for translation functions too. If the translation helper function returns NULL following a processing error, the engine will return the user provided error code, or the default values of 'TRANSLATION_ERROR' for text types or -3333 for numeric types.
@@ -90,7 +90,7 @@ Translation tables are themselves validated by the translation engine while proc
 * target attribute types are valid PostgreSQL types (integer, text, boolean, etc...),
 * helper functions for validation and translation rules exist and have the propre number of parameters and types,
 * the flag indicating if the description is in sync with the validation/translation rules is set to TRUE,
-* the return type of the translation functions match the targetAttributeType specified in the translation table.
+* the return type of the translation functions match the target_attribute_type specified in the translation table.
 
 **Example translation table**
 
@@ -102,7 +102,7 @@ Similarly, the source attribute "sp1_per" is validated by checking it is not nul
 
 A textual description of the rules is provided and the flag indicating that the description is in sync with the rules is set to TRUE.
 
-| rule_id | targetAttribute | targetAttributeType | validationRules | translationRules | description | descUpToDateWithRules |
+| rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
 |1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,'public','species_lookup'\|NOT_IN_SET)|lookupText(sp1, 'public', 'species_lookup', 'targetSp')|Maps source value to SPECIES_1 using lookup table|TRUE|
 |2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,'0','100'\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
@@ -141,7 +141,7 @@ If your source table is very big, we suggest developing and testing your transla
 
 # How to control errors, warnings and logging?
 
-**Errors -** Two types of error can stop the engine: 1) invalid translation rules in the translation table and 2) errors generated during helper function execution. The first case will always happen at the very beginning of a translation and will unconditionally stop the engine with a meaningful error message. This could be due to the translation table refering a helper function that doesn't exist, specifying an incorrect number of parameters, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the targetAttributeType. It is up to the writer of the translation file to fix the translation table to avoid these errors. The second case is usually due to source value that cannot be or are badly handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the 'stopOnTranslationError' TT_Translate() parameter. If 'stopOnTranslationError' is set to FALSE (default behavior), the engine will log this type of error every time it encounters one, but will not stop the engine. These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
+**Errors -** Two types of error can stop the engine: 1) invalid translation rules in the translation table and 2) errors generated during helper function execution. The first case will always happen at the very beginning of a translation and will unconditionally stop the engine with a meaningful error message. This could be due to the translation table refering a helper function that doesn't exist, specifying an incorrect number of parameters, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation file to fix the translation table to avoid these errors. The second case is usually due to source value that cannot be or are badly handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the 'stopOnTranslationError' TT_Translate() parameter. If 'stopOnTranslationError' is set to FALSE (default behavior), the engine will log this type of error every time it encounters one, but will not stop the engine. These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
 
 **Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule. You can control if the engine should stop as soon as this happens with the 'stopOnInvalidSource' TT_Translate() parameter. If 'stopOnInvalidSource' is set to FALSE (default behavior), the engine will log these warnings in the log table. You can therefore translate a source table in its entirety (which can takes hours or days) without errors and get a final report of invalidated values only at the end of the whole process. You can then fix the source table or the translation table accordingly and restart the translation process.
 
@@ -216,12 +216,12 @@ Create an example translation table:
 ```sql
 CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
-       'SPECIES_1' AS targetAttribute, 
-       'text' AS targetAttributeType, 
-       'notNull(sp1|NULL);matchTable(sp1,'public','species_lookup'|NOT_IN_SET)' AS validationRules, 
-       'lookupText(sp1, 'public', 'species_lookup', 'targetSp')' AS translationRules, 
+       'SPECIES_1' AS target_attribute, 
+       'text' AS target_attribute_type, 
+       'notNull(sp1|NULL);matchTable(sp1,'public','species_lookup'|NOT_IN_SET)' AS validation_rules, 
+       'lookupText(sp1, 'public', 'species_lookup', 'targetSp')' AS translation_rules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
-       TRUE AS descUpToDateWithRules
+       TRUE AS desc_uptodate_with_rules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
@@ -283,7 +283,7 @@ Two groups of function are of interest here:
                          *boolean* **resume**[default FALSE],  
                          *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
                          **)**
-    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUES' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'descUpToDateWithRules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
+    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUES' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'desc_uptodate_with_rules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
 
 * **TT_DropAllTranslateFct**()
@@ -308,7 +308,7 @@ Two groups of function are of interest here:
 # Helper Function Syntax and Reference
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
-Helper functions are of two types: validation helper functions are used in the **validationRules** column of the translation table. They validate the source values and always return TRUE or FALSE. If multiple validation helper functions are provided they should be seperated by semi colons, they will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translationRules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table. Translation helper functions can optionally include a user defined error code.
+Helper functions are of two types: validation helper functions are used in the **validation_rules** column of the translation table. They validate the source values and always return TRUE or FALSE. If multiple validation helper functions are provided they should be seperated by semi colons, they will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translation_rules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table. Translation helper functions can optionally include a user defined error code.
 
 Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. 
 
@@ -340,7 +340,7 @@ Helper function parameters are grouped into three classes, each of which have a 
     * the Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
     * This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
-One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **targetAttributeType** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
+One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
 Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is null. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
 
@@ -484,15 +484,15 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * e.g. PadConcat('str1,str2,str3', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
 
 * **NothingText**()
-    * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingText()
 
 * **NothingDouble**()
-    * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingDouble()
 
 * **NothingInt**()
-    * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **targetAttributeType**.
+    * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
