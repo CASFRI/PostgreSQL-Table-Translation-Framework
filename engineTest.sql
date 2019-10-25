@@ -327,7 +327,7 @@ UNION ALL
 SELECT '4.1'::text number,
        'TT_ParseRules'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseRules('test1(aa, bb,''-999.55''); test2(cc, dd,''222.22'')') = ARRAY[('test1', '{aa,bb,''-999.55''}', NULL, FALSE)::TT_RuleDef, ('test2', '{cc,dd,''222.22''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(aa, bb,''-999.55''); test2(cc, dd,''222.22'')') = ARRAY[('test1', '{aa,bb,''-999.55''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test2', '{cc,dd,''222.22''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.2'::text number,
@@ -345,25 +345,25 @@ UNION ALL
 SELECT '4.4'::text number,
        'TT_ParseRules'::text function_tested,
        'Test empty function'::text description,
-        TT_ParseRules('test1()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.5'::text number,
        'TT_ParseRules'::text function_tested,
        'Test many empty functions'::text description,
-        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', NULL, NULL, FALSE)::TT_RuleDef, ('test2', NULL, NULL, FALSE)::TT_RuleDef, ('test3', NULL, NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test2', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test3', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
        'TT_ParseRules'::text function_tested,
        'Test quoted arguments'::text description,
-        TT_ParseRules('test1(''aa'', ''bb'')') =  ARRAY[('test1', '{''aa'',''bb''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(''aa'', ''bb'')') =  ARRAY[('test1', '{''aa'',''bb''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.7'::text number,
        'TT_ParseRules'::text function_tested,
        'Test quoted arguments containing comma and special chars'::text description,
-        TT_ParseRules('test1(''a,a'', ''b@b'')') =  ARRAY[('test1', '{"''a,a''",''b@b''}', NULL, FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules('test1(''a,a'', ''b@b'')') =  ARRAY[('test1', '{"''a,a''",''b@b''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.8'::text number,
@@ -379,7 +379,7 @@ SELECT '5.1'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Basic test'::text description,
         array_agg(rec)::text =
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
 FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -401,7 +401,7 @@ SELECT '5.4'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test default schema to public'::text description,
         array_agg(rec)::text =
-'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},,f)\")"}' passed
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
 FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
@@ -409,22 +409,23 @@ SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Invalid target attribute name'::text description,
        TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') =
-                     'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 : Target attribute name (CROWN CLOSURE UPPER) is invalid.' passed
+                     'ERROR IN TRANSLATION TABLE AT RULE_ID # 1: Target attribute name (CROWN CLOSURE UPPER) is invalid...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test wrong translation error type'::text description,
        TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);')
-                = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER) : Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule copyInt().' passed
+                = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER): Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule ''copyInt()''...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.7'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test NULL validation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable3''::text);')
-                = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER) : Error code is NULL or empty for validation rule notNull().' passed
----------------------------------------------------------
+       array_agg(rec)::text = 
+'{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
+FROM (SELECT TT_ValidateTTable('public', 'test_translationtable3'::text) rec) foo
+--------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
 UNION ALL
@@ -475,13 +476,13 @@ UNION ALL
 SELECT '7.5'::text number,
        'TT_Prepare'::text function_tested,
        'Test without schema name'::text description,
-        TT_Prepare('test_translationtable') = 'TT_Translate' passed
+        TT_Prepare('test_translationtable') = 'SELECT * FROM TT_Translate(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.6'::text number,
        'TT_Prepare'::text function_tested,
        'Test suffix'::text description,
-        TT_Prepare('public', 'test_translationtable', '_01') = 'TT_Translate_01' passed
+        TT_Prepare('public', 'test_translationtable', '_01') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.7'::text number,
@@ -493,7 +494,7 @@ UNION ALL
 SELECT '7.8'::text number,
        'TT_Prepare'::text function_tested,
        'Test with identical ref translation table'::text description,
-        TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'TT_Translate_01' passed
+        TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 -- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------

@@ -47,6 +47,99 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_DefaultErrorCode
+--
+--   rule text - Name of the rule.
+--   type text - Required type.
+--
+--   RETURNS text - Default error code for this rule.
+--
+-- Return a default error code of the specified type for the specified rule.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DefaultErrorCode(text, text);
+CREATE OR REPLACE FUNCTION TT_DefaultErrorCode(
+  rule text, 
+  type text
+)
+RETURNS text AS $$
+  DECLARE
+  BEGIN
+    IF type = 'integer' OR type = 'int' OR type = 'double precision' THEN 
+      RETURN CASE WHEN rule = 'translation_error'  THEN '-3333'
+                  WHEN rule = 'notnull'            THEN '-8888'
+                  WHEN rule = 'notempty'           THEN '-8889'
+                  WHEN rule = 'isint'              THEN '-9995'
+                  WHEN rule = 'isnumeric'          THEN '-9995'
+                  WHEN rule = 'isbetween'          THEN '-9999'
+                  WHEN rule = 'isgreaterthan'      THEN '-9999'
+                  WHEN rule = 'islessthan'         THEN '-9999'
+                  WHEN rule = 'matchtable'         THEN '-9998'
+                  WHEN rule = 'matchlist'          THEN '-9998'
+                  WHEN rule = 'false'              THEN '-8887'
+                  WHEN rule = 'true'               THEN '-8887'
+                  WHEN rule = 'countnotnull'       THEN '-8888'
+                  WHEN rule = 'isintsubstring'     THEN '-9997'
+                  WHEN rule = 'isbetweensubstring' THEN '-9997'
+                  WHEN rule = 'geoisvalid'         THEN '-7779'
+                  WHEN rule = 'geointersects'      THEN '-7778'
+                  ELSE 'NO_DEFAULT_ERROR_CODE' END;
+    ELSE
+      RETURN CASE WHEN rule = 'translation_error'  THEN 'TRANSLATION_ERROR'
+                  WHEN rule = 'notnull'            THEN 'NULL_VALUE'
+                  WHEN rule = 'notempty'           THEN 'EMPTY_STRING'
+                  WHEN rule = 'isint'              THEN 'WRONG_TYPE'
+                  WHEN rule = 'isnumeric'          THEN 'WRONG_TYPE'
+                  WHEN rule = 'isbetween'          THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isgreaterthan'      THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'islessthan'         THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
+                  WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
+                  WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
+                  WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
+                  WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
+                  WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
+                  WHEN rule = 'geoisvalid'         THEN 'INVALID_GEOMETRY'
+                  WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
+                  ELSE 'NO_DEFAULT_ERROR_CODE' END;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_DefaultProjectErrorCode
+--
+--   rule text - Name of the rule.
+--   type text - Required type.
+--
+--   RETURNS text - Default error code for this rule.
+--
+-- Default project error code function to be overwritten by specific projects
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DefaultProjectErrorCode(text, text);
+CREATE OR REPLACE FUNCTION TT_DefaultProjectErrorCode(
+  rule text, 
+  type text
+)
+RETURNS text AS $$
+  DECLARE
+    rulelc text = lower(rule);
+    typelc text = lower(type);
+  BEGIN
+    IF typelc = 'integer' OR typelc = 'int' OR typelc = 'double precision' THEN 
+      RETURN CASE WHEN rulelc = 'projectrule1' THEN '-9999'
+                  ELSE TT_DefaultErrorCode(rulelc, typelc) END;
+    ELSE
+      RETURN CASE WHEN rulelc = 'projectrule1' THEN 'ERROR_CODE'
+                  ELSE TT_DefaultErrorCode(rulelc, typelc) END;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_FullTableName
 --
 --   schemaName name - Name of the schema.
@@ -898,7 +991,9 @@ $$ LANGUAGE sql STRICT VOLATILE;
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_ParseRules(text);
 CREATE OR REPLACE FUNCTION TT_ParseRules(
-    ruleStr text DEFAULT NULL
+  ruleStr text DEFAULT NULL,
+  targetType text DEFAULT NULL,
+  isTranslation boolean DEFAULT FALSE
 )
 RETURNS TT_RuleDef[] AS $$
   DECLARE
@@ -914,12 +1009,17 @@ RETURNS TT_RuleDef[] AS $$
                                                 '\|?\s*' ||      -- a vertical bar followed by any spaces
                                                 '([^;,|]+)?' ||  -- the error code
                                                 ',?\s*' ||       -- a comma followed by any spaces
-                                                '([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])?\)'-- TRUE or FALSE
+                                                '([Ss][Tt][Oo][Pp])?\)'-- STOP or not
                                                 , 'g') LOOP
       ruleDef.fctName = rules[1];
       ruleDef.args = TT_ParseArgs(rules[2]);
-      ruleDef.errorCode = rules[3];
-      ruleDef.stopOnInvalid = coalesce(rules[4]::boolean, FALSE);
+      ruleDef.errorCode = TT_DefaultProjectErrorCode(CASE WHEN isTranslation THEN 'translation_error' ELSE ruleDef.fctName END, targetType);
+      IF upper(rules[3]) = 'STOP' THEN
+        ruleDef.stopOnInvalid = TRUE;
+      ELSE
+        ruleDef.errorCode = coalesce(rules[3], ruleDef.errorCode);
+        ruleDef.stopOnInvalid = (NOT upper(rules[4]) IS NULL AND upper(rules[4]) = 'STOP');
+      END IF;
       ruleDefs = array_append(ruleDefs, ruleDef);
     END LOOP;
     RETURN ruleDefs;
@@ -995,8 +1095,8 @@ RETURNS TABLE (target_attribute text,
       -- validate attributes and assign values
       target_attribute = row.target_attribute;
       target_attribute_type = row.target_attribute_type;
-      validation_rules = (TT_ParseRules(row.validation_rules))::TT_RuleDef[];
-      translation_rule = ((TT_ParseRules(row.translation_rules))[1])::TT_RuleDef;
+      validation_rules = (TT_ParseRules(row.validation_rules, target_attribute_type))::TT_RuleDef[];
+      translation_rule = ((TT_ParseRules(row.translation_rules, target_attribute_type, TRUE))[1])::TT_RuleDef;
       --description = coalesce(row.description, '');
       --desc_uptodate_with_rules should not be null or empty
       --desc_uptodate_with_rules = (row.desc_uptodate_with_rules)::boolean;
@@ -1005,85 +1105,84 @@ RETURNS TABLE (target_attribute text,
         -- rule_id should be integer, not null, not empty string
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
         IF NOT TT_NotEmpty(row.rule_id) THEN
-          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty.';
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty...';
         END IF;
         IF NOT TT_IsInt(row.rule_id) THEN
-          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer.', row.rule_id;
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer...', row.rule_id;
         END IF;
 
         -- target_attribute should not be null or empty string, should be word with underscore allowed but no special characters
         IF NOT TT_NotEmpty(row.target_attribute) THEN
-          RAISE EXCEPTION '% % : Target attribute is NULL or empty.', error_msg_start, row.rule_id;
+          RAISE EXCEPTION '% %: Target attribute is NULL or empty...', error_msg_start, row.rule_id;
         END IF;
         IF NOT TT_IsName(row.target_attribute) THEN -- ~ '^(\d|\w)+$' THEN
-          RAISE EXCEPTION '% % : Target attribute name (%) is invalid.', error_msg_start, row.rule_id, row.target_attribute;
+          RAISE EXCEPTION '% %: Target attribute name (%) is invalid...', error_msg_start, row.rule_id, row.target_attribute;
         END IF;
 
         -- target_attribute_type should not be null or empty
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
         IF NOT TT_NotEmpty(row.target_attribute_type) THEN
-          RAISE EXCEPTION '% % (%) : Target attribute type is NULL or empty.', error_msg_start, row.rule_id, target_attribute;
+          RAISE EXCEPTION '% % (%): Target attribute type is NULL or empty...', error_msg_start, row.rule_id, target_attribute;
         END IF;
 
         -- validation_rules should not be null or empty
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
         IF NOT TT_NotEmpty(row.validation_rules) THEN
-          RAISE EXCEPTION '% % (%) : Validation rules is NULL or empty.', error_msg_start, row.rule_id, target_attribute;
+          RAISE EXCEPTION '% % (%): Validation rules is NULL or empty...', error_msg_start, row.rule_id, target_attribute;
         END IF;
 
         -- translation_rules should not be null or empty
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
         IF NOT TT_NotEmpty(row.translation_rules) THEN
-          RAISE EXCEPTION '% % (%) : Translation rule is NULL or empty.', error_msg_start, row.rule_id, target_attribute;
+          RAISE EXCEPTION '% % (%): Translation rule is NULL or empty...', error_msg_start, row.rule_id, target_attribute;
         END IF;
 
         -- description should not be null or empty
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
         IF NOT TT_NotEmpty(row.description) THEN
-          RAISE EXCEPTION '% % (%) : Description is NULL or empty.', error_msg_start, row.rule_id, target_attribute;
+          RAISE EXCEPTION '% % (%): Description is NULL or empty...', error_msg_start, row.rule_id, target_attribute;
         END IF;
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
         IF NOT TT_NotEmpty(row.desc_uptodate_with_rules) THEN
-          RAISE EXCEPTION '% % (%) : desc_uptodate_with_rules is NULL or empty.', error_msg_start, row.rule_id, target_attribute;
+          RAISE EXCEPTION '% % (%): desc_uptodate_with_rules is NULL or empty...', error_msg_start, row.rule_id, target_attribute;
         END IF;
 
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
         -- check validation functions exist, error code is not null, and error code can be cast to target attribute type
         FOREACH rule IN ARRAY validation_rules LOOP
-
           -- check function exists
           IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
           IF NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
-            RAISE EXCEPTION '% % (%) : Validation helper function %(%) does not exist.', error_msg_start, row.rule_id, target_attribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
+            RAISE EXCEPTION '% % (%): Validation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, target_attribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
           END IF;
 
           -- check error code is not null
-          IF NOT TT_NotEmpty(rule.errorCode) THEN
-            RAISE EXCEPTION '% % (%) : Error code is NULL or empty for validation rule %().', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
+          IF NOT TT_NotEmpty(rule.errorCode) OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
+            RAISE EXCEPTION '% % (%): No error code defined for validation rule ''%()''. Define or update your own project TT_DefaultProjectErrorCode() function...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
           END IF;
 
           -- check error code can be cast to attribute type, catch error with EXCEPTION
           IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', target_attribute_type, rule.errorCode;END IF;
           IF NOT TT_IsCastableTo(rule.errorCode, target_attribute_type) THEN
-            RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for validation rule %().', error_msg_start, row.rule_id, row.target_attribute, rule.errorCode, target_attribute_type, rule.fctName;
+            RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for validation rule ''%()''.', error_msg_start, row.rule_id, row.target_attribute, rule.errorCode, target_attribute_type, rule.fctName;
           END IF;
         END LOOP;
 
         -- check translation function exists
         IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translation_rule.fctName, translation_rule.args;END IF;
         IF NOT TT_TextFctExists(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) THEN
-          RAISE EXCEPTION '% % (%) : Translation helper function %(%) does not exist.', error_msg_start, row.rule_id, target_attribute, translation_rule.fctName, btrim(repeat('text,', coalesce(cardinality(translation_rule.args), 0)), ',');
+          RAISE EXCEPTION '% % (%): Translation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, target_attribute, translation_rule.fctName, btrim(repeat('text,', coalesce(cardinality(translation_rule.args), 0)), ',');
         END IF;
 
         -- check translation rule return type matches target attribute type
         IF NOT TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) = target_attribute_type THEN
-          RAISE EXCEPTION '% % (%) : Translation rule return type (%) does not match translation helper function return type (%).', error_msg_start, row.rule_id, target_attribute, target_attribute_type, TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0));
+          RAISE EXCEPTION '% % (%): Translation rule return type (%) does not match translation helper function return type (%)...', error_msg_start, row.rule_id, target_attribute, target_attribute_type, TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0));
         END IF;
 
         -- If not null, check translation error code can be cast to attribute type
         IF translation_rule.errorCode IS NOT NULL AND NOT TT_IsCastableTo(translation_rule.errorCode, target_attribute_type) THEN
           IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', target_attribute_type, translation_rule.errorCode;END IF;
-          RAISE EXCEPTION '% % (%) : Error code (%) cannot be cast to the target attribute type (%) for translation rule %().', error_msg_start, row.rule_id, target_attribute, translation_rule.errorCode, target_attribute_type, translation_rule.fctName;
+          RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for translation rule ''%()''...', error_msg_start, row.rule_id, target_attribute, translation_rule.errorCode, target_attribute_type, translation_rule.fctName;
         END IF;
       END IF;
       RETURN NEXT;
@@ -1203,7 +1302,7 @@ RETURNS text AS $f$
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
     EXECUTE query;
-    RETURN 'TT_Translate' || coalesce(fctNameSuf, '');
+    RETURN 'SELECT * FROM TT_Translate' || coalesce(fctNameSuf, '') || '(''schemaName'', ''tableName'', ''uniqueIDColumn'');';
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
