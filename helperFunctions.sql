@@ -12,6 +12,68 @@
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+-- TT_DefaultErrorCode
+--
+--   rule text - Name of the rule.
+--   type text - Required type.
+--
+--   RETURNS text - Default error code for this rule.
+--
+-- Return a default error code of the specified type for the specified rule.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DefaultErrorCode(text, text);
+CREATE OR REPLACE FUNCTION TT_DefaultErrorCode(
+  rule text, 
+  type text
+)
+RETURNS text AS $$
+  DECLARE
+  BEGIN
+    IF type = 'integer' OR type = 'int' OR type = 'double precision' THEN 
+      RETURN CASE WHEN rule = 'translation_error'  THEN '-3333'
+                  WHEN rule = 'notnull'            THEN '-8888'
+                  WHEN rule = 'notempty'           THEN '-8889'
+                  WHEN rule = 'isint'              THEN '-9995'
+                  WHEN rule = 'isnumeric'          THEN '-9995'
+                  WHEN rule = 'isbetween'          THEN '-9999'
+                  WHEN rule = 'isgreaterthan'      THEN '-9999'
+                  WHEN rule = 'islessthan'         THEN '-9999'
+                  WHEN rule = 'matchtable'         THEN '-9998'
+                  WHEN rule = 'matchlist'          THEN '-9998'
+                  WHEN rule = 'false'              THEN '-8887'
+                  WHEN rule = 'true'               THEN '-8887'
+                  WHEN rule = 'countnotnull'       THEN '-8888'
+                  WHEN rule = 'isintsubstring'     THEN '-9997'
+                  WHEN rule = 'isbetweensubstring' THEN '-9997'
+                  WHEN rule = 'geoisvalid'         THEN '-7779'
+                  WHEN rule = 'geointersects'      THEN '-7778'
+                  ELSE 'NO_DEFAULT_ERROR_CODE' END;
+    ELSE
+      RETURN CASE WHEN rule = 'translation_error'  THEN 'TRANSLATION_ERROR'
+                  WHEN rule = 'notnull'            THEN 'NULL_VALUE'
+                  WHEN rule = 'notempty'           THEN 'EMPTY_STRING'
+                  WHEN rule = 'isint'              THEN 'WRONG_TYPE'
+                  WHEN rule = 'isnumeric'          THEN 'WRONG_TYPE'
+                  WHEN rule = 'isbetween'          THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isgreaterthan'      THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'islessthan'         THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
+                  WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
+                  WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
+                  WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
+                  WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
+                  WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
+                  WHEN rule = 'geoisvalid'         THEN 'INVALID_GEOMETRY'
+                  WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
+                  ELSE 'NO_DEFAULT_ERROR_CODE' END;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
 -- Consist of a source value to be validated, and any parameters associated
