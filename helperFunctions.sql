@@ -15,7 +15,7 @@
 -- TT_DefaultErrorCode
 --
 --   rule text - Name of the rule.
---   type text - Required type.
+--   targetType text - Required type.
 --
 --   RETURNS text - Default error code for this rule.
 --
@@ -24,12 +24,12 @@
 --DROP FUNCTION IF EXISTS TT_DefaultErrorCode(text, text);
 CREATE OR REPLACE FUNCTION TT_DefaultErrorCode(
   rule text, 
-  type text
+  targetType text
 )
 RETURNS text AS $$
   DECLARE
   BEGIN
-    IF type = 'integer' OR type = 'int' OR type = 'double precision' THEN 
+    IF targetType = 'integer' OR targetType = 'int' OR targetType = 'double precision' THEN 
       RETURN CASE WHEN rule = 'translation_error'  THEN '-3333'
                   WHEN rule = 'notnull'            THEN '-8888'
                   WHEN rule = 'notempty'           THEN '-8889'
@@ -48,6 +48,25 @@ RETURNS text AS $$
                   WHEN rule = 'geoisvalid'         THEN '-7779'
                   WHEN rule = 'geointersects'      THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
+    ELSIF targetType = 'geometry' THEN
+      RETURN CASE WHEN rule = 'translation_error'  THEN NULL
+                  WHEN rule = 'notnull'            THEN NULL
+                  WHEN rule = 'notempty'           THEN NULL
+                  WHEN rule = 'isint'              THEN NULL
+                  WHEN rule = 'isnumeric'          THEN NULL
+                  WHEN rule = 'isbetween'          THEN NULL
+                  WHEN rule = 'isgreaterthan'      THEN NULL
+                  WHEN rule = 'islessthan'         THEN NULL
+                  WHEN rule = 'matchtable'         THEN NULL
+                  WHEN rule = 'matchlist'          THEN NULL
+                  WHEN rule = 'false'              THEN NULL
+                  WHEN rule = 'true'               THEN NULL
+                  WHEN rule = 'countnotnull'       THEN NULL
+                  WHEN rule = 'isintsubstring'     THEN NULL
+                  WHEN rule = 'isbetweensubstring' THEN NULL
+                  WHEN rule = 'geoisvalid'         THEN NULL
+                  WHEN rule = 'geointersects'      THEN NULL
+                  ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'  THEN 'TRANSLATION_ERROR'
                   WHEN rule = 'notnull'            THEN 'NULL_VALUE'
@@ -65,7 +84,7 @@ RETURNS text AS $$
                   WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
                   WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
                   WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
-                  WHEN rule = 'geoisvalid'         THEN 'INVALID_GEOMETRY'
+                  WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;

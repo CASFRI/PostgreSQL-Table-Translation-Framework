@@ -59,19 +59,22 @@ $$ LANGUAGE plpgsql VOLATILE;
 --DROP FUNCTION IF EXISTS TT_DefaultProjectErrorCode(text, text);
 CREATE OR REPLACE FUNCTION TT_DefaultProjectErrorCode(
   rule text, 
-  type text
+  targetType text
 )
 RETURNS text AS $$
   DECLARE
     rulelc text = lower(rule);
-    typelc text = lower(type);
+    targetTypelc text = lower(targetType);
   BEGIN
-    IF typelc = 'integer' OR typelc = 'int' OR typelc = 'double precision' THEN 
+    IF targetTypelc = 'integer' OR targetTypelc = 'int' OR targetTypelc = 'double precision' THEN 
       RETURN CASE WHEN rulelc = 'projectrule1' THEN '-9999'
-                  ELSE TT_DefaultErrorCode(rulelc, typelc) END;
+                  ELSE TT_DefaultErrorCode(rulelc, targetTypelc) END;
+    ELSIF targetTypelc = 'geometry' THEN
+      RETURN CASE WHEN rulelc = 'projectrule1' THEN NULL
+                  ELSE TT_DefaultErrorCode(rulelc, targetTypelc) END;
     ELSE
       RETURN CASE WHEN rulelc = 'projectrule1' THEN 'ERROR_CODE'
-                  ELSE TT_DefaultErrorCode(rulelc, typelc) END;
+                  ELSE TT_DefaultErrorCode(rulelc, targetTypelc) END;
     END IF;
   END;
 $$ LANGUAGE plpgsql;
@@ -422,8 +425,11 @@ RETURNS boolean AS $$
   DECLARE
     query text;
   BEGIN
-    query = 'SELECT ' || '''' || val || '''' || '::' || targetType || ';';
-    EXECUTE query;
+    -- NULL values are castable to everything
+    IF NOT val IS NULL THEN
+      query = 'SELECT ' || '''' || val || '''' || '::' || targetType || ';';
+      EXECUTE query;
+    END IF;
     RETURN TRUE;
   EXCEPTION WHEN OTHERS THEN
     RETURN FALSE;
@@ -1010,6 +1016,7 @@ RETURNS TABLE (target_attribute text,
     debug boolean = TT_Debug();
     rule TT_RuleDef;
     error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
+    warning_msg_start text = 'WARNING FOR TRANSLATION TABLE AT RULE_ID #';
   BEGIN
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable 11';END IF;
@@ -1095,12 +1102,15 @@ RETURNS TABLE (target_attribute text,
           END IF;
 
           -- check error code is not null
-          IF NOT TT_NotEmpty(rule.errorCode) OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
+          IF rule.errorCode = '' OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
             RAISE EXCEPTION '% % (%): No error code defined for validation rule ''%()''. Define or update your own project TT_DefaultProjectErrorCode() function...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
           END IF;
 
           -- check error code can be cast to attribute type, catch error with EXCEPTION
           IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', target_attribute_type, rule.errorCode;END IF;
+          IF rule.errorCode IS NULL THEN
+            RAISE NOTICE '% % (%): Error code for target attribute type (%) and validation rule ''%()'' is NULL.', warning_msg_start, row.rule_id, row.target_attribute, target_attribute_type, rule.fctName;
+          END IF;
           IF NOT TT_IsCastableTo(rule.errorCode, target_attribute_type) THEN
             RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for validation rule ''%()''.', error_msg_start, row.rule_id, row.target_attribute, rule.errorCode, target_attribute_type, rule.fctName;
           END IF;
@@ -1116,9 +1126,11 @@ RETURNS TABLE (target_attribute text,
         IF NOT TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) = target_attribute_type THEN
           RAISE EXCEPTION '% % (%): Translation rule return type (%) does not match translation helper function return type (%)...', error_msg_start, row.rule_id, target_attribute, target_attribute_type, TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0));
         END IF;
-
+        IF translation_rule.errorCode IS NULL THEN
+          RAISE NOTICE '% % (%): Error code for target attribute type (%) and translation rule ''%()'' is NULL.', warning_msg_start, row.rule_id, target_attribute, target_attribute_type, translation_rule.fctName;
+        END IF;
         -- If not null, check translation error code can be cast to attribute type
-        IF translation_rule.errorCode IS NOT NULL AND NOT TT_IsCastableTo(translation_rule.errorCode, target_attribute_type) THEN
+        IF NOT TT_IsCastableTo(translation_rule.errorCode, target_attribute_type) THEN
           IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', target_attribute_type, translation_rule.errorCode;END IF;
           RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for translation rule ''%()''...', error_msg_start, row.rule_id, target_attribute, translation_rule.errorCode, target_attribute_type, translation_rule.fctName;
         END IF;
