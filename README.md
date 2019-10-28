@@ -410,7 +410,7 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
-    * Default error code is 'NOT_UNIQUE' for text attributes. NULL for other types.
+    * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
