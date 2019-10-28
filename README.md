@@ -368,7 +368,7 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 
 * **NotNull**(*stringList* **srcVal**)
     * Returns TRUE if all srcVal's are not NULL. Returns FALSE if any srcVal is NULL. Paired with most translation functions to make sure input values are available. Can use single or multiple srcVal's.
-    * Default error codes are 'NULL_VALUE' for text attributes and -8888 for numeric attributes. NULL for other types.
+    * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
 
@@ -379,33 +379,33 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 
 * **NotEmpty**(*text* **srcVal**)
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
-    * Default error codes are 'EMPTY_STRING' for text attributes and -8889 for numeric attributes. NULL for other types.
+    * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
     * e.g. NotEmpty('a')
 
 * **IsInt**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
-    * Default error codes are 'WRONG_TYPE' for text attributes and -9995 for numeric attributes. NULL for other types.
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsInt('1')
 
 * **IsNumeric**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\]) 
     * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
-    * Default error codes are 'WRONG_TYPE' for text attributes and -9995 for numeric attributes. NULL for other types.
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsNumeric('1.1')
    
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
           
 * **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsGreaterThan(5, 0, TRUE)
 
 * **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsLessThan(1, 5, TRUE)
 
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default TRUE\])
@@ -415,17 +415,17 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
-    * Default error codes are 'NOT_IN_SET' for text attributes and -9998 for numeric attributes. NULL for other types.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
 
 * **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
-    * Default error codes are 'NOT_IN_SET' for text attributes and -9998 for numeric attributes. NULL for other types.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. Match('a', '{'a','b','c'}', TRUE)
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
-    * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes. NULL for other types.
+    * Default error codes are 'NOT_APPLICABLE' for text attributes, -8887 for numeric attributes and NULL for other types.
     * e.g. False()
 
 * **True**()
@@ -440,25 +440,27 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
  
  * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsInt().
-    * Default error codes are 'INVALID_VALUE' for text attributes and -9997 for numeric attributes. NULL for other types.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
   * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsBetween().
-    * Default error codes are 'INVALID_VALUE' for text attributes and -9997 for numeric attributes. NULL for other types.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
-    * Default error codes are 'INVALID_VALUE' for text attributes and -7779 for numeric attributes. NULL for other types (including geometry).
+    * Default error codes are 'INVALID_VALUE' for text attributes, -7779 for numeric attributes and NULL for other types (including geometry).
     * e.g. GeoIsValid(POLYGON, TRUE)
     
 * **GeoIntersects**(*geometry* **geom**, *text* **intersectSchemaName**\[default public\], *text* **intersectTableName**, *geometry* **geomCol**\[default geom\])
     * Returns TRUE if geom intersects with any features in the intersect table. Otherwise returns FALSE. Invalid geometries are validated before running the intersection test.
-    * Default error codes are 'NO_INTERSECT' for text attributes and -7778 for numeric attributes. NULL for other types (including geometry).
+    * Default error codes are 'NO_INTERSECT' for text attributes, -7778 for numeric attributes and NULL for other types (including geometry).
     * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo)
       
 ## Translation Functions
+
+Default error code for translation function are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric ones and NULL for others.
 
 * **CopyText**(*text* **srcVal**)
     * Returns srcVal as text without any transformation.
