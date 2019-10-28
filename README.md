@@ -460,7 +460,7 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
       
 ## Translation Functions
 
-Default error code for translation function are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric ones and NULL for others.
+Default error codes for translation functions are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric ones and NULL for others.
 
 * **CopyText**(*text* **srcVal**)
     * Returns srcVal as text without any transformation.
