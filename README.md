@@ -78,8 +78,7 @@ Translation tables have one row per target attribute and they must contain these
  5. **translation_rules** - The translation rule to convert source values to target values.
  6. **description** - A text description of the translation taking place.
  7. **desc_uptodate_with_rules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
- 
-* Multiple validation rules can be seperated with a semi-colon.
+
 * Error codes, to be returned by the engine if validation rules return FALSE, should follow a vertical bar ('|') after the list of helper function parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute. Error codes can optionally be provided for translation functions too. If the translation helper function returns NULL following a processing error, the engine will return the user provided error code, or the default values of 'TRANSLATION_ERROR' for text types or -3333 for numeric types.
 * It is possible to configure the engine to stop on any validation or translation error. 
 
