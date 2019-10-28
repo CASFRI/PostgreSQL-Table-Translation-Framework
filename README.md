@@ -65,31 +65,35 @@ A translation table is a normal PostgreSQL table defining the structure of the t
 
 The translation table implements two very different steps:
 
-1. **Validation -** The source values are first validated by a set of validation rules separated by a semicolon. Each validation rule defines an error code that is returned if the rule is not fulfilled. The next step (translation) happens only if all the validation rules pass. A boolean flag (TRUE or FALSE) can make a failing validation rule stop the engine. This flag is set to false by default, allowing the engine to report errors without stopping.
+1. **Validation -** Source values are first validated by a set of validation rules. Translation, the next step, happens only if all the validation rules pass. When a validation rule is not fulfilled (e.g. notNull(attribute)), it sets the target value to an error code. Each validation rule has a default error code. It can also can defines its own depending on the application and on the type and range of valid values in the target table (e.g. 0 can be a valid error code in some case and not a valid one in some case).
 
-2. **Translation -** The source values are translated to the target values by the translation rule (one per target attribute).
+2. **Translation -** Source values are then translated to the target values by the translation rule (one per target attribute).
 
-Translation tables have one row per target attribute and they must contain these seven columns:
+Translation tables have one row per target attribute describing the generic validation and translation process. They must contain these seven columns:
 
- 1. **rule_id** - Incremental unique integer identifier used for ordering target attributes in target table.
+ 1. **rule_id** - An incremental unique integer identifier used for ordering target attributes in the target table.
  2. **target_attribute** - The name of the target attribute to be created in the target table.
- 3. **target_attribute_type** - The data type of the target attribute.
+ 3. **target_attribute_type** - The data type of the target attribute (text, integer, double precision).
  4. **validation_rules** - A semicolon separated list of validation rules needed to validate the source values before translating.
  5. **translation_rules** - The translation rule to convert source values to target values.
  6. **description** - A text description of the translation taking place.
  7. **desc_uptodate_with_rules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
 
-* Error codes, to be returned by the engine if validation rules return FALSE, should follow a vertical bar ('|') after the list of helper function parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute. Error codes can optionally be provided for translation functions too. If the translation helper function returns NULL following a processing error, the engine will return the user provided error code, or the default values of 'TRANSLATION_ERROR' for text types or -3333 for numeric types.
-* It is possible to configure the engine to stop on any validation or translation error. 
+Validation and translation rules are helper function calls of the form "rule(src_attribute, parameter1, parameter2)". Available helper functions are listed below.
+
+Each rule define a default error code to be returned when the rule fails. You can overwrite the default error code for validation and translation rule directly in the translation table by setting a value preceded by a vertical bar ('|') after the list of parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute.
+
+You can configure the engine to stop and report errors on any validation or translation failure with the appropriate parameter to the TT_Translate() function that is created with your translation table. It is also possible to make the engine to stop on a particular rule by adding the word 'STOP' after the last parameter or after the error code of a rule (e.g. notNull(sp1_per|-8888, STOP)). More on both scenarios below.
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process with a message explaining the problem. The engine checks that:
 
-* no null values exists (all cells must have a value),
+* no NULL values exists in the table (all cells must have a value),
 * target attribute names do not contain invalid characters (e.g. spaces or accents),
-* target attribute types are valid PostgreSQL types (integer, text, boolean, etc...),
+* target attribute types are valid PostgreSQL types (text, integer, double precision, boolean, etc...),
 * helper functions for validation and translation rules exist and have the propre number of parameters and types,
-* the flag indicating if the description is in sync with the validation/translation rules is set to TRUE,
-* the return type of the translation functions match the target_attribute_type specified in the translation table.
+* the return type of the translation functions match the target_attribute_type specified in the translation table,
+* the flag indicating if the description is in sync with the validation/translation rules is set to TRUE.
+
 
 **Example translation table**
 
