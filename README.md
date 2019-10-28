@@ -156,7 +156,7 @@ Two types of error can stop the engine during a translation process:
 
 You can also add 'STOP' directly in the translation table helper functions in order to implement a faster "write, test, fix, retest" cycle. 
 
-Here is how to set those 'stop' parameters in two different translation scenarios:
+Here is how to set those stopping parameters in two very different translation scenarios:
 
 **Scenario 1: Fixing values directly at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the 'stopOnTranslationError' and the 'stopOnInvalidSource' TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
 
