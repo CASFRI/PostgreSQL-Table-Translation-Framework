@@ -79,7 +79,7 @@ Translation tables have one row per target attribute describing the generic vali
  6. **description** - A text description of the translation taking place.
  7. **desc_uptodate_with_rules** - A boolean describing whether the translation rules are up to date with the description. This allows non-technical users to propose translations using the description column. Once the described translation has been applied throughout the table this attribute should be set to TRUE.
 
-Validation and translation rules are helper function calls of the form "rule(src_attribute, parameter1, parameter2)". Available helper functions are listed below.
+Validation and translation rules are helper function calls of the form "rule(src_attribute, 'parameter1', 'parameter2')". Available helper functions are listed below with a description of each parameter.
 
 Each rule defines a default error code to be returned when the rule fails. These default error codes are listed in the "Provided Helper Functions" section below. You can overwrite some or all default error codes by providing a TT_DefaultProjectErrorCode() function in your project. You can also overwrite the default error code for a specific validation and translation rule directly in the translation table by setting a value preceded by a vertical bar ('|') after the list of parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute.
 
@@ -99,16 +99,18 @@ Translation tables are themselves validated by the translation engine while proc
 
 The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
 
-The source attribute "sp1" is validated by checking it is not null, and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookup table named "species_lookup". If the first validation rules fails, the "NULL" string is returned instead. If the first rule passes but the second validation rule fails, the "NOT_IN_SET" string is returned.
+The source attribute "sp1" is validated by checking it is not NULL, and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
-Similarly, the source attribute "sp1_per" is validated by checking it is not null, and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECISE_1_PER". "-8888", an integer error code, is returned if the first rule fails. "-9999" is returned if the second validation rule fails.
+If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. In this case this rule would also make the engine to STOP. If the first rule passes but the second validation rule fails, the error code defined in the translation table ('SPECIES_NOT_IN_SET') is returned.
+
+Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL, and that it falls between 0 and 100. The engine will STOP "sp1_per" is NULL . It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". '-8888', the default integer code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. '-9999' is returned if the second validation rule fails.
 
 A textual description of the rules is provided and the flag indicating that the description is in sync with the rules is set to TRUE.
 
 | rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|1        |SPECIES_1        |text                 |notNull(sp1\|NULL); matchTable(sp1,'public','species_lookup'\|NOT_IN_SET)|lookupText(sp1, 'public', 'species_lookup', 'targetSp')|Maps source value to SPECIES_1 using lookup table|TRUE|
-|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|-8888); between(sp1_per,'0','100'\|-9999)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+|1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|SPECIES_NOT_IN_SET)|lookupText(sp1, 'public', 'species_lookup', 'targetSp')|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,'0','100')|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
 # How to actually translate a source table?
 
