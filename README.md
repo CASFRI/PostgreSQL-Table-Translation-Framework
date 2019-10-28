@@ -166,7 +166,7 @@ A logging table has the following attributes:
 4. **firstrowid** - In the case of a group of matching entries, the first source row ID of the group.
 5. **message** - Detailed logging message.
 6. **currentrownb** - Number of the row being processed when this log entry was created. Different from 'firstrowid' which is an identifier.
-7, **count** - Number of rows pertaining to this log entry group. Equal to logFrequecy for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALID_VALUE' and 'TRANSLATION_ERROR' entries.
+7. **count** - Number of rows pertaining to this log entry group. Equal to logFrequency for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALID_VALUE' and 'TRANSLATION_ERROR' entries.
 
 The 'sourceRowIdColumn' parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column, the first source table row having triggered this type of log entry. If 'sourceRowIdColumn' is not provided, logging is disabled.
 
@@ -283,7 +283,7 @@ Two groups of function are of interest here:
                          *boolean* **resume**[default FALSE],  
                          *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
                          **)**
-    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUES' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'desc_uptodate_with_rules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
+    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUE' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'desc_uptodate_with_rules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
 
 * **TT_DropAllTranslateFct**()
