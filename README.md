@@ -158,9 +158,9 @@ You can also add 'STOP' directly in the translation table helper functions in or
 
 Here is how to set those stopping parameters in two very different translation scenarios:
 
-**Scenario 1: Fixing values directly at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the "stopOnTranslationError" and the "stopOnInvalidSource" TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
+**Scenario 1: Fixing values at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the "stopOnTranslationError" and the "stopOnInvalidSource" TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
 
-**Scenario 2: Fixing the translation file -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you to move forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, TRUE)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will not stop anymore when invalidation occurs. It will write the error code in the target table in place of the translated value and log the invalid value in the log table. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
+**Scenario 2: Fixing the translation file -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you to move forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, STOP)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will not stop anymore when invalidation occurs. It will write the error code in the target table in place of the translated value and log the invalid value in the log table. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
 
 **Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define a error code for each possible types (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
 
@@ -355,91 +355,107 @@ Helper function parameters are grouped into three classes, each of which have a 
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
-Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is null. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
+Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
 
 CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET)
 
-  * CountNotNull checks that exactly one value is not null and returns the NULL_ERROR if the test fails.
-    * Note that the order of these tests is important. We need to check for nulls before checking values are in the list.
-  * Now we know that col1 and col2 contain one value and one null. We want to test the value using MatchList and ignore the null. We test col1 and col2 using MatchList. The column with the value will be evaluated by MatchList, the column with the NULL will be ignored (i.e. the acceptNull parameter will cause TRUE to be returned). Note that if acceptNull was set to FALSE, the null value would trigger a FALSE to be returned which would fail the validation and return the NOT_IN_SET error. This is not the desired behaviour for this case.
+  * CountNotNull checks that exactly one value is not NULL and returns the NULL_ERROR if the test fails.
+    * Note that the order of these tests is important. We need to check for NULLs before checking values are in the list.
+  * Now we know that col1 and col2 contain one value and one NULL. We want to test the value using MatchList and ignore the NULL. We test col1 and col2 using MatchList. The column with the value will be evaluated by MatchList, the column with the NULL will be ignored (i.e. the acceptNull parameter will cause TRUE to be returned). Note that if acceptNull was set to FALSE, the null value would trigger a FALSE to be returned which would fail the validation and return the NOT_IN_SET error. This is not the desired behaviour for this case.
 
 # Provided Helper Functions
 ## Validation Functions
 
 * **NotNull**(*stringList* **srcVal**)
     * Returns TRUE if all srcVal's are not NULL. Returns FALSE if any srcVal is NULL. Paired with most translation functions to make sure input values are available. Can use single or multiple srcVal's.
+    * Default error codes are 'NULL_VALUE' for text attributes and -8888 for numeric attributes. NULL for other types.
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
 
-* **IsNull**(*stringList* **srcVal**)
+* **IsNull**(*stringList* **srcVal**) DEPRECATED
     * Returns TRUE if all srcVal's are NULL. Returns FALSE if any srcVal is not NULL. Paired with some complex translation functions dependant on multiple columns. Can use single or multiple srcVal's.
     * e.g. IsNull('a')
     * e.g. IsNull({'a', 'b', 'c'})
 
 * **NotEmpty**(*text* **srcVal**)
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
+    * Default error codes are 'EMPTY_STRING' for text attributes and -8889 for numeric attributes. NULL for other types.
     * e.g. NotEmpty('a')
 
 * **IsInt**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
+    * Default error codes are 'WRONG_TYPE' for text attributes and -9995 for numeric attributes. NULL for other types.
     * e.g. IsInt('1')
 
 * **IsNumeric**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\]) 
     * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
+    * Default error codes are 'WRONG_TYPE' for text attributes and -9995 for numeric attributes. NULL for other types.
     * e.g. IsNumeric('1.1')
    
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
           
 * **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
     * e.g. IsGreaterThan(5, 0, TRUE)
 
 * **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes and -9995 for numeric attributes. NULL for other types.
     * e.g. IsLessThan(1, 5, TRUE)
 
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
+    * Default error code is 'NOT_UNIQUE' for text attributes. NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
+    * Default error codes are 'NOT_IN_SET' for text attributes and -9998 for numeric attributes. NULL for other types.
     * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
 
 * **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
+    * Default error codes are 'NOT_IN_SET' for text attributes and -9998 for numeric attributes. NULL for other types.
     * e.g. Match('a', '{'a','b','c'}', TRUE)
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
+    * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes. NULL for other types.
     * e.g. False()
 
 * **True**()
     * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
+    * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
     * e.g. True()
     
-* **NotNullEmptyOr**(*stringList* **srcVal**)
+* **NotNullEmptyOr**(*stringList* **srcVal**) DEPRECATED
     * Return TRUE if at least one value is not NULL or empty strings.
     * Return FALSE if all values are NULL or empty strings.
     * e.g. NotNullEmptyOr('{'a','','NULL'}')
  
  * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsInt().
+    * Default error codes are 'INVALID_VALUE' for text attributes and -9997 for numeric attributes. NULL for other types.
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
   * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsBetween().
+    * Default error codes are 'INVALID_VALUE' for text attributes and -9997 for numeric attributes. NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
+    * Default error codes are 'INVALID_VALUE' for text attributes and -7779 for numeric attributes. NULL for other types (including geometry).
     * e.g. GeoIsValid(POLYGON, TRUE)
     
 * **GeoIntersects**(*geometry* **geom**, *text* **intersectSchemaName**\[default public\], *text* **intersectTableName**, *geometry* **geomCol**\[default geom\])
     * Returns TRUE if geom intersects with any features in the intersect table. Otherwise returns FALSE. Invalid geometries are validated before running the intersection test.
+    * Default error codes are 'NO_INTERSECT' for text attributes and -7778 for numeric attributes. NULL for other types (including geometry).
     * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo)
       
 ## Translation Functions
