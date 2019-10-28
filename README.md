@@ -150,17 +150,17 @@ Two types of error can stop the engine during a translation process:
 
 **1) Translation table syntax errors -** Any syntax error in the translation table will make the engine to stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a helper function that doesn't exist, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation file to fix the translation table to avoid these errors. 
 
-**2) Helper function errors -**  The second case is usually due to source value that cannot be or are badly handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the 'stopOnTranslationError' TT_Translate() parameter. If 'stopOnTranslationError' is set to FALSE (default behavior), the engine will log these errors every time it encounters one instead of stopping. These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
+**2) Helper function errors -**  The second case is usually due to source value that cannot be or are badly handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the "stopOnTranslationError" TT_Translate() parameter. If "stopOnTranslationError" is set to FALSE (default behavior), the engine will log these errors every time it encounters one instead of stopping. These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
 
-**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule. You can control if they should stop the engine with the 'stopOnInvalidSource' TT_Translate() parameter. If 'stopOnInvalidSource' is set to FALSE (default behavior), the engine will log these warnings in the log table instead of stopping. You can therefore translate a source table in its entirety (which can takes hours or days) without errors and get a final report of invalidated values only at the end of the whole process. You can then fix the source table or the translation table accordingly and restart the translation process.
+**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule. You can control if they should stop the engine with the "stopOnInvalidSource" TT_Translate() parameter. If "stopOnInvalidSource" is set to FALSE (default behavior), the engine will log these warnings in the log table instead of stopping. You can therefore translate a source table in its entirety (which can takes hours or days) without errors and get a final report of invalidated values only at the end of the whole process. You can then fix the source table or the translation table accordingly and restart the translation process.
 
 You can also add 'STOP' directly in the translation table helper functions in order to implement a faster "write, test, fix, retest" cycle. 
 
 Here is how to set those stopping parameters in two very different translation scenarios:
 
-**Scenario 1: Fixing values directly at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the 'stopOnTranslationError' and the 'stopOnInvalidSource' TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
+**Scenario 1: Fixing values directly at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the "stopOnTranslationError" and the "stopOnInvalidSource" TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
 
-**Scenario 2: Fixing the translation file -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() 'stopOnInvalidSource' to TRUE. It would stop the engine every time a source value is invalidated and prevent you to move forward with the translation table. In this scenario it is preferable to keep the TT_Translate() 'stopOnInvalidSource' parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, TRUE)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will not stop anymore when invalidation occurs. It will write the error code in the target table in place of the translated value and log the invalid value in the log table. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
+**Scenario 2: Fixing the translation file -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you to move forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, TRUE)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will not stop anymore when invalidation occurs. It will write the error code in the target table in place of the translated value and log the invalid value in the log table. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
 
 **Logging -** Logging is activated as soon as you provide the name of a unique ID column for the source table as the third parameter to your TT_Translate() function:
 
@@ -179,19 +179,19 @@ A logging table has the following attributes:
 6. **currentrownb** - Number of the row being processed when this log entry was created. Different from 'firstrowid' which is an identifier.
 7. **count** - Number of rows pertaining to this log entry group. Equal to logFrequency for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALID_VALUE' and 'TRANSLATION_ERROR' entries.
 
-The 'sourceRowIdColumn' parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the 'firstrowid' column, the first source table row having triggered this type of log entry. If 'sourceRowIdColumn' is not provided, logging is disabled.
+The "sourceRowIdColumn" parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the "firstrowid" column, the first source table row having triggered this type of log entry. If "sourceRowIdColumn" is not provided, logging is disabled.
 
-Invalidation and translation errors can happen millions of time in some translation projects. Log entries of of the same type are grouped together in order to avoid generating a huge number of identical rows in the log table. The 'count' attribute of the logging table reflects the number of time an identical error has happened during the translation process. By default the logging system will log only the first 100 entries of the same type. You can change this behavior by adding the 'dupLogEntriesHandling' parameter to TT_Translate() specifying how to handle duplicate log entries. "ALL_GROUPED" will log all entries (not only the first 100 ones) grouped together. It is the slowest option. "ALL_OWN_ROW" will log each entry into its own row. It is the fastest option but it might result in a huge number of rows in the logging table. Between these two options, you can instead specify a maximum number of entries per similar invalid rows as a single quoted integer. The default value for 'dupLogEntriesHandling' is '100'.
+Invalidation and translation errors can happen millions of time in some translation projects. Log entries of of the same type are grouped together in order to avoid generating a huge number of identical rows in the log table. The "count" attribute of the logging table reflects the number of time an identical error has happened during the translation process. By default the logging system will log only the first 100 entries of the same type. You can change this behavior by adding the "dupLogEntriesHandling" parameter to TT_Translate() specifying how to handle duplicate log entries. "ALL_GROUPED" will log all entries (not only the first 100 ones) grouped together. It is the slowest option. "ALL_OWN_ROW" will log each entry into its own row. It is the fastest option but it might result in a huge number of rows in the logging table. Between these two options, you can instead specify a maximum number of entries per similar invalid rows as a single quoted integer. The default value for "dupLogEntriesHandling" is '100'.
 
 Logging tables are created beside the translation table for which the translation function was created (with TT_Prepare()). They have the same name as the translation table but with the '_log_00X' suffix.
 
-By default, every time you execute the translation function, a new log table is created with an incremental name. You can change this behavior by settting the TT_Translate() 'incrementLog' parameter to FALSE. In this case the log table number '001' will be created or overwritten if it already exists. When 'incrementLog' is set to TRUE, it's default value, and you execute TT_Translate() often, you will end up with many log tables. You can list the last one using the TT_ShowLastLog() function:
+By default, every time you execute the translation function, a new log table is created with an incremental name. You can change this behavior by settting the TT_Translate() "incrementLog" parameter to FALSE. In this case the log table number '001' will be created or overwritten if it already exists. When "incrementLog" is set to TRUE, it's default value, and you execute TT_Translate() often, you will end up with many log tables. You can list the last one using the TT_ShowLastLog() function:
 
 ```sql
 SELECT * FROM TT_ShowLastLog(translationTableSchema, translationTable);
 ```
 
-If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the 'logNb' argument to TT_ShowLastLog().
+If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the "logNb" argument to TT_ShowLastLog().
 
 You can delete all log tables associated with a translation table with the TT_DeleteAllLogs() function:
 
@@ -199,12 +199,12 @@ You can delete all log tables associated with a translation table with the TT_De
 SELECT TT_DeleteAllLogs(translationTableSchema, translationTable);
 ```
 
-You can delete all log tables in the schema if you omit the 'translationTable' parameter.
+You can delete all log tables in the schema if you omit the "translationTable" parameter.
 
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
-* Helper functions using lookup tables will always look for the source values in the column named 'source_val'. The lookupText() function will return the corresponding value in the specified column.
+* Helper functions using lookup tables will always look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "targetSp1"  or the "targetSp2" column.
 
@@ -213,7 +213,7 @@ Example lookup table. Source values for species codes in the "source_val" column
 |TA        |PopuTrem |POPTRE   |
 |LP        |PinuCont |PINCON   |
 
-# Complete Example
+# A Complete Example
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
@@ -229,14 +229,14 @@ CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
        'SPECIES_1' AS target_attribute, 
        'text' AS target_attribute_type, 
-       'notNull(sp1|NULL);matchTable(sp1,'public','species_lookup'|NOT_IN_SET)' AS validation_rules, 
+       'notNull(sp1|STOP);matchTable(sp1,'public','species_lookup'|INVALID_SPECIES)' AS validation_rules, 
        'lookupText(sp1, 'public', 'species_lookup', 'targetSp')' AS translation_rules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS desc_uptodate_with_rules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
-          'notNull(sp1_per|-8888);between(sp1_per,'0','100'|-9999)', 
+          'notNull(sp1_per|STOP);between(sp1_per,'0','100')', 
           'copyInt(sp1_per)', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
@@ -294,7 +294,7 @@ Two groups of function are of interest here:
                          *boolean* **resume**[default FALSE],  
                          *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
                          **)**
-    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a 'sourceRowIdColumn'. Log entries of type 'PROGRESS' happen every 'logFrequency' rows. Log entries of type 'INVALID_VALUE' and 'TRANSLATION_ERROR' are grouped according to 'dupLogEntriesHandling' which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting 'incrementLog' to TRUE or FALSE. Translation can be stopped by setting 'stopOnInvalidSource' or 'stopOnTranslationError' to TRUE. When 'ignoreDescUpToDateWithRules' is set to FALSE, the translation engine will stop as soon as one attribute's 'desc_uptodate_with_rules' is marked as FALSE in the translation table. 'resume' is yet to be implemented.
+    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a "sourceRowIdColumn". Log entries of type 'PROGRESS' happen every "logFrequency" rows. Log entries of type 'INVALID_VALUE' and 'TRANSLATION_ERROR' are grouped according to "dupLogEntriesHandling" which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting "incrementLog" to TRUE or FALSE. Translation can be stopped by setting "stopOnInvalidSource" or "stopOnTranslationError" to TRUE. When "ignoreDescUpToDateWithRules" is set to FALSE, the translation engine will stop as soon as one attribute's "desc_uptodate_with_rules" is marked as FALSE in the translation table. 'resume' is yet to be implemented.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
 
 * **TT_DropAllTranslateFct**()
@@ -306,7 +306,7 @@ Two groups of function are of interest here:
                  *name* **tableName**,  
                  *text* **logNb**[default NULL]  
                  **)**
-    * Display the last log table generated after using the provided translation table or the one corresponding to the provided 'logNb'.
+    * Display the last log table generated after using the provided translation table or the one corresponding to the provided "logNb".
     * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
 
 * **TT_DeleteAllLogs(**  
