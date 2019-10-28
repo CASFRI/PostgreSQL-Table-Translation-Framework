@@ -109,7 +109,7 @@ A textual description of the rules is provided and the flag indicating that the 
 
 | rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
-|1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'targetSp')|Maps source value to SPECIES_1 using lookup table|TRUE|
+|1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
 |2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,'0','100')|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
 # How to actually translate a source table?
@@ -208,9 +208,9 @@ You can delete all log tables in the schema if you omit the "translationTable" p
 * An example is a list of source value species codes and a corresponding list of target value species names.
 * Helper functions using lookup tables will always look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
 
-Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "targetSp1"  or the "targetSp2" column.
+Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
 
-|source_val|targetSp1|targetSp2|
+|source_val|target_sp_1|target_sp_2|
 |:---------|:--------|:--------|
 |TA        |PopuTrem |POPTRE   |
 |LP        |PinuCont |PINCON   |
@@ -220,7 +220,7 @@ Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
 SELECT 'TA' AS source_val, 
-       'PopuTrem' AS targetSp
+       'PopuTrem' AS target_sp
 UNION ALL
 SELECT 'LP', 'PinuCont';
 ```
@@ -232,7 +232,7 @@ SELECT 1 AS rule_id,
        'SPECIES_1' AS target_attribute, 
        'text' AS target_attribute_type, 
        'notNull(sp1|STOP);matchTable(sp1,'public','species_lookup'|INVALID_SPECIES)' AS validation_rules, 
-       'lookupText(sp1, 'public', 'species_lookup', 'targetSp')' AS translation_rules, 
+       'lookupText(sp1, 'public', 'species_lookup', 'target_sp')' AS translation_rules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS desc_uptodate_with_rules
 UNION ALL
@@ -343,7 +343,7 @@ Helper function parameters are grouped into three classes, each of which have a 
     * e.g. CopyText(column_A)
     * This would return the text value from column_A in the source table for each row being translated.
   * If the column name is not found as a column in the source table, it is processed as a string.
-  * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'targetSp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the targetSp column in the public.species_lookup table.
+  * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'target_sp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the "target_sp" column in the public.species_lookup table.
 
 **3. String lists**
   * Some helper functions can take a variable number of inputs. Concatenation functions are an example.
@@ -476,7 +476,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       
 * **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
     * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. LookupText('sp1', public, species_lookup, targetSp, TRUE)
+    * e.g. LookupText('sp1', public, species_lookup, target_sp, TRUE)
       
 * **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
     * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
