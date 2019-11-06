@@ -534,7 +534,7 @@ UNION ALL
 SELECT '9.5'::text number,
        'TT_TextFctEval'::text function_tested,
        'Argument not found in jsonb structure'::text description,
-        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closureX, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE: Source attribute ''crown_closureX'', called in function ''isbetween()'', does not exist...' passed
+        TT_IsError('SELECT TT_TextFctEval(''isbetween'', ''{crown_closureX, 0, 2}''::text[], to_jsonb((SELECT r FROM (SELECT * FROM test_sourcetable1 LIMIT 1) r)), NULL::boolean, TRUE)') = 'ERROR IN TRANSLATION TABLE: Source attribute ''crown_closureX'', called in function ''isbetween()'', does not exist in the source table...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '9.6'::text number,

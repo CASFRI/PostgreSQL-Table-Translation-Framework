@@ -793,7 +793,7 @@ RETURNS text AS $$
             IF debug THEN RAISE NOTICE 'TT_TextFctQuery 44 argValNested=%', argValNested;END IF;
           ELSE
             -- if column name not in source table, raise exception
-            RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: Source attribute ''%'', called in function ''%()'', does not exist...', argNested, fctName;
+            RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: Source attribute ''%'', called in function ''%()'', does not exist in the source table...', argNested, fctName;
           END IF;
         ELSE
           IF debug THEN RAISE NOTICE 'TT_TextFctQuery 55 argNested=%', argNested;END IF;

@@ -372,11 +372,6 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
 
-* **IsNull**(*stringList* **srcVal**) DEPRECATED
-    * Returns TRUE if all srcVal's are NULL. Returns FALSE if any srcVal is not NULL. Paired with some complex translation functions dependant on multiple columns. Can use single or multiple srcVal's.
-    * e.g. IsNull('a')
-    * e.g. IsNull({'a', 'b', 'c'})
-
 * **NotEmpty**(*text* **srcVal**)
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
     * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
@@ -433,11 +428,6 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
     * e.g. True()
     
-* **NotNullEmptyOr**(*stringList* **srcVal**) DEPRECATED
-    * Return TRUE if at least one value is not NULL or empty strings.
-    * Return FALSE if all values are NULL or empty strings.
-    * e.g. NotNullEmptyOr('{'a','','NULL'}')
- 
  * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default TRUE\])
     * Takes a substring of a text string and tests using IsInt().
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
