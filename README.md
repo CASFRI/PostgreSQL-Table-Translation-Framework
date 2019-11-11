@@ -23,17 +23,22 @@ The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versi
 
 The current version is 0.0.2-beta and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.0.2-beta
 
-# Installation/Uninstallation
-* **Installation -** In a PostgreSQL query window, or using the PSQL client, run, in this order:
+# Installation/Test/Uninstallation
+* **Installation** 
 
-  1. the engine.sql file,
-  2. the helperFunctions.sql file,
-  3. the engineTest.sql file. All tests should pass (the "passed" column should be TRUE for all tests).
-  4. the helperFunctionsTest.sql file. All tests should pass.
-  5. if required, the helperFunctionsGIS.sql file.
-  6. If required, the helperFunctionsGISTest.sql file. All tests should pass.
+  1. Copy the configSample.bat (or the configSample.sh) file to config.bat (or config.sh) and edit it to set the path to your version of PostgreSQL.
+  2. Open a shell and CD to this folder
+  3. Run install.bat (or install.sh). This will install the framework as a PostgreSQL extension.
+  4. In a postgreSQL query tool window do: 
+     CREATE EXTENSION table_translation_framework;
   
-* **Uninstallation -** You can uninstall all the functions by running the helperFunctionsUninstall.sql, the helperFunctionsGISUninstall.sql and the engineUninstall.sql files.
+* **Test** 
+  1. In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
+  
+* **Uninstallation** 
+  1. In a postgreSQL query tool window do: 
+     DROP EXTENSION table_translation_framework;
+
 
 # Vocabulary
 *Translation engine/function* - The PL/pgSQL code implementing the PostgreSQL Table Translation Framework. Can also refer more precisely to the translation function TT_Translate() which is the core of the translation process.
