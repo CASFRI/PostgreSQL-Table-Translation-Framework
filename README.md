@@ -27,7 +27,7 @@ The current version is 0.0.2-beta and is available for download at https://githu
 **Installation** 
 
   1. Copy the configSample.bat (or the configSample.sh) file to config.bat (or config.sh) and edit it to set the path to your version of PostgreSQL.
-  2. Open a shell and CD to this folder
+  2. Open a shell and CD to this folder.
   3. Run install.bat (or install.sh). This will install the framework as a PostgreSQL extension.
   4. In a postgreSQL query tool window do: CREATE EXTENSION table_translation_framework;
   
