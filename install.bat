@@ -50,14 +50,18 @@ ECHO.
 
 TYPE engine.sql >> %sql_file%
 
+(
 ECHO.
 ECHO -- Helper Functions Part --
 ECHO.
+) >> %sql_file%
 
 TYPE helperFunctions.sql >> %sql_file%
 
+(
 ECHO.
 ECHO -- GIS Helper functions part --
 ECHO.
+) >> %sql_file%
 
 TYPE helperFunctionsGIS.sql >> %sql_file%
