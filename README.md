@@ -24,7 +24,7 @@ The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versi
 The current version is 0.0.2-beta and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v0.0.2-beta
 
 # Installation/Test/Uninstallation
-* **Installation** 
+**Installation** 
 
   1. Copy the configSample.bat (or the configSample.sh) file to config.bat (or config.sh) and edit it to set the path to your version of PostgreSQL.
   2. Open a shell and CD to this folder
@@ -32,10 +32,10 @@ The current version is 0.0.2-beta and is available for download at https://githu
   4. In a postgreSQL query tool window do: 
      CREATE EXTENSION table_translation_framework;
   
-* **Test** 
+**Test** 
   1. In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
   
-* **Uninstallation** 
+**Uninstallation** 
   1. In a postgreSQL query tool window do: 
      DROP EXTENSION table_translation_framework;
 
