@@ -33,10 +33,10 @@ The current version is 0.0.2-beta and is available for download at https://githu
      CREATE EXTENSION table_translation_framework;
   
 **Test** 
-  1. In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
+  In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
   
 **Uninstallation** 
-  1. In a postgreSQL query tool window do: 
+  In a postgreSQL query tool window do: 
      DROP EXTENSION table_translation_framework;
 
 
