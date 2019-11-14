@@ -276,7 +276,8 @@ RETURNS TABLE (logID int,
     suffix = '_log_' || TT_Pad(logInc::text, 3::text, '0');
     logTableName = tableName || suffix;
     IF TT_FullTableName(schemaName, logTableName) = 'public.' || suffix THEN
-      RAISE EXCEPTION 'TT_ShowLastLog() ERROR: Invalid translation table name or number...';
+      RAISE NOTICE 'TT_ShowLastLog() ERROR: Invalid translation table name or number (%.%)...', schemaName, logTableName;
+      RETURN;
     END IF;
     IF logNb IS NULL THEN
       -- find the last log table name
@@ -286,12 +287,14 @@ RETURNS TABLE (logID int,
       END LOOP;
       -- if logInc = 1 means no log table exists
       IF logInc = 1 THEN
-        RAISE EXCEPTION 'TT_ShowLastLog() ERROR: No translation log to show for this translation table...';
+        RAISE NOTICE 'TT_ShowLastLog() ERROR: No translation log to show for translation table ''%.%''...', schemaName, tableName;
+        RETURN;
       END IF;
       logInc = logInc - 1;
     ELSE
       IF NOT TT_TableExists(schemaName, logTableName) THEN
-        RAISE EXCEPTION 'TT_ShowLastLog() ERROR: Translation log table ''%.%'' does not exist...', schemaName, logTableName;
+        RAISE NOTICE 'TT_ShowLastLog() ERROR: Translation log table ''%.%'' does not exist...', schemaName, logTableName;
+        RETURN;
       END IF;
     END IF;
     logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
