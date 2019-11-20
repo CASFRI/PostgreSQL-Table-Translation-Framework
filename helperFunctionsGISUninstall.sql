@@ -28,5 +28,6 @@ DROP FUNCTION IF EXISTS TT_GeoIntersectionDouble(text, text, text, text, text, t
 DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GeoIntersectionInt(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GeoMakeValid(text);
+DROP FUNCTION IF EXISTS TT_GeoMakeValidMultiPolygon(text);
 DROP FUNCTION IF EXISTS TT_GeoArea(text);
 DROP FUNCTION IF EXISTS TT_GeoPerimeter(text);
