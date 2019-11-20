@@ -430,6 +430,19 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_GeoMakeValidMultiPolygon
+--
+-- Make a geometry valid and a multipoligon
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_GeoMakeValidMultiPolygon(
+  the_geom text
+)
+RETURNS geometry AS $$
+  SELECT ST_Multi(ST_CollectionExtract(TT_GeoMakeValid(the_geom), 3));
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_GeoArea
 --
 -- the_geom text - the geometry
