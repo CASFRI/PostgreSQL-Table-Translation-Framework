@@ -536,6 +536,11 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **GeoMakeValid**(*geometry* **geom**)
     * Returns a valid geometry column. If geometry cannot be validated, returns NULL.
     * e.g. GeoMakeValid(POLYGON)
+    
+* **GeoMakeValidMultiPolygon**(*geometry* **geom**)
+    * Returns a valid geometry column of type ST_MultiPolygon. If geometry cannot be validated, returns NULL.
+    * e.g. GeoMakeValidMultiPolygon(POLYGON)
+
 
 # Adding Custom Helper Functions
 Additional helper functions can be written in PL/pgSQL. They must follow the following conventions:
