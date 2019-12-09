@@ -313,6 +313,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- tableName text
 --
 -- Delete all log table associated with the target table.
+-- If tableName is NULL, delete all log tables in schema.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
 CREATE OR REPLACE FUNCTION TT_DeleteAllLogs(
