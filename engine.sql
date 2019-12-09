@@ -326,7 +326,7 @@ RETURNS SETOF text AS $$
     IF tableName IS NULL THEN
       FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
                  FROM information_schema.tables 
-                 WHERE right(table_name, 8) ~ '_log_[0-9][0-9][0-9]'
+                 WHERE lower(table_schema) = schemaName AND right(table_name, 8) ~ '_log_[0-9][0-9][0-9]'
                  ORDER BY table_name LOOP
         EXECUTE res.query;
         RETURN NEXT res.query;
