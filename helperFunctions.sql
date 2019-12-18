@@ -40,6 +40,7 @@ RETURNS text AS $$
                   WHEN rule = 'islessthan'         THEN '-9999'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
+				  WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
                   WHEN rule = 'countnotnull'       THEN '-8888'
@@ -59,6 +60,7 @@ RETURNS text AS $$
                   WHEN rule = 'islessthan'         THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
+				  WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
                   WHEN rule = 'countnotnull'       THEN NULL
@@ -79,6 +81,7 @@ RETURNS text AS $$
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
+				  WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
                   WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
                   WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
@@ -926,6 +929,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
 --
 -- Is val in lst?
 -- val followed by string of test values
@@ -935,21 +939,25 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
   ignoreCase text,
-  acceptNull text
+  acceptNull text,
+  matches text
 )
 RETURNS boolean AS $$
   DECLARE
     _lst text[];
     _ignoreCase boolean;
     _acceptNull boolean;
+	_matches boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchList',
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
-                                    'acceptNull', acceptNull, 'boolean']);
+                                    'acceptNull', acceptNull, 'boolean',
+								    'matches', matches, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
     _acceptNull = acceptNull::boolean;
+	_matches = matches::boolean;
 
     -- validate source value
     IF val IS NULL THEN
@@ -962,10 +970,18 @@ RETURNS boolean AS $$
     -- process
     IF _ignoreCase = FALSE THEN
       _lst = TT_ParseStringList(lst, TRUE);
-      RETURN val = ANY(_lst);
+	  IF _matches THEN
+	    RETURN val = ANY(_lst);
+	  ELSE
+		RETURN NOT val = ANY(_lst);
+	  END IF;
     ELSE
       _lst = TT_ParseStringList(upper(lst), TRUE);
-      RETURN upper(val) = ANY(_lst);
+	  IF _matches THEN
+	    RETURN upper(val) = ANY(_lst);
+	  ELSE
+	    RETURN NOT upper(val) = ANY(_lst);
+	  END IF;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -973,21 +989,88 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchList(
+  val text,
+  lst text,
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
-
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NotMatchList
+--
+-- val text - value to test.
+-- lst text (stringList) - string containing comma separated vals.
+-- ignoreCase - text default FALSE. Should upper/lower case be ignored?
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+--
+-- If val in list, return false?
+-- simple wrapper arounf TT_MatchList() with matches = FALSE. 
+-- e.g. TT_NotMatchList('d', {'a','b','c'})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_NotMatchList(
+  val text,
+  lst text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _acceptNull boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_NotMatchList',
+                              ARRAY['lst', lst, 'stringlist',
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
+	_acceptNull = acceptNull::boolean;
+
+    -- validate source value
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+	    RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+
+    SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text);
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotMatchList(
+  val text,
+  lst text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotMatchList(
+  val text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
 -- TT_False
