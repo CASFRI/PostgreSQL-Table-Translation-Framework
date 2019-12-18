@@ -395,17 +395,17 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
           
 * **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsGreaterThan(5, 0, TRUE)
 
 * **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsLessThan(1, 5, TRUE)
 
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default TRUE\])
