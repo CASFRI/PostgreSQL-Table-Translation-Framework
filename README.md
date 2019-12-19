@@ -416,12 +416,17 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. TT_MatchTable('sp1', public, species_lookup, TRUE)
+    * e.g. MatchTable('sp1', public, species_lookup, TRUE)
 
 * **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. Match('a', '{'a','b','c'}', TRUE)
+    * e.g. MatchList('a', '{'a','b','c'}')
+    
+* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+    * Returns TRUE if srcVal is not in lst. Ignores letter case if ignoreCase = TRUE.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. NotMatchList('d', '{'a','b','c'}')
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
