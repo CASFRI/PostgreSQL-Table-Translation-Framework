@@ -208,7 +208,8 @@ WITH test_nb AS (
     SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
-    SELECT 'TT_NothingInt'::text,            120,          1
+    SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
+	SELECT 'TT_NumberOfNotNull'::text,       121,          4
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2019,6 +2020,37 @@ SELECT '120.1'::text number,
        'TT_NothingInt'::text function_tested,
        'Simple test'::text description,
        TT_NothingInt() IS NULL passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 121 - TT_NumberOfNotNull
+---------------------------------------------------------
+UNION ALL
+SELECT '121.1'::text number,
+       'TT_NumberOfNotNull'::text function_tested,
+       'Simple test'::text description,
+       TT_NumberOfNotNull('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text) = 7 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '121.2'::text number,
+       'TT_NumberOfNotNull'::text function_tested,
+       'Lower max_return_val'::text description,
+       TT_NumberOfNotNull('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '121.3'::text number,
+       'TT_NumberOfNotNull'::text function_tested,
+       'Some NULLs and empties, '::text description,
+       TT_NumberOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text) = 5 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '121.4'::text number,
+       'TT_NumberOfNotNull'::text function_tested,
+       'Fewer arguments, '::text description,
+       TT_NumberOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  7::text) = 2 passed
 ---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

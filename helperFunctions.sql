@@ -1978,3 +1978,152 @@ RETURNS int AS $$
     SELECT NULL::int;
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_NumberOfNotNull()
+--
+-- vals1/2/3/4/5/6/7 text - string lists of values to test.
+-- max_return_val int - the maximum value that can returned by the function.
+--
+-- Returns the number of vals lists where at least one element in the vals list 
+-- is not null. If the number of not null vals > max_return_val, max_return_val 
+-- is returned.
+--
+-- e.g. TT_NumberOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text, text)
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  DECLARE
+    _vals1 text[];
+	_vals2 text[];
+	_vals3 text[];
+	_vals4 text[];
+	_vals5 text[];
+	_vals6 text[];
+	_vals7 text[];
+    _max_return_val int;
+	_count int;
+  BEGIN
+    -- validate source values (return FALSE)
+    IF NOT TT_IsStringList(vals1) OR
+	NOT TT_IsStringList(vals2) OR
+	NOT TT_IsStringList(vals3) OR
+	NOT TT_IsStringList(vals4) OR
+	NOT TT_IsStringList(vals5) OR
+	NOT TT_IsStringList(vals6) OR
+	NOT TT_IsStringList(vals7) THEN
+      RETURN FALSE;
+    END IF;
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_NumberOfNotNull',
+                              ARRAY['max_return_val', max_return_val, 'int']);
+    _vals1 = TT_ParseStringList(vals1, TRUE);
+	_vals2 = TT_ParseStringList(vals2, TRUE);
+	_vals3 = TT_ParseStringList(vals3, TRUE);
+	_vals4 = TT_ParseStringList(vals4, TRUE);
+	_vals5 = TT_ParseStringList(vals5, TRUE);
+	_vals6 = TT_ParseStringList(vals6, TRUE);
+	_vals7 = TT_ParseStringList(vals7, TRUE);
+	_max_return_val = max_return_val::int;
+
+    -- get count of not null vals lists
+    WITH a AS (
+					SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+					UNION ALL
+					SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+					)
+				SELECT sum(y::int) FROM a INTO _count;
+				
+    -- return count, or max return value		
+    IF _count > _max_return_val THEN
+	  RETURN _max_return_val;
+	ELSE
+	  RETURN _count;
+	END IF;
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  vals2 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+  vals1 text,
+  max_return_val text
+)
+RETURNS int AS $$
+  SELECT TT_NumberOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_return_val)
+$$ LANGUAGE sql VOLATILE;

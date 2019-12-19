@@ -89,6 +89,13 @@ DROP FUNCTION IF EXISTS TT_Concat(text, text);
 DROP FUNCTION IF EXISTS TT_NothingText();
 DROP FUNCTION IF EXISTS TT_NothingDouble();
 DROP FUNCTION IF EXISTS TT_NothingInt();
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
