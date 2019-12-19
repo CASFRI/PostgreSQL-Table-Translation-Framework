@@ -512,7 +512,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **PadConcat**(*stringList* **srcVals**, *stringList* **lengths**, *stringList* **pads**, *text* **separator**, *boolean* **upperCase**, *boolean* **includeEmpty**\[default TRUE\])
     * Returns a string of concatenated values, where each value is padded using **Pad()**. Inputs for srcVals, lengths, and pads are comma separated strings where the ith length and pad values correspond to the ith srcVal. If upperCase is TRUE, all characters are converted to upper case, if includeEmpty is FALSE, any empty strings in the srcVals are dropped from the concatenation. 
-    * e.g. PadConcat('str1,str2,str3', '5,5,7', 'x,x,0', '-', TRUE, TRUE)
+    * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE)
 
 * **NothingText**()
     * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
@@ -525,6 +525,11 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **NothingInt**()
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
+
+* **NumberOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**)
+    * Returns the number of string list input arguments that have at least one list element that is not null or empty. Up to a maximum of 7 lists.
+    * If the count is greater than the max_return_val, the max_return_val is returned.
+    * e.g. NumberOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7)
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
