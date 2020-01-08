@@ -2014,20 +2014,22 @@ RETURNS int AS $$
     _max_return_val int;
 	_count int;
   BEGIN
-    -- validate source values (return FALSE)
-    IF NOT TT_IsStringList(vals1) OR
-	NOT TT_IsStringList(vals2) OR
-	NOT TT_IsStringList(vals3) OR
-	NOT TT_IsStringList(vals4) OR
-	NOT TT_IsStringList(vals5) OR
-	NOT TT_IsStringList(vals6) OR
-	NOT TT_IsStringList(vals7) THEN
+    -- Validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_NumberOfNotNull',
+                              ARRAY['max_return_val', max_return_val, 'int']);
+
+    -- Validate source values (return FALSE)
+    IF TT_NotNull(vals1) AND NOT TT_IsStringList(vals1) OR
+       TT_NotNull(vals2) AND NOT TT_IsStringList(vals2) OR
+       TT_NotNull(vals3) AND NOT TT_IsStringList(vals3) OR
+       TT_NotNull(vals4) AND NOT TT_IsStringList(vals4) OR
+       TT_NotNull(vals5) AND NOT TT_IsStringList(vals5) OR
+       TT_NotNull(vals6) AND NOT TT_IsStringList(vals6) OR
+       TT_NotNull(vals7) AND NOT TT_IsStringList(vals7) THEN
       RETURN FALSE;
     END IF;
     
-    -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_NumberOfNotNull',
-                              ARRAY['max_return_val', max_return_val, 'int']);
+    -- Parse them
     _vals1 = TT_ParseStringList(vals1, TRUE);
 	_vals2 = TT_ParseStringList(vals2, TRUE);
 	_vals3 = TT_ParseStringList(vals3, TRUE);
