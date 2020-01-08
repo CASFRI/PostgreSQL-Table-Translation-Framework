@@ -40,7 +40,7 @@ RETURNS text AS $$
                   WHEN rule = 'islessthan'         THEN '-9999'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
-				  WHEN rule = 'notmatchlist'       THEN '-9998'
+                  WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
                   WHEN rule = 'countnotnull'       THEN '-8888'
@@ -60,7 +60,7 @@ RETURNS text AS $$
                   WHEN rule = 'islessthan'         THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
-				  WHEN rule = 'notmatchlist'       THEN NULL
+                  WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
                   WHEN rule = 'countnotnull'       THEN NULL
@@ -81,7 +81,7 @@ RETURNS text AS $$
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
-				  WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
+                  WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
                   WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
                   WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
@@ -198,7 +198,7 @@ RETURNS boolean AS $$
     
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     ELSE
@@ -243,10 +243,10 @@ RETURNS boolean AS $$
     PERFORM TT_ValidateParams('TT_IsNumeric',
                               ARRAY['acceptNull', acceptNull, 'boolean']);
     _acceptNull = acceptNull::boolean;
-    	
+
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     ELSE
@@ -254,7 +254,7 @@ RETURNS boolean AS $$
         _val = val::double precision;
         RETURN TRUE;
       EXCEPTION WHEN OTHERS THEN
-		RETURN FALSE;
+    RETURN FALSE;
       END;
     END IF;
   END;
@@ -560,7 +560,7 @@ RETURNS boolean AS $$
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
@@ -642,7 +642,7 @@ RETURNS boolean AS $$
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
@@ -717,7 +717,7 @@ RETURNS boolean AS $$
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     ELSIF NOT TT_IsNumeric(val) THEN
@@ -794,7 +794,7 @@ RETURNS boolean AS $$
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -876,7 +876,7 @@ RETURNS boolean AS $$
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -947,22 +947,22 @@ RETURNS boolean AS $$
     _lst text[];
     _ignoreCase boolean;
     _acceptNull boolean;
-	_matches boolean;
+    _matches boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchList',
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
                                     'acceptNull', acceptNull, 'boolean',
-								    'matches', matches, 'boolean']);
+                                    'matches', matches, 'boolean']);
     _ignoreCase = ignoreCase::boolean;
     _acceptNull = acceptNull::boolean;
-	_matches = matches::boolean;
+    _matches = matches::boolean;
 
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -970,18 +970,18 @@ RETURNS boolean AS $$
     -- process
     IF _ignoreCase = FALSE THEN
       _lst = TT_ParseStringList(lst, TRUE);
-	  IF _matches THEN
-	    RETURN val = ANY(_lst);
-	  ELSE
-		RETURN NOT val = ANY(_lst);
-	  END IF;
+      IF _matches THEN
+        RETURN val = ANY(_lst);
+      ELSE
+        RETURN NOT val = ANY(_lst);
+      END IF;
     ELSE
       _lst = TT_ParseStringList(upper(lst), TRUE);
-	  IF _matches THEN
-	    RETURN upper(val) = ANY(_lst);
-	  ELSE
-	    RETURN NOT upper(val) = ANY(_lst);
-	  END IF;
+      IF _matches THEN
+        RETURN upper(val) = ANY(_lst);
+      ELSE
+        RETURN NOT upper(val) = ANY(_lst);
+      END IF;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -1041,12 +1041,12 @@ RETURNS boolean AS $$
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-	_acceptNull = acceptNull::boolean;
+    _acceptNull = acceptNull::boolean;
 
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -1214,7 +1214,7 @@ RETURNS boolean AS $$
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -1279,7 +1279,7 @@ RETURNS boolean AS $$
     -- validate source value (return FALSE)
     IF val IS NULL THEN
       IF _acceptNull THEN
-	    RETURN TRUE;
+        RETURN TRUE;
       END IF;
       RETURN FALSE;
     END IF;
@@ -2005,15 +2005,15 @@ CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
 RETURNS int AS $$
   DECLARE
     _vals1 text[];
-	_vals2 text[];
-	_vals3 text[];
-	_vals4 text[];
-	_vals5 text[];
-	_vals6 text[];
-	_vals7 text[];
+    _vals2 text[];
+    _vals3 text[];
+    _vals4 text[];
+    _vals5 text[];
+    _vals6 text[];
+    _vals7 text[];
     _max_return_val int;
-	_count int;
-  BEGIN
+    _count int;
+  BEGIN    
     -- Validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_NumberOfNotNull',
                               ARRAY['max_return_val', max_return_val, 'int']);
@@ -2031,39 +2031,38 @@ RETURNS int AS $$
     
     -- Parse them
     _vals1 = TT_ParseStringList(vals1, TRUE);
-	_vals2 = TT_ParseStringList(vals2, TRUE);
-	_vals3 = TT_ParseStringList(vals3, TRUE);
-	_vals4 = TT_ParseStringList(vals4, TRUE);
-	_vals5 = TT_ParseStringList(vals5, TRUE);
-	_vals6 = TT_ParseStringList(vals6, TRUE);
-	_vals7 = TT_ParseStringList(vals7, TRUE);
-	_max_return_val = max_return_val::int;
+    _vals2 = TT_ParseStringList(vals2, TRUE);
+    _vals3 = TT_ParseStringList(vals3, TRUE);
+    _vals4 = TT_ParseStringList(vals4, TRUE);
+    _vals5 = TT_ParseStringList(vals5, TRUE);
+    _vals6 = TT_ParseStringList(vals6, TRUE);
+    _vals7 = TT_ParseStringList(vals7, TRUE);
+    _max_return_val = max_return_val::int;
 
-    -- get count of not null vals lists
+    -- Get count of not null vals lists
     WITH a AS (
-					SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
-					UNION ALL
-					SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
-					)
-				SELECT sum(y::int) FROM a INTO _count;
-				
-    -- return count, or max return value		
+      SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+      UNION ALL
+      SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+    )
+    SELECT sum(y::int) FROM a INTO _count;
+
+    -- Return count, or max return value
     IF _count > _max_return_val THEN
-	  RETURN _max_return_val;
-	ELSE
-	  RETURN _count;
-	END IF;
-    
+      RETURN _max_return_val;
+    ELSE
+      RETURN _count;
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
