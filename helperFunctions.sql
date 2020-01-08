@@ -1991,7 +1991,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- e.g. TT_NumberOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text, text)
+-- DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
   vals1 text,
   vals2 text,
