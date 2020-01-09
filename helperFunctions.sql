@@ -1893,7 +1893,7 @@ RETURNS text AS $$
     END IF;
 
     -- validate source value (return NULL if not valid)
-    IF NOT TT_IsStringList(val) THEN
+    IF TT_NotNull(val) AND NOT TT_IsStringList(val) THEN
       RETURN NULL;
     END IF;
 
@@ -2018,7 +2018,7 @@ RETURNS int AS $$
     PERFORM TT_ValidateParams('TT_NumberOfNotNull',
                               ARRAY['max_return_val', max_return_val, 'int']);
 
-    -- Validate source values (return FALSE)
+    -- Validate source values (return NULL)
     IF TT_NotNull(vals1) AND NOT TT_IsStringList(vals1) OR
        TT_NotNull(vals2) AND NOT TT_IsStringList(vals2) OR
        TT_NotNull(vals3) AND NOT TT_IsStringList(vals3) OR
@@ -2026,7 +2026,7 @@ RETURNS int AS $$
        TT_NotNull(vals5) AND NOT TT_IsStringList(vals5) OR
        TT_NotNull(vals6) AND NOT TT_IsStringList(vals6) OR
        TT_NotNull(vals7) AND NOT TT_IsStringList(vals7) THEN
-      RETURN FALSE;
+      RETURN NULL;
     END IF;
     
     -- Parse them
