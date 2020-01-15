@@ -1567,25 +1567,27 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MapText
 --
--- val text - value to test.
--- mapVals text (stringList) - string list of mapping values
+-- vals text - string list containing values to test. Or a single value to test.-- mapVals text (stringList) - string list of mapping values
 -- targetVals (stringList) text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return value from targetVals that matches value index in mapVals
+-- If multiple vals provided they are concatenated before testing.
 -- Return type is text
 -- Error if val is NULL
 -- e.g. TT_Map('A', '{''A'',''B'',''C''}', '{''1'',''2'',''3''}', 'TRUE')
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapText(
-  val text,
+  vals text,
   mapVals text,
   targetVals text,
   ignoreCase text
 )
 RETURNS text AS $$
   DECLARE
+    _vals text[];
+    _val text;
     _mapVals text[];
     _targetVals text[];
     _ignoreCase boolean;
@@ -1595,61 +1597,66 @@ RETURNS text AS $$
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
+    _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     -- validate source value (return NULL if not valid)
-    IF val IS NULL THEN
+    IF vals IS NULL THEN
       RETURN FALSE;
     END IF;
+
+    -- get val
+    _val = array_to_string(_vals, '');
 
     -- process
     IF _ignoreCase = FALSE THEN
       _mapVals = TT_ParseStringList(mapVals, TRUE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE);
-      RETURN (_targetVals)[array_position(_mapVals, val)];
+      RETURN (_targetVals)[array_position(_mapVals, _val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      _targetVals = TT_ParseStringList(targetVals, TRUE);
-      RETURN (_targetVals)[array_position(_mapVals, upper(val))];
+      RETURN (_targetVals)[array_position(_mapVals, upper(_val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapText(
-  val text,
+  vals text,
   mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_MapText(val, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapText(vals, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_MapDouble
 --
--- val text - value to test.
+-- vals text - string list containing values to test. Or a single value to test.
 -- mapVals text - string containing comma seperated vals
 -- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return double precision value from targetVals that matches value index in mapVals
+-- If multiple vals provided they are concatenated before testing.
 -- Return type is double precision
 -- Error if val is NULL, or if any targetVals elements cannot be cast to double precision, or if val is not in mapVals
 -- e.g. TT_Map('A',{'A','B','C'},{'1.1','2.2','3.3'})
 
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapDouble(
-  val text,
+  vals text,
   mapVals text,
   targetVals text,
   ignoreCase text
 )
 RETURNS double precision AS $$
   DECLARE
+    _vals text[];
+    _val text;
     _mapVals text[];
     _targetVals text[];
-    _i double precision;
     _ignoreCase boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
@@ -1657,56 +1664,64 @@ RETURNS double precision AS $$
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'doublelist',
                                     'ignoreCase', ignoreCase, 'boolean']);
+    
+    _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE);
     _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     -- validate source value (return NULL if not valid)
-    IF val IS NULL THEN
+    IF vals IS NULL THEN
       RETURN FALSE;
     END IF;
 
+    -- get val
+    _val = array_to_string(_vals, '');
+    
     -- process
     IF _ignoreCase = FALSE THEN
-      RETURN (_targetVals)[array_position(_mapVals, val)];
+      _mapVals = TT_ParseStringList(mapVals, TRUE);  
+      RETURN (_targetVals)[array_position(_mapVals, _val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
+      RETURN (_targetVals)[array_position(_mapVals,upper(_val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapDouble(
-  val text,
+  vals text,
   mapVals text,
   targetVals text
 )
 RETURNS double precision AS $$
-  SELECT TT_MapDouble(val, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapDouble(vals, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_MapInt
 --
--- val text - value to test.
+-- vals text - string list containing values to test. Or a single value to test.
 -- mapVals text - string containing comma seperated vals
 -- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
 --
 -- Return int value from targetVals that matches value index in mapVals
+-- If multiple vals provided they are concatenated before testing.
 -- Return type is int
 -- Error if val is NULL, or if any targetVals elements are not int, or if val is not in mapVals
 -- e.g. TT_MapInt('A',{'A','B','C'}, {'1','2','3'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapInt(
-  val text,
+  vals text,
   mapVals text,
   targetVals text,
   ignoreCase text
 )
 RETURNS int AS $$
   DECLARE
+    _vals text[];
+    _val text;
     _mapVals text[];
     _targetVals text[];
     _i int;
@@ -1717,32 +1732,37 @@ RETURNS int AS $$
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'intlist',
                                     'ignoreCase', ignoreCase, 'boolean']);
+    
+    _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
-    _mapVals = TT_ParseStringList(mapVals, TRUE);
     _targetVals = TT_ParseStringList(targetVals, TRUE);
 
     -- validate source value (return NULL if not valid)
-    IF val IS NULL THEN
+    IF vals IS NULL THEN
       RETURN NULL;
     END IF;
 
+    -- get val
+    _val = array_to_string(_vals, '');
+    
     -- process
     IF _ignoreCase = FALSE THEN
-      RETURN (_targetVals)[array_position(_mapVals, val)];
+      _mapVals = TT_ParseStringList(mapVals, TRUE);
+      RETURN (_targetVals)[array_position(_mapVals, _val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      RETURN (_targetVals)[array_position(_mapVals,upper(val))];
+      RETURN (_targetVals)[array_position(_mapVals,upper(_val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapInt(
-  val text,
+  vals text,
   mapVals text,
   targetVals text
 )
 RETURNS int AS $$
-  SELECT TT_MapInt(val, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapInt(vals, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

@@ -200,9 +200,9 @@ WITH test_nb AS (
     SELECT 'TT_LookupText'::text,            104,         10         UNION ALL
     SELECT 'TT_LookupDouble'::text,          105,          9         UNION ALL
     SELECT 'TT_LookupInt'::text,             106,          9         UNION ALL
-    SELECT 'TT_MapText'::text,               107,         12         UNION ALL
-    SELECT 'TT_MapDouble'::text,             108,         10         UNION ALL
-    SELECT 'TT_MapInt'::text,                109,         10         UNION ALL
+    SELECT 'TT_MapText'::text,               107,         14         UNION ALL
+    SELECT 'TT_MapDouble'::text,             108,         12         UNION ALL
+    SELECT 'TT_MapInt'::text,                109,         12         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
     SELECT 'TT_Concat'::text,                111,          4         UNION ALL
     SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
@@ -1752,6 +1752,18 @@ SELECT '107.12'::text number,
        'Test caseIgnore, false'::text description,
        TT_MapText('a'::text, '{''A'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text, FALSE::text) IS NULL passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '107.13'::text number,
+       'TT_MapText'::text function_tested,
+       'Test multiple vals'::text description,
+       TT_MapText('{A, B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'aa' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '107.14'::text number,
+       'TT_MapText'::text function_tested,
+       'Test single val in stringlist format'::text description,
+       TT_MapText('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'bb' passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 108 - TT_MapDouble
 ---------------------------------------------------------
@@ -1786,6 +1798,18 @@ SELECT '108.10'::text number,
        'Test Null val'::text description,
        TT_IsError('SELECT TT_MapDouble(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''1.1'',''2.2'',''3.3'',''4.4''}''::text);') != 'FALSE' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '108.11'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test multiple vals'::text description,
+       TT_MapDouble('{A, B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1'::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '108.12'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test single val in stringlist format'::text description,
+       TT_MapDouble('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '2.2'::double precision passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 109 - TT_MapInt
 ---------------------------------------------------------
@@ -1819,6 +1843,18 @@ SELECT '109.10'::text number,
        'TT_MapInt'::text function_tested,
        'Test Null val'::text description,
        TT_IsError('SELECT TT_MapInt(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''5'',''6'',''7'',''8''}''::text);') != 'FALSE' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.11'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test multiple vals'::text description,
+       TT_MapInt('{A, B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1'::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.12'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test single val in stringlist format'::text description,
+       TT_MapInt('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '2'::int passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 110 - TT_Pad
