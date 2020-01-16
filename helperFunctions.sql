@@ -925,7 +925,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MatchList
 --
--- val text - value to test.
+-- val text or string list - value to test. If string list, concatenates before test.
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
@@ -944,6 +944,8 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 )
 RETURNS boolean AS $$
   DECLARE
+    _vals text[];
+    _val text;
     _lst text[];
     _ignoreCase boolean;
     _acceptNull boolean;
@@ -958,6 +960,7 @@ RETURNS boolean AS $$
     _ignoreCase = ignoreCase::boolean;
     _acceptNull = acceptNull::boolean;
     _matches = matches::boolean;
+    _vals = TT_ParseStringList(val, TRUE);
 
     -- validate source value
     IF val IS NULL THEN
@@ -966,21 +969,24 @@ RETURNS boolean AS $$
       END IF;
       RETURN FALSE;
     END IF;
+    
+    -- get val
+    _val = array_to_string(_vals, '');
 
     -- process
     IF _ignoreCase = FALSE THEN
       _lst = TT_ParseStringList(lst, TRUE);
       IF _matches THEN
-        RETURN val = ANY(_lst);
+        RETURN _val = ANY(_lst);
       ELSE
-        RETURN NOT val = ANY(_lst);
+        RETURN NOT _val = ANY(_lst);
       END IF;
     ELSE
       _lst = TT_ParseStringList(upper(lst), TRUE);
       IF _matches THEN
-        RETURN upper(val) = ANY(_lst);
+        RETURN upper(_val) = ANY(_lst);
       ELSE
-        RETURN NOT upper(val) = ANY(_lst);
+        RETURN NOT upper(_val) = ANY(_lst);
       END IF;
     END IF;
   END;

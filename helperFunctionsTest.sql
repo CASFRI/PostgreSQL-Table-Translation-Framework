@@ -185,7 +185,7 @@ WITH test_nb AS (
     SELECT 'TT_IsLessThan'::text,              9,         13         UNION ALL
     SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
     SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
-    SELECT 'TT_MatchList'::text,              12,         30         UNION ALL
+    SELECT 'TT_MatchList'::text,              12,         31         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_CountNotNull'::text,           15,         18         UNION ALL
@@ -1014,7 +1014,7 @@ SELECT '11.20'::text number,
        TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable3'::text, TRUE::text, TRUE::text) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
--- Test 12 - TT_MatchList (list variant)
+-- Test 12 - TT_MatchList
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (8 tests)
@@ -1154,6 +1154,12 @@ SELECT '12.30'::text number,
        'TT_MatchList'::text function_tested,
        'Tets NULL with acceptNull true'::text description,
        TT_MatchList(NULL::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.31'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test concatenating input vals'::text description,
+       TT_MatchList('{''A'', ''B''}', '{''AB'', ''BA'', ''CC''}'::text, FALSE::text, TRUE::text) passed
 ---------------------------------------------------------
 -- Test 13 - TT_False
 ---------------------------------------------------------
