@@ -960,7 +960,14 @@ RETURNS boolean AS $$
     _ignoreCase = ignoreCase::boolean;
     _acceptNull = acceptNull::boolean;
     _matches = matches::boolean;
-    _vals = TT_ParseStringList(val, TRUE);
+    
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(val, 1) = '{'  AND right(val, 1) = '}' THEN
+      _vals = TT_ParseStringList(val, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{'|| '''' || val || '''' || '}', TRUE);
+    END IF;
 
     -- validate source value
     IF val IS NULL THEN
@@ -1612,6 +1619,14 @@ RETURNS text AS $$
       RETURN FALSE;
     END IF;
 
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(vals, 1) = '{'  AND right(vals, 1) = '}' THEN
+      _vals = TT_ParseStringList(vals, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{' || '''' || vals || '''' || '}', TRUE);
+    END IF;
+    
     -- get val
     _val = array_to_string(_vals, '');
 
@@ -1680,6 +1695,14 @@ RETURNS double precision AS $$
       RETURN FALSE;
     END IF;
 
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(vals, 1) = '{'  AND right(vals, 1) = '}' THEN
+      _vals = TT_ParseStringList(vals, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{' || '''' || vals || '''' || '}', TRUE);
+    END IF;
+    
     -- get val
     _val = array_to_string(_vals, '');
     
@@ -1748,6 +1771,14 @@ RETURNS int AS $$
       RETURN NULL;
     END IF;
 
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(vals, 1) = '{'  AND right(vals, 1) = '}' THEN
+      _vals = TT_ParseStringList(vals, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{' || '''' || vals || '''' || '}', TRUE);
+    END IF;
+    
     -- get val
     _val = array_to_string(_vals, '');
     

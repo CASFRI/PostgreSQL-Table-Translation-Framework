@@ -185,14 +185,14 @@ WITH test_nb AS (
     SELECT 'TT_IsLessThan'::text,              9,         13         UNION ALL
     SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
     SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
-    SELECT 'TT_MatchList'::text,              12,         31         UNION ALL
+    SELECT 'TT_MatchList'::text,              12,         33         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_CountNotNull'::text,           15,         18         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         19         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
-	SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
+	  SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -200,16 +200,16 @@ WITH test_nb AS (
     SELECT 'TT_LookupText'::text,            104,         10         UNION ALL
     SELECT 'TT_LookupDouble'::text,          105,          9         UNION ALL
     SELECT 'TT_LookupInt'::text,             106,          9         UNION ALL
-    SELECT 'TT_MapText'::text,               107,         14         UNION ALL
-    SELECT 'TT_MapDouble'::text,             108,         12         UNION ALL
-    SELECT 'TT_MapInt'::text,                109,         12         UNION ALL
+    SELECT 'TT_MapText'::text,               107,         16         UNION ALL
+    SELECT 'TT_MapDouble'::text,             108,         14         UNION ALL
+    SELECT 'TT_MapInt'::text,                109,         14         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
     SELECT 'TT_Concat'::text,                111,          4         UNION ALL
     SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-	SELECT 'TT_NumberOfNotNull'::text,       121,          4
+	  SELECT 'TT_NumberOfNotNull'::text,       121,          4
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1161,6 +1161,18 @@ SELECT '12.31'::text number,
        'Test concatenating input vals'::text description,
        TT_MatchList('{''A'', ''B''}', '{''AB'', ''BA'', ''CC''}'::text, FALSE::text, TRUE::text) passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '12.32'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test string with space and character and no brackets'::text description,
+       TT_MatchList(' 0', '{'' 0'', ''BA'', ''CC''}'::text, FALSE::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '12.33'::text number,
+       'TT_MatchList'::text function_tested,
+       'Test string with space and no brackets'::text description,
+       TT_MatchList(' ', '{'' '', ''BA'', ''CC''}'::text, FALSE::text, TRUE::text) passed
+---------------------------------------------------------
 -- Test 13 - TT_False
 ---------------------------------------------------------
 UNION ALL
@@ -1770,6 +1782,18 @@ SELECT '107.14'::text number,
        'Test single val in stringlist format'::text description,
        TT_MapText('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'bb' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '107.15'::text number,
+       'TT_MapText'::text function_tested,
+       'Test string with space and character and no brackets'::text description,
+       TT_MapText(' '::text, '{'' '',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'aa' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '107.16'::text number,
+       'TT_MapText'::text function_tested,
+       'Test string with space and no brackets'::text description,
+       TT_MapText(' a'::text, '{'' a'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'aa' passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 108 - TT_MapDouble
 ---------------------------------------------------------
@@ -1816,6 +1840,18 @@ SELECT '108.12'::text number,
        'Test single val in stringlist format'::text description,
        TT_MapDouble('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '2.2'::double precision passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '108.13'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test string with space and character and no brackets'::text description,
+       TT_MapDouble(' '::text, '{'' '',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '108.14'::text number,
+       'TT_MapDouble'::text function_tested,
+       'Test string with space and no brackets'::text description,
+       TT_MapDouble(' X'::text, '{'' X'',''B'',''C'',''D''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) = '1.1' passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 109 - TT_MapInt
 ---------------------------------------------------------
@@ -1861,6 +1897,18 @@ SELECT '109.12'::text number,
        'TT_MapInt'::text function_tested,
        'Test single val in stringlist format'::text description,
        TT_MapInt('{B}'::text, '{''AB'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '2'::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.13'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test string with space and character and no brackets'::text description,
+       TT_MapInt(' '::text, '{'' '',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '109.14'::text number,
+       'TT_MapInt'::text function_tested,
+       'Test string with space and no brackets'::text description,
+       TT_MapInt(' X'::text, '{'' X'',''B'',''C'',''D''}'::text, '{''1'',''2'',''3'',''4''}'::text) = '1' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 110 - TT_Pad
