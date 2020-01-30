@@ -96,6 +96,13 @@ DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text);
 DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

@@ -209,7 +209,8 @@ WITH test_nb AS (
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-	  SELECT 'TT_NumberOfNotNull'::text,       121,          4
+	  SELECT 'TT_NumberOfNotNull'::text,       121,          4         UNION ALL
+    SELECT 'TT_IfElseNumberOfNotNullText'::text,122,       4
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2124,24 +2125,54 @@ SELECT '121.1'::text number,
 UNION ALL
 SELECT '121.2'::text number,
        'TT_NumberOfNotNull'::text function_tested,
-       'Lower max_return_val'::text description,
-       TT_NumberOfNotNull('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text) = 1 passed
+       'Lower max_rank_to_consider'::text description,
+       TT_NumberOfNotNull('{'''',''''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text) = 0 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '121.3'::text number,
        'TT_NumberOfNotNull'::text function_tested,
        'Some NULLs and empties, '::text description,
        TT_NumberOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text) = 5 passed
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 3::text) = 1 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '121.4'::text number,
        'TT_NumberOfNotNull'::text function_tested,
        'Fewer arguments, '::text description,
        TT_NumberOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  7::text) = 2 passed
+						  4::text) = 2 passed
 ---------------------------------------------------------
+  ---------------------------------------------------------
+-- Test 121 - TT_NumberOfNotNull
+---------------------------------------------------------
+UNION ALL
+SELECT '122.1'::text number,
+       'TT_IfElseNumberOfNotNullText'::text function_tested,
+       'Simple test'::text description,
+       TT_IfElseNumberOfNotNullText('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text, 1::text, 'S'::text, 'M'::text) = 'M' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '122.2'::text number,
+       'TT_IfElseNumberOfNotNullText'::text function_tested,
+       'Lower max_rank_to_consider'::text description,
+       TT_IfElseNumberOfNotNullText('{'''',''''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text, 1::text, 'S'::text, 'M'::text) = 'S' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '122.3'::text number,
+       'TT_IfElseNumberOfNotNullText'::text function_tested,
+       'Some NULLs and empties, '::text description,
+       TT_IfElseNumberOfNotNullText('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 3::text, 2::text, 'S'::text, 'M'::text) = 'S' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '122.4'::text number,
+       'TT_IfElseNumberOfNotNullText'::text function_tested,
+       'Fewer arguments, '::text description,
+       TT_IfElseNumberOfNotNullText('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  4::text, 1::text, 'S'::text, 'M'::text) = 'M' passed
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
