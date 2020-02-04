@@ -362,9 +362,9 @@ One feature of the translation engine is that the return type of a translation f
 
 Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
 
-CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET)
+HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET)
 
-  * CountNotNull checks that exactly one value is not NULL and returns the NULL_ERROR if the test fails.
+  * HasCountOfNotNull checks that exactly one value is not NULL and returns the NULL_ERROR if the test fails.
     * Note that the order of these tests is important. We need to check for NULLs before checking values are in the list.
   * Now we know that col1 and col2 contain one value and one NULL. We want to test the value using MatchList and ignore the NULL. We test col1 and col2 using MatchList. The column with the value will be evaluated by MatchList, the column with the NULL will be ignored (i.e. the acceptNull parameter will cause TRUE to be returned). Note that if acceptNull was set to FALSE, the null value would trigger a FALSE to be returned which would fail the validation and return the NOT_IN_SET error. This is not the desired behaviour for this case.
 
@@ -376,6 +376,13 @@ CountNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull
     * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
+ 
+* **HasCountOfNotNull**(*stringList* **srcVal**, *int* **count**, *exact* **boolean**, *testEmpty* **boolean**)
+    * Returns TRUE if exact = TRUE and number of notNulls matches count exactly.
+    * Returns FALSE if exact = FALSE and number of notNulls is greater than or equal to count.
+    * If testEmpty = TRUE, it counts both the NULL values and any empty strings in srcVal.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
+    * e.g. HasCountOfNotNull({'a','b','c'}, 3, TRUE, FALSE)
 
 * **NotEmpty**(*text* **srcVal**)
     * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
@@ -526,10 +533,15 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
 
-* **NumberOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**)
-    * Returns the number of string list input arguments that have at least one list element that is not null or empty. Up to a maximum of 7 lists.
+* **CountOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**)
+    * Returns the number of string list input arguments that have at least one list element that is not null or empty. Up to a maximum of 7.
     * If the count is greater than the max_return_val, the max_return_val is returned.
-    * e.g. NumberOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7)
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7)
+ 
+* **IfElseCountOfNotNullText**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *int* **count**, *text* **return_if**, *text* **return_else**)
+    * Calls CountOfNotNull() and tests if the returned value matches the count.
+    * If returned value is less than or equal to count, returns the return_if string, else returns the return_else string.
+    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
