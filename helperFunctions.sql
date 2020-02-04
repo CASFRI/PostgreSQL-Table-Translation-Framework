@@ -43,7 +43,7 @@ RETURNS text AS $$
                   WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
-                  WHEN rule = 'countnotnull'       THEN '-8888'
+                  WHEN rule = 'hascountofnotnull'  THEN '-8888'
                   WHEN rule = 'isintsubstring'     THEN '-9997'
                   WHEN rule = 'isbetweensubstring' THEN '-9997'
                   WHEN rule = 'geoisvalid'         THEN '-7779'
@@ -63,7 +63,7 @@ RETURNS text AS $$
                   WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
-                  WHEN rule = 'countnotnull'       THEN NULL
+                  WHEN rule = 'hascountofnotnull'  THEN NULL
                   WHEN rule = 'isintsubstring'     THEN NULL
                   WHEN rule = 'isbetweensubstring' THEN NULL
                   WHEN rule = 'geoisvalid'         THEN NULL
@@ -84,7 +84,7 @@ RETURNS text AS $$
                   WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
                   WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
-                  WHEN rule = 'countnotnull'       THEN 'NULL_VALUE'
+                  WHEN rule = 'hascountofnotnull'  THEN 'NULL_VALUE'
                   WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
                   WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
                   WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
@@ -1114,7 +1114,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_CountNotNull()
+-- HasCountOfNotNull()
 --
 -- val text - string list of values to test.
 -- count int - number of notNulls to test against
@@ -1127,9 +1127,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- If testEmpty = TRUE, it counts both the NULL values and any empty strings
 -- in val.
 --
--- e.g. TT_CountNotNull({'a','b','c'}, 3, TRUE, FALSE)
+-- e.g. TT_HasCountOfNotNull({'a','b','c'}, 3, TRUE, FALSE)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_CountNotNull(
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   val text,
   count text,
   exact text,
@@ -1148,7 +1148,7 @@ RETURNS boolean AS $$
     END IF;
     
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_CountNotNull',
+    PERFORM TT_ValidateParams('TT_HasCountOfNotNull',
                               ARRAY['count', count, 'int',
                                     'exact', exact, 'boolean',
                                    'testEmpty', testEmpty, 'boolean']);
@@ -1175,21 +1175,21 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_CountNotNull(
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   val text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_CountNotNull(val, count, exact, FALSE::text)
+  SELECT TT_HasCountOfNotNull(val, count, exact, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_CountNotNull(
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   val text,
   count text
 )
 RETURNS boolean AS $$
-  SELECT TT_CountNotNull(val, count, TRUE::text, FALSE::text)
+  SELECT TT_HasCountOfNotNull(val, count, TRUE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -2037,7 +2037,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_NumberOfNotNull()
+-- TT_CountOfNotNull()
 --
 -- vals1/2/3/4/5/6/7 text - string lists of values to test.
 -- max_rank_to_consider int - only consider the first x string lists.
@@ -2046,10 +2046,10 @@ $$ LANGUAGE sql VOLATILE;
 -- Returns the number of vals lists where at least one element in the vals list 
 -- is not null.
 --
--- e.g. TT_NumberOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7)
+-- e.g. TT_CountOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_NumberOfNotNull(text, text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2072,7 +2072,7 @@ RETURNS int AS $$
     _count int;
   BEGIN    
     -- Validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_NumberOfNotNull',
+    PERFORM TT_ValidateParams('TT_CountOfNotNull',
                               ARRAY['max_rank_to_consider', max_rank_to_consider, 'int']);
 
     -- Validate source values (return NULL)
@@ -2190,7 +2190,7 @@ RETURNS int AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2200,10 +2200,10 @@ CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2212,10 +2212,10 @@ CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2223,50 +2223,50 @@ CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_NumberOfNotNull(
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   max_rank_to_consider text
 )
 RETURNS int AS $$
-  SELECT TT_NumberOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
+  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_IfElseNumberOfNotNullText()
+-- TT_IfElseCountOfNotNullText()
 --
--- vals1/2/3/4/5/6/7 text - string lists of values to test. Same as TT_NumberOfNotNull().
--- max_rank_to_consider int - only consider the first x string lists. Same as TT_NumberOfNotNull().
+-- vals1/2/3/4/5/6/7 text - string lists of values to test. Same as TT_IfElseCountOfNotNullText().
+-- max_rank_to_consider int - only consider the first x string lists. Same as TT_IfElseCountOfNotNullText().
 -- cutoff_val - value to use in ifelse
--- str_1 - if TT_NumberOfNotNull() returns less than or equal to cutoffVal, return this string
--- str_2 - if TT_NumberOfNotNull() returns greater than cutoffVal, return this string
+-- str_1 - if TT_CountOfNotNull() returns less than or equal to cutoffVal, return this string
+-- str_2 - if TT_CountOfNotNull() returns greater than cutoffVal, return this string
 --
--- e.g. TT_NumberOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
+-- e.g. TT_IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_IfElseNumberOfNotNullText(text, text, text, text, text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+-- DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2284,13 +2284,13 @@ RETURNS text AS $$
     _cutoff_val int;
   BEGIN    
     -- Validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_IfElseNumberOfNotNull_text',
+    PERFORM TT_ValidateParams('TT_IfElseCountOfNotNullText',
                               ARRAY['cutoff_val', cutoff_val, 'int',
                                    'str_1', str_1, 'text',
                                    'str_2', str_2, 'text']);
     _cutoff_val = cutoff_val::int;
     
-    IF TT_NumberOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, max_rank_to_consider) <= _cutoff_val THEN
+    IF TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, max_rank_to_consider) <= _cutoff_val THEN
       RETURN str_1;
     ELSE
       RETURN str_2;
@@ -2298,7 +2298,7 @@ RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2311,10 +2311,10 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2326,10 +2326,10 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2340,10 +2340,10 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
@@ -2353,10 +2353,10 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   max_rank_to_consider text,
@@ -2365,10 +2365,10 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
 
-CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   max_rank_to_consider text,
   cutoff_val text,
@@ -2376,5 +2376,5 @@ CREATE OR REPLACE FUNCTION TT_IfElseNumberOfNotNullText(
   str_2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseNumberOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
