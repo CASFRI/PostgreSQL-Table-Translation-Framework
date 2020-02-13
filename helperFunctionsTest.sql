@@ -193,6 +193,7 @@ WITH test_nb AS (
     SELECT 'TT_IsBetweenSubstring'::text,     17,         19         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
 	  SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
+    SELECT 'TT_MatchListSubstring'::text,     20,         14         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -209,8 +210,8 @@ WITH test_nb AS (
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-	  SELECT 'TT_CountOfNotNull'::text,       121,          4         UNION ALL
-    SELECT 'TT_IfElseCountOfNotNullText'::text,122,       4
+	  SELECT 'TT_CountOfNotNull'::text,        121,          4         UNION ALL
+    SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1541,7 +1542,41 @@ SELECT '19.28'::text number,
        'TT_NotMatchList'::text function_tested,
        'Tets NULL with acceptNull true'::text description,
        TT_NotMatchList(NULL::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text, TRUE::text) passed
-  
+---------------------------------------------------------
+-- Test 20 - TT_MatchListSubstring
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (10 tests)
+SELECT (TT_TestNullAndWrongTypeParams(20, 'TT_MatchListSubstring', ARRAY['start_char', 'int',
+                                                                'for_length', 'int',
+                                                                'lst', 'stringlist',
+                                                                'ignoreCase', 'boolean',
+                                                                'acceptNull', 'boolean'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '20.11'::text number,
+       'TT_MatchListSubstring'::text function_tested,
+       'Matches'::text description,
+       TT_MatchListSubstring('4321'::text, '4', '1', '{''1'', ''5'', ''6''}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '20.12'::text number,
+       'TT_MatchListSubstring'::text function_tested,
+       'Matches with stringlist vals'::text description,
+       TT_MatchListSubstring('{''4321'', ''abcd''}'::text, '3', '2', '{''21cd'', ''xx'', ''6''}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '20.13'::text number,
+       'TT_MatchListSubstring'::text function_tested,
+       'Test NULL'::text description,
+       TT_MatchListSubstring(NULL::text, '3', '2', '{''21cd'', ''xx'', ''6''}'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '20.14'::text number,
+       'TT_MatchListSubstring'::text function_tested,
+       'Test not in set'::text description,
+       TT_MatchListSubstring('4444', '1', '2', '{''21cd'', ''xx'', ''6''}'::text) IS FALSE passed
 	
 ---------------------------------------------------------
 --------------- Translation functions -------------------

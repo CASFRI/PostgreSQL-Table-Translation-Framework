@@ -59,6 +59,9 @@ DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);

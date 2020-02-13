@@ -46,6 +46,7 @@ RETURNS text AS $$
                   WHEN rule = 'hascountofnotnull'  THEN '-9997'
                   WHEN rule = 'isintsubstring'     THEN '-9997'
                   WHEN rule = 'isbetweensubstring' THEN '-9997'
+                  WHEN rule = 'matchlistsubstring' THEN '-9998'
                   WHEN rule = 'geoisvalid'         THEN '-7779'
                   WHEN rule = 'geointersects'      THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -66,6 +67,7 @@ RETURNS text AS $$
                   WHEN rule = 'hascountofnotnull'  THEN NULL
                   WHEN rule = 'isintsubstring'     THEN NULL
                   WHEN rule = 'isbetweensubstring' THEN NULL
+                  WHEN rule = 'matchlistsubstring' THEN NULL
                   WHEN rule = 'geoisvalid'         THEN NULL
                   WHEN rule = 'geointersects'      THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -87,6 +89,7 @@ RETURNS text AS $$
                   WHEN rule = 'hascountofnotnull'  THEN 'INVALID_VALUE'
                   WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
                   WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
+                  WHEN rule = 'matchlistsubstring' THEN 'NOT_IN_SET'
                   WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -925,7 +928,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MatchList
 --
--- val text or string list - value to test. If string list, concatenates before test.
+-- val text or string list - value to test. If string list, the list members are concatenates before testing.
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
@@ -934,6 +937,7 @@ $$ LANGUAGE sql VOLATILE;
 -- Is val in lst?
 -- val followed by string of test values
 -- e.g. TT_Match('a', {'a','b','c'})
+-- e.g. TT_Match({'a', 'b'}, {'aa','ab','ac'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -1192,7 +1196,6 @@ RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(val, count, TRUE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text)
 --
 -- val text - input string
@@ -1326,6 +1329,97 @@ RETURNS boolean AS $$
   SELECT TT_IsBetweenSubstring(val, start_char, for_length, min, max, TRUE::text, TRUE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TT_MatchListSubstring(text, text, text)
+--
+-- val text or string list - value to test.
+--
+-- start_char - start character to take substring from
+-- for_length - length of substring to take
+--
+-- lst text (stringList) - string containing comma separated vals.
+-- ignoreCase - text default FALSE. Should upper/lower case be ignored?
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
+--
+-- Take substring and test matchList
+-- e.g. TT_MatchListSubstring('2001-01-01', 1, 4, {2001, 2002})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
+  val text,
+  start_char text,
+  for_length text,
+  lst text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
+    _val text;
+    _start_char int;
+    _for_length int;    
+    _acceptNull boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_MatchListSubstring',
+                              ARRAY['lst', lst, 'stringlist',
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'start_char', start_char, 'int',
+                                    'for_length', for_length, 'int',
+                                    'acceptNull', acceptNull, 'boolean']);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+    _acceptNull = acceptNull::boolean;
+
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(val, 1) = '{'  AND right(val, 1) = '}' THEN
+      _vals = TT_ParseStringList(val, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{'|| '''' || val || '''' || '}', TRUE);
+    END IF;
+
+    -- validate source value
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+    
+    -- run substring on each element of array, then concatenate
+    -- Here we are doing the substring and the concatenation (if >1 string list element), then passing
+    -- the concatenated value into matchList. So this matchList wrapper will only ever receive a single
+    -- string.
+    _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _start_char for _for_length)), '');
+    
+    -- process
+    RETURN TT_MatchList(_val, lst, ignoreCase, acceptNull);
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
+  val text,
+  start_char text,
+  for_length text,
+  lst text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListSubstring(val, start_char, for_length, lst, ignoreCase, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
+  val text,
+  start_char text,
+  for_length text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListSubstring(val, start_char, for_length, lst, FALSE::text, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
