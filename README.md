@@ -455,6 +455,11 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
+    * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+    * Takes a substring of a text string and tests using MatchList().
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
+    
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
     * Default error codes are 'INVALID_VALUE' for text attributes, -7779 for numeric attributes and NULL for other types (including geometry).
