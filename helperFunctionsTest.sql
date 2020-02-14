@@ -194,6 +194,7 @@ WITH test_nb AS (
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
 	  SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
     SELECT 'TT_MatchListSubstring'::text,     20,         14         UNION ALL
+    SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -206,12 +207,15 @@ WITH test_nb AS (
     SELECT 'TT_MapInt'::text,                109,         14         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
     SELECT 'TT_Concat'::text,                111,          4         UNION ALL
-    SELECT 'TT_PadConcat'::text,             112,         18         UNION ALL
+    SELECT 'TT_PadConcat'::text,             112,         16         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
 	  SELECT 'TT_CountOfNotNull'::text,        121,          4         UNION ALL
-    SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4
+    SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
+    SELECT 'TT_SubstringText'::text,         123,          6         UNION ALL
+    SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
+    SELECT 'TT_MapSubstringText'::text,      125,         12
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1577,6 +1581,27 @@ SELECT '20.14'::text number,
        'TT_MatchListSubstring'::text function_tested,
        'Test not in set'::text description,
        TT_MatchListSubstring('4444', '1', '2', '{''21cd'', ''xx'', ''6''}'::text) IS FALSE passed
+---------------------------------------------------------
+-- Test 21 - TT_HasLength
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(21, 'TT_HasLength', ARRAY['length_test', 'int',
+                                                                'acceptNull', 'boolean'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '21.5'::text number,
+       'TT_HasLength'::text function_tested,
+       'TRUE test'::text description,
+       TT_HasLength('4321'::text, '4') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '21.6'::text number,
+       'TT_HasLength'::text function_tested,
+       'FALSE test'::text description,
+       TT_HasLength('43215'::text, '4') IS FALSE passed
+---------------------------------------------------------
 	
 ---------------------------------------------------------
 --------------- Translation functions -------------------
@@ -2038,33 +2063,34 @@ SELECT '110.17'::text number,
 -- Test 111 - TT_Concat
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(111, 'TT_Concat',
-                                      ARRAY['sep', 'text'])).*
----------------------------------------------------------
-UNION ALL
-SELECT '111.2'::text number,
+SELECT '111.1'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage'::text description,
        TT_Concat('{''cas'', ''id'', ''test''}'::text, '-'::text) = 'cas-id-test' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '111.3'::text number,
+SELECT '111.2'::text number,
        'TT_Concat'::text function_tested,
        'Basic usage with numbers and symbols'::text description,
        TT_Concat('{''001'', ''--0--'', ''tt.tt''}'::text, '-'::text) = '001---0---tt.tt' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '111.4'::text number,
+SELECT '111.3'::text number,
        'TT_Concat'::text function_tested,
        'Sep is null'::text description,
        TT_IsError('SELECT TT_Concat(''{''''cas'''', ''''id'''', ''''test''''}''::text, NULL::text);') != 'FALSE' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '111.4'::text number,
+       'TT_Concat'::text function_tested,
+       'Test sep with empty string'::text description,
+       TT_Concat('{''cas'', ''id'', ''test''}'::text, ''::text) = 'casidtest' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 112 - TT_PadConcat
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (6 tests)
+-- test all NULLs and wrong types (8 tests)
 SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat',
                                       ARRAY['length', 'intlist',
                                             'pad', 'charlist',
@@ -2073,49 +2099,49 @@ SELECT (TT_TestNullAndWrongTypeParams(112, 'TT_PadConcat',
                                             'includeEmpty', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.11'::text number,
+SELECT '112.9'::text number,
        'TT_PadConcat'::text function_tested,
        'Test with spaces and uppercase'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'', ''15'', ''10'', ''10'', ''7''}', '{''x'', ''x'', ''x'', ''0'', ''0''}'::text, '-'::text, TRUE::text) = 'AB06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.12'::text number,
+SELECT '112.10'::text number,
        'TT_PadConcat'::text function_tested,
        'Test without spaces and not uppercase'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.13'::text number,
+SELECT '112.11'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value'::text description,
        TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxxxxxxxxxxx-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.14'::text number,
+SELECT '112.12'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty length'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'','''',''10'',''7''}'', ''{''x'',''x'',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.15'::text number,
+SELECT '112.13'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty pad'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.16'::text number,
+SELECT '112.14'::text number,
        'TT_PadConcat'::text function_tested,
        'Uneven val, length, pad strings'::text description,
        TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.17'::text number,
+SELECT '112.15'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty value, includeEmpty FALSE'::text description,
        TT_PadConcat('{''ab06'', '''', ''81145'', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, TRUE::text, FALSE::text) = 'AB06-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '112.18'::text number,
+SELECT '112.16'::text number,
        'TT_PadConcat'::text function_tested,
        'Zero length'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''0'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06--xxxxx81145-0811451038-0000001' passed
@@ -2178,7 +2204,7 @@ SELECT '121.4'::text number,
        TT_CountOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
 						  4::text) = 2 passed
 ---------------------------------------------------------
-  ---------------------------------------------------------
+---------------------------------------------------------
 -- Test 121 - TT_IfElseCountOfNotNullText
 ---------------------------------------------------------
 UNION ALL
@@ -2208,6 +2234,71 @@ SELECT '122.4'::text number,
        'Fewer arguments, '::text description,
        TT_IfElseCountOfNotNullText('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
 						  4::text, 1::text, 'S'::text, 'M'::text) = 'M' passed
+---------------------------------------------------------
+-- Test 123 - TT_SubstringText
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(123, 'TT_SubstringText', ARRAY['start_char', 'int',
+                                                                'for_length', 'int'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '123.5'::text number,
+       'TT_SubstringText'::text function_tested,
+       'Basic function call'::text description,
+       TT_SubstringText('abcd'::text, '3'::text, '2'::text) = 'cd' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '123.6'::text number,
+       'TT_SubstringText'::text function_tested,
+       'NULL value'::text description,
+       TT_IsError('TT_SubstringText(NULL::text, NULL::text, NULL::text)') != 'FALSE' passed  
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 124 - TT_SubstringInt
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(124, 'TT_SubstringInt', ARRAY['start_char', 'int',
+                                                                'for_length', 'int'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '124.5'::text number,
+       'TT_SubstringInt'::text function_tested,
+       'Basic function call'::text description,
+       TT_SubstringInt('1234'::text, '1'::text, '3'::text) = '123' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '124.6'::text number,
+       'TT_SubstringInt'::text function_tested,
+       'NULL value'::text description,
+       TT_IsError('TT_SubstringInt(NULL::text, NULL::text, NULL::text)') != 'FALSE' passed  
+---------------------------------------------------------
+-- Test 125 - TT_MapSubstringText
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (10 tests)
+SELECT (TT_TestNullAndWrongTypeParams(125, 'TT_MapSubstringText', ARRAY['start_char', 'int',
+                                                                'for_length', 'int',
+                                                                'mapVals', 'stringlist',
+                                                                'targetVals', 'stringlist',
+                                                                'ignoreCase', 'boolean'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '125.11'::text number,
+       'TT_MapSubstringText'::text function_tested,
+       'Basic function call'::text description,
+       TT_MapSubstringText('1234'::text, '1'::text, '1'::text, '{''1'', ''2''}', '{''A'',''B''}') = 'A' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '125.12'::text number,
+       'TT_MapSubstringText'::text function_tested,
+       'val as string list'::text description,
+       TT_MapSubstringText('{''1234'', ''abcd''}'::text, '1'::text, '1'::text, '{''1a'', ''2a''}', '{''A'',''B''}') = 'A' passed
+---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

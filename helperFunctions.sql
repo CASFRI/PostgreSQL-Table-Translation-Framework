@@ -38,6 +38,7 @@ RETURNS text AS $$
                   WHEN rule = 'isbetween'          THEN '-9999'
                   WHEN rule = 'isgreaterthan'      THEN '-9999'
                   WHEN rule = 'islessthan'         THEN '-9999'
+                  WHEN rule = 'haslength'          THEN '-9997'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
                   WHEN rule = 'notmatchlist'       THEN '-9998'
@@ -59,6 +60,7 @@ RETURNS text AS $$
                   WHEN rule = 'isbetween'          THEN NULL
                   WHEN rule = 'isgreaterthan'      THEN NULL
                   WHEN rule = 'islessthan'         THEN NULL
+                  WHEN rule = 'haslength'          THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
                   WHEN rule = 'notmatchlist'       THEN NULL
@@ -80,6 +82,7 @@ RETURNS text AS $$
                   WHEN rule = 'isbetween'          THEN 'OUT_OF_RANGE'
                   WHEN rule = 'isgreaterthan'      THEN 'OUT_OF_RANGE'
                   WHEN rule = 'islessthan'         THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'haslength'          THEN 'INVALID_VALUE'
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
@@ -170,6 +173,49 @@ CREATE OR REPLACE FUNCTION TT_Length(
 )
 RETURNS int AS $$
       SELECT coalesce(char_length(val), 0);
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_HasLength
+--
+-- val text - value to test.
+-- length - Length to test against
+--
+-- Count characters in string and compare to length_test 
+-- e.g. TT_HasLength('12345', 5)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_HasLength(
+  val text,
+  length_test text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _length_test int;
+    _acceptNull boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_HasLength',
+                              ARRAY['acceptNull', acceptNull, 'boolean',
+                                   'length_test', length_test, 'int']);
+    _acceptNull = acceptNull::boolean;
+    _length_test = length_test::int;
+    
+    IF TT_Length(val) = _length_test THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasLength(
+  val text,
+  length_test text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasLength(val, length_test, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -492,7 +538,7 @@ RETURNS void AS $$
         RAISE EXCEPTION 'ERROR in %(): % is not a numeric value', fctName, paramName;
       ELSIF paramType = 'boolean' AND NOT TT_IsBoolean(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
-      ELSIF paramType = 'char' AND NOT TT_IsChar(paramVal) THEN
+      ELSIF paramType = 'char' AND NOT TT_IsChar(paramVal) AND NOT paramVal = '' THEN -- char needs to support empty string so concat function can use sep = ''.
         RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
       ELSIF paramType = 'stringlist' AND NOT TT_IsStringList(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a stringlist value', fctName, paramName;
@@ -1249,7 +1295,7 @@ RETURNS boolean AS $$
   SELECT TT_IsIntSubstring(val, start_char, for_length, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
--- TT_IsBetweenSubstring(text, text, text)
+-- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text)
 --
 -- val text - input string
 -- start_char text - start character to take substring from
@@ -1746,6 +1792,89 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_MapSubstringText
+--
+-- vals text - string list containing values to test. Or a single value to test.-- mapVals text (stringList) - string list of mapping values
+--
+-- start_char - start character to take substring from
+-- for_length - length of substring to take
+--
+-- targetVals (stringList) text - string list of target values
+-- ignoreCase - default FALSE. Should upper/lower case be ignored?
+--
+-- get substring of val and test mapText
+-- e.g. TT_MapSubstringText('ABC', 2, 1, '{''A'',''B'',''C''}', '{''1'',''2'',''3''}', 'TRUE')
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MapSubstringText(
+  vals text,
+  start_char text,
+  for_length text,
+  mapVals text,
+  targetVals text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _vals text[];
+    _val text;
+    _start_char int;
+    _for_length int;
+    _mapVals text[];
+    _targetVals text[];
+    _ignoreCase boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_MapSubstringText',
+                              ARRAY['start_char', start_char, 'int',
+                                    'for_length', for_length, 'int',
+                                    'mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist',
+                                    'ignoreCase', ignoreCase, 'boolean']);
+    _vals = TT_ParseStringList(vals, TRUE);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+    _ignoreCase = ignoreCase::boolean;
+    _targetVals = TT_ParseStringList(targetVals, TRUE);
+
+    -- validate source value (return NULL if not valid)
+    IF vals IS NULL THEN
+      RETURN FALSE;
+    END IF;
+
+    -- prepare vals
+    -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
+    IF left(vals, 1) = '{'  AND right(vals, 1) = '}' THEN
+      _vals = TT_ParseStringList(vals, TRUE);  
+    ELSE
+      _vals = TT_ParseStringList('{' || '''' || vals || '''' || '}', TRUE);
+    END IF;
+    
+    -- run substring on each element of array, then concatenate
+    -- Here we are doing the substring and the concatenation (if >1 string list element), then passing
+    -- the concatenated value into matchList. So this matchList wrapper will only ever receive a single
+    -- string.
+    _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _start_char for _for_length)), '');
+    
+    -- process
+    RETURN TT_MapText(_val, mapVals, targetVals, ignoreCase);
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapSubstringText(
+  vals text,
+  start_char text,
+  for_length text,
+  mapVals text,
+  targetVals text
+)
+RETURNS text AS $$
+  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_MapDouble
 --
 -- vals text - string list containing values to test. Or a single value to test.
@@ -1979,7 +2108,7 @@ RETURNS text AS $$
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_Concat',
                              ARRAY['sep', sep, 'char']);
-
+                             
     -- validate source value (return NULL if not valid)
     IF NOT TT_IsStringList(val) THEN
       RETURN NULL;
@@ -2472,3 +2601,74 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
 $$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_SubstringText()
+--
+-- val text - input string
+-- start_char text - start character to take substring from
+-- for_length text - length of substring to take
+--
+-- basic wrapper around postgresql substring(), returning text
+-- e.g. TT_SubstringText('abcd', 1, 1)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_SubstringText(text, text, text);
+CREATE OR REPLACE FUNCTION TT_SubstringText(
+  val text,
+  start_char text,
+  for_length text
+)
+RETURNS text AS $$
+  DECLARE
+    _start_char int;
+    _for_length int;
+  BEGIN    
+    -- Validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_SubstringText',
+                              ARRAY['start_char', start_char, 'int',
+                                   'for_length', for_length, 'int']);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+
+    -- process
+    RETURN substring(val from _start_char for _for_length);
+    
+   END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_SubstringInt()
+--
+-- val text - input string
+-- start_char text - start character to take substring from
+-- for_length text - length of substring to take
+--
+-- basic wrapper around postgresql substring(), returning int
+-- e.g. TT_SubstringText('124', 1, 1)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_SubstringInt(text, text, text);
+CREATE OR REPLACE FUNCTION TT_SubstringInt(
+  val text,
+  start_char text,
+  for_length text
+)
+RETURNS int AS $$
+  DECLARE
+    _start_char int;
+    _for_length int;
+  BEGIN    
+    -- Validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_SubstringInt',
+                              ARRAY['start_char', start_char, 'int',
+                                   'for_length', for_length, 'int']);
+    _start_char = start_char::int;
+    _for_length = for_length::int;
+
+    -- process
+    RETURN substring(val from _start_char for _for_length)::int;
+    
+   END;
+$$ LANGUAGE plpgsql VOLATILE;
