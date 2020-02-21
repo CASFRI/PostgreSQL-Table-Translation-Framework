@@ -389,48 +389,48 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
     * e.g. NotEmpty('a')
 
-* **IsInt**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\])
+* **IsInt**(*text* **srcVal**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal represents an integer (e.g. '1.0', '1'). Returns FALSE is srcVal does not represent an integer (e.g. '1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsInt('1')
 
-* **IsNumeric**(*text* **srcVal**, *boolean* **acceptNull**\[default TRUE\]) 
+* **IsNumeric**(*text* **srcVal**, *boolean* **acceptNull**\[default FALSE\]) 
     * Returns TRUE if srcVal can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if srcVal cannot be cast to double precision (e.g. '1.1.1', '1a'), or if srcVal is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
     * e.g. IsNumeric('1.1')
    
-* **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is between min and max. FALSE otherwise.
     * includeMin and includeMax default to TRUE and indicate whether the acceptable range of values should include the min and max values. Must include both or neither includeMin and includeMax.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
           
-* **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal >= lowerBound and inclusive = TRUE or if srcVal > lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsGreaterThan(5, 0, TRUE)
 
-* **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal <= lowerBound and inclusive = TRUE or if srcVal < lowerBound and inclusive = FALSE. Returns FALSE otherwise or if srcVal is NULL.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsLessThan(1, 5, TRUE)
 
-* **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default TRUE\])
+* **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurences**\[default 1\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if number of occurences of srcVal in source_val column of lookupSchemaName.lookupTableName equals occurences. Useful for validating lookup tables to make sure srcVal only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchTable('sp1', public, species_lookup, TRUE)
 
-* **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchList('a', '{'a','b','c'}')
     
-* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is not in lst. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. NotMatchList('d', '{'a','b','c'}')
@@ -445,17 +445,17 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
     * e.g. True()
     
- * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default TRUE\])
+ * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string and tests using IsInt().
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
-  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string and tests using IsBetween().
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-    * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default TRUE\])
+    * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string and tests using MatchList().
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
