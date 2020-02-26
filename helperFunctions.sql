@@ -1540,6 +1540,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- that matches val in source_val column.
 -- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
+--
+-- NULL source values are converted to empty strings. This allows NULLs to be
+-- translated into a target value by using an empty string in the lookup table.
+-- For csv tables this is just a blank cell.
+--
+-- Any source val (including empty strings, aka NULLs) that is not included in the lookup table returns NULL.
+--
 -- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LookupText(
@@ -1557,6 +1564,7 @@ RETURNS text AS $$
     _ignoreCase boolean;
     query text;
     result text;
+    _val text;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
@@ -1568,17 +1576,21 @@ RETURNS text AS $$
     _lookupTableName = lookupTableName::name;
     _ignoreCase = ignoreCase::boolean;
 
-    -- validate source value (return NULL if not valid)
+    -- convert source NULLs into empty strings. This allows NULL source values to be translated into target
+    -- values by using an empty string in the lookup table. If no empty string translation is provided, function
+    -- returns NULL as usual.
     IF val IS NULL THEN
-      RETURN NULL;
+      _val = '';
+    ELSE
+      _val = val;
     END IF;
 
     -- process
     query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
             CASE WHEN _ignoreCase IS TRUE THEN
-                   ' WHERE upper(source_val::text) = upper(' || quote_literal(val) || ')'
+                   ' WHERE upper(source_val::text) = upper(' || quote_literal(_val) || ')'
                  ELSE
-                   ' WHERE source_val = ' || quote_literal(val)
+                   ' WHERE source_val = ' || quote_literal(_val)
             END || ';';
 
     EXECUTE query INTO result;
