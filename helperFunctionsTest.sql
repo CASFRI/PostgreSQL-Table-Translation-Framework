@@ -195,6 +195,7 @@ WITH test_nb AS (
 	  SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
     SELECT 'TT_MatchListSubstring'::text,     20,         14         UNION ALL
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
+    SELECT 'TT_SumIntMatchList'::text,        22,          9         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -215,7 +216,8 @@ WITH test_nb AS (
     SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
     SELECT 'TT_SubstringText'::text,         123,          6         UNION ALL
     SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
-    SELECT 'TT_MapSubstringText'::text,      125,         12
+    SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
+    SELECT 'TT_SumIntMapText'::text,         126,          7
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1602,7 +1604,41 @@ SELECT '21.6'::text number,
        'FALSE test'::text description,
        TT_HasLength('43215'::text, '4') IS FALSE passed
 ---------------------------------------------------------
-	
+---------------------------------------------------------
+-- Test 22 - TT_SumIntMatchList
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (6 tests)
+SELECT (TT_TestNullAndWrongTypeParams(22, 'TT_SumIntMatchList', ARRAY['lst', 'stringlist',
+                                                                'acceptNull', 'boolean',
+                                                                'matches', 'boolean'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '22.6'::text number,
+       'TT_SumIntMatchList'::text function_tested,
+       'Passes test'::text description,
+       TT_SumIntMatchList('{11,12,13}'::text, '{36,37}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '22.7'::text number,
+       'TT_SumIntMatchList'::text function_tested,
+       'Fails test'::text description,
+       TT_SumIntMatchList('{11,12,13}'::text, '{37}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '22.8'::text number,
+       'TT_SumIntMatchList'::text function_tested,
+       'Null source test'::text description,
+       TT_SumIntMatchList(NULL, '{37}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '22.9'::text number,
+       'TT_SumIntMatchList'::text function_tested,
+       'not int'::text description,
+       TT_SumIntMatchList('{a,2}', '{37}') IS FALSE passed
+---------------------------------------------------------
+
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------
@@ -2298,6 +2334,33 @@ SELECT '125.12'::text number,
        'TT_MapSubstringText'::text function_tested,
        'val as string list'::text description,
        TT_MapSubstringText('{''1234'', ''abcd''}'::text, '1'::text, '1'::text, '{''1a'', ''2a''}', '{''A'',''B''}') = 'A' passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 126 - TT_SumIntMapText
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(126, 'TT_SumIntMapText', ARRAY['mapVals', 'stringlist',
+                                                                'targetVals', 'stringlist'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '126.5'::text number,
+       'TT_SumIntMapText'::text function_tested,
+       'Basic function call'::text description,
+       TT_SumIntMapText('{1,2}'::text, '{3,4,5}'::text, '{''A'',''B'',''C''}') = 'A' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '126.6'::text number,
+       'TT_SumIntMapText'::text function_tested,
+       'Not in set'::text description,
+       TT_SumIntMapText('{1,2}'::text, '{6,4,5}'::text, '{''A'',''B'',''C''}') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '126.7'::text number,
+       'TT_SumIntMapText'::text function_tested,
+       'Not int'::text description,
+       TT_SumIntMapText('{a,2}'::text, '{6,4,5}'::text, '{''A'',''B'',''C''}') IS NULL passed
 ---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

@@ -41,6 +41,7 @@ RETURNS text AS $$
                   WHEN rule = 'haslength'          THEN '-9997'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
+                  WHEN rule = 'sumintmatchlist'    THEN '-9998'
                   WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
@@ -63,6 +64,7 @@ RETURNS text AS $$
                   WHEN rule = 'haslength'          THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
+                  WHEN rule = 'sumintmatchlist'    THEN NULL
                   WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
@@ -86,6 +88,7 @@ RETURNS text AS $$
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
+                  WHEN rule = 'sumintmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
                   WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
@@ -974,7 +977,7 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_MatchList
 --
--- val text or string list - value to test. If string list, the list members are concatenates before testing.
+-- val text or string list - value to test. If string list, the list members are concatenated before testing.
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
@@ -1134,6 +1137,85 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_SumIntMatchList
+--
+-- vals string list - integers to sum.
+-- lst text (stringList) - string containing comma separated vals.
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
+--
+-- Is sum of vals in lst?
+--
+-- e.g. TT_SumIntMatchList({1, 1}, {2, 3, 4})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
+  vals text,
+  lst text,
+  acceptNull text,
+  matches text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
+    _acceptNull boolean;
+    _valSum int := 0;
+  BEGIN
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_SumIntMatchList',
+                              ARRAY['lst', lst, 'stringlist',
+                                    'acceptNull', acceptNull, 'boolean',
+                                    'matches', matches, 'boolean']);
+     
+    _acceptNull = acceptNull::boolean;
+    
+    -- validate source value
+    IF vals IS NULL THEN
+      IF _acceptNull THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+    
+    -- prepare vals
+    _vals = TT_ParseStringList(vals, TRUE);
+    
+    -- check all source vals are int
+    -- sum vals
+    FOR i IN 1..array_length(_vals,1) LOOP
+      IF NOT TT_isInt(_vals[i]) THEN
+        RETURN FALSE;
+      ELSE
+        _valSum = _valSum + _vals[i]::int; -- sum vals
+      END IF;
+    END LOOP;
+    
+    -- run summed vals through tt_matchlist
+    RETURN TT_Matchlist(_valSum::text, lst, acceptNull, matches);
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
+  vals text,
+  lst text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  SELECT TT_SumIntMatchList(vals, lst, acceptNull, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
+  vals text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_SumIntMatchList(vals, lst, FALSE::text, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_False
@@ -1768,7 +1850,7 @@ RETURNS text AS $$
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
-      RETURN FALSE;
+      RETURN NULL;
     END IF;
 
     -- prepare vals
@@ -1851,7 +1933,7 @@ RETURNS text AS $$
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
-      RETURN FALSE;
+      RETURN NULL;
     END IF;
 
     -- prepare vals
@@ -1884,6 +1966,62 @@ CREATE OR REPLACE FUNCTION TT_MapSubstringText(
 RETURNS text AS $$
   SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_SumIntMapText
+--
+-- vals string list - integers to sum.
+-- mapVals text (stringList) - string list of mapping values
+-- targetVals (stringList) text - string list of target values
+--
+-- Map sum of vals from mapVals to targetVals
+-- return type is text
+--
+-- Return value from targetVals that matches summed value index in mapVals
+-- Return type is text
+-- Error if vals is NULL or sum of vals is not in mapVals. 
+-- e.g. TT_SumIntMapText('{1,2}', '{3,4,5}', '{A, B, C}')
+
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_SumIntMapText(
+  vals text,
+  mapVals text,
+  targetVals text
+)
+RETURNS text AS $$
+  DECLARE
+    _vals text[];
+    _valSum int := 0;   
+  BEGIN
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_SumIntMapText',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist']);
+                                    
+    _vals = TT_ParseStringList(vals, TRUE);
+
+    -- validate source value (return NULL if not valid)
+    IF vals IS NULL THEN
+      RETURN NULL;
+    END IF;
+
+    -- check all source vals are int
+    -- sum vals
+    FOR i IN 1..array_length(_vals,1) LOOP
+      IF NOT TT_isInt(_vals[i]) THEN
+        RETURN NULL;
+      ELSE
+        _valSum = _valSum + _vals[i]::int; -- sum vals
+      END IF;
+    END LOOP;
+
+    -- run TT_MapText with summed vals
+    RETURN TT_MapText(_valSum::text, mapVals, targetVals);
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1927,7 +2065,7 @@ RETURNS double precision AS $$
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
-      RETURN FALSE;
+      RETURN NULL;
     END IF;
 
     -- prepare vals
