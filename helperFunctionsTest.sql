@@ -195,7 +195,8 @@ WITH test_nb AS (
 	  SELECT 'TT_NotMatchList'::text,           19,         28         UNION ALL
     SELECT 'TT_MatchListSubstring'::text,     20,         14         UNION ALL
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
-    SELECT 'TT_SumIntMatchList'::text,        22,          9         UNION ALL
+    SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
+    SELECT 'TT_LengthMatchList'::text,        23,         11         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -217,7 +218,8 @@ WITH test_nb AS (
     SELECT 'TT_SubstringText'::text,         123,          6         UNION ALL
     SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
     SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
-    SELECT 'TT_SumIntMapText'::text,         126,          7
+    SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
+    SELECT 'TT_LengthMapInt'::text,          127,          6
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1615,28 +1617,68 @@ SELECT (TT_TestNullAndWrongTypeParams(22, 'TT_SumIntMatchList', ARRAY['lst', 'st
                                                                 ])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '22.6'::text number,
+SELECT '22.7'::text number,
        'TT_SumIntMatchList'::text function_tested,
        'Passes test'::text description,
        TT_SumIntMatchList('{11,12,13}'::text, '{36,37}') passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '22.7'::text number,
+SELECT '22.8'::text number,
        'TT_SumIntMatchList'::text function_tested,
        'Fails test'::text description,
        TT_SumIntMatchList('{11,12,13}'::text, '{37}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '22.8'::text number,
+SELECT '22.9'::text number,
        'TT_SumIntMatchList'::text function_tested,
        'Null source test'::text description,
        TT_SumIntMatchList(NULL, '{37}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '22.9'::text number,
+SELECT '22.10'::text number,
        'TT_SumIntMatchList'::text function_tested,
        'not int'::text description,
        TT_SumIntMatchList('{a,2}', '{37}') IS FALSE passed
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 23 - TT_LengthMatchList
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (6 tests)
+SELECT (TT_TestNullAndWrongTypeParams(23, 'TT_LengthMatchList', ARRAY['lst', 'stringlist',
+                                                                'acceptNull', 'boolean',
+                                                                'matches', 'boolean'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '23.7'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'Passes basic test'::text description,
+       TT_LengthMatchList('1234'::text, '{4,5,6}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.8'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'Passes with lst having no brackets'::text description,
+       TT_LengthMatchList('1234'::text, '4') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.9'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'Fails basic test'::text description,
+       TT_LengthMatchList('1234'::text, '{5,6}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.10'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'NULL fails'::text description,
+       TT_LengthMatchList(NULL, '{5,6}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.11'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'NULL passes with acceptNull test'::text description,
+       TT_LengthMatchList(NULL, '{5,6}', TRUE::text) passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -2362,6 +2404,28 @@ SELECT '126.7'::text number,
        'Not int'::text description,
        TT_SumIntMapText('{a,2}'::text, '{6,4,5}'::text, '{''A'',''B'',''C''}') IS NULL passed
 ---------------------------------------------------------
+---------------------------------------------------------
+-- Test 127 - TT_LengthMapInt
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(127, 'TT_LengthMapInt', ARRAY['mapVals', 'stringlist',
+                                                                'targetVals', 'stringlist'
+                                                                ])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '127.5'::text number,
+       'TT_LengthMapInt'::text function_tested,
+       'Basic function call'::text description,
+       TT_LengthMapInt('123'::text, '{3,4,5}'::text, '{1,2,3}'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '127.6'::text number,
+       'TT_LengthMapInt'::text function_tested,
+       'not in set'::text description,
+       TT_LengthMapInt('123'::text, '{6,4,5}'::text, '{1,2,3}'::text) IS NULL passed
+---------------------------------------------------------
+  
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

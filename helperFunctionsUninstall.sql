@@ -49,6 +49,9 @@ DROP FUNCTION IF EXISTS TT_MatchList(text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text);
+DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text);
+DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text);
 DROP FUNCTION IF EXISTS TT_NotMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_NotMatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_NotMatchList(text, text);
@@ -116,7 +119,7 @@ DROP FUNCTION IF EXISTS TT_SubstringInt(text, text, text);
 DROP FUNCTION IF EXISTS TT_MapSubstringText(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MapSubstringText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMapText(text, text, text);
-
+DROP FUNCTION IF EXISTS TT_LengthMapInt(text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

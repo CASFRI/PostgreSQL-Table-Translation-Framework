@@ -42,6 +42,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
                   WHEN rule = 'sumintmatchlist'    THEN '-9998'
+                  WHEN rule = 'matchlengthlist'    THEN '-9998'
                   WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
@@ -65,6 +66,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
                   WHEN rule = 'sumintmatchlist'    THEN NULL
+                  WHEN rule = 'matchlengthlist'    THEN NULL
                   WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
@@ -88,6 +90,7 @@ RETURNS text AS $$
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
+                  WHEN rule = 'matchlengthlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'sumintmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
@@ -1218,6 +1221,74 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_LengthMatchList
+--
+-- val text - string to test length.
+-- lst text (stringList) - list of integers to test against.
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
+--
+-- Is length of val in lst?
+--
+-- e.g. TT_LengthMatchList('abcd', {2, 3, 4, 5})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LengthMatchList(
+  val text,
+  lst text,
+  acceptNull text,
+  matches text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _valLength text;
+    _acceptNull boolean;
+    _valSum int := 0;
+  BEGIN
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_LengthMatchList',
+                              ARRAY['lst', lst, 'stringlist',
+                                    'acceptNull', acceptNull, 'boolean',
+                                    'matches', matches, 'boolean']);
+     
+    _acceptNull = acceptNull::boolean;
+    
+    -- validate source value
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+    
+    -- calculate length and cast to text
+    _valLength = TT_Length(val)::text;
+    
+    -- run summed vals through tt_matchlist
+    RETURN TT_Matchlist(_valLength, lst, acceptNull, matches);
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LengthMatchList(
+  vals text,
+  lst text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  SELECT TT_LengthMatchList(vals, lst, acceptNull, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LengthMatchList(
+  vals text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_LengthMatchList(vals, lst, FALSE::text, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_False
 --
 -- Return false
@@ -1976,7 +2047,6 @@ $$ LANGUAGE sql VOLATILE;
 -- targetVals (stringList) text - string list of target values
 --
 -- Map sum of vals from mapVals to targetVals
--- return type is text
 --
 -- Return value from targetVals that matches summed value index in mapVals
 -- Return type is text
@@ -2174,6 +2244,48 @@ CREATE OR REPLACE FUNCTION TT_MapInt(
 RETURNS int AS $$
   SELECT TT_MapInt(vals, mapVals, targetVals, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LengthMapInt
+--
+-- val string list - string to calculate length.
+-- mapVals text (stringList) - string list of mapping values
+-- targetVals (stringList) text - string list of target values
+--
+-- Map length of val from mapVals to targetVals
+-- return type is int
+--
+-- Return NULL if val is NULL or length of val is not in mapVals. 
+-- e.g. TT_LengthMapInt('1234', '{3,4,5}', '{1, 1, 2}')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LengthMapInt(
+  val text,
+  mapVals text,
+  targetVals text
+)
+RETURNS text AS $$
+  DECLARE
+    _valLength text;   
+  BEGIN
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_LengthMapInt',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist']);
+
+    -- validate source value (return NULL if not valid)
+    IF val IS NULL THEN
+      RETURN NULL;
+    END IF;
+
+    _valLength = TT_Length(val)::text;
+
+    -- run TT_MapText with summed vals
+    RETURN TT_MapText(_valLength, mapVals, targetVals);
+    
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
