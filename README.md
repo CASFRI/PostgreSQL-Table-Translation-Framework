@@ -31,6 +31,15 @@ The current version is 0.0.2-beta and is available for download at https://githu
   3. Run install.bat (or install.sh). This will install the framework as a PostgreSQL extension.
   4. In a postgreSQL query tool window do: CREATE EXTENSION table_translation_framework;
   
+  Alternatively, the engine can be loaded manually. In a PostgreSQL query window, or using the PSQL client, run, in this order:
+
+  1. the engine.sql file,
+  2. the helperFunctions.sql file,
+  3. the helperFunctionsGIS.sql file,
+  4. the engineTest.sql file. All tests should pass (an empty table indicates all tests passed).
+  5. the helperFunctionsTest.sql file. All tests should pass.
+  6. the helperFunctionsGISTest.sql file. All tests should pass.
+  
 **Test**
 
   In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
