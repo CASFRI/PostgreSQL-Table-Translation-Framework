@@ -170,15 +170,34 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_Length
 --
 -- val text - values to test.
+-- trim_spaces boolean - trim spaces from start and end before calculating length?
 --
 -- Count characters in string
 -- e.g. TT_Length('12345')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Length(
+  val text,
+  trim_spaces text
+)
+RETURNS int AS $$
+  DECLARE
+    _trim_spaces boolean;
+  BEGIN
+    _trim_spaces = trim_spaces::boolean;
+    
+    IF _trim_spaces THEN
+      RETURN coalesce(char_length(trim(val)), 0);
+    ELSE
+      RETURN coalesce(char_length(val), 0);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_Length(
   val text
 )
 RETURNS int AS $$
-      SELECT coalesce(char_length(val), 0);
+  SELECT TT_Length(val, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1235,12 +1254,14 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   val text,
   lst text,
+  trim_spaces text,
   acceptNull text,
   matches text
 )
 RETURNS boolean AS $$
   DECLARE
     _valLength text;
+    _trim_spaces boolean;
     _acceptNull boolean;
     _valSum int := 0;
   BEGIN
@@ -1248,10 +1269,12 @@ RETURNS boolean AS $$
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LengthMatchList',
                               ARRAY['lst', lst, 'stringlist',
+                                    'trim_spaces', trim_spaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean',
                                     'matches', matches, 'boolean']);
      
     _acceptNull = acceptNull::boolean;
+    _trim_spaces = trim_spaces::boolean;
     
     -- validate source value
     IF val IS NULL THEN
@@ -1262,7 +1285,11 @@ RETURNS boolean AS $$
     END IF;
     
     -- calculate length and cast to text
-    _valLength = TT_Length(val)::text;
+    IF _trim_spaces THEN
+      _valLength = TT_Length(trim(val))::text;
+    ELSE
+      _valLength = TT_Length(val)::text;
+    END IF;
     
     -- run summed vals through tt_matchlist
     RETURN TT_Matchlist(_valLength, lst, acceptNull, matches);
@@ -1273,10 +1300,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
   lst text,
+  trim_spaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, acceptNull, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, trim_spaces, acceptNull, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LengthMatchList(
+  vals text,
+  lst text,
+  trim_spaces text
+)
+RETURNS boolean AS $$
+  SELECT TT_LengthMatchList(vals, lst, trim_spaces, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
@@ -1284,7 +1321,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, FALSE::text, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -2262,30 +2299,48 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMapInt(
   val text,
   mapVals text,
-  targetVals text
+  targetVals text,
+  trim_spaces text
 )
-RETURNS text AS $$
+RETURNS int AS $$
   DECLARE
-    _valLength text;   
+    _valLength text;
+    _trim_spaces text;
   BEGIN
     
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LengthMapInt',
-                              ARRAY['mapVals', mapVals, 'stringlist',
+                              ARRAY['trim_spaces', trim_spaces, 'boolean',
+                                    'mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
+
+    _trim_spaces = trim_spaces::boolean;
 
     -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
       RETURN NULL;
     END IF;
-
-    _valLength = TT_Length(val)::text;
+    
+    IF _trim_spaces THEN
+      _valLength = TT_Length(val, TRUE::text)::text;
+    ELSE
+      _valLength = TT_Length(val)::text;
+    END IF;
 
     -- run TT_MapText with summed vals
-    RETURN TT_MapText(_valLength, mapVals, targetVals);
+    RETURN TT_MapText(_valLength, mapVals, targetVals)::int;
     
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LengthMapInt(
+  val text,
+  mapVals text,
+  targetVals text
+)
+RETURNS int AS $$
+  SELECT TT_LengthMapInt(val, mapVals, targetVals, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

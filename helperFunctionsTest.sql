@@ -196,7 +196,7 @@ WITH test_nb AS (
     SELECT 'TT_MatchListSubstring'::text,     20,         14         UNION ALL
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
-    SELECT 'TT_LengthMatchList'::text,        23,         11         UNION ALL
+    SELECT 'TT_LengthMatchList'::text,        23,         15         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -219,7 +219,7 @@ WITH test_nb AS (
     SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
     SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
     SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
-    SELECT 'TT_LengthMapInt'::text,          127,          6
+    SELECT 'TT_LengthMapInt'::text,          127,          8
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1644,41 +1644,54 @@ SELECT '22.10'::text number,
 -- Test 23 - TT_LengthMatchList
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (6 tests)
+-- test all NULLs and wrong types (8 tests)
 SELECT (TT_TestNullAndWrongTypeParams(23, 'TT_LengthMatchList', ARRAY['lst', 'stringlist',
+                                                                'trim_spaces', 'boolean',
                                                                 'acceptNull', 'boolean',
                                                                 'matches', 'boolean'
                                                                 ])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '23.7'::text number,
+SELECT '23.9'::text number,
        'TT_LengthMatchList'::text function_tested,
        'Passes basic test'::text description,
        TT_LengthMatchList('1234'::text, '{4,5,6}') passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '23.8'::text number,
+SELECT '23.10'::text number,
        'TT_LengthMatchList'::text function_tested,
        'Passes with lst having no brackets'::text description,
        TT_LengthMatchList('1234'::text, '4') passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '23.9'::text number,
+SELECT '23.11'::text number,
        'TT_LengthMatchList'::text function_tested,
        'Fails basic test'::text description,
        TT_LengthMatchList('1234'::text, '{5,6}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '23.10'::text number,
+SELECT '23.12'::text number,
        'TT_LengthMatchList'::text function_tested,
        'NULL fails'::text description,
        TT_LengthMatchList(NULL, '{5,6}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '23.11'::text number,
+SELECT '23.13'::text number,
        'TT_LengthMatchList'::text function_tested,
        'NULL passes with acceptNull test'::text description,
-       TT_LengthMatchList(NULL, '{5,6}', TRUE::text) passed
+       TT_LengthMatchList(NULL, '{5,6}', FALSE::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.14'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'Passes basic test with trim'::text description,
+       TT_LengthMatchList(' 1234 '::text, '{4}', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '23.15'::text number,
+       'TT_LengthMatchList'::text function_tested,
+       'Passes basic test with trim'::text description,
+       TT_LengthMatchList(' 1234 '::text, '{4}', 'FALSE') IS FALSE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -2424,6 +2437,18 @@ SELECT '127.6'::text number,
        'TT_LengthMapInt'::text function_tested,
        'not in set'::text description,
        TT_LengthMapInt('123'::text, '{6,4,5}'::text, '{1,2,3}'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '127.7'::text number,
+       'TT_LengthMapInt'::text function_tested,
+       'Basic function call, with trim'::text description,
+       TT_LengthMapInt(' 123 '::text, '{3}'::text, '{1}'::text, 'TRUE'::text) = 1::int passed
+---------------------------------------------------------
+UNION ALL
+SELECT '127.8'::text number,
+       'TT_LengthMapInt'::text function_tested,
+       'Basic function call, with trim'::text description,
+       TT_LengthMapInt(' 123 '::text, '{5}'::text, '{1}'::text) = 1::int passed
 ---------------------------------------------------------
   
 ) AS b
