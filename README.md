@@ -464,10 +464,16 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-    * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+  * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string and tests using MatchList().
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
+    
+  * **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **trim_spaces**\[default FALSE\], **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+    * Calculates length of string then checks with matchList.
+    * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. LengthMatchList('12345', {5})
     
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
@@ -519,9 +525,16 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','{'A','B','C'}','{'1','2','3'}', TRUE)
       
-* **Length**(*text* **srcVal**)
+* **Length**(*text* **srcVal**, *boolean* trim_spaces)
     * Returns the length of the srcVal string.
+    * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
     * e.g. Length('12345')
+
+* **LengthMapInt**(*text* **srcVal**, *stringList* **mapVals**, *stringList* **targetVals**, *boolean* **trim_spaces**\[default FALSE\])
+    * Calculates length of string then maps length integer from mapVals to targetVals.
+    * Return type is integer.
+    * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
+    * e.g. Length('12345', {5}, {1})
 
 * **Pad**(*text* **srcVal**, *int* **targetLength**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength and trunc = TRUE. Returns srcVal if srcVal length > targetLength and trunc = FALSE. 
