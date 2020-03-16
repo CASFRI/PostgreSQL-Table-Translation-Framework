@@ -42,7 +42,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
                   WHEN rule = 'sumintmatchlist'    THEN '-9998'
-                  WHEN rule = 'matchlengthlist'    THEN '-9998'
+                  WHEN rule = 'lengthmatchlist'    THEN '-9998'
                   WHEN rule = 'notmatchlist'       THEN '-9998'
                   WHEN rule = 'false'              THEN '-8887'
                   WHEN rule = 'true'               THEN '-8887'
@@ -66,7 +66,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
                   WHEN rule = 'sumintmatchlist'    THEN NULL
-                  WHEN rule = 'matchlengthlist'    THEN NULL
+                  WHEN rule = 'lengthmatchlist'    THEN NULL
                   WHEN rule = 'notmatchlist'       THEN NULL
                   WHEN rule = 'false'              THEN NULL
                   WHEN rule = 'true'               THEN NULL
@@ -90,7 +90,7 @@ RETURNS text AS $$
                   WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
                   WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
-                  WHEN rule = 'matchlengthlist'    THEN 'NOT_IN_SET'
+                  WHEN rule = 'lengthmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'sumintmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
@@ -2289,6 +2289,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val string list - string to calculate length.
 -- mapVals text (stringList) - string list of mapping values
 -- targetVals (stringList) text - string list of target values
+-- trim_spaces - remove leading and trainling spaces befores calculatin length
 --
 -- Map length of val from mapVals to targetVals
 -- return type is int
