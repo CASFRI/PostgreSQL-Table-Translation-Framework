@@ -1244,6 +1244,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- val text - string to test length.
 -- lst text (stringList) - list of integers to test against.
+-- trim_spaces - remove leading and trailing spaces
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 -- matches text - default TRUE. Should a match return true or false?
 --
@@ -2585,7 +2586,7 @@ $$ LANGUAGE sql VOLATILE;
 -- i.e. if max_rank_to_consider = 3, only vals1, vals2 and vals3 are condsidered.
 --
 -- Returns the number of vals lists where at least one element in the vals list 
--- is not null.
+-- is not a null value or an empty string.
 --
 -- e.g. TT_CountOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7)
 ------------------------------------------------------------
@@ -2918,6 +2919,113 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IfElseCountOfNotNullInt()
+--
+-- simple wrapper around TT_IfElseCountOfNotNullText()
+--
+-- e.g. TT_IfElseCountOfNotNullInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  max_rank_to_consider text,
+  cutoff_val text,
+  str_1 text,
+  str_2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, max_rank_to_consider, cutoff_val, str_1, str_2)::int
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

@@ -219,7 +219,9 @@ WITH test_nb AS (
     SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
     SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
     SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
-    SELECT 'TT_LengthMapInt'::text,          127,          8
+    SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
+    SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4
+
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2450,7 +2452,37 @@ SELECT '127.8'::text number,
        'Basic function call, with trim'::text description,
        TT_LengthMapInt(' 123 '::text, '{5}'::text, '{1}'::text) = 1::int passed
 ---------------------------------------------------------
-  
+---------------------------------------------------------
+-- Test 128 - TT_IfElseCountOfNotNullInt
+---------------------------------------------------------
+UNION ALL
+SELECT '128.1'::text number,
+       'TT_IfElseCountOfNotNullInt'::text function_tested,
+       'Simple test'::text description,
+       TT_IfElseCountOfNotNullInt('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text, 1::text, '1'::text, '2'::text) = '2' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '128.2'::text number,
+       'TT_IfElseCountOfNotNullInt'::text function_tested,
+       'Lower max_rank_to_consider'::text description,
+       TT_IfElseCountOfNotNullInt('{'''',''''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text, 1::text, '1'::text, '2'::text) = '1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '128.3'::text number,
+       'TT_IfElseCountOfNotNullInt'::text function_tested,
+       'Some NULLs and empties, '::text description,
+       TT_IfElseCountOfNotNullInt('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 3::text, 2::text, '1'::text, '2'::text) = '1' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '128.4'::text number,
+       'TT_IfElseCountOfNotNullInt'::text function_tested,
+       'Fewer arguments, '::text description,
+       TT_IfElseCountOfNotNullInt('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
+						  4::text, 1::text, '1'::text, '2'::text) = '2' passed
+---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

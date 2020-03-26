@@ -116,6 +116,13 @@ DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SubstringText(text, text, text);
 DROP FUNCTION IF EXISTS TT_SubstringInt(text, text, text);
 DROP FUNCTION IF EXISTS TT_MapSubstringText(text, text, text, text, text, text);
