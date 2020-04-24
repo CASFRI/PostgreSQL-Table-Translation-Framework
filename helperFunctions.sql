@@ -1360,77 +1360,118 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- val text - string list of values to test.
 -- count int - number of notNulls to test against
 -- exact boolean - should number of notNulls match count exactly?
--- testEmpty boolean - should we test for empty strings as well?
 --
--- Return TRUE if exact = TRUE and number of notNulls matches count exactly.
--- Return FALSE if exact = FALSE and number of notNulls is greater than or 
--- equal to count.
--- If testEmpty = TRUE, it counts both the NULL values and any empty strings
--- in val.
+-- Calls countOfNotNull() and test the result against count.
+-- If exact = TRUE, count has to exactly match notNulls.
+-- If exact is FALSE, notNulls need to be greater than or equal to count.
 --
--- e.g. TT_HasCountOfNotNull({'a','b','c'}, 3, TRUE, FALSE)
+-- e.g. TT_HasCountOfNotNull({'a'},{'b'},{'c'}, 3, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  val text,
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
   count text,
-  exact text,
-  testEmpty text
+  exact text
 )
 RETURNS boolean AS $$
   DECLARE
     _vals text[];
     _count int;
     _exact boolean;
-    _testEmpty boolean;
+    _counted_nulls int;
   BEGIN
-    -- validate source value (return FALSE)
-    IF NOT TT_IsStringList(val) THEN
-      RETURN FALSE;
-    END IF;
     
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_HasCountOfNotNull',
                               ARRAY['count', count, 'int',
-                                    'exact', exact, 'boolean',
-                                   'testEmpty', testEmpty, 'boolean']);
+                                    'exact', exact, 'boolean']);
     _count = count::int;
     _exact = exact::boolean;
-    _testEmpty = testEmpty::boolean;
 
     -- process
-    _vals = TT_ParseStringList(val, TRUE);
-    IF _testEmpty THEN -- note tt_notempty returns false for both NULL and ''
-      IF _exact THEN
-        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotEmpty(x)) = _count;
-      ELSE
-        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotEmpty(x)) >= _count;
-      END IF;
+    _counted_nulls = tt_countOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7');
+
+    IF _exact THEN
+      RETURN _counted_nulls = _count;
     ELSE
-      IF _exact THEN
-        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotNull(x)) = _count;
-      ELSE
-        RETURN (SELECT count(*) FROM unnest(_vals) x WHERE TT_NotNull(x)) >= _count;
-      END IF;
+      RETURN _counted_nulls >= _count;
     END IF;
-    RETURN _notNullCount;
+
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  val text,
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(val, count, exact, FALSE::text)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, NULL, count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  val text,
-  count text
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  count text,
+  exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(val, count, TRUE::text, FALSE::text)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, NULL, NULL, count, exact)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, NULL, NULL, NULL, count, exact)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, NULL, NULL, NULL, NULL, count, exact)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text,
+  vals2 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, NULL, NULL, NULL, NULL, NULL, count, exact)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, NULL, NULL, NULL, NULL, NULL, NULL, count, exact)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text)
