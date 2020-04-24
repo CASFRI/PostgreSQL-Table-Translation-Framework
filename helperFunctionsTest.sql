@@ -188,7 +188,7 @@ WITH test_nb AS (
     SELECT 'TT_MatchList'::text,              12,         33         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
-    SELECT 'TT_HasCountOfNotNull'::text,      15,         18         UNION ALL
+    SELECT 'TT_HasCountOfNotNull'::text,      15,         10         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         19         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL

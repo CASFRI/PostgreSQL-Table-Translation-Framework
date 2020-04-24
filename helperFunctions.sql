@@ -1416,7 +1416,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1429,7 +1429,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, NULL, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1441,7 +1441,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, NULL, NULL, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1452,7 +1452,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, NULL, NULL, NULL, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1462,7 +1462,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, NULL, NULL, NULL, NULL, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1471,7 +1471,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, NULL, NULL, NULL, NULL, NULL, NULL, count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text)
