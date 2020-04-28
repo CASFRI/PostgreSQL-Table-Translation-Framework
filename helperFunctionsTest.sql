@@ -174,7 +174,7 @@ SELECT * FROM (
 -- by returning nothing.
 WITH test_nb AS (
     -- Validation functions
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 11 nb_test UNION ALL
+    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 14 nb_test UNION ALL
     SELECT 'TT_NotEmpty'::text,                2,         11         UNION ALL
     SELECT 'TT_Length'::text,                  3,          5         UNION ALL
     SELECT 'TT_IsInt'::text,                   4,         12         UNION ALL
@@ -307,6 +307,24 @@ SELECT '1.11'::text number,
        'TT_NotNull'::text function_tested,
        'Test string list with one value'::text description,
        TT_NotNull('{test}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.12'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with one NULL and any = TRUE'::text description,
+       TT_NotNull('{''a'',NULL}'::text, 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.13'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with all NULL and any = TRUE'::text description,
+       TT_NotNull('{NULL,NULL}'::text, 'TRUE') = FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.14'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list no NULLs and any = TRUE'::text description,
+       TT_NotNull('{''a'',''b''}'::text, 'TRUE') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 2 - TT_NotEmpty

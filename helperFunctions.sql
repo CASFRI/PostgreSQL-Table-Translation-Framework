@@ -119,6 +119,7 @@ $$ LANGUAGE plpgsql;
 -- TT_NotNULL
 --
 --  val text (string list) - Value(s) to test. Can be one or many.
+--  any_ text - default FALSE - if TRUE, return true if any inputs are null.
 --
 -- Return TRUE if all vals are not NULL.
 -- Return FALSE if any val is NULL.
@@ -126,11 +127,14 @@ $$ LANGUAGE plpgsql;
 -- e.g. TT_NotNull({'a', 'b', 'c'})
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotNULL(
-  val text
+  val text,
+  any_ text
 )
 RETURNS boolean AS $$
   DECLARE
     _val text[];
+    _null_count int;
+    _any boolean := any_::boolean;
   BEGIN
     -- validate source value (return FALSE)
     IF NOT TT_IsStringList(val) THEN
@@ -138,9 +142,28 @@ RETURNS boolean AS $$
     END IF;
 
     _val = TT_ParseStringList(val, TRUE);
-    RETURN array_position(_val, NULL) IS NULL;
+    _null_count = array_length(array_positions(_val, NULL), 1); -- counts number of NULLs, if no nulls, returns NULL.
+
+    -- if all values are not null, always return true
+    IF _null_count IS NULL THEN
+      RETURN TRUE;
+    END IF;
+
+    -- if any is TRUE, return TRUE if null_count is less than length of string list. i.e. at least one val is not null
+    IF _any THEN
+      RETURN _null_count < array_length(_val, 1);
+    END IF;
+    
+    RETURN FALSE;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotNull(
+  val text
+)
+RETURNS boolean AS $$
+  SELECT TT_NotNull(val, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
