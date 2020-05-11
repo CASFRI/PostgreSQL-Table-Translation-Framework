@@ -560,10 +560,12 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
 
-* **CountOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**)
+* **CountOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *boolean* **zero_is_null**)
     * Returns the number of string list input arguments that have at least one list element that is not null or empty. Up to a maximum of 7.
     * If the count is greater than the max_return_val, the max_return_val is returned.
-    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7)
+    * If zero_is_null is TRUE, any zero values ('0') are counted as null.
+    * max_return_val and zero_is_null always need to provided.
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE)
  
 * **IfElseCountOfNotNullText**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *int* **count**, *text* **return_if**, *text* **return_else**)
     * Calls CountOfNotNull() and tests if the returned value matches the count.

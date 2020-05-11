@@ -13,6 +13,7 @@
 
 -- validation helper functions
 DROP FUNCTION IF EXISTS TT_NotNull(text);
+DROP FUNCTION IF EXISTS TT_NotNull(text, text);
 DROP FUNCTION IF EXISTS TT_NotEmpty(text);
 DROP FUNCTION IF EXISTS TT_IsInt(text);
 DROP FUNCTION IF EXISTS TT_IsInt(text, text);
@@ -58,9 +59,13 @@ DROP FUNCTION IF EXISTS TT_NotMatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_NotMatchList(text, text);
 DROP FUNCTION IF EXISTS TT_False();
 DROP FUNCTION IF EXISTS TT_True();
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text);
-DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text, text, text, text);
@@ -102,13 +107,13 @@ DROP FUNCTION IF EXISTS TT_Concat(text, text);
 DROP FUNCTION IF EXISTS TT_NothingText();
 DROP FUNCTION IF EXISTS TT_NothingDouble();
 DROP FUNCTION IF EXISTS TT_NothingInt();
+DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text);
-DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text);

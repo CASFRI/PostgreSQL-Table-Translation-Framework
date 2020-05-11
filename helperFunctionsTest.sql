@@ -174,7 +174,7 @@ SELECT * FROM (
 -- by returning nothing.
 WITH test_nb AS (
     -- Validation functions
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 11 nb_test UNION ALL
+    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 14 nb_test UNION ALL
     SELECT 'TT_NotEmpty'::text,                2,         11         UNION ALL
     SELECT 'TT_Length'::text,                  3,          5         UNION ALL
     SELECT 'TT_IsInt'::text,                   4,         12         UNION ALL
@@ -188,7 +188,7 @@ WITH test_nb AS (
     SELECT 'TT_MatchList'::text,              12,         33         UNION ALL
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
-    SELECT 'TT_HasCountOfNotNull'::text,      15,         18         UNION ALL
+    SELECT 'TT_HasCountOfNotNull'::text,      15,         10         UNION ALL
     SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         19         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
@@ -213,7 +213,7 @@ WITH test_nb AS (
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-	  SELECT 'TT_CountOfNotNull'::text,        121,          4         UNION ALL
+	  SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
     SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
     SELECT 'TT_SubstringText'::text,         123,          6         UNION ALL
     SELECT 'TT_SubstringInt'::text,          124,          6         UNION ALL
@@ -307,6 +307,24 @@ SELECT '1.11'::text number,
        'TT_NotNull'::text function_tested,
        'Test string list with one value'::text description,
        TT_NotNull('{test}'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.12'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with one NULL and any = TRUE'::text description,
+       TT_NotNull('{''a'',NULL}'::text, 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.13'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list with all NULL and any = TRUE'::text description,
+       TT_NotNull('{NULL,NULL}'::text, 'TRUE') = FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '1.14'::text number,
+       'TT_NotNull'::text function_tested,
+       'Test string list no NULLs and any = TRUE'::text description,
+       TT_NotNull('{''a'',''b''}'::text, 'TRUE') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 2 - TT_NotEmpty
@@ -1206,83 +1224,46 @@ SELECT '14.1'::text number,
 -- Test 15 - TT_HasCountOfNotNull
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (6 tests)
+-- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(15, 'TT_HasCountOfNotNull',
                                       ARRAY['count', 'int',
-                                            'exact', 'boolean',
-                                            'testEmpty', 'boolean'])).*
+                                            'exact', 'boolean'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '15.5'::text number,
+       'TT_HasCountOfNotNull'::text function_tested,
+       'exact true'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, 2::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '15.6'::text number,
+       'TT_HasCountOfNotNull'::text function_tested,
+       'exact false, passes'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, 1::text, FALSE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.7'::text number,
        'TT_HasCountOfNotNull'::text function_tested,
-       'exact true, empty true, passes'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',''c''}'::text, 3::text, TRUE::text, TRUE::text) passed
+       'exact true, fails'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, 1::text, TRUE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.8'::text number,
        'TT_HasCountOfNotNull'::text function_tested,
-       'exact true, empty true, fails'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',NULL}'::text, 3::text, TRUE::text, TRUE::text) IS FALSE passed
+       'exact false, fails'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, 3::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.9'::text number,
        'TT_HasCountOfNotNull'::text function_tested,
-       'exact true, empty true, passes with a NULL'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',NULL}'::text, 2::text, TRUE::text, TRUE::text) passed
+       'passes with nulls'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, NULL, 2::text, TRUE::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '15.10'::text number,
        'TT_HasCountOfNotNull'::text function_tested,
-       'exact true, empty true, passes with a NULL and an empty'::text description,
-       TT_HasCountOfNotNull('{"",''b'',NULL}'::text, 1::text, TRUE::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.11'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'exact true, empty true, fails with a NULL and an empty'::text description,
-       TT_HasCountOfNotNull('{"",''b'',NULL}'::text, 2::text, TRUE::text, TRUE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.12'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'test zero passes'::text description,
-       TT_HasCountOfNotNull('{"","",NULL}'::text, 0::text, TRUE::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.13'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'exact false, empty true, passes greater than'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',''c''}'::text, 2::text, FALSE::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.14'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'exact false, empty true, passes with exact'::text description,
-       TT_HasCountOfNotNull('{''a'',NULL,''c''}'::text, 2::text, FALSE::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.15'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'empty false, passes'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',NULL}'::text, 2::text, TRUE::text, FALSE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.16'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'empty false, fails'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',""}'::text, 2::text, TRUE::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.17'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'empty false, fails, test default 1'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',""}'::text, 3::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '15.18'::text number,
-       'TT_HasCountOfNotNull'::text function_tested,
-       'empty false, fails, test default 2'::text description,
-       TT_HasCountOfNotNull('{''a'',''b'',""}'::text, 3::text) passed
+       'fails with nulls'::text description,
+       TT_HasCountOfNotNull('{''a''}'::text, '{''a''}'::text, NULL, 1::text, TRUE::text) IS FALSE passed
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -2274,28 +2255,42 @@ SELECT '121.1'::text number,
        'TT_CountOfNotNull'::text function_tested,
        'Simple test'::text description,
        TT_CountOfNotNull('{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text) = 7 passed
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 7::text, 'FALSE') = 7 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '121.2'::text number,
        'TT_CountOfNotNull'::text function_tested,
        'Lower max_rank_to_consider'::text description,
        TT_CountOfNotNull('{'''',''''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text) = 0 passed
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 1::text, 'FALSE') = 0 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '121.3'::text number,
        'TT_CountOfNotNull'::text function_tested,
        'Some NULLs and empties, '::text description,
        TT_CountOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 3::text) = 1 passed
+						  '{''1'',''2''}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 3::text, 'FALSE') = 1 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '121.4'::text number,
        'TT_CountOfNotNull'::text function_tested,
        'Fewer arguments, '::text description,
        TT_CountOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
-						  4::text) = 2 passed
+						  4::text, 'FALSE') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '121.5'::text number,
+       'TT_CountOfNotNull'::text function_tested,
+       'zeros not counted as null'::text description,
+       TT_CountOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''0'',''0''}'::text, '{''1'',''2''}'::text, 
+						  4::text, 'FALSE') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '121.6'::text number,
+       'TT_CountOfNotNull'::text function_tested,
+       'zeros counted as null'::text description,
+       TT_CountOfNotNull('{'''',''''}'::text, '{NULL,NULL}'::text, '{''0'',''0''}'::text, '{''1'',''2''}'::text, 
+						  4::text, 'TRUE') = 1 passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 121 - TT_IfElseCountOfNotNullText
