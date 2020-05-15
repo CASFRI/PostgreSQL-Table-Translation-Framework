@@ -429,17 +429,17 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchTable('sp1', public, species_lookup, TRUE)
 
-* **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+* **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchList('a', '{'a','b','c'}')
     
-* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if srcVal is not in lst. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. NotMatchList('d', '{'a','b','c'}')
@@ -464,12 +464,12 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-  * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+  * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string and tests using MatchList().
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
     
-  * **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **trim_spaces**\[default FALSE\], **ignoreCase**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+  * **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **trim_spaces**\[default FALSE\], **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Calculates length of string then checks with matchList.
     * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
@@ -501,27 +501,27 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns srcVal as integer without any transformation.
     * e.g. CopyInt(1)
       
-* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
+* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. LookupText('sp1', public, species_lookup, target_sp, TRUE)
       
-* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default TRUE\])
+* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. LookupDouble(5.5, public, species_lookup, sp_percent, TRUE)
 
-* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, boolean **ignoreCase**\[default TRUE\])
+* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, boolean **ignoreCase**\[default FALSE\])
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
 
-* **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
+* **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE)
       
-* **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
+* **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
     * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. MapDouble('A','{'A','B','C'}','{'1.1','1.2','1.3'}', TRUE)
       
-* **MapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default TRUE\])
+* **MapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
     * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
     * e.g. Map('A','{'A','B','C'}','{'1','2','3'}', TRUE)
       
