@@ -386,10 +386,10 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
  
-* **HasCountOfNotNull**(*stringList* **srcVal**, *int* **count**, *exact* **boolean**, *testEmpty* **boolean**)
+* **HasCountOfNotNull**(*stringList* **srcVal**, *int* **count**, *exact* **boolean**)
     * Returns TRUE if exact = TRUE and number of notNulls matches count exactly.
     * Returns FALSE if exact = FALSE and number of notNulls is greater than or equal to count.
-    * If testEmpty = TRUE, it counts both the NULL values and any empty strings in srcVal.
+    * Empty string is considered null.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. HasCountOfNotNull({'a','b','c'}, 3, TRUE, FALSE)
 
@@ -561,7 +561,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * e.g. NothingInt()
 
 * **CountOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *boolean* **zero_is_null**)
-    * Returns the number of string list input arguments that have at least one list element that is not null or empty. Up to a maximum of 7.
+    * Returns the number of string list input arguments that have at least one list element that is not null or empty string. Up to a maximum of 7.
     * If the count is greater than the max_return_val, the max_return_val is returned.
     * If zero_is_null is TRUE, any zero values ('0') are counted as null.
     * max_return_val and zero_is_null always need to provided.
