@@ -161,7 +161,7 @@ SELECT * FROM (
 WITH test_nb AS (
     SELECT 'TT_FullTableName'::text function_tested, 1 maj_num,  5 nb_test UNION ALL
     SELECT 'TT_FullFunctionName'::text,              2,          5         UNION ALL
-    SELECT 'TT_ParseArgs'::text,                     3,         11         UNION ALL
+    SELECT 'TT_ParseArgs'::text,                     3,         12         UNION ALL
     SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          7         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
@@ -320,6 +320,12 @@ SELECT '3.11'::text number,
        'TT_ParseArgs'::text function_tested,
        'Test two stringLists and strings and col names'::text description,
         TT_ParseArgs('col_a, {col_b, ''str1''}, {''str2'', colC}, ''str 3''') = ARRAY['col_a', '{col_b, ''str1''}', '{''str2'', colC}', '''str 3'''] passed
+---------------------------------------------------------
+UNION ALL
+SELECT '3.12'::text number,
+       'TT_ParseArgs'::text function_tested,
+       'Basic test, space and unquoted numeric'::text description,
+        TT_ParseArgs('aa,  bb, -111.11') = ARRAY['aa', 'bb', '-111.11'] passed
 ---------------------------------------------------------
 -- Test 4 - TT_ParseRules
 ---------------------------------------------------------

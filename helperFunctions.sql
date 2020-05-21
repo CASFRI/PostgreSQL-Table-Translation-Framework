@@ -39,6 +39,7 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'      THEN '-9999'
                   WHEN rule = 'islessthan'         THEN '-9999'
                   WHEN rule = 'haslength'          THEN '-9997'
+				  WHEN rule = 'isunique'           THEN '-9993'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
                   WHEN rule = 'sumintmatchlist'    THEN '-9998'
@@ -63,6 +64,7 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'      THEN NULL
                   WHEN rule = 'islessthan'         THEN NULL
                   WHEN rule = 'haslength'          THEN NULL
+				  WHEN rule = 'isunique'           THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
                   WHEN rule = 'sumintmatchlist'    THEN NULL

@@ -911,7 +911,7 @@ CREATE OR REPLACE FUNCTION TT_ParseArgs(
 )
 RETURNS text[] AS $$
   -- Matches:
-    -- [^\s,][-_\w\s]* - any word including '-' or '_' or a space, removes any preceding spaces or commas
+    -- [^\s,][-_\.\w\s]* - any word including '-' or '_' or a space, removes any preceding spaces or commas
     -- ''[^''\\]*(?:\\''[^''\\]*)*''
       -- '' - single quotes surrounding...
       -- [^''\\]* - anything thats not \ or ' followed by...
@@ -923,7 +923,7 @@ RETURNS text[] AS $$
     -- {[^}]+} - anything inside curly brackets. [^}] makes it not greedy so it will match multiple lists
     -- ""|'''' - empty strings
   SELECT array_agg(str)
-  FROM (SELECT (regexp_matches(argStr, '([^\s,][-_\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+}|""|'''')', 'g'))[1] str) foo
+  FROM (SELECT (regexp_matches(argStr, '([^\s,][-_\.\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+}|""|'''')', 'g'))[1] str) foo
 $$ LANGUAGE sql STRICT VOLATILE;
 -------------------------------------------------------------------------------
 
