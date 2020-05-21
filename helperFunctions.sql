@@ -1027,6 +1027,7 @@ $$ LANGUAGE sql VOLATILE;
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 -- matches text - default TRUE. Should a match return true or false?
+-- removeSpaces text - remove all empty spaces? Default True.
 --
 -- Is val in lst?
 -- val followed by string of test values
@@ -1038,7 +1039,8 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   lst text,
   ignoreCase text,
   acceptNull text,
-  matches text
+  matches text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -1048,16 +1050,20 @@ RETURNS boolean AS $$
     _ignoreCase boolean;
     _acceptNull boolean;
     _matches boolean;
+    _removeSpaces boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchList',
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
                                     'acceptNull', acceptNull, 'boolean',
-                                    'matches', matches, 'boolean']);
+                                    'matches', matches, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
+    
     _ignoreCase = ignoreCase::boolean;
     _acceptNull = acceptNull::boolean;
     _matches = matches::boolean;
+    _removeSpaces = removeSpaces::boolean;
     
     -- prepare vals
     -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
@@ -1076,7 +1082,11 @@ RETURNS boolean AS $$
     END IF;
     
     -- get val
-    _val = array_to_string(_vals, '');
+    IF removeSpaces THEN
+      _val = replace(array_to_string(_vals, ''), ' ', '');
+    ELSE
+      _val = array_to_string(_vals, '');
+    END IF;
 
     -- process
     IF _ignoreCase = FALSE THEN
@@ -1101,10 +1111,21 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
   lst text,
   ignoreCase text,
+  acceptNull text,
+  matches text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, matches, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchList(
+  val text,
+  lst text,
+  ignoreCase text,
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
@@ -1113,7 +1134,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
@@ -1121,7 +1142,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1132,6 +1153,7 @@ $$ LANGUAGE sql VOLATILE;
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- removeSpace text - remove spaces?
 --
 -- If val in list, return false?
 -- simple wrapper arounf TT_MatchList() with matches = FALSE. 
@@ -1141,7 +1163,8 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   val text,
   lst text,
   ignoreCase text,
-  acceptNull text
+  acceptNull text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -1151,7 +1174,8 @@ RETURNS boolean AS $$
     PERFORM TT_ValidateParams('TT_NotMatchList',
                               ARRAY['lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
-                                    'acceptNull', acceptNull, 'boolean']);
+                                    'acceptNull', acceptNull, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
     _acceptNull = acceptNull::boolean;
 
     -- validate source value
@@ -1162,9 +1186,19 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
 
-    SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text);
+    SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, removeSpaces);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotMatchList(
+  val text,
+  lst text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
   val text,
@@ -1172,7 +1206,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, FALSE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
@@ -1180,7 +1214,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1990,6 +2024,7 @@ $$ LANGUAGE sql VOLATILE;
 -- vals text - string list containing values to test. Or a single value to test.-- mapVals text (stringList) - string list of mapping values
 -- targetVals (stringList) text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
+-- removeSpaces text - remove all empty spaces? Default True.
 --
 -- Return value from targetVals that matches value index in mapVals
 -- If multiple vals provided they are concatenated before testing.
@@ -2002,7 +2037,8 @@ CREATE OR REPLACE FUNCTION TT_MapText(
   vals text,
   mapVals text,
   targetVals text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS text AS $$
   DECLARE
@@ -2011,15 +2047,18 @@ RETURNS text AS $$
     _mapVals text[];
     _targetVals text[];
     _ignoreCase boolean;
+    _removeSpaces boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapText',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
     _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
     _targetVals = TT_ParseStringList(targetVals, TRUE);
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
@@ -2035,7 +2074,11 @@ RETURNS text AS $$
     END IF;
     
     -- get val
-    _val = array_to_string(_vals, '');
+    IF _removeSpaces THEN
+      _val = replace(array_to_string(_vals, ''), ' ', '');
+    ELSE
+      _val = array_to_string(_vals, '');
+    END IF;
 
     -- process
     IF _ignoreCase = FALSE THEN
@@ -2051,10 +2094,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MapText(
   vals text,
   mapVals text,
+  targetVals text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  SELECT TT_MapText(vals, mapVals, targetVals, ignoreCase, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapText(
+  vals text,
+  mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_MapText(vals, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapText(vals, mapVals, targetVals, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -2066,8 +2119,10 @@ $$ LANGUAGE sql VOLATILE;
 -- start_char - start character to take substring from
 -- for_length - length of substring to take
 --
+-- mapVals (stringList) text - string list of mapping values
 -- targetVals (stringList) text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
+-- removeSpaces - passed to matchList, should spaces be removed
 --
 -- get substring of val and test mapText
 -- e.g. TT_MapSubstringText('ABC', 2, 1, '{''A'',''B'',''C''}', '{''1'',''2'',''3''}', 'TRUE')
@@ -2079,7 +2134,8 @@ CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   for_length text,
   mapVals text,
   targetVals text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS text AS $$
   DECLARE
@@ -2097,7 +2153,8 @@ RETURNS text AS $$
                                     'for_length', for_length, 'int',
                                     'mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
     _vals = TT_ParseStringList(vals, TRUE);
     _start_char = start_char::int;
     _for_length = for_length::int;
@@ -2124,7 +2181,7 @@ RETURNS text AS $$
     _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _start_char for _for_length)), '');
     
     -- process
-    RETURN TT_MapText(_val, mapVals, targetVals, ignoreCase);
+    RETURN TT_MapText(_val, mapVals, targetVals, ignoreCase, removeSpaces);
     
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -2134,10 +2191,22 @@ CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   start_char text,
   for_length text,
   mapVals text,
+  targetVals text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, ignoreCase, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapSubstringText(
+  vals text,
+  start_char text,
+  for_length text,
+  mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -2203,6 +2272,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- mapVals text - string containing comma seperated vals
 -- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
+-- removeSpaces text - remove all empty spaces? Default True.
 --
 -- Return double precision value from targetVals that matches value index in mapVals
 -- If multiple vals provided they are concatenated before testing.
@@ -2215,7 +2285,8 @@ CREATE OR REPLACE FUNCTION TT_MapDouble(
   vals text,
   mapVals text,
   targetVals text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS double precision AS $$
   DECLARE
@@ -2224,16 +2295,19 @@ RETURNS double precision AS $$
     _mapVals text[];
     _targetVals text[];
     _ignoreCase boolean;
+    _removeSpaces boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapDouble',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'doublelist',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
     
     _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
     _targetVals = TT_ParseStringList(targetVals, TRUE);
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
@@ -2249,7 +2323,11 @@ RETURNS double precision AS $$
     END IF;
     
     -- get val
-    _val = array_to_string(_vals, '');
+    IF _removeSpaces THEN
+      _val = replace(array_to_string(_vals, ''), ' ', '');
+    ELSE
+      _val = array_to_string(_vals, '');
+    END IF;
     
     -- process
     IF _ignoreCase = FALSE THEN
@@ -2265,10 +2343,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MapDouble(
   vals text,
   mapVals text,
+  targetVals text,
+  ignoreCase text
+)
+RETURNS double precision AS $$
+  SELECT TT_MapDouble(vals, mapVals, targetVals, ignoreCase, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapDouble(
+  vals text,
+  mapVals text,
   targetVals text
 )
 RETURNS double precision AS $$
-  SELECT TT_MapDouble(vals, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapDouble(vals, mapVals, targetVals, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -2279,6 +2367,7 @@ $$ LANGUAGE sql VOLATILE;
 -- mapVals text - string containing comma seperated vals
 -- targetVals text - string containing comma seperated vals
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
+-- removeSpaces text - remove all empty spaces? Default True.
 --
 -- Return int value from targetVals that matches value index in mapVals
 -- If multiple vals provided they are concatenated before testing.
@@ -2290,7 +2379,8 @@ CREATE OR REPLACE FUNCTION TT_MapInt(
   vals text,
   mapVals text,
   targetVals text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS int AS $$
   DECLARE
@@ -2300,16 +2390,19 @@ RETURNS int AS $$
     _targetVals text[];
     _i int;
     _ignoreCase boolean;
+    _removeSpaces boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapInt',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'intlist',
-                                    'ignoreCase', ignoreCase, 'boolean']);
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
     
     _vals = TT_ParseStringList(vals, TRUE);
     _ignoreCase = ignoreCase::boolean;
     _targetVals = TT_ParseStringList(targetVals, TRUE);
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return NULL if not valid)
     IF vals IS NULL THEN
@@ -2325,7 +2418,11 @@ RETURNS int AS $$
     END IF;
     
     -- get val
-    _val = array_to_string(_vals, '');
+    IF _removeSpaces THEN
+      _val = replace(array_to_string(_vals, ''), ' ', '');
+    ELSE
+      _val = array_to_string(_vals, '');
+    END IF;
     
     -- process
     IF _ignoreCase = FALSE THEN
@@ -2341,10 +2438,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_MapInt(
   vals text,
   mapVals text,
+  targetVals text,
+  ignoreCase text
+)
+RETURNS int AS $$
+  SELECT TT_MapInt(vals, mapVals, targetVals, ignoreCase, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MapInt(
+  vals text,
+  mapVals text,
   targetVals text
 )
 RETURNS int AS $$
-  SELECT TT_MapInt(vals, mapVals, targetVals, FALSE::text)
+  SELECT TT_MapInt(vals, mapVals, targetVals, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 

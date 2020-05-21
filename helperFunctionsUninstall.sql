@@ -43,6 +43,7 @@ DROP FUNCTION IF EXISTS TT_MatchTable(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchTable(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchTable(text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchTable(text, text);
+DROP FUNCTION IF EXISTS TT_MatchList(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchList(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchList(text, text, text);
