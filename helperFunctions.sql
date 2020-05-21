@@ -39,7 +39,6 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'      THEN '-9999'
                   WHEN rule = 'islessthan'         THEN '-9999'
                   WHEN rule = 'haslength'          THEN '-9997'
-				  WHEN rule = 'isunique'           THEN '-9993'
                   WHEN rule = 'matchtable'         THEN '-9998'
                   WHEN rule = 'matchlist'          THEN '-9998'
                   WHEN rule = 'sumintmatchlist'    THEN '-9998'
@@ -64,7 +63,6 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'      THEN NULL
                   WHEN rule = 'islessthan'         THEN NULL
                   WHEN rule = 'haslength'          THEN NULL
-				  WHEN rule = 'isunique'           THEN NULL
                   WHEN rule = 'matchtable'         THEN NULL
                   WHEN rule = 'matchlist'          THEN NULL
                   WHEN rule = 'sumintmatchlist'    THEN NULL
@@ -171,21 +169,32 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_NotEmpty
 --
---  val text - value to test
+--  val (stringList) text - value to test
 --
 -- Return TRUE if val is not an empty string.
 -- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or NULL.
+-- If multiple inputs provided they are concatenated before testing
 -- e.g. TT_NotEmpty('a')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
    val text
 )
 RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
   BEGIN
+  
+    -- validate source value (return FALSE)
+    IF NOT TT_IsStringList(val) THEN
+      RETURN FALSE;
+    END IF;
+
+    _vals = TT_ParseStringList(val, TRUE);
+  
     IF val IS NULL THEN
       RETURN FALSE;
     ELSE
-      RETURN replace(val, ' ', '') != '';
+      RETURN replace(array_to_string(_vals, ''), ' ', '') != '';
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -1199,7 +1208,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
@@ -1208,7 +1217,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text)
+  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
@@ -1216,7 +1225,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text)
+  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
