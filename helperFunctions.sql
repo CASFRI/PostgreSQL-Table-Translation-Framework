@@ -119,7 +119,7 @@ $$ LANGUAGE plpgsql;
 -- TT_NotNULL
 --
 --  val text (string list) - Value(s) to test. Can be one or many.
---  any_ text - default FALSE - if TRUE, return true if any inputs are null.
+--  any_ text - default FALSE - if TRUE, return true if any inputs are not null.
 --
 -- Return TRUE if all vals are not NULL.
 -- Return FALSE if any val is NULL.
@@ -170,6 +170,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_NotEmpty
 --
 --  val (stringList) text - value to test
+--  any text - default FALSE - if TRUE, return true if any inputs are not null.
 --
 -- Return TRUE if val is not an empty string.
 -- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or NULL.
@@ -177,27 +178,50 @@ $$ LANGUAGE sql VOLATILE;
 -- e.g. TT_NotEmpty('a')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
-   val text
+   val text,
+   any text
 )
 RETURNS boolean AS $$
   DECLARE
     _vals text[];
+    _not_empty_count int := 0;
+    _any boolean := any_::boolean;
   BEGIN
   
     -- validate source value (return FALSE)
     IF NOT TT_IsStringList(val) THEN
       RETURN FALSE;
     END IF;
+    
+    IF val IS NULL THEN
+      RETURN FALSE;
+    END IF;
 
     _vals = TT_ParseStringList(val, TRUE);
   
-    IF val IS NULL THEN
-      RETURN FALSE;
+    -- get count of not empty strings in array
+    FOR i IN 1..array_length(_vals, 1) LOOP
+      IF replace(array_to_string(_vals[i], ''), ' ', '') != '' THEN
+        _not_empty_count = _not_empty_count + 1;
+      END IF;
+    END LOOP;
+    
+    -- return TRUE if any is TRUE and _not_empty_count >0
+    -- return TRUE if any is FALSE and _not_empty_count = length of _vals array
+    IF _any THEN
+      RETURN _not_empty_count > 0;
     ELSE
-      RETURN replace(array_to_string(_vals, ''), ' ', '') != '';
+      RETURN _not_empty_count = array_length(_vals, 1)
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_NotEmpty(
+  val text
+)
+RETURNS boolean AS $$
+  SELECT TT_NotEmpty(val, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

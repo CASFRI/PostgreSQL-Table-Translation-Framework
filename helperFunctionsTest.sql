@@ -175,7 +175,7 @@ SELECT * FROM (
 WITH test_nb AS (
     -- Validation functions
     SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 14 nb_test UNION ALL
-    SELECT 'TT_NotEmpty'::text,                2,         14         UNION ALL
+    SELECT 'TT_NotEmpty'::text,                2,         16         UNION ALL
     SELECT 'TT_Length'::text,                  3,          5         UNION ALL
     SELECT 'TT_IsInt'::text,                   4,         12         UNION ALL
     SELECT 'TT_IsNumeric'::text,               5,          8         UNION ALL
@@ -414,6 +414,18 @@ SELECT '2.14'::text number,
        'TT_NotEmpty'::text function_tested,
        'multiple strings'::text description,
        TT_NotEmpty('{'' '', ''  '', NULL}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.15'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'multiple strings, any false'::text description,
+       TT_NotEmpty('{'' '', ''a''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '2.16'::text number,
+       'TT_NotEmpty'::text function_tested,
+       'multiple strings, any true'::text description,
+       TT_NotEmpty('{'' '', ''a''}', TRUE::text) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 3 - TT_Length
