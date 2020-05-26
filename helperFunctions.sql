@@ -179,7 +179,7 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
    val text,
-   any text
+   any_ text
 )
 RETURNS boolean AS $$
   DECLARE
@@ -201,7 +201,7 @@ RETURNS boolean AS $$
   
     -- get count of not empty strings in array
     FOR i IN 1..array_length(_vals, 1) LOOP
-      IF replace(array_to_string(_vals[i], ''), ' ', '') != '' THEN
+      IF replace(_vals[i], ' ', '') != '' THEN
         _not_empty_count = _not_empty_count + 1;
       END IF;
     END LOOP;
@@ -211,7 +211,7 @@ RETURNS boolean AS $$
     IF _any THEN
       RETURN _not_empty_count > 0;
     ELSE
-      RETURN _not_empty_count = array_length(_vals, 1)
+      RETURN _not_empty_count = array_length(_vals, 1);
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -228,22 +228,22 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_Length
 --
 -- val text - values to test.
--- trim_spaces boolean - trim spaces from start and end before calculating length?
+-- removeSpaces boolean - trim spaces from start and end before calculating length?
 --
 -- Count characters in string
 -- e.g. TT_Length('12345')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Length(
   val text,
-  trim_spaces text
+  removeSpaces text
 )
 RETURNS int AS $$
   DECLARE
-    _trim_spaces boolean;
+    _removeSpaces boolean;
   BEGIN
-    _trim_spaces = trim_spaces::boolean;
+    _removeSpaces = removeSpaces::boolean;
     
-    IF _trim_spaces THEN
+    IF _removeSpaces THEN
       RETURN coalesce(char_length(trim(val)), 0);
     ELSE
       RETURN coalesce(char_length(val), 0);
@@ -1336,7 +1336,7 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- val text - string to test length.
 -- lst text (stringList) - list of integers to test against.
--- trim_spaces - remove leading and trailing spaces
+-- removeSpaces - remove leading and trailing spaces
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 -- matches text - default TRUE. Should a match return true or false?
 --
@@ -1347,14 +1347,14 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   val text,
   lst text,
-  trim_spaces text,
+  removeSpaces text,
   acceptNull text,
   matches text
 )
 RETURNS boolean AS $$
   DECLARE
     _valLength text;
-    _trim_spaces boolean;
+    _removeSpaces boolean;
     _acceptNull boolean;
     _valSum int := 0;
   BEGIN
@@ -1362,12 +1362,12 @@ RETURNS boolean AS $$
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LengthMatchList',
                               ARRAY['lst', lst, 'stringlist',
-                                    'trim_spaces', trim_spaces, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean',
                                     'matches', matches, 'boolean']);
      
     _acceptNull = acceptNull::boolean;
-    _trim_spaces = trim_spaces::boolean;
+    _removeSpaces = removeSpaces::boolean;
     
     -- validate source value
     IF val IS NULL THEN
@@ -1378,7 +1378,7 @@ RETURNS boolean AS $$
     END IF;
     
     -- calculate length and cast to text
-    IF _trim_spaces THEN
+    IF _removeSpaces THEN
       _valLength = TT_Length(trim(val))::text;
     ELSE
       _valLength = TT_Length(val)::text;
@@ -1393,20 +1393,20 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
   lst text,
-  trim_spaces text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, trim_spaces, acceptNull, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, removeSpaces, acceptNull, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
   lst text,
-  trim_spaces text
+  removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, trim_spaces, FALSE::text, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, removeSpaces, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
@@ -1566,11 +1566,12 @@ RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
--- TT_IsIntSubstring(text, text, text)
+-- TT_IsIntSubstring(text, text, text, text)
 --
 -- val text - input string
--- start_char - start character to take substring from
--- for_length - length of substring to take
+-- startChar - start character to take substring from
+-- forLength - length of substring to take
+-- removeSpaces - default FALSE - remove spaces before doing substring
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Take substring and test isInt
@@ -1578,24 +1579,28 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
-    _start_char int;
-    _for_length int;
+    _startChar int;
+    _forLength int;
+    _removeSpaces boolean;
     _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsIntSubstring',
-                              ARRAY['start_char', start_char, 'int',
-                                    'for_length', for_length, 'int',
+                              ARRAY['startChar', startChar, 'int',
+                                    'forLength', forLength, 'int',
+                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
+    _startChar = startChar::int;
+    _forLength = forLength::int;
     _acceptNull = acceptNull::boolean;
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return FALSE)
     IF val IS NULL THEN
@@ -1606,20 +1611,34 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    RETURN TT_IsInt(substring(val from _start_char for _for_length));
+    IF _removeSpaces THEN
+      RETURN TT_IsInt(substring(replace(val, ' ', '') from _startChar for _forLength));
+    ELSE
+      RETURN TT_IsInt(substring(val from _startChar for _forLength));
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
-  start_char text,
-  for_length text
+  startChar text,
+  forLength text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsIntSubstring(val, start_char, for_length, FALSE::text)
+  SELECT TT_IsIntSubstring(val, startChar, forLength, removeSpaces, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
+  val text,
+  startChar text,
+  forLength text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
--- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text)
+-- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text)
 --
 -- val text - input string
 -- start_char text - start character to take substring from
@@ -1628,6 +1647,7 @@ $$ LANGUAGE sql VOLATILE;
 -- max text - upper between bound
 -- includeMin text - boolean for including lower bound
 -- includeMax text - boolean for including upper bound
+-- removeSpaces - default FALSE - remove spaces before doing substring
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Take substring and test with TT_IsBetween()
@@ -1635,32 +1655,36 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   min text,
   max text,
   includeMin text,
   includeMax text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
-    _start_char int;
-    _for_length int;
+    _startChar int;
+    _forLength int;
+    _removeSpaces boolean;
     _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsBetweenSubstring',
-                              ARRAY['start_char', start_char, 'int',
-                                    'for_length', for_length, 'int',
+                              ARRAY['startChar', startChar, 'int',
+                                    'forLength', forLength, 'int',
                                     'min', min, 'numeric',
                                     'max', max, 'numeric',
                                     'includeMin', includeMin, 'boolean',
                                     'includeMax', includeMax, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
+    _startChar = startChar::int;
+    _forLength = forLength::int;
     _acceptNull = acceptNull::boolean;
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return FALSE)
     IF val IS NULL THEN
@@ -1671,41 +1695,59 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    RETURN TT_IsBetween(substring(val from _start_char for _for_length), min, max, includeMin, includeMax);
+    IF _removeSpaces THEN
+      RETURN TT_IsBetween(substring(replace(val, ' ', '') from _startChar for _forLength), min, max, includeMin, includeMax);
+    ELSE
+      RETURN TT_IsBetween(substring(val from _startChar for _forLength), min, max, includeMin, includeMax);
+    END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text,
+  removeSpaces text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, includeMin, includeMin, removeSpaces, FALSE::text);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
+  val text,
+  startChar text,
+  forLength text,
   min text,
   max text,
   includeMin text,
   includeMax text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsBetweenSubstring(val, start_char, for_length, min, max, includeMin, includeMin, FALSE::text);
+  SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, includeMin, includeMin, FALSE::text, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   min text,
   max text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsBetweenSubstring(val, start_char, for_length, min, max, TRUE::text, TRUE::text);
+  SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, TRUE::text, TRUE::text, FALSE::text, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- TT_MatchListSubstring(text, text, text)
+-- TT_MatchListSubstring(text, text, text, text, text, text, text)
 --
 -- val text or string list - value to test.
 --
--- start_char - start character to take substring from
--- for_length - length of substring to take
+-- startChar - start character to take substring from
+-- forLength - length of substring to take
 --
 -- lst text (stringList) - string containing comma separated vals.
 -- ignoreCase - text default FALSE. Should upper/lower case be ignored?
@@ -1715,32 +1757,37 @@ $$ LANGUAGE sql VOLATILE;
 -- Take substring and test matchList
 -- e.g. TT_MatchListSubstring('2001-01-01', 1, 4, {2001, 2002})
 ------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   lst text,
   ignoreCase text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
     _vals text[];
     _val text;
-    _start_char int;
-    _for_length int;    
+    _startChar int;
+    _forLength int;
+    _removeSpaces boolean;
     _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchListSubstring',
-                              ARRAY['lst', lst, 'stringlist',
+                              ARRAY['startChar', startChar, 'int',
+                                    'forLength', forLength, 'int',
+                                    'lst', lst, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
-                                    'start_char', start_char, 'int',
-                                    'for_length', for_length, 'int',
+                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
+    _startChar = startChar::int;
+    _forLength = forLength::int;
     _acceptNull = acceptNull::boolean;
+    _removeSpaces = removeSpaces::boolean;
 
     -- prepare vals
     -- if not already a string list, surround with {}. This ensures correct behaviour when parsing
@@ -1762,32 +1809,48 @@ RETURNS boolean AS $$
     -- Here we are doing the substring and the concatenation (if >1 string list element), then passing
     -- the concatenated value into matchList. So this matchList wrapper will only ever receive a single
     -- string.
-    _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _start_char for _for_length)), '');
+    IF _removeSpaces THEN
+      _val = array_to_string(ARRAY(SELECT substring(replace(unnest(_vals), ' ', '') from _startChar for _forLength)), '');
+    ELSE
+      _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _startChar for _forLength)), '');
+    END IF;
     
     -- process
-    RETURN TT_MatchList(_val, lst, ignoreCase, acceptNull);
+    RETURN TT_MatchList(_val, lst, ignoreCase, acceptNull, TRUE::text, removeSpaces);
   END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   lst text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchListSubstring(val, start_char, for_length, lst, ignoreCase, FALSE::text)
+  SELECT TT_MatchListSubstring(val, startChar, forLength, lst, ignoreCase, removeSpaces, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
+  lst text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListSubstring(val, startChar, forLength, lst, ignoreCase, FALSE::text, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
+  val text,
+  startChar text,
+  forLength text,
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchListSubstring(val, start_char, for_length, lst, FALSE::text, FALSE::text)
+  SELECT TT_MatchListSubstring(val, startChar, forLength, lst, FALSE::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
 -------------------------------------------------------------------------------
@@ -2165,8 +2228,8 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   vals text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   mapVals text,
   targetVals text,
   ignoreCase text,
@@ -2176,23 +2239,24 @@ RETURNS text AS $$
   DECLARE
     _vals text[];
     _val text;
-    _start_char int;
-    _for_length int;
+    _startChar int;
+    _forLength int;
     _mapVals text[];
     _targetVals text[];
     _ignoreCase boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MapSubstringText',
-                              ARRAY['start_char', start_char, 'int',
-                                    'for_length', for_length, 'int',
+                              ARRAY['startChar', startChar, 'int',
+                                    'forLength', forLength, 'int',
                                     'mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist',
                                     'ignoreCase', ignoreCase, 'boolean',
                                     'removeSpaces', removeSpaces, 'boolean']);
+                                    
     _vals = TT_ParseStringList(vals, TRUE);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
+    _startChar = startChar::int;
+    _forLength = forLength::int;
     _ignoreCase = ignoreCase::boolean;
     _targetVals = TT_ParseStringList(targetVals, TRUE);
 
@@ -2213,7 +2277,7 @@ RETURNS text AS $$
     -- Here we are doing the substring and the concatenation (if >1 string list element), then passing
     -- the concatenated value into matchList. So this matchList wrapper will only ever receive a single
     -- string.
-    _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _start_char for _for_length)), '');
+    _val = array_to_string(ARRAY(SELECT substring(unnest(_vals) from _startChar for _forLength)), '');
     
     -- process
     RETURN TT_MapText(_val, mapVals, targetVals, ignoreCase, removeSpaces);
@@ -2223,25 +2287,25 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   vals text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   mapVals text,
   targetVals text,
   ignoreCase text
 )
 RETURNS text AS $$
-  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, ignoreCase, TRUE::text)
+  SELECT TT_MapSubstringText(vals, startChar, forLength, mapVals, targetVals, ignoreCase, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   vals text,
-  start_char text,
-  for_length text,
+  startChar text,
+  forLength text,
   mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_MapSubstringText(vals, start_char, for_length, mapVals, targetVals, FALSE::text, TRUE::text)
+  SELECT TT_MapSubstringText(vals, startChar, forLength, mapVals, targetVals, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -2496,7 +2560,7 @@ $$ LANGUAGE sql VOLATILE;
 -- val string list - string to calculate length.
 -- mapVals text (stringList) - string list of mapping values
 -- targetVals (stringList) text - string list of target values
--- trim_spaces - remove leading and trainling spaces befores calculatin length
+-- removeSpaces - remove leading and trainling spaces befores calculatin length
 --
 -- Map length of val from mapVals to targetVals
 -- return type is int
@@ -2508,28 +2572,28 @@ CREATE OR REPLACE FUNCTION TT_LengthMapInt(
   val text,
   mapVals text,
   targetVals text,
-  trim_spaces text
+  removeSpaces text
 )
 RETURNS int AS $$
   DECLARE
     _valLength text;
-    _trim_spaces text;
+    _removeSpaces text;
   BEGIN
     
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LengthMapInt',
-                              ARRAY['trim_spaces', trim_spaces, 'boolean',
+                              ARRAY['removeSpaces', removeSpaces, 'boolean',
                                     'mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
 
-    _trim_spaces = trim_spaces::boolean;
+    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return NULL if not valid)
     IF val IS NULL THEN
       RETURN NULL;
     END IF;
     
-    IF _trim_spaces THEN
+    IF _removeSpaces THEN
       _valLength = TT_Length(val, TRUE::text)::text;
     ELSE
       _valLength = TT_Length(val)::text;
@@ -2788,9 +2852,9 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_CountOfNotNull()
 --
 -- vals1/2/3/4/5/6/7 text - string lists of values to test.
--- max_rank_to_consider int - only consider the first x string lists.
--- i.e. if max_rank_to_consider = 3, only vals1, vals2 and vals3 are condsidered.
--- zero_is_null = if TRUE, and zero values are counted a null
+-- maxRankToConsider int - only consider the first x string lists.
+-- i.e. if maxRankToConsider = 3, only vals1, vals2 and vals3 are condsidered.
+-- zeroIsNull = if TRUE, and zero values are counted a null
 --
 -- Returns the number of vals lists where at least one element in the vals list 
 -- is not a null value or an empty string.
@@ -2806,8 +2870,8 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals5 text,
   vals6 text,
   vals7 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
   DECLARE
@@ -2818,14 +2882,14 @@ RETURNS int AS $$
     _vals5 text[];
     _vals6 text[];
     _vals7 text[];
-    _max_rank_to_consider int;
+    _maxRankToConsider int;
     _count int;
-    _zero_is_null boolean;
+    _zeroIsNull boolean;
   BEGIN    
     -- Validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_CountOfNotNull',
-                              ARRAY['max_rank_to_consider', max_rank_to_consider, 'int',
-                                   'zero_is_null', zero_is_null, 'boolean']);
+                              ARRAY['maxRankToConsider', maxRankToConsider, 'int',
+                                   'zeroIsNull', zeroIsNull, 'boolean']);
 
     -- Validate source values (return NULL)
     IF TT_NotNull(vals1) AND NOT TT_IsStringList(vals1) OR
@@ -2846,21 +2910,21 @@ RETURNS int AS $$
     _vals5 = TT_ParseStringList(vals5, TRUE);
     _vals6 = TT_ParseStringList(vals6, TRUE);
     _vals7 = TT_ParseStringList(vals7, TRUE);
-    _max_rank_to_consider = max_rank_to_consider::int;
-    _zero_is_null = zero_is_null::boolean;
+    _maxRankToConsider = maxRankToConsider::int;
+    _zeroIsNull = zeroIsNull::boolean;
 
     -- Run queries when zero_is_null = FALSE
-    IF _zero_is_null = FALSE THEN
+    IF _zeroIsNull = FALSE THEN
       -- Get count of not null vals lists
-      IF _max_rank_to_consider = 0 THEN
+      IF _maxRankToConsider = 0 THEN
         RETURN 0;
-      ELSEIF _max_rank_to_consider = 1 THEN 
+      ELSEIF _maxRankToConsider = 1 THEN 
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSEIF _max_rank_to_consider = 2 THEN
+      ELSEIF _maxRankToConsider = 2 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
@@ -2868,7 +2932,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSEIF _max_rank_to_consider = 3 THEN
+      ELSEIF _maxRankToConsider = 3 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
@@ -2878,7 +2942,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 4 THEN
+      ELSIF _maxRankToConsider = 4 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
@@ -2890,7 +2954,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 5 THEN
+      ELSIF _maxRankToConsider = 5 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
@@ -2904,7 +2968,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 6 THEN
+      ELSIF _maxRankToConsider = 6 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
@@ -2941,15 +3005,15 @@ RETURNS int AS $$
       
     -- Run queries when zero_is_null = FALSE
     ELSE
-      IF _max_rank_to_consider = 0 THEN
+      IF _maxRankToConsider = 0 THEN
         RETURN 0;
-      ELSEIF _max_rank_to_consider = 1 THEN 
+      ELSEIF _maxRankToConsider = 1 THEN 
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSEIF _max_rank_to_consider = 2 THEN
+      ELSEIF _maxRankToConsider = 2 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
@@ -2957,7 +3021,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSEIF _max_rank_to_consider = 3 THEN
+      ELSEIF _maxRankToConsider = 3 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
@@ -2967,7 +3031,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 4 THEN
+      ELSIF _maxRankToConsider = 4 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
@@ -2979,7 +3043,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 5 THEN
+      ELSIF _maxRankToConsider = 5 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
@@ -2993,7 +3057,7 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
-      ELSIF _max_rank_to_consider = 6 THEN
+      ELSIF _maxRankToConsider = 6 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
@@ -3041,11 +3105,11 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals4 text, 
   vals5 text,
   vals6 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -3054,11 +3118,11 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals3 text,
   vals4 text, 
   vals5 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -3066,41 +3130,41 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals2 text,
   vals3 text,
   vals4 text, 
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
-  max_rank_to_consider text,
-  zero_is_null text
+  maxRankToConsider text,
+  zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, zero_is_null)
+  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -3108,10 +3172,10 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_IfElseCountOfNotNullText()
 --
 -- vals1/2/3/4/5/6/7 text - string lists of values to test. Same as TT_IfElseCountOfNotNullText().
--- max_rank_to_consider int - only consider the first x string lists. Same as TT_IfElseCountOfNotNullText().
--- cutoff_val - value to use in ifelse
--- str_1 - if TT_CountOfNotNull() returns less than or equal to cutoffVal, return this string
--- str_2 - if TT_CountOfNotNull() returns greater than cutoffVal, return this string
+-- maxRankToConsider int - only consider the first x string lists. Same as TT_IfElseCountOfNotNullText().
+-- cutoffVal - value to use in ifelse
+-- str1 - if TT_CountOfNotNull() returns less than or equal to cutoffVal, return this string
+-- str2 - if TT_CountOfNotNull() returns greater than cutoffVal, return this string
 --
 -- e.g. TT_IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 ------------------------------------------------------------
@@ -3124,26 +3188,26 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals5 text,
   vals6 text,
   vals7 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
   DECLARE
-    _cutoff_val int;
+    _cutoffVal int;
   BEGIN    
     -- Validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IfElseCountOfNotNullText',
-                              ARRAY['cutoff_val', cutoff_val, 'int',
-                                   'str_1', str_1, 'text',
-                                   'str_2', str_2, 'text']);
-    _cutoff_val = cutoff_val::int;
+                              ARRAY['cutoffVal', cutoffVal, 'int',
+                                   'str1', str1, 'text',
+                                   'str2', str2, 'text']);
+    _cutoffVal = cutoffVal::int;
     
-    IF TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, max_rank_to_consider, 'FALSE') <= _cutoff_val THEN
-      RETURN str_1;
+    IF TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, 'FALSE') <= _cutoffVal THEN
+      RETURN str1;
     ELSE
-      RETURN str_2;
+      RETURN str2;
     END IF;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -3155,13 +3219,13 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals4 text, 
   vals5 text,
   vals6 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -3170,13 +3234,13 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals3 text,
   vals4 text, 
   vals5 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -3184,49 +3248,49 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals2 text,
   vals3 text,
   vals4 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
   vals3 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', max_rank_to_consider, cutoff_val, str_1, str_2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -3246,13 +3310,13 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals5 text,
   vals6 text,
   vals7 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
@@ -3262,13 +3326,13 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals4 text, 
   vals5 text,
   vals6 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
@@ -3277,13 +3341,13 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals3 text,
   vals4 text, 
   vals5 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
@@ -3291,49 +3355,49 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals2 text,
   vals3 text,
   vals4 text, 
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
   vals2 text,
   vals3 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
   vals2 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
-  max_rank_to_consider text,
-  cutoff_val text,
-  str_1 text,
-  str_2 text
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
 )
 RETURNS int AS $$
-    SELECT TT_IfElseCountOfNotNullText(vals1, max_rank_to_consider, cutoff_val, str_1, str_2)::int
+    SELECT TT_IfElseCountOfNotNullText(vals1, maxRankToConsider, cutoffVal, str1, str2)::int
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -3341,44 +3405,61 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_SubstringText()
 --
 -- val text - input string
--- start_char text - start character to take substring from
--- for_length text - length of substring to take
+-- startChar text - start character to take substring from
+-- forLength text - length of substring to take
+-- removeSpaces text - default FALSE - remove spaces before doing substring
 --
 -- basic wrapper around postgresql substring(), returning text
 -- e.g. TT_SubstringText('abcd', 1, 1)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_SubstringText(text, text, text);
+-- DROP FUNCTION IF EXISTS TT_SubstringText(text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_SubstringText(
   val text,
-  start_char text,
-  for_length text
+  startChar text,
+  forLength text,
+  removeSpaces text
 )
 RETURNS text AS $$
   DECLARE
-    _start_char int;
-    _for_length int;
+    _startChar int;
+    _forLength int;
+    _removeSpaces boolean;
   BEGIN    
     -- Validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_SubstringText',
-                              ARRAY['start_char', start_char, 'int',
-                                   'for_length', for_length, 'int']);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
+                              ARRAY['startChar', startChar, 'int',
+                                   'forLength', forLength, 'int',
+                                   'removeSpaces', removeSpaces, 'boolean']);
+    _startChar = startChar::int;
+    _forLength = forLength::int;
+    _removeSpaces = removeSpaces::boolean;
 
     -- process
-    RETURN substring(val from _start_char for _for_length);
+    IF _removeSpaces THEN
+      RETURN substring(replace(val, ' ', '') from _startChar for _forLength);
+    ELSE
+      RETURN substring(val from _startChar for _forLength);
+    END IF;
     
    END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+CREATE OR REPLACE FUNCTION TT_SubstringText(
+  val text,
+  startChar text,
+  forLength text
+)
+RETURNS text AS $$
+    SELECT TT_SubstringText(val, startChar, forLength, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_SubstringInt()
 --
 -- val text - input string
--- start_char text - start character to take substring from
--- for_length text - length of substring to take
+-- startChar text - start character to take substring from
+-- forLength text - length of substring to take
 --
 -- basic wrapper around postgresql substring(), returning int
 -- e.g. TT_SubstringText('124', 1, 1)
@@ -3386,23 +3467,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- DROP FUNCTION IF EXISTS TT_SubstringInt(text, text, text);
 CREATE OR REPLACE FUNCTION TT_SubstringInt(
   val text,
-  start_char text,
-  for_length text
+  startChar text,
+  forLength text
 )
 RETURNS int AS $$
-  DECLARE
-    _start_char int;
-    _for_length int;
-  BEGIN    
-    -- Validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_SubstringInt',
-                              ARRAY['start_char', start_char, 'int',
-                                   'for_length', for_length, 'int']);
-    _start_char = start_char::int;
-    _for_length = for_length::int;
-
-    -- process
-    RETURN substring(val from _start_char for _for_length)::int;
-    
-   END;
-$$ LANGUAGE plpgsql VOLATILE;
+  SELECT TT_SubstringText(val, startChar, forLength)::int
+$$ LANGUAGE sql VOLATILE;
