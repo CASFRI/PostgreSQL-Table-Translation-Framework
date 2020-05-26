@@ -1581,7 +1581,6 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
   startChar text,
   forLength text,
-  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
@@ -1595,12 +1594,10 @@ RETURNS boolean AS $$
     PERFORM TT_ValidateParams('TT_IsIntSubstring',
                               ARRAY['startChar', startChar, 'int',
                                     'forLength', forLength, 'int',
-                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
     _startChar = startChar::int;
     _forLength = forLength::int;
     _acceptNull = acceptNull::boolean;
-    _removeSpaces = removeSpaces::boolean;
 
     -- validate source value (return FALSE)
     IF val IS NULL THEN
@@ -1611,23 +1608,9 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    IF _removeSpaces THEN
-      RETURN TT_IsInt(substring(replace(val, ' ', '') from _startChar for _forLength));
-    ELSE
-      RETURN TT_IsInt(substring(val from _startChar for _forLength));
-    END IF;
+    RETURN TT_IsInt(substring(val from _startChar for _forLength));
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
-  val text,
-  startChar text,
-  forLength text,
-  removeSpaces text
-)
-RETURNS boolean AS $$
-  SELECT TT_IsIntSubstring(val, startChar, forLength, removeSpaces, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
@@ -1635,7 +1618,7 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   forLength text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text, FALSE::text)
+  SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text)

@@ -189,7 +189,7 @@ WITH test_nb AS (
     SELECT 'TT_False'::text,                  13,          1         UNION ALL
     SELECT 'TT_True'::text,                   14,          1         UNION ALL
     SELECT 'TT_HasCountOfNotNull'::text,      15,         10         UNION ALL
-    SELECT 'TT_IsIntSubstring'::text,         16,         14         UNION ALL
+    SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         23         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
 	  SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
@@ -1319,48 +1319,35 @@ SELECT '15.10'::text number,
 -- Test 16 - TT_IsIntSubstring
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (8 tests)
+-- test all NULLs and wrong types (6 tests)
 SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_IsIntSubstring',
                                       ARRAY['startChar', 'int',
                                             'forLength', 'int',
-                                            'removeSpaces', 'boolean',
                                             'acceptNull', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.9'::text number,
+SELECT '16.7'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'NULL value'::text description,
        TT_IsIntSubstring(NULL::text, 4::text, 1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.10'::text number,
+SELECT '16.8'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Good string'::text description,
        TT_IsIntSubstring('2001-01-02'::text, 1::text, 4::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.11'::text number,
+SELECT '16.9'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Bad string'::text description,
        TT_IsIntSubstring('200-01-02'::text, 1::text, 4::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '16.12'::text number,
+SELECT '16.10'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Test acceptNull'::text description,
-       TT_IsIntSubstring(NULL::text, 1::text, 4::text, FALSE::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.13'::text number,
-       'TT_IsIntSubstring'::text function_tested,
-       'Test removeSpaces FALSE'::text description,
-       TT_IsIntSubstring('  200b'::text, 1::text, 4::text, FALSE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '16.14'::text number,
-       'TT_IsIntSubstring'::text function_tested,
-       'Test removeSpaces TRUE'::text description,
-       TT_IsIntSubstring('  200b'::text, 1::text, 4::text, TRUE::text) IS FALSE passed
+       TT_IsIntSubstring(NULL::text, 1::text, 4::text, TRUE::text) passed
 ---------------------------------------------------------
 -- Test 17 - TT_IsBetweenSubstring
 ---------------------------------------------------------
