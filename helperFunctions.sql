@@ -1571,7 +1571,6 @@ $$ LANGUAGE sql VOLATILE;
 -- val text - input string
 -- startChar - start character to take substring from
 -- forLength - length of substring to take
--- removeSpaces - default FALSE - remove spaces before doing substring
 -- acceptNull text - should NULL value return TRUE? Default FALSE.
 --
 -- Take substring and test isInt
