@@ -1379,7 +1379,7 @@ RETURNS boolean AS $$
     
     -- calculate length and cast to text
     IF _removeSpaces THEN
-      _valLength = TT_Length(trim(val))::text;
+      _valLength = TT_Length(replace(val, ' ', ''))::text;
     ELSE
       _valLength = TT_Length(val)::text;
     END IF;
