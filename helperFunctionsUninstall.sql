@@ -52,6 +52,7 @@ DROP FUNCTION IF EXISTS TT_MatchList(text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMatchList(text, text);
+DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMatchList(text, text, text);

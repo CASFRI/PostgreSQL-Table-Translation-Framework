@@ -244,7 +244,7 @@ RETURNS int AS $$
     _removeSpaces = removeSpaces::boolean;
     
     IF _removeSpaces THEN
-      RETURN coalesce(char_length(trim(val)), 0);
+      RETURN coalesce(char_length(replace(val, ' ','')), 0);
     ELSE
       RETURN coalesce(char_length(val), 0);
     END IF;
@@ -1347,6 +1347,7 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   val text,
   lst text,
+  trim_ text,
   removeSpaces text,
   acceptNull text,
   matches text
@@ -1354,6 +1355,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
 RETURNS boolean AS $$
   DECLARE
     _valLength text;
+    _trim boolean;
     _removeSpaces boolean;
     _acceptNull boolean;
     _valSum int := 0;
@@ -1362,12 +1364,14 @@ RETURNS boolean AS $$
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_LengthMatchList',
                               ARRAY['lst', lst, 'stringlist',
+                                    'trim_', trim_, 'boolean',
                                     'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean',
                                     'matches', matches, 'boolean']);
      
     _acceptNull = acceptNull::boolean;
     _removeSpaces = removeSpaces::boolean;
+    _trim = trim_::boolean;
     
     -- validate source value
     IF val IS NULL THEN
@@ -1378,9 +1382,15 @@ RETURNS boolean AS $$
     END IF;
     
     -- calculate length and cast to text
+    IF _trim THEN
+      _valLength = TT_Length(trim(val))::text;
+    END IF;
+    
     IF _removeSpaces THEN
       _valLength = TT_Length(replace(val, ' ', ''))::text;
-    ELSE
+    END IF;
+    
+    IF _trim IS FALSE AND _removeSpaces IS FALSE THEN
       _valLength = TT_Length(val)::text;
     END IF;
     
@@ -1393,20 +1403,31 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
   lst text,
+  trim_ text,
   removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, removeSpaces, acceptNull, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, trim_, removeSpaces, acceptNull, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
   lst text,
+  trim_ text,
   removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, removeSpaces, FALSE::text, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, trim_, removeSpaces, FALSE::text, TRUE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LengthMatchList(
+  vals text,
+  lst text,
+  trim_ text
+)
+RETURNS boolean AS $$
+  SELECT TT_LengthMatchList(vals, lst, trim_, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
@@ -1414,7 +1435,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_LengthMatchList(vals, lst, FALSE::text, FALSE::text, TRUE::text)
+  SELECT TT_LengthMatchList(vals, lst, FALSE::text, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
