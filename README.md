@@ -380,21 +380,30 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
 # Provided Helper Functions
 ## Validation Functions
 
-* **NotNull**(*stringList* **srcVal**)
-    * Returns TRUE if all srcVal's are not NULL. Returns FALSE if any srcVal is NULL. Paired with most translation functions to make sure input values are available. Can use single or multiple srcVal's.
+* **NotNull**(*stringList* **srcVal**, *boolean* **any**\[default FALSE\])
+    * Returns TRUE if all srcVal's are not NULL. Returns TRUE if all srcVal's are not NULL. Paired with most translation functions to make sure input values are available. Can use single or multiple srcVal's.
+    * If **any** is TRUE, returns TRUE if any srcVal's are not NULL.
     * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
  
-* **HasCountOfNotNull**(*stringList* **srcVal**, *int* **count**, *exact* **boolean**)
-    * Returns TRUE if exact = TRUE and number of notNulls matches count exactly.
-    * Returns FALSE if exact = FALSE and number of notNulls is greater than or equal to count.
+* **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7**, *int* **count**, *exact* **boolean**)
+    * Can take between 1 and 7 srcVal string lists of input values.
+    * Counts the number of not null string list srcVals by passing srcVal1 - srcVal7 to CountOfNotNull.
+    * Returns TRUE if exact = TRUE and number of notNulls matches **count** exactly.
+    * Returns FALSE if exact = FALSE and number of notNulls is greater than or equal to **count**.
     * Empty string is considered null.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. HasCountOfNotNull({'a','b','c'}, 3, TRUE, FALSE)
+    * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE)
 
-* **NotEmpty**(*text* **srcVal**)
-    * Returns TRUE if srcVal is not empty string. Returns FALSE if srcVal is an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
+* **HasLength**(*text* **srcVal**, *int* **length**, *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if the number of characters in srcVal matches **length**.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
+    * e.g. HasLength('123', 3)
+
+* **NotEmpty**(*text* **srcVal**, *boolean* **any**\[default FALSE\])
+    * Returns TRUE if all srcVal's are not empty strings. Returns FALSE if any srcVal's are an empty string or padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
+    * If **any** is TRUE, returns TRUE if any srcVal's are not empty strings. 
     * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
     * e.g. NotEmpty('a')
 
@@ -434,15 +443,29 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchTable('sp1', public, species_lookup, TRUE)
 
-* **MatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+* **MatchList**(*stringList* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
+    * If **matches** is FALSE, returns FALSE in the case of a match.
+    * If **removeSpaces** is TRUE, removes any spaces from string before testing matches.
+    * If multiple input values are provided as a string list, they are concatenated before testing for matches.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. MatchList('a', '{'a','b','c'}')
+    * e.g. MatchList('a', {'a','b','c'})
+    * e.g. MatchList({'a', 'b'}, {'ab','bb','cc'})
     
-* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if srcVal is not in lst. Ignores letter case if ignoreCase = TRUE.
+* **NotMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * A wrapper around MatchList that sets **matches** to FALSE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. NotMatchList('d', '{'a','b','c'}')
+
+* **SumIntMatchList**(*stringList* **srcVal**, *stringList* **lst**, *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\])
+    * Sums the values in srcVal and tests if the sum is in **lst** using MatchList.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. SumIntMatchList({1,2}, {3, 4, 5})
+    
+* **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\])
+    * Calculates length of srcVal and tests if the length is in **lst** using MatchList.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. LengthMatchList('abc', {3, 4, 5})
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
@@ -454,24 +477,24 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
     * e.g. True()
     
- * **IsIntSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *boolean* **acceptNull**\[default FALSE\])
-    * Takes a substring of a text string and tests using IsInt().
+ * **IsIntSubstring**(*text* **srcVal**, *int* **starChar**, *int* **forLength**, *boolean* **acceptNull**\[default FALSE\])
+    * Takes a substring of srcVal from **startChar** for **forLength** and tests using IsInt().
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
  
-  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
-    * Takes a substring of a text string and tests using IsBetween().
+  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Takes a substring of a text string, optinoally removes spaces and tests using IsBetween().
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-  * **MacthListSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Takes a substring of a text string and tests using MatchList().
+  * **MacthListSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Takes a substring of a text string, optionally removes spaces and tests using MatchList().
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
     
-  * **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **trim_spaces**\[default FALSE\], **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+  * **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **removeSpaces**\[default FALSE\], **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Calculates length of string then checks with matchList.
-    * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
+    * If removeSpaces is TRUE, removes any spaces before calculating length.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
@@ -513,30 +536,38 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
     * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
 
-* **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
-    * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
+* **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE. Remove spaces if **removeSpaces** is true.
     * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE)
+    
+* **MapSubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Calculates substring of **srcVal** and passes to MapText using **lst1** amd **lst2**.
+    * e.g. MapSubstringText('ABC',1,1,'{'A','B','C'}','{'D','E','F'}')
+    
+* **SumIntMapText**(*stringList* **srcVal**, *stringList* **lst1**, *stringList* **lst2**)
+    * Calculates the sum  of the values in **srcVal** and passes the sum to MapText using **lst1** amd **lst2**.
+    * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'})
       
-* **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
-    * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
-    * e.g. MapDouble('A','{'A','B','C'}','{'1.1','1.2','1.3'}', TRUE)
+* **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE, remove spaces before mapping if **removeSpaces** is TRUE.
+    * e.g. MapDouble('A',{'A','B','C'},{1.1,1.2,1.3}, TRUE)
       
-* **MapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\])
-    * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if ignoreCase = TRUE.
-    * e.g. Map('A','{'A','B','C'}','{'1','2','3'}', TRUE)
+* **MapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Return integer value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE, remove spaces before mapping if **removeSpaces** is TRUE.
+    * e.g. Map('A',{'A','B','C'},{1,2,3})
       
 * **Length**(*text* **srcVal**, *boolean* trim_spaces)
     * Returns the length of the srcVal string.
     * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
     * e.g. Length('12345')
 
-* **LengthMapInt**(*text* **srcVal**, *stringList* **mapVals**, *stringList* **targetVals**, *boolean* **trim_spaces**\[default FALSE\])
-    * Calculates length of string then maps length integer from mapVals to targetVals.
+* **LengthMapInt**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **removeSpaces**\[default FALSE\])
+    * Calculates length of string then pass the length to MapInt.
     * Return type is integer.
-    * If trim_spaces is TRUE, removes any leading or trailing spaces before calculating length.
-    * e.g. Length('12345', {5}, {1})
+    * If removeSpaces is TRUE, removes any spaces before calculating length.
+    * e.g. Length('12345', {5, 6, 7}, {1, 2, 3})
 
-* **Pad**(*text* **srcVal**, *int* **targetLength**, *boolean* **trunc**\[default TRUE\])
+* **Pad**(*text* **srcVal**, *int* **targetLength**, *text* **padChar**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength and trunc = TRUE. Returns srcVal if srcVal length > targetLength and trunc = FALSE. 
     * e.g. Pad('tab1', 10, x, TRUE)
 
@@ -560,17 +591,29 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
 
-* **CountOfNotNull**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *boolean* **zero_is_null**)
+* **CountOfNotNull**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
     * Returns the number of string list input arguments that have at least one list element that is not null or empty string. Up to a maximum of 7.
-    * If the count is greater than the max_return_val, the max_return_val is returned.
-    * If zero_is_null is TRUE, any zero values ('0') are counted as null.
-    * max_return_val and zero_is_null always need to provided.
+    * Between 1 and 7 string lists can be provided.
+    * Only the first **maxRankToConsider** string lists will be considered for the calculation. For example, if **maxRankToConsider** is one, only the first string list will be considered and the maximum values that could be returned would be 1.
+    * If zeroIsNull is TRUE, any zero values ('0') are counted as null.
+    * maxRankToConsider and zeroIsNull always need to provided.
     * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE)
  
-* **IfElseCountOfNotNullText**(*stringList* **vals1**, *stringList* **vals2**, *stringList* **vals3**, *stringList* **vals4**, *stringList* **vals5**, *stringList* **vals6**, *stringList* **vals7**, *int* **max_return_val**, *int* **count**, *text* **return_if**, *text* **return_else**)
+* **IfElseCountOfNotNullText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Calls CountOfNotNull() and tests if the returned value matches the count.
-    * If returned value is less than or equal to count, returns the return_if string, else returns the return_else string.
+    * If returned value is less than or equal to count, returns the returnIf string, else returns the returnElse string.
     * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
+
+* **IfElseCountOfNotNullInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
+    * Simple wrapper around IfElseCountOfNotNullText that returns an int.
+    
+* **SubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *boolean* **removeSpaces**\[default FALSE\])
+    * Returns a substring of **srcVal** from **startChar** for **forLength**.
+    * If **removeSpaces** is TRUE, spaces are removed from the string before taking the substring.
+    * e.g. SubstringText('abcd', 2, 2)
+
+* **SubstringInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**)
+    * Simple wrapper around **SubstringText** that returns an int.
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
