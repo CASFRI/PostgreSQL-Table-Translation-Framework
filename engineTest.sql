@@ -169,8 +169,9 @@ WITH test_nb AS (
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,         15         UNION ALL
     SELECT 'TT_ParseStringList'::text,              10,         36         UNION ALL
-    SELECT 'TT_RepackStringList'::text,             11,         37         UNION ALL
-    SELECT 'TT_IsCastableTo'::text,                 12,          2
+    SELECT 'TT_RepackStringList'::text,             11,         74         UNION ALL
+    SELECT 'TT_IsCastableTo'::text,                 12,          2         UNION ALL
+    SELECT 'TT_RuleToSQL'::text,                    13,          8
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -837,221 +838,452 @@ SELECT '11.2'::text number,
 UNION ALL
 SELECT '11.3'::text number,
        'TT_RepackStringList'::text function_tested,
+       'NULL parameter'::text description,
+       TT_RepackStringList(NULL, NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.4'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'NULL parameter, toSQL'::text description,
+       TT_RepackStringList(NULL, TRUE) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.5'::text number,
+       'TT_RepackStringList'::text function_tested,
        'NULL string'::text description,
        TT_RepackStringList('{"NULL"}'::text[]) = 'NULL' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.4'::text number,
+SELECT '11.6'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'NULL string, toSQL'::text description,
+       TT_RepackStringList('{"NULL"}'::text[], TRUE) = 'NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.7'::text number,
        'TT_RepackStringList'::text function_tested,
        'NULL string'::text description,
        TT_RepackStringList('{NULL}'::text[]) IS NULL passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.5'::text number,
+SELECT '11.8'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'NULL string, toSQL'::text description,
+       TT_RepackStringList('{NULL}'::text[], TRUE) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.9'::text number,
        'TT_RepackStringList'::text function_tested,
        'String and NULL string'::text description,
        TT_RepackStringList('{aa, NULL}'::text[]) = '{"aa",NULL}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.6'::text number,
+SELECT '11.10'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'String and NULL string, toSQL'::text description,
+       TT_RepackStringList('{aa, NULL}'::text[], TRUE) = 'ARRAY[aa,NULL]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.11'::text number,
        'TT_RepackStringList'::text function_tested,
        'string without quotes, spaces are trimmed'::text description,
        --TT_RepackStringList('{"a a"}'::text[]) = '"a a"' passed
        TT_RepackStringList('{"a a"}'::text[]) = 'a a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.7'::text number,
+SELECT '11.12'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string without quotes, spaces are trimmed, toSQL'::text description,
+       --TT_RepackStringList('{"a a"}'::text[]) = '"a a"' passed
+       TT_RepackStringList('{"a a"}'::text[], TRUE) = 'a a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.13'::text number,
        'TT_RepackStringList'::text function_tested,
        'string without quotes with comma'::text description,
        --TT_RepackStringList('{"a b ,a"}'::text[]) = '"a b ,a"' passed
        TT_RepackStringList('{"a b ,a"}'::text[]) = 'a b ,a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.8'::text number,
+SELECT '11.14'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string without quotes with comma, toSQL'::text description,
+       --TT_RepackStringList('{"a b ,a"}'::text[]) = '"a b ,a"' passed
+       TT_RepackStringList('{"a b ,a"}'::text[], TRUE) = 'a b ,a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.15'::text number,
        'TT_RepackStringList'::text function_tested,
        'single quoted string with comma'::text description,
        --TT_RepackStringList('{"''a ,a''"}'::text[]) = '"''a ,a''"' passed
        TT_RepackStringList('{"''a ,a''"}'::text[]) = '''a ,a''' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.9'::text number,
+SELECT '11.16'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'single quoted string with comma, toSQL'::text description,
+       --TT_RepackStringList('{"''a ,a''"}'::text[]) = '"''a ,a''"' passed
+       TT_RepackStringList('{"''a ,a''"}'::text[], TRUE) = '''a ,a''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.17'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with comma'::text description,
        --TT_RepackStringList('{"a ,a"}'::text[]) = '"a ,a"' passed
        TT_RepackStringList('{"a ,a"}'::text[]) = 'a ,a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.10'::text number,
+SELECT '11.18'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with comma, toSQL'::text description,
+       --TT_RepackStringList('{"a ,a"}'::text[]) = '"a ,a"' passed
+       TT_RepackStringList('{"a ,a"}'::text[], TRUE) = 'a ,a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.19'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with spaces and comma'::text description,
        --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
        TT_RepackStringList('{" a ,a "}'::text[]) = ' a ,a ' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.11'::text number,
+SELECT '11.20'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with spaces and comma, toSQL'::text description,
+       --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
+       TT_RepackStringList('{" a ,a "}'::text[], TRUE) = ' a ,a ' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.21'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with doubled single quote'::text description,
        --TT_RepackStringList('{"a ''a"}'::text[]) = '"a ''a"' passed
        TT_RepackStringList('{"a ''a"}'::text[]) = 'a ''a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.12'::text number,
+SELECT '11.22'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with doubled single quote, toSQL'::text description,
+       --TT_RepackStringList('{"a ''a"}'::text[]) = '"a ''a"' passed
+       TT_RepackStringList('{"a ''a"}'::text[], TRUE) = 'a ''a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.23'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with doubled single quote and double quotes'::text description,
        --TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[]) = '"a ''a", "b ''b"' passed
        TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[]) = 'a ''a", "b ''b' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.13'::text number,
+SELECT '11.24'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with doubled single quote and double quotes, toSQL'::text description,
+       --TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[]) = '"a ''a", "b ''b"' passed
+       TT_RepackStringList('{"a ''a\", \"b ''b"}'::text[], TRUE) = 'a ''a", "b ''b' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.25'::text number,
        'TT_RepackStringList'::text function_tested,
        'string looking like a stringlist but is a string because quoted'::text description,
        --TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[]) = '"{ a ,b ,c ,d }"' passed
        TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[]) = '{ a ,b ,c ,d }' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.14'::text number,
+SELECT '11.26'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string looking like a stringlist but is a string because quoted, toSQL'::text description,
+       --TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[]) = '"{ a ,b ,c ,d }"' passed
+       TT_RepackStringList('{"{ a ,b ,c ,d }"}'::text[], TRUE) = '{ a ,b ,c ,d }' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.27'::text number,
        'TT_RepackStringList'::text function_tested,
        'string with escaped double quote'::text description,
        TT_RepackStringList('{"a \"a"}'::text[]) = 'a "a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.15'::text number,
+SELECT '11.28'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string with escaped double quote, toSQL'::text description,
+       TT_RepackStringList('{"a \"a"}'::text[], TRUE) = 'a "a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.29'::text number,
        'TT_RepackStringList'::text function_tested,
        'string with escaped double quote'::text description,
        TT_RepackStringList('{"a \\\"a"}'::text[]) = 'a \"a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.16'::text number,
+SELECT '11.30'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'string with escaped double quote, toSQL'::text description,
+       TT_RepackStringList('{"a \\\"a"}'::text[], TRUE) = 'a \"a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.31'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with non-escaped double quote'::text description,
        TT_RepackStringList('{"a \"a"}'::text[]) = 'a "a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.17'::text number,
+SELECT '11.32'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with non-escaped double quote, toSQL'::text description,
+       TT_RepackStringList('{"a \"a"}'::text[], TRUE) = 'a "a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.33'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with escaped double quote'::text description,
        TT_RepackStringList('{"a \\\"a"}'::text[]) = 'a \"a' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.18'::text number,
+SELECT '11.34'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with escaped double quote, toSQL'::text description,
+       TT_RepackStringList('{"a \\\"a"}'::text[], TRUE) = 'a \"a' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.35'::text number,
        'TT_RepackStringList'::text function_tested,
        'basic stringlist'::text description,
        TT_RepackStringList('{a,b,c,d}'::text[]) = '{"a","b","c","d"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.19'::text number,
+SELECT '11.36'::text number,
        'TT_RepackStringList'::text function_tested,
-       'basic stringlist surrounded by spaces'::text description,
-       TT_RepackStringList('{a,b,c,d}'::text[]) = '{"a","b","c","d"}' passed
+       'basic stringlist, toSQL'::text description,
+       TT_RepackStringList('{a,b,c,d}'::text[], TRUE) = 'ARRAY[a,b,c,d]' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.20'::text number,
+SELECT '11.37'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'basic stringlist surrounded by spaces'::text description,
+       TT_RepackStringList(' {a,b,c,d} '::text[]) = '{"a","b","c","d"}' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.38'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'basic stringlist surrounded by spaces, toSQL'::text description,
+       TT_RepackStringList(' {a,b,c,d} '::text[], TRUE) = 'ARRAY[a,b,c,d]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.39'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with one double quoted string and one single quoted string'::text description,
        TT_RepackStringList('{a," b ",c,"'' d ''"}'::text[]) = '{"a"," b ","c","'' d ''"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.21'::text number,
+SELECT '11.40'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one double quoted string and one single quoted string, toSQL'::text description,
+       TT_RepackStringList('{a," b ",c,"'' d ''"}'::text[], TRUE) = 'ARRAY[a," b ",c,'' d '']' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.41'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with one single quoted string and one double quoted string'::text description,
        TT_RepackStringList('{"''str 1''","str 2"}'::text[]) = '{"''str 1''","str 2"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.22'::text number,
+SELECT '11.42'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one single quoted string and one double quoted string, toSQL'::text description,
+       TT_RepackStringList('{"''str 1''","str 2"}'::text[], TRUE) = 'ARRAY[''str 1'',"str 2"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.43'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with two quoted strings with comma'::text description,
        TT_RepackStringList('{" a ,b","c ,d "}'::text[]) = '{" a ,b","c ,d "}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.23'::text number,
+SELECT '11.44'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two quoted strings with comma, toSQL'::text description,
+       TT_RepackStringList('{" a ,b","c ,d "}'::text[], TRUE) = 'ARRAY[" a ,b","c ,d "]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.45'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with two quoted strings with single quotes'::text description,
        TT_RepackStringList('{"a ''a","b ''b"}'::text[]) = '{"a ''a","b ''b"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.24'::text number,
+SELECT '11.46'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two quoted strings with single quotes, toSQL'::text description,
+       TT_RepackStringList('{"a ''a","b ''b"}'::text[], TRUE) = 'ARRAY["a ''a","b ''b"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.47'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with two double quoted strings, one with double quotes inside'::text description,
        TT_RepackStringList('{"a \"b"," , a"}'::text[]) = '{"a \"b"," , a"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.25'::text number,
+SELECT '11.48'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with two double quoted strings, one with double quotes inside, toSQL'::text description,
+       TT_RepackStringList('{"a \"b"," , a"}'::text[], TRUE) = 'ARRAY["a \"b"," , a"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.49'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with one double quoted strings with double quotes inside and one unquoted string with space'::text description,
        TT_RepackStringList('{"a \"b","a b"}'::text[]) = '{"a \"b","a b"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.26'::text number,
+SELECT '11.50'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one double quoted strings with double quotes inside and one unquoted string with space, toSQL'::text description,
+       TT_RepackStringList('{"a \"b","a b"}'::text[], TRUE) = 'ARRAY["a \"b","a b"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.51'::text number,
        'TT_RepackStringList'::text function_tested,
        'stringlist with one single quoted strings with one single quoted strings with double quotes inside'::text description,
        TT_RepackStringList('{"a a","''b \"b''"}'::text[]) = '{"a a","''b \"b''"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.27'::text number,
+SELECT '11.52'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'stringlist with one single quoted strings with one single quoted strings with double quotes inside, toSQL'::text description,
+       TT_RepackStringList('{"a a","''b \"b''"}'::text[], TRUE) = 'ARRAY["a a",''b "b'']' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.53'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - two strings'::text description,
        TT_RepackStringList('{"''str 1''","str @-_= //2"}'::text[]) = '{"''str 1''","str @-_= //2"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.28'::text number,
+SELECT '11.54'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two strings, toSQL'::text description,
+       TT_RepackStringList('{"''str 1''","str @-_= //2"}'::text[], TRUE) = 'ARRAY[''str 1'',"str @-_= //2"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.55'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - two column names'::text description,
        TT_RepackStringList('{column_A,column-B}'::text[]) = '{"column_A","column-B"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.29'::text number,
+SELECT '11.56'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two column names, toSQL'::text description,
+       TT_RepackStringList('{column_A,column-B}'::text[], TRUE) = 'ARRAY[column_A,"column-B"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.57'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - one single quoted string and one column name'::text description,
        TT_RepackStringList('{''string 1'',column_A}'::text[]) = '{"''string 1''","column_A"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.30'::text number,
+SELECT '11.58'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one single quoted string and one column name, toSQL'::text description,
+       TT_RepackStringList('{''string 1'',column_A}'::text[], TRUE) = 'ARRAY[''string 1'',column_A]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.59'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - two column names'::text description,
        TT_RepackStringList('{''string 1 ''}'::text[]) = '''string 1 ''' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.31'::text number,
+SELECT '11.60'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two column names, toSQL'::text description,
+       TT_RepackStringList('{''string 1 ''}'::text[], TRUE) = '''string 1 ''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.61'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - one column name'::text description,
        TT_RepackStringList('{column_A}'::text[]) = 'column_A' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.32'::text number,
+SELECT '11.62'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name, toSQL'::text description,
+       TT_RepackStringList('{column_A}'::text[], TRUE) = 'column_A' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.63'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - one column name'::text description,
        TT_RepackStringList('{column A}'::text[]) = 'column A' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.33'::text number,
+SELECT '11.64'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name, toSQL'::text description,
+       TT_RepackStringList('{column A}'::text[], TRUE) = 'column A' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.65'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - one column name'::text description,
        TT_RepackStringList('{string1,"string 2"}'::text[]) = '{"string1","string 2"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.34'::text number,
+SELECT '11.66'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name, toSQL'::text description,
+       TT_RepackStringList('{string1,"string 2"}'::text[], TRUE) = 'ARRAY[string1,"string 2"]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.67'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - one column name'::text description,
        TT_RepackStringList('{-134,4567}'::text[]) = '{"-134","4567"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.35'::text number,
+SELECT '11.68'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - one column name, toSQL'::text description,
+       TT_RepackStringList('{-134,4567}'::text[], TRUE) = 'ARRAY[-134,4567]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.69'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - two single quotes strings and one column name'::text description,
        TT_RepackStringList(ARRAY['''str1''', '''str 2''', 'col_A']) = '{"''str1''","''str 2''","col_A"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.36'::text number,
+SELECT '11.70'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two single quotes strings and one column name, toSQL'::text description,
+       TT_RepackStringList(ARRAY['''str1''', '''str 2''', 'col_A'], TRUE) = 'ARRAY[''str1'',''str 2'',col_A]' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.71'::text number,
        'TT_RepackStringList'::text function_tested,
        'old test - two single quotes strings and one column name'::text description,
        TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2''']) = '{"''str 1 --''","''str@/\\:2''"}' passed
 --------------------------------------------------------
 UNION ALL
-SELECT '11.37'::text number,
+SELECT '11.72'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'old test - two single quotes strings and one column name, toSQL'::text description,
+       TT_RepackStringList(ARRAY['''str 1 --''', '''str@/\:2'''], TRUE) = 'ARRAY[''str 1 --'',''str@/\:2'']' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.73'::text number,
        'TT_RepackStringList'::text function_tested,
        'double quoted string with spaces and comma'::text description,
        --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
        TT_RepackStringList('{"'' a ,a ''"}') = ''' a ,a ''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '11.74'::text number,
+       'TT_RepackStringList'::text function_tested,
+       'double quoted string with spaces and comma, toSQL'::text description,
+       --TT_RepackStringList('{" a ,a "}'::text[]) = '" a ,a "' passed
+       TT_RepackStringList('{"'' a ,a ''"}', TRUE) = ''' a ,a ''' passed
 --------------------------------------------------------
 -- TT_IsCastableTo
 --------------------------------------------------------
@@ -1066,6 +1298,57 @@ SELECT '12.2'::text number,
        'TT_IsCastableTo'::text function_tested,
        'Bad test'::text description,
        TT_IsCastableTo('11a', 'int') IS FALSE passed
+--------------------------------------------------------
+-- TT_RuleToSQL
+--------------------------------------------------------
+UNION ALL
+SELECT '13.1'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'All arguments NULL'::text description,
+       TT_RuleToSQL(NULL, NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.2'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'No arguments'::text description,
+       TT_RuleToSQL('fctName', NULL) = 'TT_fctName()' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.3'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'One NULL argument'::text description,
+       TT_RuleToSQL('fctName', ARRAY[NULL]) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.4'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'One NULL string argument'::text description,
+       TT_RuleToSQL('fctName', ARRAY['NULL']) = 'TT_fctName(NULL::text)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.5'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'One column name'::text description,
+       TT_RuleToSQL('fctName', ARRAY['aa']) = 'TT_fctName(aa::text)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.6'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'Two column names'::text description,
+       TT_RuleToSQL('fctName', ARRAY['aa', 'bb']) = 'TT_fctName(aa::text, bb::text)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.7'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'One column name and one string'::text description,
+       TT_RuleToSQL('fctName', ARRAY['aa', '''bb''']) = 'TT_fctName(aa::text, ''bb''::text)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '13.8'::text number,
+       'TT_RuleToSQL'::text function_tested,
+       'One column name and one string containing a space'::text description,
+       TT_RuleToSQL('fctName', ARRAY['aa', '''b b''']) = 'TT_fctName(aa::text, ''b b''::text)' passed
+
 --------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
