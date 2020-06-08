@@ -39,6 +39,7 @@ DROP FUNCTION IF EXISTS TT_RepackStringList(text[], boolean);
 DROP FUNCTION IF EXISTS TT_IsCastableTo(text, text);
 DROP FUNCTION IF EXISTS TT_EscapeDoubleQuotesAndBackslash(text);
 DROP FUNCTION IF EXISTS TT_EscapeSingleQuotes(text);
+DROP FUNCTION IF EXISTS TT_IsSingleQuoted(text);
 DROP FUNCTION IF EXISTS TT_UnsingleQuote(text);
 DROP FUNCTION IF EXISTS TT_TableExists(text, text);
 DROP FUNCTION IF EXISTS TT_LogInit(text, text, boolean, text);
