@@ -79,7 +79,7 @@ A translation table is a normal PostgreSQL table defining the structure of the t
 
 A translation table implements two very different steps:
 
-1. **Validation -** Source values are first validated by a set of validation rules which establish the condition for a value to be translated. Translation happens only if all validation rules pass. When a validation rule is not fulfilled (e.g. notNull(attribute)), the translation engine sets the target value to the error code associated with the validation rule instead of the translated value. Each validation rule has a default error code. Default error codes can be overwritten globally by overwritting a special function or individually for each rule in the translation table. Choice of error code depend on the application and on the type and range of valid values in the target table (e.g. 0 can be a valid error code in some cases and not a valid one in some other cases).
+1. **Validation -** Source values are first validated by a set of validation rules which establish the condition for a value to be translated. Translation happens only if all validation rules pass. When a validation rule is not fulfilled (e.g. notNull(attribute)), the translation engine sets the target value to the error code associated with the validation rule instead of the translated value.
 
 2. **Translation -** Source values are then translated to the target values by the translation rule (one per target attribute).
 
