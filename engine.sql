@@ -1564,6 +1564,7 @@ RETURNS SETOF RECORD AS $$
          -- iterate over each validation rule
          isValid = TRUE;
          FOREACH rule IN ARRAY translationRow.validation_rules LOOP
+           EXIT WHEN NOT isValid; -- exit the loop as soon as one rule is invalidated
            IF debug THEN RAISE NOTICE '_TT_Translate 33 rule=%', rule;END IF;
            -- evaluate the rule and catch errors
            BEGIN
