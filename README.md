@@ -99,6 +99,8 @@ Each rule defines a default error code to be returned when the rule fails. These
 
 You can configure the engine to stop and report errors on any validation or translation failure with the appropriate parameter to the TT_Translate() function that is created with your translation table. It is also possible to make the engine to stop on a particular rule by adding the word 'STOP' after the last parameter or after the error code of a rule (e.g. notNull(sp1_per|-8888, STOP)). More on both scenarios below.
 
+A special optional row in the translation table can be defined to determine which rows from the source table must be translated or not. This special row 'target_attribute' must be set to ROW_TRANSLATION_RULE and its validation_rules must be set to a series of validation rules identical to other target attribute validation rules. The row will be translated if and only if at least one ROW_TRANSLATION_RULE 'validation_rules' is validated (like if there was a OR operator between them). Rows not fulfilling any rules from the ROW_TRANSLATION_RULE 'validation_rules' are skipped by the engine and hence, not translated. If no ROW_TRANSLATION_RULE is provided, all rows from the source table are translated. The 'target_attribute_type' and the 'translation_rules' of a ROW_TRANSLATION_RULE line should be set to NA.
+
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process with a message explaining the problem. The engine checks that:
 
 * no NULL values exists in the table (all cells must have a value),
@@ -123,6 +125,7 @@ A textual description of the rules is provided and the flag indicating that the 
 
 | rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
+|0        |ROW_TRANSLATION_RULE        |NA                 |notNull(sp1) |NA |Maps source value to SPECIES_1 using lookup table|TRUE|
 |1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
 |2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,'0','100')|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
