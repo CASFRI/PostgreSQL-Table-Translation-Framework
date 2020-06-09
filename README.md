@@ -115,7 +115,7 @@ Translation tables are themselves validated by the translation engine while proc
 
 The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
 
-The ROW_TRANSLATION_RULE special row specifies that only source rows for which the "sp1" attribute is not NULL must be translated. Other source rows must be ignored.
+The ROW_TRANSLATION_RULE special row specifies that only source rows for which the "sp1" attribute is not NULL must be translated. Other source rows (where "sp1" is NULL) must be ignored.
 
 The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
