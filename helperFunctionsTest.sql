@@ -220,8 +220,8 @@ WITH test_nb AS (
     SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
     SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
     SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
-    SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4
-
+    SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4         UNION ALL
+    SELECT 'TT_XMinusYInt'::text,            129,          3
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2576,6 +2576,27 @@ SELECT '128.4'::text number,
        TT_IfElseCountOfNotNullInt('{'''',''''}'::text, '{NULL,NULL}'::text, '{''1'',''2''}'::text, '{''1'',''2''}'::text, 
 						  4::text, 1::text, '1'::text, '2'::text) = '2' passed
 ---------------------------------------------------------
+-- Test 129 - TT_XMinusYInt
+---------------------------------------------------------
+UNION ALL
+SELECT '129.1'::text number,
+       'TT_XMinusYInt'::text function_tested,
+       'Simple test'::text description,
+       TT_XMinusYInt(5::text, 3::text) = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '129.2'::text number,
+       'TT_XMinusYInt'::text function_tested,
+       'Simple test with 0'::text description,
+       TT_XMinusYInt(5::text, 0::text) = 5 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '129.3'::text number,
+       'TT_XMinusYInt'::text function_tested,
+       'Test null'::text description,
+       TT_XMinusYInt(5::text, NULL::text) IS NULL passed
+---------------------------------------------------------
+
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

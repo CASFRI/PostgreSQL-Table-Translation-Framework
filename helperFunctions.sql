@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - Helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
 -- https://github.com/edwardsmarc/postTranslationEngine
@@ -3475,4 +3475,23 @@ CREATE OR REPLACE FUNCTION TT_SubstringInt(
 )
 RETURNS int AS $$
   SELECT TT_SubstringText(val, startChar, forLength)::int
+$$ LANGUAGE sql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_XMinusYInt()
+--
+-- x text - first value
+-- y text - second value
+--
+-- calculates x - y and returns int.
+-- e.g. TT_xMinusYInt('2', '1')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_XMinusYInt(text, text);
+CREATE OR REPLACE FUNCTION TT_XMinusYInt(
+  x text,
+  y text
+)
+RETURNS int AS $$
+  SELECT (x::double precision - y::double precision)::int
 $$ LANGUAGE sql VOLATILE;

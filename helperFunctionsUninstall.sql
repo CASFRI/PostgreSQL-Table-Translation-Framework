@@ -146,6 +146,7 @@ DROP FUNCTION IF EXISTS TT_MapSubstringText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SumIntMapText(text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMapInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMapInt(text, text, text);
+DROP FUNCTION IF EXISTS TT_XMinusYInt(text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
