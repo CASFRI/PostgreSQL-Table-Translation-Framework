@@ -492,7 +492,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
     
-  * **MacthListSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+  * **MatchListSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Takes a substring of a text string, optionally removes spaces and tests using MatchList().
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
