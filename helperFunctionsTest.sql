@@ -68,7 +68,6 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
       query = left(query, char_length(query) - 2);
 
       query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
-RAISE NOTICE 'query = %', query;
       EXECUTE query INTO passed;
       RETURN NEXT;
 
@@ -113,7 +112,6 @@ RAISE NOTICE 'query = %', query;
         paramType = params[(i - 1) * 2 + 2];
         query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is not a ' || paramType || ' value'';';
 
-RAISE NOTICE 'query = %', query;
         EXECUTE query INTO passed;
         RETURN NEXT;
       END IF;
@@ -201,9 +199,9 @@ WITH test_nb AS (
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
     SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
-    SELECT 'TT_LookupText'::text,            104,         10         UNION ALL
-    SELECT 'TT_LookupDouble'::text,          105,          9         UNION ALL
-    SELECT 'TT_LookupInt'::text,             106,          9         UNION ALL
+    SELECT 'TT_LookupText'::text,            104,         17         UNION ALL
+    SELECT 'TT_LookupDouble'::text,          105,         14         UNION ALL
+    SELECT 'TT_LookupInt'::text,             106,         14         UNION ALL
     SELECT 'TT_MapText'::text,               107,         18         UNION ALL
     SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
     SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
@@ -884,8 +882,8 @@ SELECT '9.13'::text number,
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
 SELECT (TT_TestNullAndWrongTypeParams(10, 'TT_IsUnique',
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
+                                      ARRAY['lookupSchemaName', 'name',
+                                            'lookupTableName', 'name',
                                             'occurrences', 'int',
                                             'acceptNull', 'boolean'])).*
 ---------------------------------------------------------
@@ -984,8 +982,9 @@ SELECT '10.21'::text number,
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'text',
-                                                                 'lookupTableName', 'text',
+SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'name',
+                                                                 'lookupTableName', 'name',
+                                                                 'lookupColumnName', 'name',
                                                                  'ignoreCase', 'boolean',
                                                                  'acceptNull', 'boolean'])).*
 ---------------------------------------------------------
@@ -1839,74 +1838,88 @@ SELECT '103.5'::text number,
 -- Test 104 - TT_LookupText
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (5 tests)
+-- test all NULLs and wrong types (10 tests)
 SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText',
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
+                                      ARRAY['lookupSchemaName', 'name',
+                                            'lookupTableName', 'name',
+                                            'lookupCol', 'name',
+                                            'retrieveCol', 'name',
                                             'ignoreCase', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '104.6'::text number,
+SELECT '104.11'::text number,
        'TT_LookupText'::text function_tested,
        'Text usage'::text description,
        TT_LookupText('a'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) = 'ACB'::text passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '104.7'::text number,
+SELECT '104.12'::text number,
        'TT_LookupText'::text function_tested,
        'NULL val'::text description,
        TT_LookupText(NULL::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '104.8'::text number,
+SELECT '104.13'::text number,
        'TT_LookupText'::text function_tested,
        'Test ignore case, true'::text description,
        TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'ACB'::text passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '104.9'::text number,
+SELECT '104.14'::text number,
        'TT_LookupText'::text function_tested,
        'Test ignore case, false'::text description,
        TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, FALSE::text) IS NULL passed
-       UNION ALL
 ---------------------------------------------------------
-SELECT '104.10'::text number,
+UNION ALL
+SELECT '104.15'::text number,
        'TT_LookupText'::text function_tested,
        'Test ignore case, true flipped case'::text description,
        TT_LookupText('aa'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, TRUE::text) = 'abcde'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '104.16'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test new retrieveCol parameter'::text description,
+       TT_LookupText('abcde'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, 'source_val'::text) = 'AA'::text passed
+---------------------------------------------------------
+UNION ALL
+SELECT '104.17'::text number,
+       'TT_LookupText'::text function_tested,
+       'Test new retrieveCol parameter with ignoreCase = TRUE'::text description,
+       TT_LookupText('AbCdE'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, 'source_val'::text, TRUE::text) = 'AA'::text passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 105 - TT_LookupDouble
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (5 tests)
+-- test all NULLs and wrong types (10 tests)
 SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble',
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
+                                      ARRAY['lookupSchemaName', 'name',
+                                            'lookupTableName', 'name',
+                                            'lookupCol', 'name',
+                                            'retrieveCol', 'name',
                                             'ignoreCase', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '105.6'::text number,
+SELECT '105.11'::text number,
        'TT_LookupDouble'::text function_tested,
        'Double precision usage'::text description,
        TT_LookupDouble('a'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) = 1.1::double precision passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '105.7'::text number,
+SELECT '105.12'::text number,
        'TT_LookupDouble'::text function_tested,
        'NULL val'::text description,
        TT_LookupDouble(NULL::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '105.8'::text number,
+SELECT '105.13'::text number,
        'TT_LookupDouble'::text function_tested,
        'Test ignore case, true'::text description,
        TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, TRUE::text) = 1.1 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '105.9'::text number,
+SELECT '105.14'::text number,
        'TT_LookupDouble'::text function_tested,
        'Test ignore case, false'::text description,
        TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'dbl_val'::text, FALSE::text) IS NULL passed
@@ -1915,33 +1928,34 @@ SELECT '105.9'::text number,
 -- Test 106 - TT_LookupInt
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (5 tests)
+-- test all NULLs and wrong types (10 tests)
 SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt',
-                                      ARRAY['lookupSchemaName', 'text',
-                                            'lookupTableName', 'text',
-                                            'lookupCol', 'text',
+                                      ARRAY['lookupSchemaName', 'name',
+                                            'lookupTableName', 'name',
+                                            'lookupCol', 'name',
+                                            'retrieveCol', 'name',
                                             'ignoreCase', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '106.6'::text number,
+SELECT '106.11'::text number,
        'TT_LookupInt'::text function_tested,
        'Int usage'::text description,
        TT_LookupInt('a'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) = 1 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '106.7'::text number,
+SELECT '106.12'::text number,
        'TT_LookupInt'::text function_tested,
        'NULL val'::text description,
        TT_LookupInt(NULL::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '106.8'::text number,
+SELECT '106.13'::text number,
        'TT_LookupInt'::text function_tested,
        'Test ignore case, true'::text description,
        TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, TRUE::text) = 1 passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '106.9'::text number,
+SELECT '106.14'::text number,
        'TT_LookupInt'::text function_tested,
        'Test ignore case, false'::text description,
        TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'int_val'::text, FALSE::text) IS NULL passed

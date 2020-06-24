@@ -603,6 +603,7 @@ RETURNS void AS $$
       paramType = params[(i - 1) * 3 + 3];
       IF paramType != 'int' AND
          paramType != 'numeric' AND
+         paramType != 'name' AND
          paramType != 'text' AND
          paramType != 'char' AND
          paramType != 'boolean' AND
@@ -610,7 +611,7 @@ RETURNS void AS $$
          paramType != 'doublelist' AND
          paramType != 'intlist' AND
          paramType != 'charlist' THEN
-        RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "text", "char", "boolean", "stringlist", "doublelist", "intlist", "charlist"', i;
+        RAISE EXCEPTION 'ERROR when calling TT_ValidateParams(): paramType #% must be "int", "numeric", "name", "text", "char", "boolean", "stringlist", "doublelist", "intlist", "charlist"', i;
       END IF;
       IF paramVal IS NULL THEN
         RAISE EXCEPTION 'ERROR in %(): % is NULL', fctName, paramName;
@@ -623,6 +624,8 @@ RETURNS void AS $$
         RAISE EXCEPTION 'ERROR in %(): % is not a boolean value', fctName, paramName;
       ELSIF paramType = 'char' AND NOT TT_IsChar(paramVal) AND NOT paramVal = '' THEN -- char needs to support empty string so concat function can use sep = ''.
         RAISE EXCEPTION 'ERROR in %(): % is not a char value', fctName, paramName;
+      ELSIF paramType = 'name' AND NOT TT_IsName(paramVal) THEN
+        RAISE EXCEPTION 'ERROR in %(): % is not a name value', fctName, paramName;
       ELSIF paramType = 'stringlist' AND NOT TT_IsStringList(paramVal) THEN
         RAISE EXCEPTION 'ERROR in %(): % is not a stringlist value', fctName, paramName;
       ELSIF paramType = 'doublelist' AND NOT TT_IsDoubleList(paramVal) THEN
@@ -914,8 +917,8 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsUnique',
-                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
-                                    'lookupTableName', lookupTableName, 'text',
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                    'lookupTableName', lookupTableName, 'name',
                                     'occurrences', occurrences, 'int',
                                     'acceptNull', acceptNull, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
@@ -970,18 +973,20 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_MatchTable
 --
 -- val text - value to test.
--- lookupSchemaName text - schema name holding lookup table.
--- lookupTableName text - lookup table.
--- ignoreCase - text default FALSE. Should upper/lower case be ignored?
--- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- lookupSchemaName text - Schema name holding lookup table.
+-- lookupTableName text - Lookup table name.
+-- lookupColumnName text - Lookup table column name.
+-- ignoreCase text - Should upper/lower case be ignored? Default to FALSE. 
+-- acceptNull text - Should NULL value return TRUE? Default to FALSE.
 --
--- if val is present in source_val of schema.lookup table, returns TRUE.
+-- if val is present in source_val of lookupSchemaName.lookupTableName table, returns TRUE.
 -- e.g. TT_Match('BS', 'public', 'bc08', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text,
+  lookupColumnName text,
   ignoreCase text,
   acceptNull text
 )
@@ -994,10 +999,19 @@ RETURNS boolean AS $$
     return boolean;
     _acceptNull boolean;
   BEGIN
+    -- Shift arguments if the fourth parameter is ignoreCase instead of lookupColumnName.
+    -- This allows backward support for already used 4 arguments calls.
+    IF upper(lookupColumnName) = 'FALSE' OR upper(lookupColumnName) = 'TRUE' THEN
+      acceptNull = ignoreCase;
+      ignoreCase = lookupColumnName;
+      lookupColumnName = 'source_val'::name;   
+    END IF;
+
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_MatchTable',
-                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
-                                    'lookupTableName', lookupTableName, 'text',
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                    'lookupTableName', lookupTableName, 'name',
+                                    'lookupColumnName', lookupColumnName, 'name',
                                     'ignoreCase', ignoreCase, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
@@ -1015,11 +1029,11 @@ RETURNS boolean AS $$
 
     -- process
     IF _ignoreCase = FALSE THEN
-      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT source_val FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
+      query = 'SELECT ' || quote_literal(val) || ' IN (SELECT ' || lookupColumnName || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     ELSE
-      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(source_val::text) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
+      query = 'SELECT ' || quote_literal(upper(val)) || ' IN (SELECT upper(' || lookupColumnName || '::text) FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) || ');';
       EXECUTE query INTO return;
       RETURN return;
     END IF;
@@ -1030,10 +1044,21 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text,
+  lookupColumnName text,
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, ignoreCase, FALSE::text)
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, FALSE::text)
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTable(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
@@ -1042,7 +1067,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, FALSE::text)
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
@@ -1050,7 +1075,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, 'public', lookupTableName, FALSE::text, FALSE::text)
+  SELECT TT_MatchTable(val, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
@@ -1920,30 +1945,32 @@ $$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_LookupText
 --
--- val text - val to lookup
+-- val text - value to lookup for
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
--- lookupColumn text - column to return
+-- lookupCol text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
 -- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
--- Return text value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in source_val column.
+-- Return text value from retrieveColumn in lookupSchemaName.lookupTableName
+-- that matches val in the lookupColumn column.
 -- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
 --
 -- NULL source values are converted to empty strings. This allows NULLs to be
 -- translated into a target value by using an empty string in the lookup table.
--- For csv tables this is just a blank cell.
+-- For CSV tables this is just a blank cell.
 --
 -- Any source val (including empty strings, aka NULLs) that is not included in the lookup table returns NULL.
 --
--- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1', TRUE)
+-- e.g. TT_LookupText('BS', 'translation', 'all_species', 'bc_species_codes', 'casfri_species_codes', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
+  retrieveCol text,
   ignoreCase text,
   callerFctName text
 )
@@ -1956,11 +1983,24 @@ RETURNS text AS $$
     result text;
     _val text;
   BEGIN
+    -- Shift arguments if the retrieveCol parameter is the boolean ignoreCase instead of a column name.
+    -- This allows backward support for already used arguments calls not providing lookupCol.
+    IF TT_IsBoolean(retrieveCol) THEN
+      ignoreCase = retrieveCol;
+      retrieveCol = lookupCol;
+      lookupCol = 'source_val';
+    ELSEIF NOT TT_IsBoolean(ignoreCase) AND TT_IsName(ignoreCase) THEN
+      lookupCol = retrieveCol;
+      retrieveCol = ignoreCase;
+      ignoreCase = 'FALSE';
+    END IF;
+
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
-                              ARRAY['lookupSchemaName', lookupSchemaName, 'text',
-                                    'lookupTableName', lookupTableName, 'text',
-                                    'lookupCol', lookupCol, 'text',
+                              ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                    'lookupTableName', lookupTableName, 'name',
+                                    'lookupCol', lookupCol, 'name',
+                                    'retrieveCol', retrieveCol, 'name',
                                     'ignoreCase', ignoreCase, 'boolean']);
     _lookupSchemaName = lookupSchemaName::name;
     _lookupTableName = lookupTableName::name;
@@ -1976,11 +2016,11 @@ RETURNS text AS $$
     END IF;
 
     -- process
-    query = 'SELECT ' || lookupCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
+    query = 'SELECT ' || retrieveCol || ' FROM ' || TT_FullTableName(_lookupSchemaName, _lookupTableName) ||
             CASE WHEN _ignoreCase IS TRUE THEN
-                   ' WHERE upper(source_val::text) = upper(' || quote_literal(_val) || ')'
+                   ' WHERE upper(' || lookupCol || '::text) = upper(' || quote_literal(_val) || ')'
                  ELSE
-                   ' WHERE source_val = ' || quote_literal(_val)
+                   ' WHERE ' || lookupCol || ' = ' || quote_literal(_val)
             END || ';';
 
     EXECUTE query INTO result;
@@ -1993,103 +2033,132 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
+  retrieveCol text,
   ignoreCase text
 )
 RETURNS text AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupText')
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupText')
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text,
+  ignoreCase text
 )
 RETURNS text AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text)
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupText')
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupText(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS text AS $$
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text
 )
 RETURNS text AS $$
-  SELECT TT_LookupText(val, 'public', lookupTableName, lookupCol, FALSE::text)
+  SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LookupDouble
 --
--- val text - val to lookup
+-- val text - val to lookup for
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
--- lookupColumn text - column to return
+-- lookupColumn text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
 -- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
--- Return double precision value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in source_val column.
+-- Return double precision value from retrieveCol in lookupSchemaName.lookupTableName
+-- that matches val in the lookupColumn column.
 -- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
--- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1_per')
+--
+-- e.g. TT_LookupDouble('BS', 'translation', 'all_species', 'bc_species_codes', 'casfri_species_codes', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
+  retrieveCol text,
   ignoreCase text
 )
 RETURNS double precision AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupDouble')::double precision;
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupDouble')::double precision;
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text,
+  ignoreCase text
 )
 RETURNS double precision AS $$
-  SELECT TT_LookupDouble(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text);
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupDouble')::double precision;
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupDouble(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS double precision AS $$
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text
 )
 RETURNS double precision AS $$
-  SELECT TT_LookupDouble(val, 'public', lookupTableName, lookupCol, FALSE::text);
+  SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LookupInt
 --
--- val text - val to lookup
+-- val text - val to lookup for
 -- lookupSchemaName text - schema name containing lookup table
 -- lookupTableName text - lookup table name
--- lookupColumn text - column to return
+-- lookupColumn text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
 -- ignoreCase text - default FALSE. Should upper/lower case be ignored?
 --
--- Return int value from lookupColumn in lookupSchemaName.lookupTableName
--- that matches val in source_val column.
+-- Return int value from retrieveCol in lookupSchemaName.lookupTableName
+-- that matches val in the lookupColumn column.
 -- If multiple matches, first row is returned.
 -- Error if any arguments are NULL.
--- e.g. TT_Lookup('BS', 'public', 'bc08', 'species1_per')
+--
+-- e.g. TT_LookupInt('BS', 'translation', 'all_species', 'bc_species_codes', 'casfri_species_codes', TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
   lookupSchemaName text,
   lookupTableName text,
   lookupCol text,
+  retrieveCol text,
   ignoreCase text
 )
 RETURNS int AS $$
   WITH inttxt AS (
-    SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, ignoreCase, 'TT_LookupInt') val
+    SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupInt') val
   )
   SELECT CASE WHEN TT_IsINT(val) THEN
               val::int
@@ -2103,19 +2172,30 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text,
+  ignoreCase text
 )
 RETURNS int AS $$
-  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, lookupCol, FALSE::text);
+    SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase);
+$$ LANGUAGE sql VOLATILE;
+
+CREATE OR REPLACE FUNCTION TT_LookupInt(
+  val text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS int AS $$
+  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
   lookupTableName text,
-  lookupCol text
+  retrieveCol text
 )
 RETURNS int AS $$
-  SELECT TT_LookupInt(val, 'public', lookupTableName, lookupCol, FALSE::text);
+  SELECT TT_LookupInt(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text);
 $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------
 
