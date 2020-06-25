@@ -43,7 +43,7 @@ RETURNS boolean AS $$
     EXCEPTION WHEN OTHERS THEN -- if tt.debug is not set
       RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ RETURNS text AS $$
     END IF;
     RETURN quote_ident(newSchemaName) || '.' || quote_ident(tableName);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -438,7 +438,7 @@ RETURNS boolean AS $$
   EXCEPTION WHEN OTHERS THEN
     RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_IsSingleQuoted
@@ -448,7 +448,7 @@ CREATE OR REPLACE FUNCTION TT_IsSingleQuoted(
 )
 RETURNS boolean AS $$
   SELECT left(str, 1) = '''' AND right(str, 1) = '''';
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -459,7 +459,7 @@ CREATE OR REPLACE FUNCTION TT_UnSingleQuote(
 )
 RETURNS text AS $$
   SELECT CASE WHEN left(str, 1) = '''' AND right(str, 1) = '''' THEN btrim(str, '''') ELSE str END;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -470,7 +470,7 @@ CREATE OR REPLACE FUNCTION TT_EscapeSingleQuotes(
 )
 RETURNS text AS $$
     SELECT replace(str, '''', '''''');
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -481,7 +481,7 @@ CREATE OR REPLACE FUNCTION TT_EscapeDoubleQuotesAndBackslash(
 )
 RETURNS text AS $$
   SELECT replace(replace(str, '\', '\\'), '"', '\"'); -- '''
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -502,7 +502,7 @@ RETURNS text[] AS $$
     SELECT array_agg(lower(a)) FROM unnest(arr) a INTO newArr;
     RETURN newArr;
   END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -526,7 +526,7 @@ RETURNS SETOF text AS $$
     END LOOP;
   RETURN;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -688,7 +688,7 @@ RETURNS text[] AS $$
     END IF;
     RETURN result;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -890,7 +890,7 @@ RETURNS text AS $$
     IF debug THEN RAISE NOTICE 'TT_TextFctQuery END queryStr=%', queryStr;END IF;
     RETURN queryStr;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -989,7 +989,7 @@ RETURNS text[] AS $$
     -- ""|'''' - empty strings
   SELECT array_agg(str)
   FROM (SELECT (regexp_matches(argStr, '([^\s,][-_\.\w\s]*|''[^''\\]*(?:\\''[^''\\]*)*''|"[^"]+"|{[^}]+}|""|'''')', 'g'))[1] str) foo
-$$ LANGUAGE sql STRICT VOLATILE;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1037,7 +1037,7 @@ RETURNS TT_RuleDef[] AS $$
     END LOOP;
     RETURN ruleDefs;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1221,7 +1221,7 @@ RETURNS TABLE (target_attribute text,
     IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
     RETURN;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTable name,
@@ -1229,7 +1229,7 @@ CREATE OR REPLACE FUNCTION TT_ValidateTTable(
 )
 RETURNS TABLE (target_attribute text, target_attribute_type text, validation_rules TT_RuleDef[], translation_rule TT_RuleDef) AS $$
   SELECT TT_ValidateTTable('public', translationTable, validate);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

@@ -44,7 +44,7 @@ RETURNS boolean AS $$
       END;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -90,14 +90,14 @@ RETURNS boolean AS $$
     END IF;
     RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIsValid(
   the_geom text
 )
 RETURNS boolean AS $$
   SELECT TT_GeoIsValid(the_geom, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ RETURNS boolean AS $$
       RETURN TRUE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 
 -- DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
@@ -172,7 +172,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersects(
 )
 RETURNS boolean AS $$
   SELECT TT_GeoIntersects(the_geom, intersectSchemaName, intersectTableName, 'geom')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 -- DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text);
 CREATE OR REPLACE FUNCTION TT_GeoIntersects(
@@ -181,7 +181,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersects(
 )
 RETURNS boolean AS $$
   SELECT TT_GeoIntersects(the_geom, 'public', intersectTableName, 'geom')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -293,7 +293,7 @@ RETURNS text AS $$
                      maxVAl
            END;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   the_geom text,
@@ -305,7 +305,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
 )
 RETURNS text AS $$
   SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionText')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
   the_geom text,
@@ -315,7 +315,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
 )
 RETURNS text AS $$
   SELECT TT_GeoIntersectionText(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
 RETURNS double precision AS $$
   SELECT CASE WHEN TT_IsNumeric(txtVal) THEN txtVal::double precision ELSE NULL END
   FROM (SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionDouble') txtVal) foo;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
   the_geom text,
@@ -344,7 +344,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_GeoIntersectionDouble(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -363,7 +363,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
 RETURNS integer AS $$
   SELECT CASE WHEN TT_IsInt(txtVal) THEN txtVal::int ELSE NULL END
   FROM (SELECT TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method, 'TT_GeoIntersectionInt') txtVal) foo;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
   the_geom text,
@@ -373,7 +373,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionInt(
 )
 RETURNS int AS $$
   SELECT TT_GeoIntersectionInt(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -425,7 +425,7 @@ RETURNS geometry AS $$
     -- if attempts fail, return NULL 
     RETURN NULL;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------------------------------------------------
 
@@ -439,7 +439,7 @@ CREATE OR REPLACE FUNCTION TT_GeoMakeValidMultiPolygon(
 )
 RETURNS geometry AS $$
   SELECT ST_Multi(ST_CollectionExtract(TT_GeoMakeValid(the_geom), 3));
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -472,7 +472,7 @@ RETURNS double precision AS $$
     
     RETURN ST_Area(_the_geom) / 10000;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -505,4 +505,4 @@ RETURNS double precision AS $$
     
     RETURN ST_Perimeter(_the_geom);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;

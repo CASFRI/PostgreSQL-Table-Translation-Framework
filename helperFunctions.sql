@@ -104,7 +104,7 @@ RETURNS text AS $$
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -156,14 +156,14 @@ RETURNS boolean AS $$
     
     RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotNull(
   val text
 )
 RETURNS boolean AS $$
   SELECT TT_NotNull(val, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -214,14 +214,14 @@ RETURNS boolean AS $$
       RETURN _not_empty_count = array_length(_vals, 1);
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
   val text
 )
 RETURNS boolean AS $$
   SELECT TT_NotEmpty(val, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -249,14 +249,14 @@ RETURNS int AS $$
       RETURN coalesce(char_length(val), 0);
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_Length(
   val text
 )
 RETURNS int AS $$
   SELECT TT_Length(val, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -291,7 +291,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasLength(
   val text,
@@ -299,7 +299,7 @@ CREATE OR REPLACE FUNCTION TT_HasLength(
 )
 RETURNS boolean AS $$
   SELECT TT_HasLength(val, length_test, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -342,14 +342,14 @@ RETURNS boolean AS $$
       END;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsInt(
   val text
 )
 RETURNS boolean AS $$
   SELECT TT_IsInt(val, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -390,14 +390,14 @@ RETURNS boolean AS $$
       END;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsNumeric(
   val text
 )
 RETURNS boolean AS $$
   SELECT TT_IsNumeric(val, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -423,7 +423,7 @@ RETURNS boolean AS $$
       END;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -437,7 +437,7 @@ CREATE OR REPLACE FUNCTION TT_IsChar(
 )
 RETURNS boolean AS $$
   SELECT TT_Length(val) = 1;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -455,7 +455,7 @@ RETURNS boolean AS $$
                    upper(argStr) = 'FALSE' THEN FALSE 
               ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' 
          END
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -487,7 +487,7 @@ RETURNS boolean AS $$
       END;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -516,7 +516,7 @@ RETURNS boolean AS $$
     END IF;
     RETURN TRUE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -545,7 +545,7 @@ RETURNS boolean AS $$
     END IF;
     RETURN TRUE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -574,7 +574,7 @@ RETURNS boolean AS $$
     END IF;
     RETURN TRUE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -637,7 +637,7 @@ RETURNS void AS $$
       END IF;
     END LOOP;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -714,7 +714,7 @@ RETURNS boolean AS $$
       RETURN _val >= _min AND _val <= _max;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetween(
   val text,
@@ -725,7 +725,7 @@ CREATE OR REPLACE FUNCTION TT_IsBetween(
 )
 RETURNS boolean AS $$
   SELECT TT_IsBetween(val, min, max, includeMin, includeMax, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetween(
   val text,
@@ -734,7 +734,7 @@ CREATE OR REPLACE FUNCTION TT_IsBetween(
 )
 RETURNS boolean AS $$
   SELECT TT_IsBetween(val, min, max, TRUE::text, TRUE::text, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -792,7 +792,7 @@ RETURNS boolean AS $$
       RETURN _val > _lowerBound;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
   val text,
@@ -801,7 +801,7 @@ CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
 )
 RETURNS boolean AS $$
   SELECT TT_IsGreaterThan(val, lowerBound, inclusive, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
   val text,
@@ -809,7 +809,7 @@ CREATE OR REPLACE FUNCTION TT_IsGreaterThan(
 )
 RETURNS boolean AS $$
   SELECT TT_IsGreaterThan(val, lowerBound, TRUE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -867,7 +867,7 @@ RETURNS boolean AS $$
       RETURN _val < _upperBound;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsLessThan(
   val text,
@@ -876,7 +876,7 @@ CREATE OR REPLACE FUNCTION TT_IsLessThan(
 )
 RETURNS boolean AS $$
   SELECT TT_IsLessThan(val, upperBound, inclusive, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsLessThan(
   val text,
@@ -884,7 +884,7 @@ CREATE OR REPLACE FUNCTION TT_IsLessThan(
 )
 RETURNS boolean AS $$
   SELECT TT_IsLessThan(val, upperBound, TRUE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -939,7 +939,7 @@ RETURNS boolean AS $$
     EXECUTE query INTO return;
     RETURN return;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
@@ -949,7 +949,7 @@ CREATE OR REPLACE FUNCTION TT_IsUnique(
 )
 RETURNS boolean AS $$
   SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, occurrences, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
@@ -958,7 +958,7 @@ CREATE OR REPLACE FUNCTION TT_IsUnique(
 )
 RETURNS boolean AS $$
   SELECT TT_IsUnique(val, lookupSchemaName, lookupTableName, 1::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsUnique(
   val text,
@@ -966,7 +966,7 @@ CREATE OR REPLACE FUNCTION TT_IsUnique(
 )
 RETURNS boolean AS $$
   SELECT TT_IsUnique(val, 'public', lookupTableName, 1::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1038,7 +1038,7 @@ RETURNS boolean AS $$
       RETURN return;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
@@ -1049,7 +1049,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
@@ -1059,7 +1059,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
@@ -1068,7 +1068,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
@@ -1076,7 +1076,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchTable(val, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1165,7 +1165,7 @@ RETURNS boolean AS $$
       END IF;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -1176,7 +1176,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, matches, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -1186,7 +1186,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, TRUE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -1195,7 +1195,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, TRUE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchList(
   val text,
@@ -1203,7 +1203,7 @@ CREATE OR REPLACE FUNCTION TT_MatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, TRUE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1248,7 +1248,7 @@ RETURNS boolean AS $$
 
     SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, removeSpaces);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
   val text,
@@ -1258,7 +1258,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
   val text,
@@ -1267,7 +1267,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
   val text,
@@ -1275,7 +1275,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1336,7 +1336,7 @@ RETURNS boolean AS $$
     RETURN TT_Matchlist(_valSum::text, lst, acceptNull, matches);
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
   vals text,
@@ -1345,7 +1345,7 @@ CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_SumIntMatchList(vals, lst, acceptNull, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
   vals text,
@@ -1353,7 +1353,7 @@ CREATE OR REPLACE FUNCTION TT_SumIntMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_SumIntMatchList(vals, lst, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1423,7 +1423,7 @@ RETURNS boolean AS $$
     RETURN TT_Matchlist(_valLength, lst, acceptNull, matches);
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
@@ -1434,7 +1434,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_LengthMatchList(vals, lst, trim_, removeSpaces, acceptNull, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
@@ -1444,7 +1444,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_LengthMatchList(vals, lst, trim_, removeSpaces, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
@@ -1453,7 +1453,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_LengthMatchList(vals, lst, trim_, FALSE::text, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMatchList(
   vals text,
@@ -1461,7 +1461,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_LengthMatchList(vals, lst, FALSE::text, FALSE::text, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1475,7 +1475,7 @@ RETURNS boolean AS $$
   BEGIN
     RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1489,7 +1489,7 @@ RETURNS boolean AS $$
   BEGIN
     RETURN TRUE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1541,7 +1541,7 @@ RETURNS boolean AS $$
     END IF;
 
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1555,7 +1555,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1568,7 +1568,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1580,7 +1580,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1591,7 +1591,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1601,7 +1601,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals1 text,
@@ -1610,7 +1610,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text, text)
 --
@@ -1655,7 +1655,7 @@ RETURNS boolean AS $$
     -- process
     RETURN TT_IsInt(substring(val from _startChar for _forLength));
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
@@ -1664,7 +1664,7 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text)
 --
@@ -1729,7 +1729,7 @@ RETURNS boolean AS $$
       RETURN TT_IsBetween(substring(val from _startChar for _forLength), min, max, includeMin, includeMax);
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
@@ -1743,7 +1743,7 @@ CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, includeMin, includeMin, removeSpaces, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
@@ -1756,7 +1756,7 @@ CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, includeMin, includeMin, FALSE::text, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
   val text,
@@ -1767,7 +1767,7 @@ CREATE OR REPLACE FUNCTION TT_IsBetweenSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_IsBetweenSubstring(val, startChar, forLength, min, max, TRUE::text, TRUE::text, FALSE::text, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_MatchListSubstring(text, text, text, text, text, text, text)
@@ -1846,7 +1846,7 @@ RETURNS boolean AS $$
     -- process
     RETURN TT_MatchList(_val, lst, ignoreCase, acceptNull, TRUE::text, removeSpaces);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
@@ -1858,7 +1858,7 @@ CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchListSubstring(val, startChar, forLength, lst, ignoreCase, removeSpaces, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
@@ -1869,7 +1869,7 @@ CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchListSubstring(val, startChar, forLength, lst, ignoreCase, FALSE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
   val text,
@@ -1879,7 +1879,7 @@ CREATE OR REPLACE FUNCTION TT_MatchListSubstring(
 )
 RETURNS boolean AS $$
   SELECT TT_MatchListSubstring(val, startChar, forLength, lst, FALSE::text, FALSE::text, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -1905,7 +1905,7 @@ RETURNS text AS $$
   BEGIN
     RETURN val;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1922,7 +1922,7 @@ RETURNS double precision AS $$
   BEGIN
     RETURN val::double precision;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1939,7 +1939,7 @@ RETURNS int AS $$
   BEGIN
     RETURN round(val::numeric)::int;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2026,7 +2026,7 @@ RETURNS text AS $$
     EXECUTE query INTO result;
     RETURN result;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
@@ -2038,7 +2038,7 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
 )
 RETURNS text AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupText')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
@@ -2049,7 +2049,7 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
 )
 RETURNS text AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupText')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
@@ -2059,7 +2059,7 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
 )
 RETURNS text AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
@@ -2068,7 +2068,7 @@ CREATE OR REPLACE FUNCTION TT_LookupText(
 )
 RETURNS text AS $$
   SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2098,7 +2098,7 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
@@ -2109,7 +2109,7 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
@@ -2119,7 +2119,7 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
@@ -2128,7 +2128,7 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2166,7 +2166,7 @@ RETURNS int AS $$
               NULL
          END
   FROM inttxt;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
@@ -2177,7 +2177,7 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
 )
 RETURNS int AS $$
     SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
@@ -2187,7 +2187,7 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
 )
 RETURNS int AS $$
   SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
@@ -2196,7 +2196,7 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
 )
 RETURNS int AS $$
   SELECT TT_LookupInt(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text);
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2270,7 +2270,7 @@ RETURNS text AS $$
       RETURN (_targetVals)[array_position(_mapVals, upper(_val))];
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapText(
   vals text,
@@ -2280,7 +2280,7 @@ CREATE OR REPLACE FUNCTION TT_MapText(
 )
 RETURNS text AS $$
   SELECT TT_MapText(vals, mapVals, targetVals, ignoreCase, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapText(
   vals text,
@@ -2289,7 +2289,7 @@ CREATE OR REPLACE FUNCTION TT_MapText(
 )
 RETURNS text AS $$
   SELECT TT_MapText(vals, mapVals, targetVals, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2366,7 +2366,7 @@ RETURNS text AS $$
     RETURN TT_MapText(_val, mapVals, targetVals, ignoreCase, removeSpaces);
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   vals text,
@@ -2378,7 +2378,7 @@ CREATE OR REPLACE FUNCTION TT_MapSubstringText(
 )
 RETURNS text AS $$
   SELECT TT_MapSubstringText(vals, startChar, forLength, mapVals, targetVals, ignoreCase, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapSubstringText(
   vals text,
@@ -2389,7 +2389,7 @@ CREATE OR REPLACE FUNCTION TT_MapSubstringText(
 )
 RETURNS text AS $$
   SELECT TT_MapSubstringText(vals, startChar, forLength, mapVals, targetVals, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2444,7 +2444,7 @@ RETURNS text AS $$
     RETURN TT_MapText(_valSum::text, mapVals, targetVals);
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2520,7 +2520,7 @@ RETURNS double precision AS $$
       RETURN (_targetVals)[array_position(_mapVals,upper(_val))];
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapDouble(
   vals text,
@@ -2530,7 +2530,7 @@ CREATE OR REPLACE FUNCTION TT_MapDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_MapDouble(vals, mapVals, targetVals, ignoreCase, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapDouble(
   vals text,
@@ -2539,7 +2539,7 @@ CREATE OR REPLACE FUNCTION TT_MapDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_MapDouble(vals, mapVals, targetVals, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2615,7 +2615,7 @@ RETURNS int AS $$
       RETURN (_targetVals)[array_position(_mapVals,upper(_val))];
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapInt(
   vals text,
@@ -2625,7 +2625,7 @@ CREATE OR REPLACE FUNCTION TT_MapInt(
 )
 RETURNS int AS $$
   SELECT TT_MapInt(vals, mapVals, targetVals, ignoreCase, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_MapInt(
   vals text,
@@ -2634,7 +2634,7 @@ CREATE OR REPLACE FUNCTION TT_MapInt(
 )
 RETURNS int AS $$
   SELECT TT_MapInt(vals, mapVals, targetVals, FALSE::text, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2686,7 +2686,7 @@ RETURNS int AS $$
     RETURN TT_MapText(_valLength, mapVals, targetVals)::int;
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_LengthMapInt(
   val text,
@@ -2695,7 +2695,7 @@ CREATE OR REPLACE FUNCTION TT_LengthMapInt(
 )
 RETURNS int AS $$
   SELECT TT_LengthMapInt(val, mapVals, targetVals, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2750,7 +2750,7 @@ RETURNS text AS $$
     END IF;
     RETURN val;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_Pad(
   val text,
@@ -2759,7 +2759,7 @@ CREATE OR REPLACE FUNCTION TT_Pad(
 )
 RETURNS text AS $$
   SELECT TT_Pad(val, targetLength, padChar, TRUE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2789,7 +2789,7 @@ RETURNS text AS $$
     -- process
     RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2875,7 +2875,7 @@ RETURNS text AS $$
     --RAISE NOTICE '%',_result;
     RETURN TT_Concat(_result, sep);
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_PadConcat(
   val text,
@@ -2886,7 +2886,7 @@ CREATE OR REPLACE FUNCTION TT_PadConcat(
 )
 RETURNS text AS $$
   SELECT TT_PadConcat(val, length, pad, sep, upperCase, 'TRUE'::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2900,7 +2900,7 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_NothingText()
 RETURNS text AS $$
     SELECT NULL::text;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2914,7 +2914,7 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_NothingDouble()
 RETURNS double precision AS $$
     SELECT NULL::double precision;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2928,7 +2928,7 @@ $$ LANGUAGE sql VOLATILE;
 CREATE OR REPLACE FUNCTION TT_NothingInt()
 RETURNS int AS $$
     SELECT NULL::int;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3179,7 +3179,7 @@ RETURNS int AS $$
     RETURN _count;
     
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3193,7 +3193,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3206,7 +3206,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3218,7 +3218,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3229,7 +3229,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3239,7 +3239,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
@@ -3248,7 +3248,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
 )
 RETURNS int AS $$
   SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3293,7 +3293,7 @@ RETURNS text AS $$
       RETURN str2;
     END IF;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3309,7 +3309,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3324,7 +3324,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3338,7 +3338,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3351,7 +3351,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3363,7 +3363,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
@@ -3374,7 +3374,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
 )
 RETURNS text AS $$
   SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3400,7 +3400,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3416,7 +3416,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3431,7 +3431,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3445,7 +3445,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3458,7 +3458,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3470,7 +3470,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, vals2, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
@@ -3481,7 +3481,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
 )
 RETURNS int AS $$
     SELECT TT_IfElseCountOfNotNullText(vals1, maxRankToConsider, cutoffVal, str1, str2)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3525,7 +3525,7 @@ RETURNS text AS $$
     END IF;
     
    END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_SubstringText(
   val text,
@@ -3534,7 +3534,7 @@ CREATE OR REPLACE FUNCTION TT_SubstringText(
 )
 RETURNS text AS $$
     SELECT TT_SubstringText(val, startChar, forLength, FALSE::text)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3555,7 +3555,7 @@ CREATE OR REPLACE FUNCTION TT_SubstringInt(
 )
 RETURNS int AS $$
   SELECT TT_SubstringText(val, startChar, forLength)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -3574,4 +3574,4 @@ CREATE OR REPLACE FUNCTION TT_XMinusYInt(
 )
 RETURNS int AS $$
   SELECT (x::double precision - y::double precision)::int
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql IMMUTABLE;

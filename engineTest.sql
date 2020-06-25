@@ -139,7 +139,7 @@ RETURNS boolean AS $$
     IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF;
     RETURN FALSE;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 ---------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_FctExists(
   fctName name,
@@ -147,7 +147,7 @@ CREATE OR REPLACE FUNCTION TT_FctExists(
 )
 RETURNS boolean AS $$
   SELECT TT_FctExists(''::name, fctName, argTypes)
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Comment out the following line and the last one of the file to display

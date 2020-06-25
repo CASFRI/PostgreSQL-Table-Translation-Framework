@@ -118,7 +118,7 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
     END LOOP;
     RETURN;
   END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;
 -----------------------------------------------------------
 -- Create some test lookup table
 DROP TABLE IF EXISTS test_lookuptable1;
