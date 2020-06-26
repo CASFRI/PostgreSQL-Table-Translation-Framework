@@ -225,7 +225,7 @@ You can delete all log tables in the schema if you omit the "translationTable" p
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
-* Helper functions using lookup tables will always look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
+* Helper functions using lookup tables will by default look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
 
@@ -443,10 +443,10 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
+* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if srcVal is present in the lookupColumnName column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. MatchTable('sp1', public, species_lookup, TRUE)
+    * e.g. looke('sp1', public, species_lookup, TRUE)
 
 * **MatchList**(*stringList* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
@@ -529,17 +529,17 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns srcVal as integer without any transformation.
     * e.g. CopyInt(1)
       
-* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
-    * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. LookupText('sp1', public, species_lookup, target_sp, TRUE)
+* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+    * Returns text value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupText('sp1', 'public', 'species_lookup', 'target_sp', TRUE)
       
-* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
-    * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. LookupDouble(5.5, public, species_lookup, sp_percent, TRUE)
+* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+    * Returns double precision value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupDouble(5.5, 'public', 'species_lookup', 'sp_percent', TRUE)
 
-* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, boolean **ignoreCase**\[default FALSE\])
-    * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
+* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, boolean **ignoreCase**\[default FALSE\])
+    * Returns integer value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupInt(20, 'public', 'species_lookup', 'sp_percent', TRUE)
 
 * **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE. Remove spaces if **removeSpaces** is true.
