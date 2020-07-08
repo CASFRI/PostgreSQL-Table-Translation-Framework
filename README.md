@@ -466,11 +466,6 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Sums the values in srcVal and tests if the sum is in **lst** using MatchList.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. SumIntMatchList({1,2}, {3, 4, 5})
-    
-* **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\])
-    * Calculates length of srcVal and tests if the length is in **lst** using MatchList.
-    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. LengthMatchList('abc', {3, 4, 5})
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
@@ -502,6 +497,18 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * If removeSpaces is TRUE, removes any spaces before calculating length.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
+    
+* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the smallest integer in the intList. Pass it to notNull(). 
+    * If there are multiple occurences of the smallest value, the **first** index is used.
+    * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
+    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
+    
+* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the largest integer in the intList. Pass it to notNull(). 
+    * If there are multiple occurences of the smallest value, the **last** index is used. 
+    * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
+    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
     
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
@@ -619,6 +626,38 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **SubstringInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**)
     * Simple wrapper around **SubstringText** that returns an int.
+    
+* **minInt**(*stringList* **vals**)
+    * Return the smallest integer in the list. 
+    * e.g. minInt({1990, 2000})
+
+* **maxInt**(*stringList* **vals**)
+    * Return the largest integer in the list. 
+    * e.g. maxInt({1990, 2000})
+
+* **minIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Returns value from returnList matching the index of the lowest value in intList.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the smallest value, the **first** index is used.
+    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+
+* **maxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Returns value from returnList matching the index of the highest value in intList.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the largest value, the **last** index is used.
+    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+    
+* **minIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the lowest value in intList to mapText. Runs mapText using the mapVals and targetVals.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the smallest value, the **first** index is used.
+    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+
+* **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the highest value in intList to mapText. Runs mapText using the mapVals and targetVals.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the largest value, the **last** index is used.
+    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
