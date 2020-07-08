@@ -498,14 +498,16 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
-* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**)
+* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the smallest value, the **first** index is used.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
     
-* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**)
+* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the smallest value, the **last** index is used. 
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
     
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
