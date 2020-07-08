@@ -50,6 +50,8 @@ RETURNS text AS $$
                   WHEN rule = 'isintsubstring'     THEN '-9997'
                   WHEN rule = 'isbetweensubstring' THEN '-9997'
                   WHEN rule = 'matchlistsubstring' THEN '-9998'
+                  WHEN rule = 'minIndexNotNull'    THEN '-8888'
+                  WHEN rule = 'maxIndexNotNull'    THEN '-8888'
                   WHEN rule = 'geoisvalid'         THEN '-7779'
                   WHEN rule = 'geointersects'      THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -74,6 +76,8 @@ RETURNS text AS $$
                   WHEN rule = 'isintsubstring'     THEN NULL
                   WHEN rule = 'isbetweensubstring' THEN NULL
                   WHEN rule = 'matchlistsubstring' THEN NULL
+                  WHEN rule = 'minIndexNotNull'    THEN NULL
+                  WHEN rule = 'maxIndexNotNull'    THEN NULL
                   WHEN rule = 'geoisvalid'         THEN NULL
                   WHEN rule = 'geointersects'      THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -99,13 +103,81 @@ RETURNS text AS $$
                   WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
                   WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
                   WHEN rule = 'matchlistsubstring' THEN 'NOT_IN_SET'
+                  WHEN rule = 'minIndexNotNull'    THEN 'NULL_VALUE'
+                  WHEN rule = 'maxIndexNotNull'    THEN 'NULL_VALUE'
                   WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Internal functions used in helper functions
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TT_min_internal(int[])
+-- TT_max_internal(int[])
+--
+-- vals int[] - array of integer values.
+-- min and max calculation for internal use. Not a helper function.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_min_internal(int[]);
+CREATE OR REPLACE FUNCTION TT_min_internal(
+  vals int[]
+)
+RETURNS integer AS $$
+  BEGIN
+    RETURN min(a) FROM unnest(vals) a;
+  END;
+$$ LANGUAGE plpgsql;
+
+-- DROP FUNCTION IF EXISTS TT_max_internal(int[]);
+CREATE OR REPLACE FUNCTION TT_max_internal(
+  vals int[]
+)
+RETURNS integer AS $$
+  BEGIN
+    RETURN max(a) FROM unnest(vals) a;
+  END;
+$$ LANGUAGE plpgsql;
+-------------------------------------------------------------------------------
+-- TT_min_max_index(int[], text, text)
+--
+-- vals int[] - array of integer values.
+-- min_max text - return index of 'min' or 'max' value?
+-- first_last - return the 'first' index or the 'last' index?
+--
+-- internal function returning the first or last index of the min or max value.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_min_max_index_internal(int[], text, text);
+CREATE OR REPLACE FUNCTION TT_min_max_index_internal(
+  vals int[],
+  min_max text,
+  first_last text
+)
+RETURNS integer AS $$
+  DECLARE
+    test_val int;
+  BEGIN
+    IF min_max = 'min' THEN
+      test_val = tt_min_internal(vals);
+    END IF;
+    IF min_max = 'max' THEN
+      test_val = tt_max_internal(vals);
+    END IF;
+    
+    IF first_last = 'first' THEN
+      RETURN array_position(vals, test_val);
+    END IF;
+    
+    IF first_last = 'last' THEN
+      RETURN tt_max_internal(array_positions(vals, test_val));
+    END IF;
+  END;
+$$ LANGUAGE plpgsql;
+
 
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
@@ -201,8 +273,10 @@ RETURNS boolean AS $$
   
     -- get count of not empty strings in array
     FOR i IN 1..array_length(_vals, 1) LOOP
-      IF replace(_vals[i], ' ', '') != '' THEN
-        _not_empty_count = _not_empty_count + 1;
+      IF _vals[i] IS NOT NULL THEN
+        IF replace(_vals[i], ' ', '') != '' THEN
+          _not_empty_count = _not_empty_count + 1; -- only add count if val is not null or empty string
+        END IF;
       END IF;
     END LOOP;
     
@@ -1881,6 +1955,124 @@ RETURNS boolean AS $$
   SELECT TT_MatchListSubstring(val, startChar, forLength, lst, FALSE::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql IMMUTABLE;
 
+-------------------------------------------------------------------------------
+-- TT_minIndexNotNull(text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+--
+-- Find the target values from the testList with a matching 
+-- index to the smallest integer in the intList. Test it with
+-- notNull().
+-- If there are multiple occurences of the smallest value, the
+-- first index is used.
+--
+-- If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating min value.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_minIndexNotNull(text, text, text);
+CREATE OR REPLACE FUNCTION TT_minIndexNotNull(
+  intList text,
+  testList text,
+  setNullTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _intList int[];
+    _testList text[];
+    _index int;
+    _testVal text;
+    _setNullTo int;
+  BEGIN
+    -- parse lists to arrays
+    _intList = TT_ParseStringList(intList, TRUE);
+    _testList = TT_ParseStringList(testList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get the first index of the min value from the integer list
+    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    
+    -- get the testVal from the testList using the _index
+    _testVal = _testList[_index];
+    
+    -- test with tt_notNull()
+    RETURN tt_notNull(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_minIndexNotNull(
+  intList text,
+  testList text
+)
+RETURNS boolean AS $$
+  SELECT TT_minIndexNotNull(intList, testList, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_maxIndexNotNull(text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+--
+-- find the target values from the testList with a matching 
+-- index to the largest integer in the intList. Test it with
+-- notNull().
+-- If there are multiple occurences of the largest value, the
+-- last index is used.
+--
+-- If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating min value.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_maxIndexNotNull(text, text, text);
+CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
+  intList text,
+  testList text,
+  setNullTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _intList int[];
+    _testList text[];
+    _index int;
+    _testVal text;
+    _setNullTo int;
+  BEGIN
+    -- parse lists to arrays
+    _intList = TT_ParseStringList(intList, TRUE);
+    _testList = TT_ParseStringList(testList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get the index of the min value from the integer list
+    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    
+    -- get the testVal from the testList using the _index
+    _testVal = _testList[_index];
+    
+    -- test with tt_notNull()
+    RETURN tt_notNull(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
+  intList text,
+  testList text
+)
+RETURNS boolean AS $$
+  SELECT TT_maxIndexNotNull(intList, testList, null::text)
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -3574,4 +3766,307 @@ CREATE OR REPLACE FUNCTION TT_XMinusYInt(
 )
 RETURNS int AS $$
   SELECT (x::double precision - y::double precision)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_maxInt()
+--
+-- vals text - stringList of values to test
+--
+-- returns max value as int.
+-- e.g. TT_maxInt({1,2,3})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_maxInt(text);
+CREATE OR REPLACE FUNCTION TT_maxInt(
+  vals text
+)
+RETURNS int AS $$
+  DECLARE
+    _vals int[];
+  BEGIN
+    _vals = TT_ParseStringList(vals, TRUE)::int[];
+    RETURN TT_max_internal(_vals);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_minInt()
+--
+-- vals text - stringList of values to test
+--
+-- returns min value as int.
+-- e.g. TT_maxInt({1,2,3})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_minInt(text);
+CREATE OR REPLACE FUNCTION TT_minInt(
+  vals text
+)
+RETURNS int AS $$
+  DECLARE
+    _vals int[];
+  BEGIN
+    _vals = TT_ParseStringList(vals, TRUE)::int[];
+    RETURN TT_min_internal(_vals);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_minIndexCopyText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the return value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- returns value from returnList matching the index of the lowest
+-- value in intList. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating min value.
+-- If multiple occurences of the smallest value, the first index is used.
+-- 
+-- e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_minIndexCopyText(text, text, text);
+CREATE OR REPLACE FUNCTION TT_minIndexCopyText(
+  intList text,
+  returnList text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams.
+    -- Validate parameters (trigger EXCEPTION)
+    --PERFORM TT_ValidateParams('tt_minIndexCopyText',
+    --                          ARRAY['setNullTo', setNullTo, 'int']);
+                                   
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    
+    -- return matching index from returnList
+    RETURN _returnList[_index];
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION tt_minIndexCopyText(
+  intList text,
+  returnList text
+)
+RETURNS text AS $$
+  SELECT tt_minIndexCopyText(intList, returnList, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_maxIndexCopyText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the return value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- returns value from returnList matching the index of the highest
+-- value in intList. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating max value.
+-- If multiple occurences of the smallest value, the last index is used.
+-- 
+-- e.g. TT_maxIndexCopyText({1,2,3}, {a,b,c})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_maxIndexCopyText(text, text, text);
+CREATE OR REPLACE FUNCTION TT_maxIndexCopyText(
+  intList text,
+  returnList text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams.
+    -- Validate parameters (trigger EXCEPTION)
+    --PERFORM TT_ValidateParams('tt_minIndexCopyText',
+    --                          ARRAY['setNullTo', setNullTo, 'int']);
+                                   
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    
+    -- return matching index from returnList
+    RETURN _returnList[_index];
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_maxIndexCopyText(
+  intList text,
+  returnList text
+)
+RETURNS text AS $$
+  SELECT TT_maxIndexCopyText(intList, returnList, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_minIndexMapText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the value to pass to mapText
+-- mapVals - list of source values for mapText
+-- targetVals - list of target values for mapText
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- passes value from returnList matching the index of the smallest
+-- value in intList to mapText. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating max value.
+-- If multiple occurences of the smallest value, the first index is used.
+-- 
+-- e.g. TT_minIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_minIndexMapText(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_minIndexMapText(
+  intList text,
+  returnList text,
+  mapVals text,
+  targetVals text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+    _srcVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams.
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_minIndexMapText',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist']);
+                                   
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    
+    -- get matching index from returnList as srcVal
+    _srcVal = _returnList[_index];
+    
+    RETURN TT_mapText(_srcVal, mapVals, targetVals);
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_minIndexMapText(
+  intList text,
+  returnList text,
+  mapVals text,
+  targetVals text
+)
+RETURNS text AS $$
+  SELECT TT_minIndexMapText(intList, returnList, mapVals, targetVals, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_maxIndexMapText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the value to pass to mapText
+-- srcList - list of source values for mapText
+-- targetList - list of target values for mapText
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- passes value from returnList matching the index of the largest
+-- value in intList to mapText. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating max value.
+-- If multiple occurences of the smallest value, the last index is used.
+-- 
+-- e.g. TT_maxIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_maxIndexMapText(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_maxIndexMapText(
+  intList text,
+  returnList text,
+  mapVals text,
+  targetVals text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+    _srcVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams.
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_maxIndexMapText',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist']);
+                                   
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    
+    -- get matching index from returnList as srcVal
+    _srcVal = _returnList[_index];
+    
+    RETURN TT_mapText(_srcVal, mapVals, targetVals);
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_maxIndexMapText(
+  intList text,
+  returnList text,
+  mapVals text,
+  targetVals text
+)
+RETURNS text AS $$
+  SELECT TT_maxIndexMapText(intList, returnList, mapVals, targetVals, null::text)
 $$ LANGUAGE sql IMMUTABLE;

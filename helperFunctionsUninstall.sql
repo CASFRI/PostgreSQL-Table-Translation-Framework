@@ -83,6 +83,8 @@ DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasLength(text, text, text);
 DROP FUNCTION IF EXISTS TT_HasLength(text, text);
+DROP FUNCTION IF EXISTS TT_maxIndexNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_minIndexNotNull(text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
@@ -151,6 +153,12 @@ DROP FUNCTION IF EXISTS TT_SumIntMapText(text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMapInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LengthMapInt(text, text, text);
 DROP FUNCTION IF EXISTS TT_XMinusYInt(text, text);
+DROP FUNCTION IF EXISTS TT_minInt(text);
+DROP FUNCTION IF EXISTS TT_maxInt(text);
+DROP FUNCTION IF EXISTS TT_minIndexCopyText(text, text, text);
+DROP FUNCTION IF EXISTS TT_maxIndexCopyText(text, text, text);
+DROP FUNCTION IF EXISTS TT_minIndexMapText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_maxIndexMapText(text, text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
