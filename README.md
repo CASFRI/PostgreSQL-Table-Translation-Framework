@@ -499,13 +499,13 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * e.g. LengthMatchList('12345', {5})
     
 * **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
-    * Find the target values from the testList with a matching index to the smallest integer in the intList. Pass it to notNull(). 
+    * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the smallest value, the **first** index is used.
     * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
     
 * **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
-    * Find the target values from the testList with a matching index to the largest integer in the intList. Pass it to notNull(). 
+    * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the smallest value, the **last** index is used. 
     * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
@@ -628,36 +628,36 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Simple wrapper around **SubstringText** that returns an int.
     
 * **minInt**(*stringList* **vals**)
-    * Return the smallest integer in the list. 
+    * Return the lowest integer in the list. 
     * e.g. minInt({1990, 2000})
 
 * **maxInt**(*stringList* **vals**)
-    * Return the largest integer in the list. 
+    * Return the highest integer in the list. 
     * e.g. maxInt({1990, 2000})
 
 * **minIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
     * Returns value from returnList matching the index of the lowest value in intList.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
-    * If multiple occurences of the smallest value, the **first** index is used.
-    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+    * If multiple occurences of the lowest value, the **first** index is used.
+    * e.g. maxIndexCopyText({1990, 2000}, {burn, wind})
 
 * **maxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
     * Returns value from returnList matching the index of the highest value in intList.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
-    * If multiple occurences of the largest value, the **last** index is used.
-    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+    * If multiple occurences of the highest value, the **last** index is used.
+    * e.g. minIndexCopyText({1990, 2000}, {burn, wind})
     
 * **minIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
     * Passes value from returnList matching the index of the lowest value in intList to mapText. Runs mapText using the mapVals and targetVals.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
-    * If multiple occurences of the smallest value, the **first** index is used.
-    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+    * If multiple occurences of the lowest value, the **first** index is used.
+    * e.g. minIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
 
 * **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to mapText. Runs mapText using the mapVals and targetVals.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
-    * If multiple occurences of the largest value, the **last** index is used.
-    * e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+    * If multiple occurences of the highest value, the **last** index is used.
+    * e.g. maxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
