@@ -119,7 +119,7 @@ The ROW_TRANSLATION_RULE special row specifies that only source rows for which t
 
 The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
-If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. In this example, this rule will also make the engine to STOP if "sp1" is NULL. If the first rule passes but the second validation rule fails, the error code 'INVALID_SPECIES' is returned instead of the matchTable() default error code (the error code defined in the translation table overwrite the default function error code 'NOT_IN_SET'). 
+If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. In this example, this rule will also make the engine to STOP if "sp1" is NULL. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
 
 Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. The engine will STOP if "sp1_per" is NULL. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". '-8888', the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. '-9999' is returned if the second validation rule fails.
 
@@ -225,7 +225,7 @@ You can delete all log tables in the schema if you omit the "translationTable" p
 # How to write a lookup table?
 * Some helper functions (e.g. matchTable(), lookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
-* Helper functions using lookup tables will always look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
+* Helper functions using lookup tables will by default look for the source values in the column named "source_val". The lookupText() function will return the corresponding value in the specified column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
 
@@ -443,10 +443,10 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
-* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if srcVal is present in the source_val column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
+* **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if srcVal is present in the lookupColumnName column of lookupSchemaName.lookupTableName. Ignores letter case if ignoreCase = TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. MatchTable('sp1', public, species_lookup, TRUE)
+    * e.g. looke('sp1', public, species_lookup, TRUE)
 
 * **MatchList**(*stringList* **srcVal**, *stringList* **lst**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if srcVal is in lst. Ignores letter case if ignoreCase = TRUE.
@@ -466,11 +466,6 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Sums the values in srcVal and tests if the sum is in **lst** using MatchList.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. SumIntMatchList({1,2}, {3, 4, 5})
-    
-* **LengthMatchList**(*text* **srcVal**, *stringList* **lst**, *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\])
-    * Calculates length of srcVal and tests if the length is in **lst** using MatchList.
-    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. LengthMatchList('abc', {3, 4, 5})
 
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt(), and NothingDouble().
@@ -503,6 +498,18 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
+* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to notNull(). 
+    * If there are multiple occurences of the smallest value, the **first** index is used.
+    * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
+    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
+    
+* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to notNull(). 
+    * If there are multiple occurences of the smallest value, the **last** index is used. 
+    * If setNullTo is provided as an integer, null values in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value.
+    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
+    
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
     * Default error codes are 'INVALID_VALUE' for text attributes, -7779 for numeric attributes and NULL for other types (including geometry).
@@ -529,17 +536,17 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns srcVal as integer without any transformation.
     * e.g. CopyInt(1)
       
-* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
-    * Returns text value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. LookupText('sp1', public, species_lookup, target_sp, TRUE)
+* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+    * Returns text value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupText('sp1', 'public', 'species_lookup', 'target_sp', TRUE)
       
-* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, *boolean* **ignoreCase**\[default FALSE\])
-    * Returns double precision value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. LookupDouble(5.5, public, species_lookup, sp_percent, TRUE)
+* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+    * Returns double precision value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupDouble(5.5, 'public', 'species_lookup', 'sp_percent', TRUE)
 
-* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupCol**, boolean **ignoreCase**\[default FALSE\])
-    * Returns integer value from lookupColumn in lookupSchemaName.lookupTableName that matches srcVal in source_val column.
-    * e.g. Lookup(20, public, species_lookup, sp_percent, TRUE)
+* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, boolean **ignoreCase**\[default FALSE\])
+    * Returns integer value from the retrieveColName column in lookupSchemaName.lookupTableName that matches srcVal in the lookupColName column.
+    * e.g. LookupInt(20, 'public', 'species_lookup', 'sp_percent', TRUE)
 
 * **MapText**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE. Remove spaces if **removeSpaces** is true.
@@ -619,6 +626,38 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **SubstringInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**)
     * Simple wrapper around **SubstringText** that returns an int.
+    
+* **minInt**(*stringList* **vals**)
+    * Return the lowest integer in the list. 
+    * e.g. minInt({1990, 2000})
+
+* **maxInt**(*stringList* **vals**)
+    * Return the highest integer in the list. 
+    * e.g. maxInt({1990, 2000})
+
+* **minIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Returns value from returnList matching the index of the lowest value in intList.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the lowest value, the **first** index is used.
+    * e.g. maxIndexCopyText({1990, 2000}, {burn, wind})
+
+* **maxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Returns value from returnList matching the index of the highest value in intList.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the highest value, the **last** index is used.
+    * e.g. minIndexCopyText({1990, 2000}, {burn, wind})
+    
+* **minIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the lowest value in intList to mapText. Runs mapText using the mapVals and targetVals.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the lowest value, the **first** index is used.
+    * e.g. minIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
+
+* **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the highest value in intList to mapText. Runs mapText using the mapVals and targetVals.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the highest value, the **last** index is used.
+    * e.g. maxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
