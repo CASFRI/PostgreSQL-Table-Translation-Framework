@@ -169,7 +169,7 @@ $$ LANGUAGE sql VOLATILE;
 -- TT_LogInit
 --
 -- schemaName text
--- tableName text
+-- translationTableName text
 -- sourceTableName
 -- increment boolean
 -- dupLogEntriesHandling text
@@ -180,7 +180,7 @@ $$ LANGUAGE sql VOLATILE;
 --DROP FUNCTION IF EXISTS TT_LogInit(text, text, text, boolean, text);
 CREATE OR REPLACE FUNCTION TT_LogInit(
   schemaName text,
-  tableName text,
+  translationTableName text,
   sourceTableName text,
   increment boolean DEFAULT TRUE,
   dupLogEntriesHandling text DEFAULT '100'
@@ -192,15 +192,15 @@ RETURNS text AS $$
     logTableName text;
     action text = 'Creating';
   BEGIN
-    IF NOT (TT_NotEmpty(tableName) AND TT_NotEmpty(sourceTableName)) THEN
+    IF NOT (TT_NotEmpty(translationTableName) AND TT_NotEmpty(sourceTableName)) THEN
       RAISE EXCEPTION 'TT_LogInit() ERROR: Invalid translation table name...';
     END IF;
-    logTableName = tableName || '_4_' || sourceTableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+    logTableName = translationTableName || '_4_' || sourceTableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     IF increment THEN
       -- find an available table name
       WHILE TT_TableExists(schemaName, logTableName) LOOP
         logInc = logInc + 1;
-        logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+        logTableName = translationTableName || '_4_' || sourceTableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
       END LOOP;
     ELSIF TT_TableExists(schemaName, logTableName) THEN
       action = 'Overwriting';
@@ -249,14 +249,15 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_ShowLastLog
 --
 -- schemaName text
--- tableName text
+-- translationTableName text
 --
 -- Return the last log table for the provided translation table.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, int);
 CREATE OR REPLACE FUNCTION TT_ShowLastLog(
   schemaName text,
-  tableName text,
+  translationTableName text,
+  sourceTableName text,
   logNb int DEFAULT NULL
 )
 RETURNS TABLE (logID int, 
@@ -276,7 +277,7 @@ RETURNS TABLE (logID int,
       logInc = logNb;
     END IF;
     suffix = '_log_' || TT_Pad(logInc::text, 3::text, '0');
-    logTableName = tableName || suffix;
+    logTableName = translationTableName || '_4_' || sourceTableName || suffix;
     IF TT_FullTableName(schemaName, logTableName) = 'public.' || suffix THEN
       RAISE NOTICE 'TT_ShowLastLog() ERROR: Invalid translation table name or number (%.%)...', schemaName, logTableName;
       RETURN;
@@ -285,11 +286,11 @@ RETURNS TABLE (logID int,
       -- find the last log table name
       WHILE TT_TableExists(schemaName, logTableName) LOOP
         logInc = logInc + 1;
-        logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+        logTableName = translationTableName || '_4_' || sourceTableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
       END LOOP;
       -- if logInc = 1 means no log table exists
       IF logInc = 1 THEN
-        RAISE NOTICE 'TT_ShowLastLog() ERROR: No translation log to show for translation table ''%.%''...', schemaName, tableName;
+        RAISE NOTICE 'TT_ShowLastLog() ERROR: No translation log to show for translation table ''%.%'' and source table %...', schemaName, translationTableName, sourceTableName;
         RETURN;
       END IF;
       logInc = logInc - 1;
@@ -299,7 +300,7 @@ RETURNS TABLE (logID int,
         RETURN;
       END IF;
     END IF;
-    logTableName = tableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
+    logTableName = translationTableName || '_4_' || sourceTableName || '_log_' || TT_Pad(logInc::text, 3::text, '0');
     RAISE NOTICE 'TT_ShowLastLog(): Displaying log table ''%''', logTableName;
     query = 'SELECT logID, logTime, logEntryType, firstRowId, message, currentRowNb, count FROM ' || 
             TT_FullTableName(schemaName, logTableName) || ' ORDER BY logid;';
@@ -312,21 +313,21 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- TT_DeleteAllLogs
 --
 -- schemaName text
--- tableName text
+-- translationTableName text
 --
 -- Delete all log table associated with the target table.
--- If tableName is NULL, delete all log tables in schema.
+-- If translationTableName is NULL, delete all log tables in schema.
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
 CREATE OR REPLACE FUNCTION TT_DeleteAllLogs(
   schemaName text,
-  tableName text DEFAULT NULL
+  translationTableName text DEFAULT NULL
 )
 RETURNS SETOF text AS $$
   DECLARE
     res RECORD;
   BEGIN
-    IF tableName IS NULL THEN
+    IF translationTableName IS NULL THEN
       FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
                  FROM information_schema.tables 
                  WHERE lower(table_schema) = schemaName AND right(table_name, 8) ~ '_log_[0-9][0-9][0-9]'
@@ -337,7 +338,7 @@ RETURNS SETOF text AS $$
     ELSE
       FOR res IN SELECT 'DROP TABLE IF EXISTS ' || TT_FullTableName(schemaName, table_name) || ';' query
                  FROM information_schema.tables 
-                 WHERE char_length(table_name) > char_length(tableName) AND left(table_name, char_length(tableName)) = tableName
+                 WHERE char_length(table_name) > char_length(translationTableName) AND left(table_name, char_length(translationTableName)) = translationTableName
                  ORDER BY table_name LOOP
         EXECUTE res.query;
         RETURN NEXT res.query;
