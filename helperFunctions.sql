@@ -3776,8 +3776,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- returns max value as int.
 -- e.g. TT_maxInt({1,2,3})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxInt(text);
-CREATE OR REPLACE FUNCTION TT_maxInt(
+-- DROP FUNCTION IF EXISTS TT_MaxInt(text);
+CREATE OR REPLACE FUNCTION TT_MaxInt(
   vals text
 )
 RETURNS int AS $$
@@ -3789,15 +3789,15 @@ RETURNS int AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minInt()
+-- TT_MinInt()
 --
 -- vals text - stringList of values to test
 --
 -- returns min value as int.
 -- e.g. TT_maxInt({1,2,3})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minInt(text);
-CREATE OR REPLACE FUNCTION TT_minInt(
+-- DROP FUNCTION IF EXISTS TT_MinInt(text);
+CREATE OR REPLACE FUNCTION TT_MinInt(
   vals text
 )
 RETURNS int AS $$
@@ -3809,7 +3809,7 @@ RETURNS int AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexCopyText()
+-- TT_MinIndexCopyText()
 --
 -- intList text - stringList of values to test
 -- returnList - stringList from which to select the return value
@@ -3823,8 +3823,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- 
 -- e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexCopyText(text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexCopyText(
+-- DROP FUNCTION IF EXISTS TT_MinIndexCopyText(text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexCopyText(
   intList text,
   returnList text,
   setNullTo text
@@ -3861,16 +3861,16 @@ RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION tt_minIndexCopyText(
+CREATE OR REPLACE FUNCTION TT_MinIndexCopyText(
   intList text,
   returnList text
 )
 RETURNS text AS $$
-  SELECT tt_minIndexCopyText(intList, returnList, null::text)
+  SELECT TT_MinIndexCopyText(intList, returnList, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_maxIndexCopyText()
+-- TT_MaxIndexCopyText()
 --
 -- intList text - stringList of values to test
 -- returnList - stringList from which to select the return value
@@ -3882,10 +3882,10 @@ $$ LANGUAGE sql IMMUTABLE;
 -- when calculating max value.
 -- If multiple occurences of the smallest value, the last index is used.
 -- 
--- e.g. TT_maxIndexCopyText({1,2,3}, {a,b,c})
+-- e.g. TT_MaxIndexCopyText({1,2,3}, {a,b,c})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexCopyText(text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexCopyText(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexCopyText(text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexCopyText(
   intList text,
   returnList text,
   setNullTo text
@@ -3922,15 +3922,15 @@ RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexCopyText(
+CREATE OR REPLACE FUNCTION TT_MaxIndexCopyText(
   intList text,
   returnList text
 )
 RETURNS text AS $$
-  SELECT TT_maxIndexCopyText(intList, returnList, null::text)
+  SELECT TT_MaxIndexCopyText(intList, returnList, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexMapText()
+-- TT_MinIndexMapText()
 --
 -- intList text - stringList of values to test
 -- returnList - stringList from which to select the value to pass to mapText
@@ -3944,10 +3944,10 @@ $$ LANGUAGE sql IMMUTABLE;
 -- when calculating max value.
 -- If multiple occurences of the smallest value, the first index is used.
 -- 
--- e.g. TT_minIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
+-- e.g. TT_MinIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexMapText(text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexMapText(
+-- DROP FUNCTION IF EXISTS TT_MinIndexMapText(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexMapText(
   intList text,
   returnList text,
   mapVals text,
@@ -3966,7 +3966,7 @@ RETURNS text AS $$
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
     -- which is not permitted by TT_ValidateParams.
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_minIndexMapText',
+    PERFORM TT_ValidateParams('TT_MinIndexMapText',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
                                    
@@ -3985,23 +3985,23 @@ RETURNS text AS $$
     -- get matching index from returnList as srcVal
     _srcVal = _returnList[_index];
     
-    RETURN TT_mapText(_srcVal, mapVals, targetVals);
+    RETURN TT_MapText(_srcVal, mapVals, targetVals);
 
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexMapText(
+CREATE OR REPLACE FUNCTION TT_MinIndexMapText(
   intList text,
   returnList text,
   mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_minIndexMapText(intList, returnList, mapVals, targetVals, null::text)
+  SELECT TT_MinIndexMapText(intList, returnList, mapVals, targetVals, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_maxIndexMapText()
+-- TT_MaxIndexMapText()
 --
 -- intList text - stringList of values to test
 -- returnList - stringList from which to select the value to pass to mapText
@@ -4015,10 +4015,10 @@ $$ LANGUAGE sql IMMUTABLE;
 -- when calculating max value.
 -- If multiple occurences of the smallest value, the last index is used.
 -- 
--- e.g. TT_maxIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
+-- e.g. TT_MaxIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexMapText(text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexMapText(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexMapText(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexMapText(
   intList text,
   returnList text,
   mapVals text,
@@ -4037,7 +4037,7 @@ RETURNS text AS $$
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
     -- which is not permitted by TT_ValidateParams.
     -- validate parameters (trigger EXCEPTION)
-    PERFORM TT_ValidateParams('TT_maxIndexMapText',
+    PERFORM TT_ValidateParams('TT_MaxIndexMapText',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
                                    
@@ -4056,17 +4056,17 @@ RETURNS text AS $$
     -- get matching index from returnList as srcVal
     _srcVal = _returnList[_index];
     
-    RETURN TT_mapText(_srcVal, mapVals, targetVals);
+    RETURN TT_MapText(_srcVal, mapVals, targetVals);
 
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexMapText(
+CREATE OR REPLACE FUNCTION TT_MaxIndexMapText(
   intList text,
   returnList text,
   mapVals text,
   targetVals text
 )
 RETURNS text AS $$
-  SELECT TT_maxIndexMapText(intList, returnList, mapVals, targetVals, null::text)
+  SELECT TT_MaxIndexMapText(intList, returnList, mapVals, targetVals, null::text)
 $$ LANGUAGE sql IMMUTABLE;

@@ -222,12 +222,12 @@ WITH test_nb AS (
     SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
     SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4         UNION ALL
     SELECT 'TT_XMinusYInt'::text,            129,          3         UNION ALL
-    SELECT 'TT_minInt'::text,                130,          3         UNION ALL
-    SELECT 'TT_maxInt'::text,                131,          3         UNION ALL
-    SELECT 'TT_minIndexCopyText'::text,      132,          6         UNION ALL
-    SELECT 'TT_maxIndexCopyText'::text,      133,          6         UNION ALL
-    SELECT 'TT_minIndexMapText'::text,       134,          8         UNION ALL
-    SELECT 'TT_maxIndexMapText'::text,       135,          8 
+    SELECT 'TT_MinInt'::text,                130,          3         UNION ALL
+    SELECT 'TT_MaxInt'::text,                131,          3         UNION ALL
+    SELECT 'TT_MinIndexCopyText'::text,      132,          6         UNION ALL
+    SELECT 'TT_MaxIndexCopyText'::text,      133,          6         UNION ALL
+    SELECT 'TT_MinIndexMapText'::text,       134,          8         UNION ALL
+    SELECT 'TT_MaxIndexMapText'::text,       135,          8 
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2696,185 +2696,185 @@ SELECT '129.3'::text number,
        'Test null'::text description,
        TT_XMinusYInt(5::text, NULL::text) IS NULL passed
 ---------------------------------------------------------
--- Test 130 - TT_minInt
+-- Test 130 - TT_MinInt
 ---------------------------------------------------------
 UNION ALL
 SELECT '130.1'::text number,
-       'TT_minInt'::text function_tested,
+       'TT_MinInt'::text function_tested,
        'Simple test'::text description,
        TT_minInt('{1,2,3}') = 1 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '130.2'::text number,
-       'TT_minInt'::text function_tested,
+       'TT_MinInt'::text function_tested,
        'Simple test with null'::text description,
        TT_minInt('{null,2}') = 2 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '130.3'::text number,
-       'TT_minInt'::text function_tested,
+       'TT_MinInt'::text function_tested,
        'All nulls'::text description,
        TT_minInt('{null,null}') IS NULL passed
 ---------------------------------------------------------
--- Test 131 - TT_maxInt
+-- Test 131 - TT_MaxInt
 ---------------------------------------------------------
 UNION ALL
 SELECT '131.1'::text number,
-       'TT_maxInt'::text function_tested,
+       'TT_MaxInt'::text function_tested,
        'Simple test'::text description,
-       TT_maxInt('{1,2,3}') = 3 passed
+       TT_MaxInt('{1,2,3}') = 3 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '131.2'::text number,
-       'TT_maxInt'::text function_tested,
+       'TT_MaxInt'::text function_tested,
        'Simple test with null'::text description,
-       TT_maxInt('{null,2}') = 2 passed
+       TT_MaxInt('{null,2}') = 2 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '131.3'::text number,
-       'TT_maxInt'::text function_tested,
+       'TT_MaxInt'::text function_tested,
        'All nulls'::text description,
-       TT_maxInt('{null,null}') IS NULL passed
+       TT_MaxInt('{null,null}') IS NULL passed
 ---------------------------------------------------------
--- Test 132 - TT_minIndexCopyText
+-- Test 132 - TT_MinIndexCopyText
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.1'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Simple test'::text description,
-       tt_minIndexCopyText('{1,2,3}', '{a,b,c}') = 'a' passed
+       TT_MinIndexCopyText('{1,2,3}', '{a,b,c}') = 'a' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.2'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Simple test 2'::text description,
-       tt_minIndexCopyText('{1,2,3,0}', '{a,b,c,d}') = 'd' passed
+       TT_MinIndexCopyText('{1,2,3,0}', '{a,b,c,d}') = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.3'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Test negative int'::text description,
-       tt_minIndexCopyText('{1,2,3,-1}', '{a,b,c,d}') = 'd' passed
+       TT_MinIndexCopyText('{1,2,3,-1}', '{a,b,c,d}') = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.4'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Test null'::text description,
-       tt_minIndexCopyText('{1,2,3,null}', '{a,b,c,d}') = 'a' passed
+       TT_MinIndexCopyText('{1,2,3,null}', '{a,b,c,d}') = 'a' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.5'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Test setNullTo'::text description,
-       tt_minIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '0') = 'd' passed
+       TT_MinIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '0') = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.6'::text number,
-       'TT_minIndexCopyText'::text function_tested,
+       'TT_MinIndexCopyText'::text function_tested,
        'Test multiple indexes'::text description,
-       tt_minIndexCopyText('{1,1,3}', '{a,b,c}') = 'a' passed
+       TT_MinIndexCopyText('{1,1,3}', '{a,b,c}') = 'a' passed
 ---------------------------------------------------------
--- Test 133 - TT_maxIndexCopyText
+-- Test 133 - TT_MaxIndexCopyText
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.1'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Simple test'::text description,
-       tt_maxIndexCopyText('{1,2,3}', '{a,b,c}') = 'c' passed
+       TT_MaxIndexCopyText('{1,2,3}', '{a,b,c}') = 'c' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.2'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Simple test 2'::text description,
-       tt_maxIndexCopyText('{4,1,2,3}', '{a,b,c,d}') = 'a' passed
+       TT_MaxIndexCopyText('{4,1,2,3}', '{a,b,c,d}') = 'a' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.3'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Test negative int'::text description,
-       tt_maxIndexCopyText('{1,2,3,-1}', '{a,b,c,d}') = 'c' passed
+       TT_MaxIndexCopyText('{1,2,3,-1}', '{a,b,c,d}') = 'c' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.4'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Test null'::text description,
-       tt_maxIndexCopyText('{1,2,3,null}', '{a,b,c,d}') = 'c' passed
+       TT_MaxIndexCopyText('{1,2,3,null}', '{a,b,c,d}') = 'c' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.5'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Test setNullTo'::text description,
-       tt_maxIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '4') = 'd' passed
+       TT_MaxIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '4') = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.6'::text number,
-       'TT_maxIndexCopyText'::text function_tested,
+       'TT_MaxIndexCopyText'::text function_tested,
        'Test multiple indexes'::text description,
-       tt_maxIndexCopyText('{1,3,3}', '{a,b,c}') = 'c' passed
+       TT_MaxIndexCopyText('{1,3,3}', '{a,b,c}') = 'c' passed
 ---------------------------------------------------------
--- Test 134 - TT_minIndexMapText
+-- Test 134 - TT_MinIndexMapText
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(134, 'TT_minIndexMapText', 
+SELECT (TT_TestNullAndWrongTypeParams(134, 'TT_MinIndexMapText', 
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'stringlist'])).*
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.5'::text number,
-       'TT_minIndexMapText'::text function_tested,
+       'TT_MinIndexMapText'::text function_tested,
        'Simple test'::text description,
-       TT_minIndexMapText('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
+       TT_MinIndexMapText('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.6'::text number,
-       'TT_minIndexMapText'::text function_tested,
+       'TT_MinIndexMapText'::text function_tested,
        'Matching indexes'::text description,
-       TT_minIndexMapText('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
+       TT_MinIndexMapText('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.7'::text number,
-       'TT_minIndexMapText'::text function_tested,
+       'TT_MinIndexMapText'::text function_tested,
        'null integer'::text description,
-       TT_minIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
+       TT_MinIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.8'::text number,
-       'TT_minIndexMapText'::text function_tested,
+       'TT_MinIndexMapText'::text function_tested,
        'setNullTo'::text description,
-       TT_minIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
+       TT_MinIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
 ---------------------------------------------------------
--- Test 135 - TT_maxIndexMapText
+-- Test 135 - TT_MaxIndexMapText
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(135, 'TT_maxIndexMapText', 
+SELECT (TT_TestNullAndWrongTypeParams(135, 'TT_MaxIndexMapText', 
                                       ARRAY['mapVals', 'stringlist',
                                             'targetVals', 'stringlist'])).*
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.5'::text number,
-       'TT_maxIndexMapText'::text function_tested,
+       'TT_MaxIndexMapText'::text function_tested,
        'Simple test'::text description,
-       TT_maxIndexMapText('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
+       TT_MaxIndexMapText('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.6'::text number,
-       'TT_maxIndexMapText'::text function_tested,
+       'TT_MaxIndexMapText'::text function_tested,
        'Matching indexes'::text description,
-       TT_maxIndexMapText('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
+       TT_MaxIndexMapText('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.7'::text number,
-       'TT_maxIndexMapText'::text function_tested,
+       'TT_MaxIndexMapText'::text function_tested,
        'null integer'::text description,
-       TT_maxIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
+       TT_MaxIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.8'::text number,
-       'TT_maxIndexMapText'::text function_tested,
+       'TT_MaxIndexMapText'::text function_tested,
        'setNullTo'::text description,
-       TT_maxIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
+       TT_MaxIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
 ---------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
