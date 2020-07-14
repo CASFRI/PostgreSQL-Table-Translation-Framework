@@ -653,7 +653,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * If multiple occurences of the lowest value, the **first** index is used.
     * e.g. minIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
 
-* **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+* **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to mapText. Runs mapText using the mapVals and targetVals.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
     * If multiple occurences of the highest value, the **last** index is used.
