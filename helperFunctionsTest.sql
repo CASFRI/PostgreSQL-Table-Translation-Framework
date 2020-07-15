@@ -2815,11 +2815,29 @@ SELECT '133.6'::text number,
 -- Test 134 - TT_MinIndexMapText
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(134, 'TT_MinIndexMapText', 
-                                      ARRAY['mapVals', 'stringlist',
-                                            'targetVals', 'stringlist'])).*
+SELECT '134.1'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Test for null mapVals'::text description,
+       TT_IsError('SELECT TT_MinIndexMapText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''{BU, WT}'')') = 'ERROR in TT_minIndexMapText(): mapVals is NULL' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '134.2'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Test for null targetVals'::text description,
+       TT_IsError('SELECT TT_MinIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}'', NULL::text)') = 'ERROR in TT_minIndexMapText(): targetVals is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '134.3'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Test for invalid mapVals'::text description,
+       TT_IsError('SELECT TT_MinIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}}}'', ''{BU, WT}'')') = 'ERROR in TT_minIndexMapText(): mapVals is not a stringlist value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '134.4'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Test for invalid targetVals'::text description,
+       TT_IsError('SELECT TT_MinIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}'', ''{BU, WT}}}'')') = 'ERROR in TT_minIndexMapText(): targetVals is not a stringlist value' passed
+------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '134.5'::text number,
        'TT_MinIndexMapText'::text function_tested,
@@ -2847,11 +2865,29 @@ SELECT '134.8'::text number,
 -- Test 135 - TT_MaxIndexMapText
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (4 tests)
-SELECT (TT_TestNullAndWrongTypeParams(135, 'TT_MaxIndexMapText', 
-                                      ARRAY['mapVals', 'stringlist',
-                                            'targetVals', 'stringlist'])).*
+SELECT '135.1'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Test for null mapVals'::text description,
+       TT_IsError('SELECT TT_MaxIndexMapText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''{BU, WT}'')') = 'ERROR in TT_maxIndexMapText(): mapVals is NULL' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '135.2'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Test for null targetVals'::text description,
+       TT_IsError('SELECT TT_MaxIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}'', NULL::text)') = 'ERROR in TT_maxIndexMapText(): targetVals is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '135.3'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Test for invalid mapVals'::text description,
+       TT_IsError('SELECT TT_MaxIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}}}'', ''{BU, WT}'')') = 'ERROR in TT_maxIndexMapText(): mapVals is not a stringlist value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '135.4'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Test for invalid targetVals'::text description,
+       TT_IsError('SELECT TT_MaxIndexMapText(''{1990, 2000}'', ''{burn, wind}'', ''{burn, wind}'', ''{BU, WT}}}'')') = 'ERROR in TT_maxIndexMapText(): targetVals is not a stringlist value' passed
+------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '135.5'::text number,
        'TT_MaxIndexMapText'::text function_tested,
