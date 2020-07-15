@@ -210,7 +210,7 @@ WITH test_nb AS (
     SELECT 'TT_LookupText'::text,            104,         17         UNION ALL
     SELECT 'TT_LookupDouble'::text,          105,         14         UNION ALL
     SELECT 'TT_LookupInt'::text,             106,         14         UNION ALL
-    SELECT 'TT_MapText'::text,               107,         18         UNION ALL
+    SELECT 'TT_MapText'::text,               107,         19         UNION ALL
     SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
     SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
@@ -2087,7 +2087,7 @@ UNION ALL
 SELECT '107.12'::text number,
        'TT_MapText'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapText(NULL::text, ''{''A'',''B'',''C'',''D''}''::text, ''{''a'',''b'',''c'',''d''}''::text);') != 'FALSE' passed
+       TT_MapText(NULL::text, '{''A'',''B'',''C'',''D''}'::text, '{''a'',''b'',''c''}'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '107.13'::text number,
@@ -2125,6 +2125,12 @@ SELECT '107.18'::text number,
        'Test string with space and no brackets, removSpaces true'::text description,
        TT_MapText(' a'::text, '{''a'',''B'',''C'',''D''}'::text, '{''aa'',''bb'',''cc'',''dd''}'::text) = 'aa' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '107.19'::text number,
+       'TT_MapText'::text function_tested,
+       'Test different number of mapping values'::text description,
+       TT_IsError('SELECT TT_MapText(''A''::text, ''{''''A'''',''''B'''',''''C'''',''''D''''}''::text, ''{''''a'''',''''b'''',''''c''''}''::text);') = 'ERROR in TT_MapText(): number of mapVals values (4) is different from number of targetVals values (3)...' passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 108 - TT_MapDouble
 ---------------------------------------------------------
@@ -2158,7 +2164,7 @@ UNION ALL
 SELECT '108.12'::text number,
        'TT_MapDouble'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapDouble(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''1.1'',''2.2'',''3.3'',''4.4''}''::text);') != 'FALSE' passed
+       TT_MapDouble(NULL::text, '{''1'',''2'',''3'',''4''}'::text, '{''1.1'',''2.2'',''3.3'',''4.4''}'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '108.13'::text number,
@@ -2217,7 +2223,7 @@ UNION ALL
 SELECT '109.12'::text number,
        'TT_MapInt'::text function_tested,
        'Test Null val'::text description,
-       TT_IsError('SELECT TT_MapInt(NULL::text, ''{''1'',''2'',''3'',''4''}''::text, ''{''5'',''6'',''7'',''8''}''::text);') != 'FALSE' passed
+       TT_MapInt(NULL::text, '{''1'', ''2'', ''3'', ''4''}'::text, '{''5'', ''6'', ''7'', ''8''}'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '109.13'::text number,
@@ -2317,7 +2323,7 @@ UNION ALL
 SELECT '110.15'::text number,
        'TT_Pad'::text function_tested,
        'Test error, pad_char > 1'::text description,
-       TT_IsError('SELECT TT_Pad(1::text, 10::text, ''22''::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_Pad(1::text, 10::text, ''22''::text);') = 'ERROR in TT_Pad(): padChar is not a char value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '110.16'::text number,
@@ -2350,7 +2356,7 @@ UNION ALL
 SELECT '111.3'::text number,
        'TT_Concat'::text function_tested,
        'Sep is null'::text description,
-       TT_IsError('SELECT TT_Concat(''{''''cas'''', ''''id'''', ''''test''''}''::text, NULL::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_Concat(''{''''cas'''', ''''id'''', ''''test''''}''::text, NULL::text);') = 'ERROR in TT_Concat(): sep is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '111.4'::text number,
@@ -2392,19 +2398,19 @@ UNION ALL
 SELECT '112.12'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty length'::text description,
-       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'','''',''10'',''7''}'', ''{''x'',''x'',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''''ab06'''', '''''''', ''''81145'''', ''''811451038'''', ''''1''''}'', ''{''''4'''',''''15'''','''''''',''''10'''',''''7''''}'', ''{''''x'''',''''x'''',''''x'''',''''0'''',''''0''''}''::text, ''-''::text, FALSE::text);') = 'ERROR in TT_PadConcat(): length is not a intlist value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '112.13'::text number,
        'TT_PadConcat'::text function_tested,
        'Empty pad'::text description,
-       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038'', ''1''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''''ab06'''', '''''''', ''''81145'''', ''''811451038'''', ''''1''''}'', ''{''''4'''',''''15'''',''''10'''',''''10'''',''''7''''}'', ''{''''x'''','''''''',''''x'''',''''0'''',''''0''''}''::text, ''-''::text, FALSE::text);') = 'ERROR in TT_PadConcat(): pad is not a charlist value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '112.14'::text number,
        'TT_PadConcat'::text function_tested,
        'Uneven val, length, pad strings'::text description,
-       TT_IsError('SELECT TT_PadConcat(''{''ab06'', '''', ''81145'', ''811451038''}'', ''{''4'',''15'',''10'',''10'',''7''}'', ''{''x'','''',''x'',''0'',''0''}''::text, ''-''::text, FALSE::text);') != 'FALSE' passed
+       TT_IsError('SELECT TT_PadConcat(''{''''ab06'''', '''''''', ''''81145'''', ''''811451038''''}'', ''{''''4'''',''''15'''',''''10'''',''''10'''',''''7''''}'', ''{''''x'''','''''''',''''x'''',''''0'''',''''0''''}''::text, ''-''::text, FALSE::text);') = 'ERROR in TT_PadConcat(): pad is not a charlist value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '112.15'::text number,
@@ -2540,7 +2546,7 @@ UNION ALL
 SELECT '123.8'::text number,
        'TT_SubstringText'::text function_tested,
        'NULL value'::text description,
-       TT_IsError('TT_SubstringText(NULL::text, NULL::text, NULL::text)') != 'FALSE' passed  
+       TT_IsError('SELECT TT_SubstringText(NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_SubstringText(): startChar is NULL' passed  
 ---------------------------------------------------------
 UNION ALL
 SELECT '123.9'::text number,
@@ -2567,7 +2573,7 @@ UNION ALL
 SELECT '124.2'::text number,
        'TT_SubstringInt'::text function_tested,
        'NULL value'::text description,
-       TT_IsError('TT_SubstringInt(NULL::text, NULL::text, NULL::text)') != 'FALSE' passed  
+       TT_IsError('SELECT TT_SubstringInt(NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_SubstringText(): startChar is NULL' passed  
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 125 - TT_MapSubstringText
