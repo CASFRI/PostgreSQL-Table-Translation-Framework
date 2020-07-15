@@ -658,6 +658,24 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
     * If multiple occurences of the highest value, the **last** index is used.
     * e.g. maxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
+    
+* **minIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the lowest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If multiple occurences of the lowest value, the **first** index is used.
+    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val** and setNullTo to **NULL**.
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, source_col, target_col, NULL::text)
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col, NULL::text)
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col)
+
+* **maxIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\])
+    * Passes value from returnList matching the index of the highest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value.
+    * If multiple occurences of the highest value, the **last** index is used.
+    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val** and setNullTo to **NULL**.
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, source_col, target_col, NULL::text)
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col, NULL::text)
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col)
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
