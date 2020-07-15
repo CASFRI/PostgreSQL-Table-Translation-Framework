@@ -3838,10 +3838,8 @@ RETURNS text AS $$
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams.
-    -- Validate parameters (trigger EXCEPTION)
-    --PERFORM TT_ValidateParams('tt_minIndexCopyText',
-    --                          ARRAY['setNullTo', setNullTo, 'int']);
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
                                    
     _intList = TT_ParseStringList(intList, TRUE)::int[];
     _returnList = TT_ParseStringList(returnList, TRUE);
@@ -3899,10 +3897,8 @@ RETURNS text AS $$
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams.
-    -- Validate parameters (trigger EXCEPTION)
-    --PERFORM TT_ValidateParams('tt_minIndexCopyText',
-    --                          ARRAY['setNullTo', setNullTo, 'int']);
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
                                    
     _intList = TT_ParseStringList(intList, TRUE)::int[];
     _returnList = TT_ParseStringList(returnList, TRUE);
@@ -3964,8 +3960,8 @@ RETURNS text AS $$
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams.
-    -- validate parameters (trigger EXCEPTION)
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
     PERFORM TT_ValidateParams('TT_MinIndexMapText',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
@@ -4035,8 +4031,8 @@ RETURNS text AS $$
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams.
-    -- validate parameters (trigger EXCEPTION)
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
     PERFORM TT_ValidateParams('TT_MaxIndexMapText',
                               ARRAY['mapVals', mapVals, 'stringlist',
                                     'targetVals', targetVals, 'stringlist']);
@@ -4069,4 +4065,182 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexMapText(
 )
 RETURNS text AS $$
   SELECT TT_MaxIndexMapText(intList, returnList, mapVals, targetVals, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_MinIndexLookupText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the value to pass to mapText
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupCol text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- passes value from returnList matching the index of the smallest
+-- value in intList to lookupText. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating max value.
+-- If multiple occurences of the smallest value, the first index is used.
+-- 
+-- e.g. TT_MinIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  retrieveCol text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+    _srcVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
+    PERFORM TT_ValidateParams('TT_MinIndexLookupText',
+                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                'lookupTableName', lookupTableName, 'name',
+                                'lookupCol', lookupCol, 'name',
+                                'retrieveCol', retrieveCol, 'name']);
+
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    
+    -- get matching index from returnList as srcVal
+    _srcVal = _returnList[_index];
+    
+    RETURN TT_LookupText(_srcVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text,
+  setNullTo text
+)
+RETURNS text AS $$
+  SELECT TT_MinIndexLookupText(intList, returnList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS text AS $$
+  SELECT TT_MinIndexLookupText(intList, returnList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, NULL::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_MaxIndexLookupText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the value to pass to mapText
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupCol text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+--
+-- passes value from returnList matching the index of the largest
+-- value in intList to lookupText. If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating max value.
+-- If multiple occurences of the smallest value, the last index is used.
+-- 
+-- e.g. TT_MaxIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  retrieveCol text,
+  setNullTo text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList int[];
+    _returnList text[];
+    _setNullTo int;
+    _index int;
+    _srcVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
+    PERFORM TT_ValidateParams('TT_MaxIndexLookupText',
+                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                'lookupTableName', lookupTableName, 'name',
+                                'lookupCol', lookupCol, 'name',
+                                'retrieveCol', retrieveCol, 'name']);
+                                   
+    _intList = TT_ParseStringList(intList, TRUE)::int[];
+    _returnList = TT_ParseStringList(returnList, TRUE);
+    
+    -- if setNullTo is provided, replace any nulls with it
+    IF setNullTo IS NOT NULL THEN
+      _setNullTo = setNullTo::int;
+      _intList = array_replace(_intList, null, _setNullTo);
+    END IF;
+    
+    -- get index of min value
+    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    
+    -- get matching index from returnList as srcVal
+    _srcVal = _returnList[_index];
+    
+    RETURN TT_LookupText(_srcVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text,
+  setNullTo text
+)
+RETURNS text AS $$
+  SELECT TT_MaxIndexLookupText(intList, returnList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
+  intList text,
+  returnList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS text AS $$
+  SELECT TT_MaxIndexLookupText(intList, returnList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text)
 $$ LANGUAGE sql IMMUTABLE;

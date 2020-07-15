@@ -83,8 +83,8 @@ DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasLength(text, text, text);
 DROP FUNCTION IF EXISTS TT_HasLength(text, text);
-DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text, text);
-DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_maxIndexNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_minIndexNotNull(text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
@@ -159,6 +159,12 @@ DROP FUNCTION IF EXISTS TT_MinIndexCopyText(text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexCopyText(text, text, text);
 DROP FUNCTION IF EXISTS TT_MinIndexMapText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexMapText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
