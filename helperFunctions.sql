@@ -2452,15 +2452,16 @@ RETURNS text AS $$
     ELSE
       _val = array_to_string(_vals, '');
     END IF;
+   
+    -- prepare _mapVals so we can compare its length with _targetVals right away
+    _mapVals = TT_ParseStringList(CASE WHEN _ignoreCase THEN upper(mapVals) ELSE mapVals END, TRUE);
+
+    IF cardinality(_mapVals) != cardinality(_targetVals) THEN
+      RAISE EXCEPTION 'ERROR in TT_MapText(): number of mapVals values (%) is different from number of targetVals values (%)...', cardinality(_mapVals), cardinality(_targetVals);
+    END IF;
 
     -- process
-    IF _ignoreCase = FALSE THEN
-      _mapVals = TT_ParseStringList(mapVals, TRUE);
-      RETURN (_targetVals)[array_position(_mapVals, _val)];
-    ELSE
-      _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      RETURN (_targetVals)[array_position(_mapVals, upper(_val))];
-    END IF;
+    RETURN (_targetVals)[array_position(_mapVals, CASE WHEN _ignoreCase THEN upper(_val) ELSE _val END)];
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
