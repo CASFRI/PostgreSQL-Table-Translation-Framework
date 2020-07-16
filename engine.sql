@@ -253,7 +253,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Return the last log table for the provided translation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, int);
+--DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, text, int);
 CREATE OR REPLACE FUNCTION TT_ShowLastLog(
   schemaName text,
   translationTableName text,
