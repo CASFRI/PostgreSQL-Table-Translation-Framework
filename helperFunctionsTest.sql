@@ -203,6 +203,7 @@ WITH test_nb AS (
     SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
     SELECT 'TT_minIndexNotNull'::text,        24,          6         UNION ALL
     SELECT 'TT_maxIndexNotNull'::text,        25,          6         UNION ALL
+    SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -235,7 +236,9 @@ WITH test_nb AS (
     SELECT 'TT_MinIndexMapText'::text,       134,          8         UNION ALL
     SELECT 'TT_MaxIndexMapText'::text,       135,          8         UNION ALL
     SELECT 'TT_MinIndexLookupText'::text,    136,         12         UNION ALL
-    SELECT 'TT_MaxIndexLookupText'::text,    137,         12
+    SELECT 'TT_MaxIndexLookupText'::text,    137,         12         UNION ALL
+    SELECT 'TT_XMinusYDouble'::text,         138,          3         
+
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1856,6 +1859,75 @@ SELECT '25.6'::text number,
        'Test all null ints'::text description,
        TT_maxIndexNotNull('{null, null}', '{burn, null}') IS FALSE passed
 ---------------------------------------------------------
+-- Test 26 - TT_IsXMinusYBetween
+---------------------------------------------------------
+UNION ALL
+SELECT '26.1'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'Passes basic test'::text description,
+       TT_IsXMinusYBetween('2005', '5', '1999', '2000') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.2'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'Passes basic test, include false'::text description,
+       TT_IsXMinusYBetween('2005', '5', '1999', '2000', 'FALSE', 'FALSE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.3'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'Fails basic test'::text description,
+       TT_IsXMinusYBetween('2005', '6', '1999', '2000') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.4'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'min is null'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', NULL::text, ''2000'')') = 'ERROR in TT_IsXMinusYBetween(): min is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.5'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'max is null'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', NULL::text)') = 'ERROR in TT_IsXMinusYBetween(): max is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.6'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'includeMin is null'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''2000'', NULL::text, ''FALSE'')') = 'ERROR in TT_IsXMinusYBetween(): includeMin is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.7'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'includeMax is null'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''2000'', ''FALSE'', NULL::text)') = 'ERROR in TT_IsXMinusYBetween(): includeMax is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.8'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'min is wrong type'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''x'', ''2000'')') = 'ERROR in TT_IsXMinusYBetween(): min is not a numeric value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.9'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'max is wrong type'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''x'')') = 'ERROR in TT_IsXMinusYBetween(): max is not a numeric value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.10'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'includeMin is wrong type'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''2000'', ''x'', ''FALSE'')') = 'ERROR in TT_IsXMinusYBetween(): includeMin is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '26.11'::text number,
+       'TT_IsXMinusYBetween'::text function_tested,
+       'includeMax is wrong type'::text description,
+       TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''2000'', ''FALSE'', ''x'')') = 'ERROR in TT_IsXMinusYBetween(): includeMax is not a boolean value' passed
+
+---------------------------------------------------------
   
 ---------------------------------------------------------
 --------------- Translation functions -------------------
@@ -3073,7 +3145,28 @@ SELECT '137.12'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'setNullTo'::text description,
        TT_MaxIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '9999') = 'BU' passed
+---------------------------------------------------------
+-- Test 138 - TT_XMinusYDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '138.1'::text number,
+       'TT_XMinusYDouble'::text function_tested,
+       'Simple test'::text description,
+       TT_XMinusYDouble(5.5::text, 3.3::text) = 2.2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '138.2'::text number,
+       'TT_XMinusYDouble'::text function_tested,
+       'Simple test with 0'::text description,
+       TT_XMinusYDouble(5.5::text, 0::text) = 5.5 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '138.3'::text number,
+       'TT_XMinusYDouble'::text function_tested,
+       'Test null'::text description,
+       TT_XMinusYDouble(5.5::text, NULL::text) IS NULL passed
 
+  
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

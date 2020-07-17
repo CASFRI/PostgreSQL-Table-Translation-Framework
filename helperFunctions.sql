@@ -48,10 +48,11 @@ RETURNS text AS $$
                   WHEN rule = 'true'               THEN '-8887'
                   WHEN rule = 'hascountofnotnull'  THEN '-9997'
                   WHEN rule = 'isintsubstring'     THEN '-9997'
-                  WHEN rule = 'isbetweensubstring' THEN '-9997'
+                  WHEN rule = 'isbetweensubstring' THEN '-9999'
                   WHEN rule = 'matchlistsubstring' THEN '-9998'
                   WHEN rule = 'minIndexNotNull'    THEN '-8888'
                   WHEN rule = 'maxIndexNotNull'    THEN '-8888'
+                  WHEN rule = 'isxminusybetween'   THEN '-9999'
                   WHEN rule = 'geoisvalid'         THEN '-7779'
                   WHEN rule = 'geointersects'      THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -76,8 +77,9 @@ RETURNS text AS $$
                   WHEN rule = 'isintsubstring'     THEN NULL
                   WHEN rule = 'isbetweensubstring' THEN NULL
                   WHEN rule = 'matchlistsubstring' THEN NULL
-                  WHEN rule = 'minIndexNotNull'    THEN NULL
-                  WHEN rule = 'maxIndexNotNull'    THEN NULL
+                  WHEN rule = 'minindexnotnull'    THEN NULL
+                  WHEN rule = 'maxindexnotnull'    THEN NULL
+                  WHEN rule = 'isxminusybetween'   THEN NULL
                   WHEN rule = 'geoisvalid'         THEN NULL
                   WHEN rule = 'geointersects'      THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -101,10 +103,11 @@ RETURNS text AS $$
                   WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
                   WHEN rule = 'hascountofnotnull'  THEN 'INVALID_VALUE'
                   WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
-                  WHEN rule = 'isbetweensubstring' THEN 'INVALID_VALUE'
+                  WHEN rule = 'isbetweensubstring' THEN 'OUT_OF_RANGE'
                   WHEN rule = 'matchlistsubstring' THEN 'NOT_IN_SET'
                   WHEN rule = 'minIndexNotNull'    THEN 'NULL_VALUE'
                   WHEN rule = 'maxIndexNotNull'    THEN 'NULL_VALUE'
+                  WHEN rule = 'isxminusybetween'   THEN 'OUT_OF_RANGE'
                   WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -2073,6 +2076,83 @@ CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
 RETURNS boolean AS $$
   SELECT TT_maxIndexNotNull(intList, testList, null::text)
 $$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_IsXMinusYBetween(text, text, text, text, text, text, text, text, text)
+--
+-- x - input x numeric
+-- y - input y numeric
+-- for_length text - length of substring to take
+-- min text - lower between bound
+-- max text - upper between bound
+-- includeMin text - boolean for including lower bound
+-- includeMax text - boolean for including upper bound
+-- removeSpaces - default FALSE - remove spaces before doing substring
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+--
+-- Calculate x minus y using tt_xminusydouble and test with TT_IsBetween()
+-- e.g. TT_IsXMinusYBetween(2001, 1, 1900, 2100, TRUE, TRUE)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsXMinusYBetween(
+  x text,
+  y text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _xMinusY text;
+    _acceptNull boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_IsXMinusYBetween',
+                              ARRAY['min', min, 'numeric',
+                                    'max', max, 'numeric',
+                                    'includeMin', includeMin, 'boolean',
+                                    'includeMax', includeMax, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean']);
+    _acceptNull = acceptNull::boolean;
+    _XMinusY = (x::double precision - y::double precision)::double precision::text;
+    
+    -- validate source value (return FALSE)
+    IF _XMinusY IS NULL THEN
+      IF _acceptNull THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+
+    -- process
+    RETURN TT_IsBetween(_XMinusY, min, max, includeMin, includeMax);
+    
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_IsXMinusYBetween(
+  x text,
+  y text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsXMinusYBetween(x, y, min, max, includeMin, includeMax, FALSE::text);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_IsXMinusYBetween(
+  x text,
+  y text,
+  min text,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsXMinusYBetween(x, y, min, max, TRUE::text, TRUE::text, FALSE::text);
+$$ LANGUAGE sql IMMUTABLE;
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -3767,6 +3847,24 @@ CREATE OR REPLACE FUNCTION TT_XMinusYInt(
 )
 RETURNS int AS $$
   SELECT (x::double precision - y::double precision)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_XMinusYDouble()
+--
+-- x text - first value
+-- y text - second value
+--
+-- calculates x - y and returns double.
+-- e.g. TT_xMinusYDouble('2', '1')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_XMinusYDouble(text, text);
+CREATE OR REPLACE FUNCTION TT_XMinusYDouble(
+  x text,
+  y text
+)
+RETURNS double precision AS $$
+  SELECT (x::double precision - y::double precision)::double precision
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
