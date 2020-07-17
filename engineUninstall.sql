@@ -43,7 +43,7 @@ DROP FUNCTION IF EXISTS TT_IsSingleQuoted(text);
 DROP FUNCTION IF EXISTS TT_UnsingleQuote(text);
 DROP FUNCTION IF EXISTS TT_TableExists(text, text);
 DROP FUNCTION IF EXISTS TT_LogInit(text, text, text, boolean, text);
-DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, int);
+DROP FUNCTION IF EXISTS TT_ShowLastLog(text, text, text, int);
 DROP FUNCTION IF EXISTS TT_DeleteAllLogs(text, text);
 DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
 DROP FUNCTION IF EXISTS TT_TextFctQuery(text, text[], jsonb, boolean, boolean);
