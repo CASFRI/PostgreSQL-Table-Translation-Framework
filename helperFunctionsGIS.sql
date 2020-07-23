@@ -447,7 +447,9 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- the_geom text - the geometry
 --
--- Calculates area of geometry in km2
+-- Calculates area of geometry in ha. 
+-- st_area calculates area in units of the projection, which for Canada equal
+-- Albers if metres. Divide by 10,000 to get ha.
 --
 -- e.g. TT_GeoArea(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'))
 ------------------------------------------------------------
