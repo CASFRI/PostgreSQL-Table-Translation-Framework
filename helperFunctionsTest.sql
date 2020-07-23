@@ -201,8 +201,8 @@ WITH test_nb AS (
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
     SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
-    SELECT 'TT_minIndexNotNull'::text,        24,          6         UNION ALL
-    SELECT 'TT_maxIndexNotNull'::text,        25,          6         UNION ALL
+    SELECT 'TT_minIndexNotNull'::text,        24,          7         UNION ALL
+    SELECT 'TT_maxIndexNotNull'::text,        25,          7         UNION ALL
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -231,13 +231,15 @@ WITH test_nb AS (
     SELECT 'TT_XMinusYInt'::text,            129,          3         UNION ALL
     SELECT 'TT_MinInt'::text,                130,          3         UNION ALL
     SELECT 'TT_MaxInt'::text,                131,          3         UNION ALL
-    SELECT 'TT_MinIndexCopyText'::text,      132,          6         UNION ALL
-    SELECT 'TT_MaxIndexCopyText'::text,      133,          6         UNION ALL
-    SELECT 'TT_MinIndexMapText'::text,       134,          8         UNION ALL
-    SELECT 'TT_MaxIndexMapText'::text,       135,          8         UNION ALL
-    SELECT 'TT_MinIndexLookupText'::text,    136,         12         UNION ALL
-    SELECT 'TT_MaxIndexLookupText'::text,    137,         12         UNION ALL
-    SELECT 'TT_XMinusYDouble'::text,         138,          3         
+    SELECT 'TT_MinIndexCopyText'::text,      132,          8         UNION ALL
+    SELECT 'TT_MaxIndexCopyText'::text,      133,          8         UNION ALL
+    SELECT 'TT_MinIndexMapText'::text,       134,         10         UNION ALL
+    SELECT 'TT_MaxIndexMapText'::text,       135,         10         UNION ALL
+    SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
+    SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
+    SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
+    SELECT 'TT_DivideDouble'::text,          139,          4         UNION ALL
+    SELECT 'TT_DivideInt'::text,             140,          2
 
 ),
 test_series AS (
@@ -1800,8 +1802,8 @@ SELECT '24.2'::text number,
 UNION ALL
 SELECT '24.3'::text number,
        'TT_minIndexNotNull'::text function_tested,
-       'Matching ints return first index'::text description,
-       TT_minIndexNotNull('{1990, 1990}', '{null, wind}') IS FALSE passed
+       'Matching ints return first not null index'::text description,
+       TT_minIndexNotNull('{1990, 1990}', '{null, wind}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.4'::text number,
@@ -1818,8 +1820,14 @@ SELECT '24.5'::text number,
 UNION ALL
 SELECT '24.6'::text number,
        'TT_minIndexNotNull'::text function_tested,
-       'Test all null ints'::text description,
-       TT_minIndexNotNull('{null, null}', '{null, wind}') IS FALSE passed
+       'Test all null ints, should return first not null return value'::text description,
+       TT_minIndexNotNull('{null, null}', '{null, wind}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '24.7'::text number,
+       'TT_minIndexNotNull'::text function_tested,
+       'Test matching years with null returns'::text description,
+       TT_minIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
 ---------------------------------------------------------
 -- Test 25 - TT_minIndexNotNull
 ---------------------------------------------------------
@@ -1838,8 +1846,8 @@ SELECT '25.2'::text number,
 UNION ALL
 SELECT '25.3'::text number,
        'TT_maxIndexNotNull'::text function_tested,
-       'Matching ints return second index'::text description,
-       TT_maxIndexNotNull('{1990, 1990}', '{burn, null}') IS FALSE passed
+       'Matching ints return last not null index'::text description,
+       TT_maxIndexNotNull('{1990, 1990}', '{burn, null}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.4'::text number,
@@ -1857,7 +1865,13 @@ UNION ALL
 SELECT '25.6'::text number,
        'TT_maxIndexNotNull'::text function_tested,
        'Test all null ints'::text description,
-       TT_maxIndexNotNull('{null, null}', '{burn, null}') IS FALSE passed
+       TT_maxIndexNotNull('{null, null}', '{burn, null}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '25.7'::text number,
+       'TT_maxIndexNotNull'::text function_tested,
+       'Test matching years with null returns'::text description,
+       TT_maxIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
 ---------------------------------------------------------
 -- Test 26 - TT_IsXMinusYBetween
 ---------------------------------------------------------
@@ -2860,6 +2874,18 @@ SELECT '132.6'::text number,
        'Test multiple indexes'::text description,
        TT_MinIndexCopyText('{1,1,3}', '{a,b,c}') = 'a' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '132.7'::text number,
+       'TT_MinIndexCopyText'::text function_tested,
+       'Matching indexes return first with null'::text description,
+       TT_MinIndexCopyText('{1,1,1}', '{a,null,c}') = 'a' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '132.8'::text number,
+       'TT_MinIndexCopyText'::text function_tested,
+       'Matching indexes return first with null'::text description,
+       TT_MinIndexCopyText('{1,1,1}', '{null,null,c}') = 'c' passed
+---------------------------------------------------------
 -- Test 133 - TT_MaxIndexCopyText
 ---------------------------------------------------------
 UNION ALL
@@ -2897,6 +2923,18 @@ SELECT '133.6'::text number,
        'TT_MaxIndexCopyText'::text function_tested,
        'Test multiple indexes'::text description,
        TT_MaxIndexCopyText('{1,3,3}', '{a,b,c}') = 'c' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '133.7'::text number,
+       'TT_MaxIndexCopyText'::text function_tested,
+       'Matching indexes return last with null'::text description,
+       TT_MaxIndexCopyText('{3,3,3}', '{a,b,c}') = 'c' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '133.8'::text number,
+       'TT_MaxIndexCopyText'::text function_tested,
+       'Matching indexes return last with null'::text description,
+       TT_MaxIndexCopyText('{null,null,null}', '{a,b,null}') = 'b' passed
 ---------------------------------------------------------
 -- Test 134 - TT_MinIndexMapText
 ---------------------------------------------------------
@@ -2948,6 +2986,18 @@ SELECT '134.8'::text number,
        'setNullTo'::text description,
        TT_MinIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '134.9'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Matching years return first not null'::text description,
+       TT_MinIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'BU' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '134.10'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'Matching years return first not null'::text description,
+       TT_MinIndexMapText('{null, null}', '{null, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
+---------------------------------------------------------
 -- Test 135 - TT_MaxIndexMapText
 ---------------------------------------------------------
 UNION ALL
@@ -2997,6 +3047,18 @@ SELECT '135.8'::text number,
        'TT_MaxIndexMapText'::text function_tested,
        'setNullTo'::text description,
        TT_MaxIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '135.9'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Matching indexes return last not null'::text description,
+       TT_MaxIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'WT' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '135.10'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'Matching indexes return last not null'::text description,
+       TT_MaxIndexMapText('{null, null}', '{burn, null}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
 ---------------------------------------------------------
 -- Test 136 - TT_MinIndexLookupText
 ---------------------------------------------------------
@@ -3072,6 +3134,18 @@ SELECT '136.12'::text number,
        'setNullTo'::text description,
        TT_MinIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '0') = 'WT' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '136.13'::text number,
+       'TT_MinIndexLookupText'::text function_tested,
+       'Matching years, return first'::text description,
+       TT_MinIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '136.14'::text number,
+       'TT_MinIndexLookupText'::text function_tested,
+       'Matching years, return first with null in list'::text description,
+       TT_MinIndexLookupText('{1990, 1990}', '{null, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'WT' passed
+---------------------------------------------------------
 -- Test 137 - TT_MaxIndexLookupText
 ---------------------------------------------------------
 UNION ALL
@@ -3146,6 +3220,18 @@ SELECT '137.12'::text number,
        'setNullTo'::text description,
        TT_MaxIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '9999') = 'BU' passed
 ---------------------------------------------------------
+UNION ALL
+SELECT '137.13'::text number,
+       'TT_MaxIndexLookupText'::text function_tested,
+       'Matching years return last with null in list'::text description,
+       TT_MaxIndexLookupText('{null, null}', '{null, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'WT' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '137.14'::text number,
+       'TT_MaxIndexLookupText'::text function_tested,
+       'Matching years return last with null in list'::text description,
+       TT_MaxIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+---------------------------------------------------------
 -- Test 138 - TT_XMinusYDouble
 ---------------------------------------------------------
 UNION ALL
@@ -3165,8 +3251,38 @@ SELECT '138.3'::text number,
        'TT_XMinusYDouble'::text function_tested,
        'Test null'::text description,
        TT_XMinusYDouble(5.5::text, NULL::text) IS NULL passed
-
-  
+---------------------------------------------------------
+-- Test 139 - TT_DivideDouble
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (2 tests)
+SELECT (TT_TestNullAndWrongTypeParams(139, 'TT_DivideDouble', ARRAY['divideBy', 'numeric'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '139.3'::text number,
+       'TT_DivideDouble'::text function_tested,
+       'Simple test, returning integer'::text description,
+       TT_DivideDouble(5.5::text, 5.5::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '139.4'::text number,
+       'TT_DivideDouble'::text function_tested,
+       'Simple test, returning double'::text description,
+       TT_DivideDouble(5::text, 2::text) = 2.5 passed
+---------------------------------------------------------
+-- Test 140 - TT_DivideInt
+---------------------------------------------------------
+UNION ALL
+SELECT '140.1'::text number,
+       'TT_DivideInt'::text function_tested,
+       'Simple test, returning integer'::text description,
+       TT_DivideInt(5::text, 5::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '140.2'::text number,
+       'TT_DivideInt'::text function_tested,
+       'Simple test, rounding a double to int'::text description,
+       TT_DivideInt(5::text, 2::text) = 3 passed  
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

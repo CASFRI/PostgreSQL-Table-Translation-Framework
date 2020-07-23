@@ -146,21 +146,19 @@ RETURNS integer AS $$
   END;
 $$ LANGUAGE plpgsql;
 -------------------------------------------------------------------------------
--- TT_min_max_index(int[], text, text)
+-- TT_min_max_indexes(int[], text, text)
 --
 -- vals int[] - array of integer values.
 -- min_max text - return index of 'min' or 'max' value?
--- first_last - return the 'first' index or the 'last' index?
 --
--- internal function returning the first or last index of the min or max value.
+-- internal function returning an array of all indexes of the min or max value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_min_max_index_internal(int[], text, text);
-CREATE OR REPLACE FUNCTION TT_min_max_index_internal(
+-- DROP FUNCTION IF EXISTS TT_min_max_indexes_internal(int[], text);
+CREATE OR REPLACE FUNCTION TT_min_max_indexes_internal(
   vals int[],
-  min_max text,
-  first_last text
+  min_max text
 )
-RETURNS integer AS $$
+RETURNS integer[] AS $$
   DECLARE
     test_val int;
   BEGIN
@@ -171,16 +169,10 @@ RETURNS integer AS $$
       test_val = tt_max_internal(vals);
     END IF;
     
-    IF first_last = 'first' THEN
-      RETURN array_position(vals, test_val);
-    END IF;
+    RETURN array_positions(vals, test_val);
     
-    IF first_last = 'last' THEN
-      RETURN tt_max_internal(array_positions(vals, test_val));
-    END IF;
   END;
 $$ LANGUAGE plpgsql;
-
 
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
@@ -1969,7 +1961,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- index to the smallest integer in the intList. Test it with
 -- notNull().
 -- If there are multiple occurences of the smallest value, the
--- first index is used.
+-- first non null value with a matching index is used. This is to
+-- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -1985,9 +1978,11 @@ RETURNS boolean AS $$
   DECLARE
     _intList int[];
     _testList text[];
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _testVal text;
     _setNullTo int;
+    i int;
   BEGIN
     -- parse lists to arrays
     _intList = TT_ParseStringList(intList, TRUE);
@@ -1999,12 +1994,22 @@ RETURNS boolean AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get the first index of the min value from the integer list
-    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    -- get indexes of all max values
+    _indexes = tt_min_max_indexes_internal(_intList, 'min');
     
-    -- get the testVal from the testList using the _index
-    _testVal = _testList[_index];
-    
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _testList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _testVal is now the first element in the list.
+    -- i.e. the first non-null value matching the index of the min value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _testVal = _returnVals[1];
+        
     -- test with tt_notNull()
     RETURN tt_notNull(_testVal);
   END;
@@ -2044,9 +2049,11 @@ RETURNS boolean AS $$
   DECLARE
     _intList int[];
     _testList text[];
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _testVal text;
     _setNullTo int;
+    i int;
   BEGIN
     -- parse lists to arrays
     _intList = TT_ParseStringList(intList, TRUE);
@@ -2058,11 +2065,21 @@ RETURNS boolean AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get the index of the min value from the integer list
-    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+-- get indexes of all max values
+    _indexes = tt_min_max_indexes_internal(_intList, 'max');
     
-    -- get the testVal from the testList using the _index
-    _testVal = _testList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _testList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _srcVal is now the last element in the list.
+    -- i.e. the last non-null value matching the index of the max value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _testVal = _returnVals[array_length(_returnVals, 1)];    
     
     -- test with tt_notNull()
     RETURN tt_notNull(_testVal);
@@ -3918,7 +3935,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- value in intList. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
--- If multiple occurences of the smallest value, the first index is used.
+-- If multiple occurences of the smallest value, the first non null value
+-- with a matching index is used.
 -- 
 -- e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
 ------------------------------------------------------------
@@ -3933,7 +3951,9 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -3949,12 +3969,22 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    -- get indexes of all min values
+    _indexes = tt_min_max_indexes_internal(_intList, 'min');
     
-    -- return matching index from returnList
-    RETURN _returnList[_index];
-
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- RETURN the first element in the list.
+    -- i.e. the first non-null value matching the index of the min value.
+    _returnVals = array_remove(_returnVals, NULL);
+    RETURN _returnVals[1];
+    
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -3977,7 +4007,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- value in intList. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating max value.
--- If multiple occurences of the smallest value, the last index is used.
+-- If multiple occurences of the smallest value, the last non null value with
+-- a matching index is used.
 -- 
 -- e.g. TT_MaxIndexCopyText({1,2,3}, {a,b,c})
 ------------------------------------------------------------
@@ -3992,7 +4023,9 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -4008,11 +4041,21 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    -- get indexes of all max values
+    _indexes = tt_min_max_indexes_internal(_intList, 'max');
     
-    -- return matching index from returnList
-    RETURN _returnList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- return the last element in the list.
+    -- i.e. the last non-null value matching the index of the max value.
+    _returnVals = array_remove(_returnVals, NULL);
+    RETURN _returnVals[array_length(_returnVals, 1)];
 
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -4037,7 +4080,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- value in intList to mapText. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating max value.
--- If multiple occurences of the smallest value, the first index is used.
+-- If multiple occurences of the smallest value, the first non null value with a
+-- matching index is used.
 -- 
 -- e.g. TT_MinIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
 ------------------------------------------------------------
@@ -4054,8 +4098,10 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _srcVal text;
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -4074,12 +4120,23 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    -- get indexes of all min values
+    _indexes = tt_min_max_indexes_internal(_intList, 'min');
     
-    -- get matching index from returnList as srcVal
-    _srcVal = _returnList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _srcVal is now the first element in the list.
+    -- i.e. the first non-null value matching the index of the min value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _srcVal = _returnVals[1];
     
+    -- pass _srcVal to lookupText
     RETURN TT_MapText(_srcVal, mapVals, targetVals);
 
   END;
@@ -4108,7 +4165,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- value in intList to mapText. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating max value.
--- If multiple occurences of the smallest value, the last index is used.
+-- If multiple occurences of the smallest value, the last non null value with a 
+-- matching index is used.
 -- 
 -- e.g. TT_MaxIndexMapText({1,2,3}, {a,b,c}, {A,B,C}, {AA, BB, CC})
 ------------------------------------------------------------
@@ -4125,8 +4183,10 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _srcVal text;
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -4145,12 +4205,23 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    -- get indexes of all max values
+    _indexes = tt_min_max_indexes_internal(_intList, 'max');
     
-    -- get matching index from returnList as srcVal
-    _srcVal = _returnList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _srcVal is now the last element in the list.
+    -- i.e. the last non-null value matching the index of the max value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _srcVal = _returnVals[array_length(_returnVals, 1)];
     
+    -- pass _srcVal to mapText
     RETURN TT_MapText(_srcVal, mapVals, targetVals);
 
   END;
@@ -4179,8 +4250,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- passes value from returnList matching the index of the smallest
 -- value in intList to lookupText. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating max value.
--- If multiple occurences of the smallest value, the first index is used.
+-- when calculating min value.
+-- If multiple occurences of the smallest value, the first index representing a non-null return value is used.
 -- 
 -- e.g. TT_MinIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
 ------------------------------------------------------------
@@ -4199,8 +4270,10 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _srcVal text;
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -4221,14 +4294,24 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'min', 'first');
+    -- get indexes of all min values
+    _indexes = tt_min_max_indexes_internal(_intList, 'min');
     
-    -- get matching index from returnList as srcVal
-    _srcVal = _returnList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _srcVal is now the first element in the list.
+    -- i.e. the first non-null value matching the index of the min value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _srcVal = _returnVals[1];
     
+    -- pass _srcVal to lookupText
     RETURN TT_LookupText(_srcVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
-
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -4265,11 +4348,11 @@ $$ LANGUAGE sql IMMUTABLE;
 -- retrieveCol - column from which to retrieve the matching value
 -- setNullTo - defaults to null - optionally convert any nulls in intList to this value
 --
--- passes value from returnList matching the index of the largest
+-- passes value from returnList matching the index of the smallest
 -- value in intList to lookupText. If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating max value.
--- If multiple occurences of the smallest value, the last index is used.
+-- when calculating min value.
+-- If multiple occurences of the largest value, the last index representing a non-null return value is used.
 -- 
 -- e.g. TT_MaxIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
 ------------------------------------------------------------
@@ -4288,8 +4371,10 @@ RETURNS text AS $$
     _intList int[];
     _returnList text[];
     _setNullTo int;
-    _index int;
+    _indexes int[];
+    _returnVals text[];
     _srcVal text;
+    i int;
   BEGIN
   
     -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
@@ -4300,7 +4385,7 @@ RETURNS text AS $$
                                 'lookupTableName', lookupTableName, 'name',
                                 'lookupCol', lookupCol, 'name',
                                 'retrieveCol', retrieveCol, 'name']);
-                                   
+
     _intList = TT_ParseStringList(intList, TRUE)::int[];
     _returnList = TT_ParseStringList(returnList, TRUE);
     
@@ -4310,14 +4395,24 @@ RETURNS text AS $$
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
     
-    -- get index of min value
-    _index = tt_min_max_index_internal(_intList, 'max', 'last');
+    -- get indexes of all max values
+    _indexes = tt_min_max_indexes_internal(_intList, 'max');
     
-    -- get matching index from returnList as srcVal
-    _srcVal = _returnList[_index];
+    -- get values from returnList matching the _indexes
+      -- for each index, add the returnList value with that index to _returnVals
+    FOREACH i IN ARRAY _indexes
+    LOOP
+      _returnVals = array_append(_returnVals, _returnList[i]);
+    END LOOP;
+        
+    -- remove any null values from _returnVals
+    -- _srcVal is now the last element in the list.
+    -- i.e. the last non-null value matching the index of the max value.
+    _returnVals = array_remove(_returnVals, NULL);
+    _srcVal = _returnVals[array_length(_returnVals, 1)];
     
+    -- pass _srcVal to lookupText
     RETURN TT_LookupText(_srcVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
-
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -4342,4 +4437,52 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
 )
 RETURNS text AS $$
   SELECT TT_MaxIndexLookupText(intList, returnList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_DivideDouble()
+--
+-- val text - source value
+-- divideBy - value to divide by
+--
+-- Basic division function returning double
+-- 
+-- e.g. TT_DivideDouble(10, 3)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_DivideDouble(text, text);
+CREATE OR REPLACE FUNCTION TT_DivideDouble(
+  val text,
+  divideBy text
+)
+RETURNS double precision AS $$
+  DECLARE
+    _divideBy double precision;
+    _val double precision;
+  BEGIN
+  
+    PERFORM TT_ValidateParams('TT_DivideDouble',
+                              ARRAY['divideBy', divideBy, 'numeric']);     
+    _val = val::double precision;                     
+    _divideBy = divideBy::double precision;
+        
+    RETURN _val/_divideBy::double precision;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_DivideInt()
+--
+-- val text - source value
+-- divideBy - value to divide by
+--
+-- Wrapper around tt_DivideDouble returning int 
+-- 
+-- e.g. TT_DivideInt(10, 2)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_DivideInt(text, text);
+CREATE OR REPLACE FUNCTION TT_DivideInt(
+  val text,
+  divideBy text
+)
+RETURNS int AS $$        
+    SELECT tt_DivideDouble(val, divideBy)::numeric::int
 $$ LANGUAGE sql IMMUTABLE;

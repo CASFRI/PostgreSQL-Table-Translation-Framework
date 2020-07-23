@@ -175,6 +175,8 @@ DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_DivideInt(text, text);
+DROP FUNCTION IF EXISTS TT_DivideDouble(text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
@@ -183,5 +185,5 @@ DROP FUNCTION IF EXISTS TT_TestNullAndWrongTypeParams(int, text, text[]);
 -- internal functions
 DROP FUNCTION IF EXISTS TT_Min_Internal(int[]);
 DROP FUNCTION IF EXISTS TT_Max_Internal(int[]);
-DROP FUNCTION IF EXISTS TT_Min_Max_Index_Internal(int[], text, text);
+DROP FUNCTION IF EXISTS TT_Min_Max_Indexes_Internal(int[], text);
 
