@@ -1989,7 +1989,7 @@ RETURNS boolean AS $$
     _testList = TT_ParseStringList(testList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -2060,7 +2060,7 @@ RETURNS boolean AS $$
     _testList = TT_ParseStringList(testList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -3964,7 +3964,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -4036,7 +4036,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -4115,7 +4115,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -4200,7 +4200,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -4289,7 +4289,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
@@ -4390,7 +4390,7 @@ RETURNS text AS $$
     _returnList = TT_ParseStringList(returnList, TRUE);
     
     -- if setNullTo is provided, replace any nulls with it
-    IF setNullTo IS NOT NULL THEN
+    IF setNullTo != 'NULL' THEN
       _setNullTo = setNullTo::int;
       _intList = array_replace(_intList, null, _setNullTo);
     END IF;
