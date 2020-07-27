@@ -238,7 +238,7 @@ WITH test_nb AS (
     SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
     SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
     SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
-    SELECT 'TT_DivideDouble'::text,          139,          4         UNION ALL
+    SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
     SELECT 'TT_DivideInt'::text,             140,          2
 
 ),
@@ -3269,6 +3269,12 @@ SELECT '139.4'::text number,
        'TT_DivideDouble'::text function_tested,
        'Simple test, returning double'::text description,
        TT_DivideDouble(5::text, 2::text) = 2.5 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '139.5'::text number,
+       'TT_DivideDouble'::text function_tested,
+       'Dividing by zero should return NULL'::text description,
+       TT_DivideDouble(5::text, 0::text) IS NULL passed
 ---------------------------------------------------------
 -- Test 140 - TT_DivideInt
 ---------------------------------------------------------

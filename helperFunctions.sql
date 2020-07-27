@@ -4464,6 +4464,11 @@ RETURNS double precision AS $$
                               ARRAY['divideBy', divideBy, 'numeric']);     
     _val = val::double precision;                     
     _divideBy = divideBy::double precision;
+    
+    -- if dividing by zero, return null to avoid error
+    IF _divideBy = 0 THEN
+      RETURN NULL;
+    END IF;
         
     RETURN _val/_divideBy::double precision;
   END;
