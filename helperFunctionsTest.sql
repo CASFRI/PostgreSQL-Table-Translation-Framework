@@ -204,6 +204,7 @@ WITH test_nb AS (
     SELECT 'TT_minIndexNotNull'::text,        24,          7         UNION ALL
     SELECT 'TT_maxIndexNotNull'::text,        25,          7         UNION ALL
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
+    SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -239,8 +240,8 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
     SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
     SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
-    SELECT 'TT_DivideInt'::text,             140,          2
-
+    SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
+    SELECT 'TT_MapTextCoalesce'::text,       141,          6
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1940,6 +1941,69 @@ SELECT '26.11'::text number,
        'TT_IsXMinusYBetween'::text function_tested,
        'includeMax is wrong type'::text description,
        TT_IsError('SELECT TT_IsXMinusYBetween(''2005'', ''6'', ''1999'', ''2000'', ''FALSE'', ''x'')') = 'ERROR in TT_IsXMinusYBetween(): includeMax is not a boolean value' passed
+---------------------------------------------------------
+-- Test 27 - TT_MatchListTwice
+---------------------------------------------------------
+UNION ALL
+SELECT '27.1'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Null lst1'::text description,
+       TT_IsError('SELECT TT_MatchListTwice(''a'', ''b'', NULL::text, ''{''''b''''}'')') = 'ERROR in TT_MatchListTwice(): lst1 is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.2'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Null lst2'::text description,
+       TT_IsError('SELECT TT_MatchListTwice(''a'', ''b'', ''{''''b''''}'', NULL::text)') = 'ERROR in TT_MatchListTwice(): lst2 is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.3'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Wrong type lst1'::text description,
+       TT_IsError('SELECT TT_MatchListTwice(''a'', ''b'', ''{string1}}}'', ''{''''b''''}'')') = 'ERROR in TT_MatchListTwice(): lst1 is not a stringlist value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.4'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Wrong type lst2'::text description,
+       TT_IsError('SELECT TT_MatchListTwice(''a'', ''b'', ''{''''b''''}'', ''{string1}}}'')') = 'ERROR in TT_MatchListTwice(): lst2 is not a stringlist value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.5'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'First val passes'::text description,
+       TT_MatchListTwice('a', 'b', '{''a''}', '{''c''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.6'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Second val passes'::text description,
+       TT_MatchListTwice('a', 'b', '{''c''}', '{''b''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.7'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'Both false'::text description,
+       TT_MatchListTwice('a', 'b', '{''c''}', '{''c''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.7'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val1 null'::text description,
+       TT_MatchListTwice(NULL::text, 'b', '{''''}', '{''b''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.8'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val2 null'::text description,
+       TT_MatchListTwice('a', NULL::text, '{''a''}', '{''b''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.9'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val1 and val2 null'::text description,
+       TT_MatchListTwice(NULL::text, NULL::text, '{''a''}', '{''b''}') IS FALSE passed
+---------------------------------------------------------
 
 ---------------------------------------------------------
   
@@ -3289,6 +3353,46 @@ SELECT '140.2'::text number,
        'TT_DivideInt'::text function_tested,
        'Simple test, rounding a double to int'::text description,
        TT_DivideInt(5::text, 2::text) = 3 passed  
+---------------------------------------------------------
+-- Test 141 - TT_MapTextCoalesce
+---------------------------------------------------------
+UNION ALL
+SELECT '141.1'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'First val returns a value'::text description,
+       TT_MapTextCoalesce('a','b','{''a''}','{''b''}','{''A''}','{''B''}') = 'A' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '141.2'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'Second val returns a value'::text description,
+       TT_MapTextCoalesce('a','b','{''c''}','{''b''}','{''A''}','{''B''}') = 'B' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '141.3'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'Neither val returns a value'::text description,
+       TT_MapTextCoalesce('a','b','{''c''}','{''c''}','{''A''}','{''B''}') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '141.4'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'val null'::text description,
+       TT_MapTextCoalesce(NULL::text,'b','{''c''}','{''b''}','{''A''}','{''B''}') = 'B' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '141.5'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'val2 null'::text description,
+       TT_MapTextCoalesce('a',NULL::text,'{''c''}','{''b''}','{''A''}','{''B''}') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '141.6'::text number,
+       'TT_MapTextCoalesce'::text function_tested,
+       'val1 and val2 null'::text description,
+       TT_MapTextCoalesce(NULL::text,NULL::text,'{''c''}','{''b''}','{''A''}','{''B''}') IS NULL passed
+
+  
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

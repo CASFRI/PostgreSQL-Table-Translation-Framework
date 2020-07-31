@@ -1534,6 +1534,44 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_MatchListTwice
+--
+-- val1 text - first value to test. Can be text or stringlist.
+-- val2 text - second value to test. Can be text or stringlist.
+-- lst1 text (stringList) - list of values to test val1 against
+-- lst2 text (stringList) - list of values to test val2 against
+--
+-- If matchList(val1, lst1) is true return true,
+-- else run matchList(val2, lst2)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MatchListTwice(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _return boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    -- Note that tests need to be done manually due to 2 source vals
+    PERFORM TT_ValidateParams('TT_MatchListTwice',
+                              ARRAY['lst1', lst1, 'stringlist',
+                                    'lst2', lst2, 'stringlist']);
+    
+    _return = tt_matchList(val1, lst1);
+    
+    IF _return THEN
+      RETURN TRUE;
+    ELSE
+      RETURN tt_matchList(val2, lst2);
+    END IF;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_False
 --
 -- Return false
@@ -4490,4 +4528,32 @@ CREATE OR REPLACE FUNCTION TT_DivideInt(
 )
 RETURNS int AS $$        
     SELECT tt_DivideDouble(val, divideBy)::numeric::int
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MapTextCoalesce
+--
+-- val1 text - first value to test. Can be text or stringlist.
+-- val2 text - second value to test. Can be text or stringlist.
+-- lst1 text (stringList) - list of values to test val1 against
+-- lst2 text (stringList) - list of values to test val2 against
+-- map1 text (stringList) - list of return values for val1
+-- map2 text (stringList) - list of return values for val2
+--
+-- If val1 is in lst1, run mapText(val1, lst1)
+-- Else run mapText(val2, lst2)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MapTextCoalesce(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text,
+  map1 text,
+  map2 text
+)
+RETURNS text AS $$
+    
+  SELECT coalesce(tt_mapText(val1, lst1, map1), tt_mapText(val2, lst2, map2))
+        
 $$ LANGUAGE sql IMMUTABLE;
