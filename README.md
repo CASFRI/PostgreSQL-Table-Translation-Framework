@@ -396,7 +396,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Can take between 1 and 7 srcVal string lists of input values.
     * Counts the number of not null string list srcVals by passing srcVal1 - srcVal7 to CountOfNotNull.
     * Returns TRUE if exact = TRUE and number of notNulls matches **count** exactly.
-    * Returns FALSE if exact = FALSE and number of notNulls is greater than or equal to **count**.
+    * Returns TRUE if exact = FALSE and number of notNulls is greater than or equal to **count**.
     * Empty string is considered null.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE)
