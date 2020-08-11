@@ -205,6 +205,7 @@ WITH test_nb AS (
     SELECT 'TT_maxIndexNotNull'::text,        25,          7         UNION ALL
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
+    SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -2004,6 +2005,59 @@ SELECT '27.9'::text number,
        'val1 and val2 null'::text description,
        TT_MatchListTwice(NULL::text, NULL::text, '{''a''}', '{''b''}') IS FALSE passed
 ---------------------------------------------------------
+  ---------------------------------------------------------
+---------------------------------------------------------
+-- Test 28 - TT_HasCountOfNotNullOrZero
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (4 tests)
+SELECT (TT_TestNullAndWrongTypeParams(28, 'TT_HasCountOfNotNullOrZero',
+                                      ARRAY['count', 'int',
+                                            'exact', 'boolean'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '28.5'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'exact true'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, 2::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.6'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'exact false, passes'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, 1::text, FALSE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.7'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'exact true, fails'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, 1::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.8'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'exact false, fails'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, 3::text, FALSE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.9'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'passes with nulls'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, NULL, 2::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.10'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'fails with nulls'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''a''}'::text, NULL, 1::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '28.11'::text number,
+       'TT_HasCountOfNotNullOrZero'::text function_tested,
+       'Zero as null'::text description,
+       TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''0''}'::text, NULL, 1::text, TRUE::text) passed
+---------------------------------------------------------
+
 
 ---------------------------------------------------------
   

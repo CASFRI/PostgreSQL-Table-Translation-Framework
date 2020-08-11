@@ -71,6 +71,14 @@ DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text)
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text);
+
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text);

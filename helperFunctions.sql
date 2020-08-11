@@ -30,86 +30,89 @@ RETURNS text AS $$
   DECLARE
   BEGIN
     IF targetType = 'integer' OR targetType = 'int' OR targetType = 'double precision' THEN 
-      RETURN CASE WHEN rule = 'translation_error'  THEN '-3333'
-                  WHEN rule = 'notnull'            THEN '-8888'
-                  WHEN rule = 'notempty'           THEN '-8889'
-                  WHEN rule = 'isint'              THEN '-9995'
-                  WHEN rule = 'isnumeric'          THEN '-9995'
-                  WHEN rule = 'isbetween'          THEN '-9999'
-                  WHEN rule = 'isgreaterthan'      THEN '-9999'
-                  WHEN rule = 'islessthan'         THEN '-9999'
-                  WHEN rule = 'haslength'          THEN '-9997'
-                  WHEN rule = 'matchtable'         THEN '-9998'
-                  WHEN rule = 'matchlist'          THEN '-9998'
-                  WHEN rule = 'sumintmatchlist'    THEN '-9998'
-                  WHEN rule = 'lengthmatchlist'    THEN '-9998'
-                  WHEN rule = 'notmatchlist'       THEN '-9998'
-                  WHEN rule = 'false'              THEN '-8887'
-                  WHEN rule = 'true'               THEN '-8887'
-                  WHEN rule = 'hascountofnotnull'  THEN '-9997'
-                  WHEN rule = 'isintsubstring'     THEN '-9997'
-                  WHEN rule = 'isbetweensubstring' THEN '-9999'
-                  WHEN rule = 'matchlistsubstring' THEN '-9998'
-                  WHEN rule = 'minIndexNotNull'    THEN '-8888'
-                  WHEN rule = 'maxIndexNotNull'    THEN '-8888'
-                  WHEN rule = 'isxminusybetween'   THEN '-9999'
-                  WHEN rule = 'geoisvalid'         THEN '-7779'
-                  WHEN rule = 'geointersects'      THEN '-7778'
+      RETURN CASE WHEN rule = 'translation_error'       THEN '-3333'
+                  WHEN rule = 'notnull'                 THEN '-8888'
+                  WHEN rule = 'notempty'                THEN '-8889'
+                  WHEN rule = 'isint'                   THEN '-9995'
+                  WHEN rule = 'isnumeric'               THEN '-9995'
+                  WHEN rule = 'isbetween'               THEN '-9999'
+                  WHEN rule = 'isgreaterthan'           THEN '-9999'
+                  WHEN rule = 'islessthan'              THEN '-9999'
+                  WHEN rule = 'haslength'               THEN '-9997'
+                  WHEN rule = 'matchtable'              THEN '-9998'
+                  WHEN rule = 'matchlist'               THEN '-9998'
+                  WHEN rule = 'sumintmatchlist'         THEN '-9998'
+                  WHEN rule = 'lengthmatchlist'         THEN '-9998'
+                  WHEN rule = 'notmatchlist'            THEN '-9998'
+                  WHEN rule = 'false'                   THEN '-8887'
+                  WHEN rule = 'true'                    THEN '-8887'
+                  WHEN rule = 'hascountofnotnull'       THEN '-9997'
+                  WHEN rule = 'hascountofnotnullorzero' THEN '-9997'
+                  WHEN rule = 'isintsubstring'          THEN '-9997'
+                  WHEN rule = 'isbetweensubstring'      THEN '-9999'
+                  WHEN rule = 'matchlistsubstring'      THEN '-9998'
+                  WHEN rule = 'minIndexNotNull'         THEN '-8888'
+                  WHEN rule = 'maxIndexNotNull'         THEN '-8888'
+                  WHEN rule = 'isxminusybetween'        THEN '-9999'
+                  WHEN rule = 'geoisvalid'              THEN '-7779'
+                  WHEN rule = 'geointersects'           THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
-      RETURN CASE WHEN rule = 'translation_error'  THEN NULL
-                  WHEN rule = 'notnull'            THEN NULL
-                  WHEN rule = 'notempty'           THEN NULL
-                  WHEN rule = 'isint'              THEN NULL
-                  WHEN rule = 'isnumeric'          THEN NULL
-                  WHEN rule = 'isbetween'          THEN NULL
-                  WHEN rule = 'isgreaterthan'      THEN NULL
-                  WHEN rule = 'islessthan'         THEN NULL
-                  WHEN rule = 'haslength'          THEN NULL
-                  WHEN rule = 'matchtable'         THEN NULL
-                  WHEN rule = 'matchlist'          THEN NULL
-                  WHEN rule = 'sumintmatchlist'    THEN NULL
-                  WHEN rule = 'lengthmatchlist'    THEN NULL
-                  WHEN rule = 'notmatchlist'       THEN NULL
-                  WHEN rule = 'false'              THEN NULL
-                  WHEN rule = 'true'               THEN NULL
-                  WHEN rule = 'hascountofnotnull'  THEN NULL
-                  WHEN rule = 'isintsubstring'     THEN NULL
-                  WHEN rule = 'isbetweensubstring' THEN NULL
-                  WHEN rule = 'matchlistsubstring' THEN NULL
-                  WHEN rule = 'minindexnotnull'    THEN NULL
-                  WHEN rule = 'maxindexnotnull'    THEN NULL
-                  WHEN rule = 'isxminusybetween'   THEN NULL
-                  WHEN rule = 'geoisvalid'         THEN NULL
-                  WHEN rule = 'geointersects'      THEN NULL
+      RETURN CASE WHEN rule = 'translation_error'       THEN NULL
+                  WHEN rule = 'notnull'                 THEN NULL
+                  WHEN rule = 'notempty'                THEN NULL
+                  WHEN rule = 'isint'                   THEN NULL
+                  WHEN rule = 'isnumeric'               THEN NULL
+                  WHEN rule = 'isbetween'               THEN NULL
+                  WHEN rule = 'isgreaterthan'           THEN NULL
+                  WHEN rule = 'islessthan'              THEN NULL
+                  WHEN rule = 'haslength'               THEN NULL
+                  WHEN rule = 'matchtable'              THEN NULL
+                  WHEN rule = 'matchlist'               THEN NULL
+                  WHEN rule = 'sumintmatchlist'         THEN NULL
+                  WHEN rule = 'lengthmatchlist'         THEN NULL
+                  WHEN rule = 'notmatchlist'            THEN NULL
+                  WHEN rule = 'false'                   THEN NULL
+                  WHEN rule = 'true'                    THEN NULL
+                  WHEN rule = 'hascountofnotnull'       THEN NULL
+                  WHEN rule = 'hascountofnotnullorzero' THEN NULL
+                  WHEN rule = 'isintsubstring'          THEN NULL
+                  WHEN rule = 'isbetweensubstring'      THEN NULL
+                  WHEN rule = 'matchlistsubstring'      THEN NULL
+                  WHEN rule = 'minindexnotnull'         THEN NULL
+                  WHEN rule = 'maxindexnotnull'         THEN NULL
+                  WHEN rule = 'isxminusybetween'        THEN NULL
+                  WHEN rule = 'geoisvalid'              THEN NULL
+                  WHEN rule = 'geointersects'           THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
-      RETURN CASE WHEN rule = 'translation_error'  THEN 'TRANSLATION_ERROR'
-                  WHEN rule = 'notnull'            THEN 'NULL_VALUE'
-                  WHEN rule = 'notempty'           THEN 'EMPTY_STRING'
-                  WHEN rule = 'isint'              THEN 'WRONG_TYPE'
-                  WHEN rule = 'isnumeric'          THEN 'WRONG_TYPE'
-                  WHEN rule = 'isbetween'          THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'isgreaterthan'      THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'islessthan'         THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'haslength'          THEN 'INVALID_VALUE'
-                  WHEN rule = 'isunique'           THEN 'NOT_UNIQUE'
-                  WHEN rule = 'matchtable'         THEN 'NOT_IN_SET'
-                  WHEN rule = 'matchlist'          THEN 'NOT_IN_SET'
-                  WHEN rule = 'lengthmatchlist'    THEN 'NOT_IN_SET'
-                  WHEN rule = 'sumintmatchlist'    THEN 'NOT_IN_SET'
-                  WHEN rule = 'notmatchlist'       THEN 'NOT_IN_SET'
-                  WHEN rule = 'false'              THEN 'NOT_APPLICABLE'
-                  WHEN rule = 'true'               THEN 'NOT_APPLICABLE'
-                  WHEN rule = 'hascountofnotnull'  THEN 'INVALID_VALUE'
-                  WHEN rule = 'isintsubstring'     THEN 'INVALID_VALUE'
-                  WHEN rule = 'isbetweensubstring' THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'matchlistsubstring' THEN 'NOT_IN_SET'
-                  WHEN rule = 'minIndexNotNull'    THEN 'NULL_VALUE'
-                  WHEN rule = 'maxIndexNotNull'    THEN 'NULL_VALUE'
-                  WHEN rule = 'isxminusybetween'   THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'geoisvalid'         THEN 'INVALID_VALUE'
-                  WHEN rule = 'geointersects'      THEN 'NO_INTERSECT'
+      RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
+                  WHEN rule = 'notnull'                 THEN 'NULL_VALUE'
+                  WHEN rule = 'notempty'                THEN 'EMPTY_STRING'
+                  WHEN rule = 'isint'                   THEN 'WRONG_TYPE'
+                  WHEN rule = 'isnumeric'               THEN 'WRONG_TYPE'
+                  WHEN rule = 'isbetween'               THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isgreaterthan'           THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'islessthan'              THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'haslength'               THEN 'INVALID_VALUE'
+                  WHEN rule = 'isunique'                THEN 'NOT_UNIQUE'
+                  WHEN rule = 'matchtable'              THEN 'NOT_IN_SET'
+                  WHEN rule = 'matchlist'               THEN 'NOT_IN_SET'
+                  WHEN rule = 'lengthmatchlist'         THEN 'NOT_IN_SET'
+                  WHEN rule = 'sumintmatchlist'         THEN 'NOT_IN_SET'
+                  WHEN rule = 'notmatchlist'            THEN 'NOT_IN_SET'
+                  WHEN rule = 'false'                   THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'true'                    THEN 'NOT_APPLICABLE'
+                  WHEN rule = 'hascountofnotnull'       THEN 'INVALID_VALUE'
+                  WHEN rule = 'hascountofnotnullorzero' THEN 'INVALID_VALUE'
+                  WHEN rule = 'isintsubstring'          THEN 'INVALID_VALUE'
+                  WHEN rule = 'isbetweensubstring'      THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'matchlistsubstring'      THEN 'NOT_IN_SET'
+                  WHEN rule = 'minIndexNotNull'         THEN 'NULL_VALUE'
+                  WHEN rule = 'maxIndexNotNull'         THEN 'NULL_VALUE'
+                  WHEN rule = 'isxminusybetween'        THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'geoisvalid'              THEN 'INVALID_VALUE'
+                  WHEN rule = 'geointersects'           THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -1717,6 +1720,124 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- HasCountOfNotNullOrZero()
+--
+-- Same as HasCountOfNotNull() but zeroIsNull in countOfNotNull call is set to TRUE
+-- Can't make this an argument in hasCountOfNotNull because we don't want to have to
+-- write the zeroIsNull argument every time and we can't assign a defualt because
+-- the signatures are already used up to allow for different numbers of vals.
+--
+-- e.g. TT_HasCountOfNotNullOrZero({'a'},{'b'},{'c'}, 3, TRUE)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _vals text[];
+    _count int;
+    _exact boolean;
+    _counted_nulls int;
+  BEGIN
+    
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_HasCountOfNotNullOrZero',
+                              ARRAY['count', count, 'int',
+                                    'exact', exact, 'boolean']);
+    _count = count::int;
+    _exact = exact::boolean;
+
+    -- process
+    _counted_nulls = tt_countOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'TRUE');
+
+    IF _exact THEN
+      RETURN _counted_nulls = _count;
+    ELSE
+      RETURN _counted_nulls >= _count;
+    END IF;
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text, text)
