@@ -400,6 +400,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Empty string is considered null.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE)
+    * There is also a variant of this function called **HasCountOfNotNullOrZero()** which is exactly the same but counts zero values as null.
 
 * **HasLength**(*text* **srcVal**, *int* **length**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if the number of characters in srcVal matches **length**.
