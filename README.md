@@ -560,6 +560,10 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **SumIntMapText**(*stringList* **srcVal**, *stringList* **lst1**, *stringList* **lst2**)
     * Calculates the sum  of the values in **srcVal** and passes the sum to MapText using **lst1** amd **lst2**.
     * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'})
+    
+* **MapTextCoalesce**(*text* **srcVal1**, *text* **srcVal2**, *stringList* **lst1**, *stringList* **lst2**, *stringList* **target1**, *stringList* **target2**)
+    * A wrapper function that runs MapText twice inside a coalesce function. If *MapText(srcVal1, lst1, target1)* returns a value, that value is returned from MapTextCoalesce. If the result is NULL, then the result of *MapText(srcVal2, lst2, target2)* is returned. 
+    * e.g. MapText('A', 'B', '{'A','B','C'}','{'D','E','F'}', '{'Aa','Bb','Cc'}','{'Dd','Ee','Ff'}')
       
 * **MapDouble**(*text* **srcVal**, *stringList* **lst1**, *stringList* **lst2**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return double precision value in lst2 that matches index of srcVal in lst1. Ignore letter cases if **ignoreCase** is TRUE, remove spaces before mapping if **removeSpaces** is TRUE.
@@ -579,6 +583,20 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return type is integer.
     * If removeSpaces is TRUE, removes any spaces before calculating length.
     * e.g. Length('12345', {5, 6, 7}, {1, 2, 3})
+    
+* **Multiply**(*double precision* **val1**, *double precision* **val2**)
+    * Multiplies val1 by val2.
+    * Return type is double precision.
+    * e.g. Multiply(2, 3)
+
+* **DivideDouble**(*double precision* **srcVal**, *double precision* **divideBy**)
+    * Divides srcVal by divideBy.
+    * Return type is double precision.
+    * e.g. DivideDouble(2.2, 1.1)
+
+* **DivideInt**(*double precision* **srcVal**, *double precision* **divideBy**)
+    * A wrapper around *DivideDouble* that returns an integer.
+    * e.g. DivideInt(2.2, 1.1)
 
 * **Pad**(*text* **srcVal**, *int* **targetLength**, *text* **padChar**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length targetLength made up of srcVal preceeded with padChar if source value length < targetLength. Returns srcVal trimmed to targetLength if srcVal length > targetLength and trunc = TRUE. Returns srcVal if srcVal length > targetLength and trunc = FALSE. 
