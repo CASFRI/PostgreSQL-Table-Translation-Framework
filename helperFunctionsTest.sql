@@ -242,7 +242,8 @@ WITH test_nb AS (
     SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
     SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
     SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
-    SELECT 'TT_MapTextCoalesce'::text,       141,          6
+    SELECT 'TT_MapTextCoalesce'::text,       141,          6         UNION ALL
+    SELECT 'TT_Multiply'::text,              142,          3
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -3445,7 +3446,27 @@ SELECT '141.6'::text number,
        'TT_MapTextCoalesce'::text function_tested,
        'val1 and val2 null'::text description,
        TT_MapTextCoalesce(NULL::text,NULL::text,'{''c''}','{''b''}','{''A''}','{''B''}') IS NULL passed
-
+---------------------------------------------------------
+-- Test 142 - TT_Multiply
+---------------------------------------------------------
+UNION ALL
+SELECT '142.1'::text number,
+       'TT_Multiply'::text function_tested,
+       'Basic test'::text description,
+       TT_Multiply('2','3.2') = 6.4 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '142.2'::text number,
+       'TT_Multiply'::text function_tested,
+       'Test zero'::text description,
+       TT_Multiply('2','0') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '142.3'::text number,
+       'TT_Multiply'::text function_tested,
+       'Test zero'::text description,
+       TT_Multiply('0','0') IS NULL passed
+---------------------------------------------------------
   
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

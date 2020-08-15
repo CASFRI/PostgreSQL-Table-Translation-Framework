@@ -4678,3 +4678,26 @@ RETURNS text AS $$
   SELECT coalesce(tt_mapText(val1, lst1, map1), tt_mapText(val2, lst2, map2))
         
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_Multiply
+--
+-- val1 text - The first value to multiply.
+-- val2 text - The second value to multiply.
+--
+-- returns val1 * val2
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Multiply(
+  val1 text,
+  val2 text
+)
+RETURNS double precision AS $$
+  BEGIN
+    IF val1::double precision = 0 OR val2::double precision = 0 THEN
+      RETURN NULL;
+    END IF;
+  
+    RETURN val1::double precision * val2::double precision;
+  END    
+$$ LANGUAGE plpgsql IMMUTABLE;
