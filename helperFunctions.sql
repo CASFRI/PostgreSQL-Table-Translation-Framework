@@ -55,7 +55,7 @@ RETURNS text AS $$
                   WHEN rule = 'maxIndexNotNull'         THEN '-8888'
                   WHEN rule = 'isxminusybetween'        THEN '-9999'
                   WHEN rule = 'matchlisttwice'          THEN '-9998'
-                  WHEN rule = 'lookupintmatchlist'      THEN '-9998'
+                  WHEN rule = 'lookuptextmatchlist'     THEN '-9998'
                   WHEN rule = 'geoisvalid'              THEN '-7779'
                   WHEN rule = 'geointersects'           THEN '-7778'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -84,7 +84,7 @@ RETURNS text AS $$
                   WHEN rule = 'minindexnotnull'         THEN NULL
                   WHEN rule = 'maxindexnotnull'         THEN NULL
                   WHEN rule = 'isxminusybetween'        THEN NULL
-                  WHEN rule = 'lookupintmatchlist'      THEN NULL
+                  WHEN rule = 'lookuptextmatchlist'     THEN NULL
                   WHEN rule = 'matchlisttwice'          THEN NULL
                   WHEN rule = 'geoisvalid'              THEN NULL
                   WHEN rule = 'geointersects'           THEN NULL
@@ -116,7 +116,7 @@ RETURNS text AS $$
                   WHEN rule = 'maxIndexNotNull'         THEN 'NULL_VALUE'
                   WHEN rule = 'isxminusybetween'        THEN 'OUT_OF_RANGE'
                   WHEN rule = 'matchlisttwice'          THEN 'NOT_IN_SET'
-                  WHEN rule = 'lookupintmatchlist'      THEN 'NOT_IN_SET'
+                  WHEN rule = 'lookuptextmatchlist'     THEN 'NOT_IN_SET'
                   WHEN rule = 'geoisvalid'              THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'           THEN 'NO_INTERSECT'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
@@ -2344,7 +2344,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- lookupCol text
 -- testVal text
 --
--- Calculate x minus y using tt_xminusydouble and test with TT_IsBetween()
+-- run lookupText and pass the result to matchList
 -- e.g. lookupIntMatchList(srcval, 'schema', 'lookuptable', 'lookupcol', 1)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_lookupTextMatchList(
@@ -2355,7 +2355,7 @@ CREATE OR REPLACE FUNCTION TT_lookupTextMatchList(
   testVal text
 )
 RETURNS boolean AS $$  
-    SELECT tt_lookupText(srcVal, lookupSchema, lookupTable, lookupCol) = testVal;
+    SELECT tt_matchList(tt_lookupText(srcVal, lookupSchema, lookupTable, lookupCol), testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
