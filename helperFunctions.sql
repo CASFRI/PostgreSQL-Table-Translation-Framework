@@ -2354,9 +2354,15 @@ CREATE OR REPLACE FUNCTION TT_lookupTextMatchList(
   lookupCol text,
   testVal text
 )
-RETURNS boolean AS $$  
-    SELECT tt_matchList(tt_lookupText(srcVal, lookupSchema, lookupTable, lookupCol), testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
-$$ LANGUAGE sql IMMUTABLE;
+RETURNS boolean AS $$
+  DECLARE
+    lookup_val text;
+  BEGIN
+    lookup_val = tt_lookupText(srcVal, lookupSchema, lookupTable, 'source_val'::text, lookupCol);
+    
+    RETURN tt_matchList(lookup_val, testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
