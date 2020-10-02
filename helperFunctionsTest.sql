@@ -206,6 +206,7 @@ WITH test_nb AS (
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
     SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
+    SELECT 'TT_LookupTextMatchList'::text,    29,          5         UNION ALL
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -2006,8 +2007,6 @@ SELECT '27.9'::text number,
        'val1 and val2 null'::text description,
        TT_MatchListTwice(NULL::text, NULL::text, '{''a''}', '{''b''}') IS FALSE passed
 ---------------------------------------------------------
-  ---------------------------------------------------------
----------------------------------------------------------
 -- Test 28 - TT_HasCountOfNotNullOrZero
 ---------------------------------------------------------
 UNION ALL
@@ -2058,10 +2057,35 @@ SELECT '28.11'::text number,
        'Zero as null'::text description,
        TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''0''}'::text, NULL, 1::text, TRUE::text) passed
 ---------------------------------------------------------
-
+-- Test 29 - TT_LookupTextMatchList
+---------------------------------------------------------
+UNION ALL
+SELECT '29.1'::text number,
+       'TT_LookupTextMatchList'::text function_tested,
+       'Matches'::text description,
+       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', 'Popu balb') passed
+UNION ALL
+SELECT '29.2'::text number,
+       'TT_LookupTextMatchList'::text function_tested,
+       'Matches with multiple test vals'::text description,
+       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', '{''Popu balb'', ''Pice mari''}') passed
+UNION ALL
+SELECT '29.3'::text number,
+       'TT_LookupTextMatchList'::text function_tested,
+       'Matches with multiple test vals'::text description,
+       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
+UNION ALL
+SELECT '29.4'::text number,
+       'TT_LookupTextMatchList'::text function_tested,
+       'Matches with multiple test vals'::text description,
+       TT_LookupTextMatchList('', 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
+UNION ALL
+SELECT '29.5'::text number,
+       'TT_LookupTextMatchList'::text function_tested,
+       'Matches with multiple test vals'::text description,
+       TT_LookupTextMatchList(NULL::text, 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
 
 ---------------------------------------------------------
-  
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------
