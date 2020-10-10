@@ -499,18 +499,58 @@ HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, accep
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
-* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches minIndexCopyText, minIndexMapText and minIndexLookupText.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
+    * e.g. minIndexNotNull({1990, null}, {burn, wind}, 2000, 'null')
     
-* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\])
+* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
+    * e.g. minIndexNotNull({1990, 0}, {burn, wind}, 'null', 2000)
+
+* **minIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Exactly the same as minIndexNotNull but tests the value using isInt().
+    * e.g. minIndexIsInt({1990, 2000}, {111, 222})
+    * e.g. minIndexIsInt({1990, null}, {111, 222}, 2000, 'null')
     
+* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Exactly the same as maxIndexNotNull but tests the value using isInt().
+    * e.g. maxIndexIsInt({1990, 2000}, {111, 222})
+    * e.g. maxIndexIsInt({1990, null}, {111, 222}, 2000, 'null')
+
+* **minIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
+    * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
+    * e.g. minIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
+    * e.g. minIndexIsBetween({1990, null}, {111, 222}, 0, 2000, 2000, 'null')
+
+* **maxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
+    * If there are multiple occurences of the lowest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
+    * e.g. maxIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
+    * e.g. maxIndexIsBetween({1990, null}, {111, 222}, 0, 2000, 2000, 'null')
+
+* **minIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to matchList() along with lst. 
+    * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
+    * e.g. minIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
+    * e.g. minIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+
+* **maxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to matchList() along with lst. 
+    * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
+    * e.g. maxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
+    * e.g. maxIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fix**\[default TRUE\])
     * Returns TRUE if geometry is valid. If fix is TRUE and geometry is invalid, function will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that using fix=TRUE does not fix the geometry in the source table, it only tests to see if the geometry can be fixed.
     * Default error codes are 'INVALID_VALUE' for text attributes, -7779 for numeric attributes and NULL for other types (including geometry).
@@ -654,47 +694,61 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return the highest integer in the list. 
     * e.g. maxInt({1990, 2000})
 
-* **minIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+* **minIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Returns value from returnList matching the index of the lowest value in intList.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested.
     * e.g. maxIndexCopyText({1990, 2000}, {burn, wind})
+    * e.g. maxIndexCopyText({1990, null}, {burn, wind}, 2000, 'null')
 
-* **maxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\])
+* **maxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Returns value from returnList matching the index of the highest value in intList.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the highest value is tested.
     * e.g. maxIndexCopyText({1990, 2000}, {burn, wind})
-    
-* **minIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
+    * e.g. maxIndexCopyText({0, 2000}, {burn, wind}, 'null', 1990)
+
+* **minIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+  * Same as minIndexCopyText but returns an integer.
+  
+* **maxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+  * Same as maxIndexCopyText but returns an integer.
+
+* **minIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Passes value from returnList matching the index of the lowest value in intList to mapText. Runs mapText using the mapVals and targetVals.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested.
     * e.g. minIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
+    * e.g. minIndexMapText({null, 0}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 2020)
 
 * **maxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to mapText. Runs mapText using the mapVals and targetVals.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the highest value is tested.
     * e.g. maxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
+    * e.g. maxIndexMapText({1990, null}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 'null')
     
-* **minIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\])
-    * Passes value from returnList matching the index of the lowest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value.
-    * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested.
-    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val** and setNullTo to **NULL**.
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, source_col, target_col, NULL::text)
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col, NULL::text)
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col)
+* **minIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+  * Same as minIndexMapText but returning an integer.
 
-* **maxIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\])
+* **maxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+  * Same as maxIndexMapText but returning an integer.
+
+* **minIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\],  *text* **setZeroTo**\[default NULL\])
+    * Passes value from returnList matching the index of the lowest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.    * If there are multiple occurences of the lowest value, the **first** non-null value with an index matching the lowest value is tested.
+    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val**, setNullTo to **NULL** and setZeroTo to **NULL**.
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'source_val', 'target_col', 'null', 'null')
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val', 'null', 'null')
+    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val')
+
+* **maxIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\],  *text* **setZeroTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
-    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value.
-    * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the highest value is tested.
-    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val** and setNullTo to **NULL**.
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, source_col, target_col, NULL::text)
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col, NULL::text)
-    * e.g. minIndexLookupText({1990, 2000}, {burn, wind}, public, table, target_col)
+    * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.    * If there are multiple occurences of the highest value, the **last** non-null value with an index matching the lowest value is tested.
+    * A 6-argument variant sets the lookupColName to **source_val** by default. A 5-argument variant sets lookupColName to **source_val**, setNullTo to **NULL** and setZeroTo to **NULL**.
+    * e.g. maxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'source_val', 'target_col', 'null', 'null')
+    * e.g. maxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val', 'null', 'null')
+    * e.g. maxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val')
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns a text value from an intersecting polygon. If multiple polygons intersect, the value from the polygon with the largest area can be returned by specifying method='GREATEST_AREA'; the lowest intersecting value can be returned using method='LOWEST_VALUE', or the highest value can be returned using method='HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when returnCol is numeric.
