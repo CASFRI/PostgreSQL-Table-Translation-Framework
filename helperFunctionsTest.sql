@@ -201,12 +201,19 @@ WITH test_nb AS (
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
     SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
-    SELECT 'TT_minIndexNotNull'::text,        24,          7         UNION ALL
-    SELECT 'TT_maxIndexNotNull'::text,        25,          7         UNION ALL
+    SELECT 'TT_minIndexNotNull'::text,        24,          8         UNION ALL
+    SELECT 'TT_maxIndexNotNull'::text,        25,          8         UNION ALL
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
     SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
     SELECT 'TT_LookupTextMatchList'::text,    29,          5         UNION ALL
+    SELECT 'TT_MinIndexIsInt'::text,          30,          5         UNION ALL
+    SELECT 'TT_MaxIndexIsInt'::text,          31,          5         UNION ALL
+    SELECT 'TT_MinIndexIsBetween'::text,      32,          4         UNION ALL
+    SELECT 'TT_MaxIndexIsBetween'::text,      33,          4         UNION ALL
+    SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
+    SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
+
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
     SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
@@ -234,17 +241,21 @@ WITH test_nb AS (
     SELECT 'TT_XMinusYInt'::text,            129,          3         UNION ALL
     SELECT 'TT_MinInt'::text,                130,          3         UNION ALL
     SELECT 'TT_MaxInt'::text,                131,          3         UNION ALL
-    SELECT 'TT_MinIndexCopyText'::text,      132,          8         UNION ALL
-    SELECT 'TT_MaxIndexCopyText'::text,      133,          8         UNION ALL
-    SELECT 'TT_MinIndexMapText'::text,       134,         10         UNION ALL
-    SELECT 'TT_MaxIndexMapText'::text,       135,         10         UNION ALL
+    SELECT 'TT_MinIndexCopyText'::text,      132,          9         UNION ALL
+    SELECT 'TT_MaxIndexCopyText'::text,      133,          9         UNION ALL
+    SELECT 'TT_MinIndexMapText'::text,       134,         11         UNION ALL
+    SELECT 'TT_MaxIndexMapText'::text,       135,         11         UNION ALL
     SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
     SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
     SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
     SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
     SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
     SELECT 'TT_MapTextCoalesce'::text,       141,          6         UNION ALL
-    SELECT 'TT_Multiply'::text,              142,          3
+    SELECT 'TT_Multiply'::text,              142,          3         UNION ALL
+    SELECT 'TT_MinIndexMapInt'::text,        143,          7         UNION ALL
+    SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
+    SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
+    SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1813,13 +1824,13 @@ UNION ALL
 SELECT '24.4'::text number,
        'TT_minIndexNotNull'::text function_tested,
        'Test setNullTo, true'::text description,
-       TT_minIndexNotNull('{1990, null}', '{null, wind}', '0') passed
+       TT_minIndexNotNull('{1990, null}', '{null, wind}', '0', null::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.5'::text number,
        'TT_minIndexNotNull'::text function_tested,
        'Test setNullTo, false'::text description,
-       TT_minIndexNotNull('{1990, null}', '{burn, null}', '0') IS FALSE passed
+       TT_minIndexNotNull('{1990, null}', '{burn, null}', '0', null::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.6'::text number,
@@ -1832,6 +1843,12 @@ SELECT '24.7'::text number,
        'TT_minIndexNotNull'::text function_tested,
        'Test matching years with null returns'::text description,
        TT_minIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '24.8'::text number,
+       'TT_minIndexNotNull'::text function_tested,
+       'Test setZeroTo, true'::text description,
+       TT_minIndexNotNull('{-1, 0}', '{null, wind}', null::text, '-2') passed
 ---------------------------------------------------------
 -- Test 25 - TT_minIndexNotNull
 ---------------------------------------------------------
@@ -1857,13 +1874,13 @@ UNION ALL
 SELECT '25.4'::text number,
        'TT_maxIndexNotNull'::text function_tested,
        'Test setNullTo, true'::text description,
-       TT_maxIndexNotNull('{1990, null}', '{null, wind}', '9999') passed
+       TT_maxIndexNotNull('{1990, null}', '{null, wind}', '9999', null::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.5'::text number,
        'TT_maxIndexNotNull'::text function_tested,
        'Test setNullTo, false'::text description,
-       TT_maxIndexNotNull('{1990, null}', '{burn, null}', '9999') IS FALSE passed
+       TT_maxIndexNotNull('{1990, null}', '{burn, null}', '9999', null::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.6'::text number,
@@ -1876,6 +1893,12 @@ SELECT '25.7'::text number,
        'TT_maxIndexNotNull'::text function_tested,
        'Test matching years with null returns'::text description,
        TT_maxIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '25.8'::text number,
+       'TT_maxIndexNotNull'::text function_tested,
+       'Test setZeroTo, true'::text description,
+       TT_maxIndexNotNull('{1990, 0}', '{null, wind}', null::text, '9999') passed
 ---------------------------------------------------------
 -- Test 26 - TT_IsXMinusYBetween
 ---------------------------------------------------------
@@ -2084,7 +2107,154 @@ SELECT '29.5'::text number,
        'TT_LookupTextMatchList'::text function_tested,
        'Matches with multiple test vals'::text description,
        TT_LookupTextMatchList(NULL::text, 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
-
+---------------------------------------------------------
+-- Test 30 - TT_MinIndexIsInt
+---------------------------------------------------------
+UNION ALL
+SELECT '30.1'::text number,
+       'TT_MinIndexIsInt'::text function_tested,
+       'Simple pass'::text description,
+       TT_MinIndexIsInt('{1,2,3}', '{1,2.2,3.3}') passed
+UNION ALL
+SELECT '30.2'::text number,
+       'TT_MinIndexIsInt'::text function_tested,
+       'Fails double'::text description,
+       TT_MinIndexIsInt('{1,2,3}', '{1.1,2.2,3.3}') IS FALSE passed
+UNION ALL
+SELECT '30.3'::text number,
+       'TT_MinIndexIsInt'::text function_tested,
+       'Fails text'::text description,
+       TT_MinIndexIsInt('{1,2,3}', '{a,2.2,3.3}') IS FALSE passed
+UNION ALL
+SELECT '30.4'::text number,
+       'TT_MinIndexIsInt'::text function_tested,
+       'Test set null'::text description,
+       TT_MinIndexIsInt('{1,null,3}', '{1.1,2,3.3}', '0', null::text) passed
+UNION ALL
+SELECT '30.5'::text number,
+       'TT_MinIndexIsInt'::text function_tested,
+       'Test set null'::text description,
+       TT_MinIndexIsInt('{1,0,3}', '{1.1,2,3.3}', null::text, '0.5') passed
+---------------------------------------------------------
+-- Test 31 - TT_MaxIndexIsInt
+---------------------------------------------------------
+UNION ALL
+SELECT '31.1'::text number,
+       'TT_MaxIndexIsInt'::text function_tested,
+       'Simple pass'::text description,
+       TT_MaxIndexIsInt('{1,2,3}', '{1.1,2.2,3}') passed
+UNION ALL
+SELECT '31.2'::text number,
+       'TT_MaxIndexIsInt'::text function_tested,
+       'Fails double'::text description,
+       TT_MaxIndexIsInt('{1,2,3}', '{1.1,2.2,3.3}') IS FALSE passed
+UNION ALL
+SELECT '31.3'::text number,
+       'TT_MaxIndexIsInt'::text function_tested,
+       'Fails text'::text description,
+       TT_MaxIndexIsInt('{1,2,3}', '{1,2,a}') IS FALSE passed
+UNION ALL
+SELECT '31.4'::text number,
+       'TT_MaxIndexIsInt'::text function_tested,
+       'Test set null'::text description,
+       TT_MaxIndexIsInt('{1,null,3}', '{1.1,2,3.3}', '4', null::text) passed
+UNION ALL
+SELECT '31.5'::text number,
+       'TT_MaxIndexIsInt'::text function_tested,
+       'Test set zero'::text description,
+       TT_MaxIndexIsInt('{1,0,3}', '{1.1,2,3.3}', null::text, '4') passed
+---------------------------------------------------------
+-- Test 32 - TT_MinIndexIsBetween
+---------------------------------------------------------
+UNION ALL
+SELECT '32.1'::text number,
+       'TT_MinIndexIsBetween'::text function_tested,
+       'Simple pass'::text description,
+       TT_MinIndexIsBetween('{1,2,3}', '{0,2,5}', '0', '2') passed
+UNION ALL
+SELECT '32.2'::text number,
+       'TT_MinIndexIsBetween'::text function_tested,
+       'Pass with setNull'::text description,
+       TT_MinIndexIsBetween('{1,null,3}', '{0,2,5}', '1', '3', '-1', null::text) passed
+UNION ALL
+SELECT '32.3'::text number,
+       'TT_MinIndexIsBetween'::text function_tested,
+       'Simple fail'::text description,
+       TT_MinIndexIsBetween('{1,2,3}', '{1,2,3}', '2', '3') IS FALSE passed
+UNION ALL
+SELECT '32.4'::text number,
+       'TT_MinIndexIsBetween'::text function_tested,
+       'Test setZero'::text description,
+       TT_MinIndexIsBetween('{1,0,3}', '{0,2,5}', '1', '3', null::text, '-1') passed
+---------------------------------------------------------
+-- Test 33 - TT_MaxIndexIsBetween
+---------------------------------------------------------
+UNION ALL
+SELECT '33.1'::text number,
+       'TT_MaxIndexIsBetween'::text function_tested,
+       'Simple pass'::text description,
+       TT_MaxIndexIsBetween('{1,2,3}', '{1,2,3}', '3', '3.1') passed
+UNION ALL
+SELECT '33.2'::text number,
+       'TT_MaxIndexIsBetween'::text function_tested,
+       'Pass with setNull'::text description,
+       TT_MaxIndexIsBetween('{1,null,3}', '{0,10,5}', '9', '10', '10', null::text) passed
+UNION ALL
+SELECT '33.3'::text number,
+       'TT_MaxIndexIsBetween'::text function_tested,
+       'Simple fail'::text description,
+       TT_MaxIndexIsBetween('{1,2,3}', '{1,2,3}', '1', '2') IS FALSE passed
+UNION ALL
+SELECT '33.4'::text number,
+       'TT_MaxIndexIsBetween'::text function_tested,
+       'Test setZero'::text description,
+       TT_MaxIndexIsBetween('{1,2,0}', '{1,20,30}', '29', '31', null::text, '10') passed
+---------------------------------------------------------
+-- Test 34 - TT_MinIndexMatchList
+---------------------------------------------------------
+UNION ALL
+SELECT '34.1'::text number,
+       'TT_MinIndexMatchList'::text function_tested,
+       'Simple pass'::text description,
+       TT_MinIndexMatchList('{1,2,3}', '{a,b,c}', '{a, y, z}') passed
+UNION ALL
+SELECT '34.2'::text number,
+       'TT_MinIndexMatchList'::text function_tested,
+       'Simple fail'::text description,
+       TT_MinIndexMatchList('{1,2,3}', '{a,b,c}', '{x, y, z}') IS FALSE passed
+UNION ALL
+SELECT '34.3'::text number,
+       'TT_MinIndexMatchList'::text function_tested,
+       'Test setNull'::text description,
+       TT_MinIndexMatchList('{1,null,3}', '{a,b,c}', '{b, y, z}', '0', null::text) passed
+UNION ALL
+SELECT '34.4'::text number,
+       'TT_MinIndexMatchList'::text function_tested,
+       'Test setZero'::text description,
+       TT_MinIndexMatchList('{1,0,3}', '{a,b,c}', '{b, y, z}', null::text, '0') passed
+---------------------------------------------------------
+-- Test 35 - TT_MaxIndexMatchList
+---------------------------------------------------------
+UNION ALL
+SELECT '35.1'::text number,
+       'TT_MaxIndexMatchList'::text function_tested,
+       'Simple pass'::text description,
+       TT_MaxIndexMatchList('{1,2,3}', '{a,b,c}', '{c, y, z}') passed
+UNION ALL
+SELECT '35.2'::text number,
+       'TT_MaxIndexMatchList'::text function_tested,
+       'Simple fail'::text description,
+       TT_MaxIndexMatchList('{1,2,3}', '{a,b,c}', '{x, y, z}') IS FALSE passed
+UNION ALL
+SELECT '35.3'::text number,
+       'TT_MaxIndexMatchList'::text function_tested,
+       'Test setNull'::text description,
+       TT_MaxIndexMatchList('{1,null,3}', '{a,b,c}', '{b, y, z}', '4', null::text) passed
+UNION ALL
+SELECT '35.4'::text number,
+       'TT_MaxIndexMatchList'::text function_tested,
+       'Test setZero'::text description,
+       TT_MaxIndexMatchList('{1,0,3}', '{a,b,c}', '{b, y, z}', null::text, '4') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------
@@ -3009,7 +3179,7 @@ UNION ALL
 SELECT '132.5'::text number,
        'TT_MinIndexCopyText'::text function_tested,
        'Test setNullTo'::text description,
-       TT_MinIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '0') = 'd' passed
+       TT_MinIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '0', null::text) = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '132.6'::text number,
@@ -3028,6 +3198,12 @@ SELECT '132.8'::text number,
        'TT_MinIndexCopyText'::text function_tested,
        'Matching indexes return first with null'::text description,
        TT_MinIndexCopyText('{1,1,1}', '{null,null,c}') = 'c' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '132.9'::text number,
+       'TT_MinIndexCopyText'::text function_tested,
+       'Test setZeroTo'::text description,
+       TT_MinIndexCopyText('{1,2,3,0}', '{a,b,c,d}', null::text, '-1') = 'd' passed
 ---------------------------------------------------------
 -- Test 133 - TT_MaxIndexCopyText
 ---------------------------------------------------------
@@ -3059,7 +3235,7 @@ UNION ALL
 SELECT '133.5'::text number,
        'TT_MaxIndexCopyText'::text function_tested,
        'Test setNullTo'::text description,
-       TT_MaxIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '4') = 'd' passed
+       TT_MaxIndexCopyText('{1,2,3,null}', '{a,b,c,d}', '4', null::text) = 'd' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '133.6'::text number,
@@ -3078,6 +3254,12 @@ SELECT '133.8'::text number,
        'TT_MaxIndexCopyText'::text function_tested,
        'Matching indexes return last with null'::text description,
        TT_MaxIndexCopyText('{null,null,null}', '{a,b,null}') = 'b' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '133.9'::text number,
+       'TT_MaxIndexCopyText'::text function_tested,
+       'Test setZeroTo'::text description,
+       TT_MaxIndexCopyText('{1,2,3,0}', '{a,b,c,d}', null::text, '4') = 'd' passed
 ---------------------------------------------------------
 -- Test 134 - TT_MinIndexMapText
 ---------------------------------------------------------
@@ -3127,19 +3309,25 @@ UNION ALL
 SELECT '134.8'::text number,
        'TT_MinIndexMapText'::text function_tested,
        'setNullTo'::text description,
-       TT_MinIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
+       TT_MinIndexMapText('{1990, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0', null::text) = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.9'::text number,
        'TT_MinIndexMapText'::text function_tested,
        'Matching years return first not null'::text description,
-       TT_MinIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0') = 'BU' passed
+       TT_MinIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '0', null::text) = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '134.10'::text number,
        'TT_MinIndexMapText'::text function_tested,
        'Matching years return first not null'::text description,
-       TT_MinIndexMapText('{null, null}', '{null, wind}', '{burn, wind}', '{BU, WT}', '0') = 'WT' passed
+       TT_MinIndexMapText('{null, null}', '{null, wind}', '{burn, wind}', '{BU, WT}', '0', null::text) = 'WT' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '134.11'::text number,
+       'TT_MinIndexMapText'::text function_tested,
+       'setZeroTo'::text description,
+       TT_MinIndexMapText('{-1, 0}', '{burn, wind}', '{burn, wind}', '{BU, WT}', null::text, '-2') = 'WT' passed
 ---------------------------------------------------------
 -- Test 135 - TT_MaxIndexMapText
 ---------------------------------------------------------
@@ -3189,19 +3377,25 @@ UNION ALL
 SELECT '135.8'::text number,
        'TT_MaxIndexMapText'::text function_tested,
        'setNullTo'::text description,
-       TT_MaxIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
+       TT_MaxIndexMapText('{null, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999', null::text) = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.9'::text number,
        'TT_MaxIndexMapText'::text function_tested,
        'Matching indexes return last not null'::text description,
-       TT_MaxIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999') = 'WT' passed
+       TT_MaxIndexMapText('{null, null}', '{burn, wind}', '{burn, wind}', '{BU, WT}', '9999', null::text) = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '135.10'::text number,
        'TT_MaxIndexMapText'::text function_tested,
        'Matching indexes return last not null'::text description,
-       TT_MaxIndexMapText('{null, null}', '{burn, null}', '{burn, wind}', '{BU, WT}', '9999') = 'BU' passed
+       TT_MaxIndexMapText('{null, null}', '{burn, null}', '{burn, wind}', '{BU, WT}', '9999', null::text) = 'BU' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '135.11'::text number,
+       'TT_MaxIndexMapText'::text function_tested,
+       'setZeroTo'::text description,
+       TT_MaxIndexMapText('{0, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', null::text, '2001') = 'BU' passed
 ---------------------------------------------------------
 -- Test 136 - TT_MinIndexLookupText
 ---------------------------------------------------------
@@ -3209,85 +3403,85 @@ UNION ALL
 SELECT '136.1'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test for null schema'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is NULL' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.2'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test for null table'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is NULL' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.3'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test for null source column'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is NULL' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.4'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test for null return column'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is NULL' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.5'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test invalid schema name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is not a name value' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is not a name value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.6'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test invalid table name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is not a name value' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '136.7'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is not a name value' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '136.8'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is not a name value' passed
+       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '136.9'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Simple test'::text description,
-       TT_MinIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+       TT_MinIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.10'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Matching indexes'::text description,
-       TT_MinIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+       TT_MinIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.11'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'null integer'::text description,
-       TT_MinIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'WT' passed
+       TT_MinIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.12'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'setNullTo'::text description,
-       TT_MinIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '0') = 'WT' passed
+       TT_MinIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '0', null::text) = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.13'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Matching years, return first'::text description,
-       TT_MinIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+       TT_MinIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'text_val') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '136.14'::text number,
        'TT_MinIndexLookupText'::text function_tested,
        'Matching years, return first with null in list'::text description,
-       TT_MinIndexLookupText('{1990, 1990}', '{null, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'WT' passed
+       TT_MinIndexLookupText('{1990, 1990}', '{null, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
 ---------------------------------------------------------
 -- Test 137 - TT_MaxIndexLookupText
 ---------------------------------------------------------
@@ -3295,85 +3489,85 @@ UNION ALL
 SELECT '137.1'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test for null schema'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is NULL' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.2'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test for null table'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is NULL' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.3'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test for null source column'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is NULL' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.4'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test for null return column'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is NULL' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.5'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test invalid schema name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is not a name value' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is not a name value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.6'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test invalid table name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is not a name value' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '137.7'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is not a name value' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '137.8'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is not a name value' passed
+       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is not a name value' passed
 ------------------------------------------------------------------------------------------------------------------
 UNION ALL
 SELECT '137.9'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Simple test'::text description,
-       TT_MaxIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', null::text) = 'WT' passed
+       TT_MaxIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.10'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Matching indexes'::text description,
-       TT_MaxIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', null::text) = 'WT' passed
+       TT_MaxIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.11'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'null integer'::text description,
-       TT_MaxIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', null::text) = 'BU' passed
+       TT_MaxIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.12'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'setNullTo'::text description,
-       TT_MaxIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '9999') = 'BU' passed
+       TT_MaxIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '9999', null::text) = 'BU' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.13'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Matching years return last with null in list'::text description,
-       TT_MaxIndexLookupText('{null, null}', '{null, wind}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'WT' passed
+       TT_MaxIndexLookupText('{null, null}', '{null, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '137.14'::text number,
        'TT_MaxIndexLookupText'::text function_tested,
        'Matching years return last with null in list'::text description,
-       TT_MaxIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'source_val', 'text_val', NULL::text) = 'BU' passed
+       TT_MaxIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'text_val') = 'BU' passed
 ---------------------------------------------------------
 -- Test 138 - TT_XMinusYDouble
 ---------------------------------------------------------
@@ -3491,6 +3685,205 @@ SELECT '142.3'::text number,
        'Test zero'::text description,
        TT_Multiply('0','0') IS NULL passed
 ---------------------------------------------------------
+-- Test 143 - TT_MinIndexMapInt
+---------------------------------------------------------
+UNION ALL
+SELECT '143.1'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'Simple test'::text description,
+       TT_MinIndexMapInt('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.2'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'Matching indexes'::text description,
+       TT_MinIndexMapInt('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.3'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'null integer'::text description,
+       TT_MinIndexMapInt('{null, 2000}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.4'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'setNullTo'::text description,
+       TT_MinIndexMapInt('{1990, null}', '{burn, wind}', '{burn, wind}', '{1, 2}', '0', null::text) = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.5'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'Matching years return first not null'::text description,
+       TT_MinIndexMapInt('{null, null}', '{burn, wind}', '{burn, wind}', '{1, 2}', '0', null::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.6'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'Matching years return first not null'::text description,
+       TT_MinIndexMapInt('{null, null}', '{null, wind}', '{burn, wind}', '{1, 2}', '0', null::text) = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '143.7'::text number,
+       'TT_MinIndexMapInt'::text function_tested,
+       'Test setZero'::text description,
+       TT_MinIndexMapInt('{-1, 0}', '{burn, wind}', '{burn, wind}', '{1, 2}', null::text, '-2') = 2 passed
+---------------------------------------------------------
+-- Test 144 - TT_MaxIndexMapInt
+---------------------------------------------------------
+UNION ALL
+SELECT '144.1'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'Simple test'::text description,
+       TT_MaxIndexMapInt('{1990, 2000}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.2'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'Matching indexes'::text description,
+       TT_MaxIndexMapInt('{1990, 1990}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.3'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'null integer'::text description,
+       TT_MaxIndexMapInt('{1990, null}', '{burn, wind}', '{burn, wind}', '{1, 2}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.4'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'setNullTo'::text description,
+       TT_MaxIndexMapInt('{null, 2000}', '{burn, wind}', '{burn, wind}', '{1, 2}', '9999', null::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.5'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'Matching indexes return last not null'::text description,
+       TT_MaxIndexMapInt('{null, null}', '{burn, wind}', '{burn, wind}', '{1, 2}', '9999', null::text) = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.6'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'Matching indexes return last not null'::text description,
+       TT_MaxIndexMapInt('{null, null}', '{burn, null}', '{burn, wind}', '{1, 2}', '9999', null::text) = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '144.7'::text number,
+       'TT_MaxIndexMapInt'::text function_tested,
+       'Test setZero'::text description,
+       TT_MaxIndexMapInt('{0, 2}', '{burn, wind}', '{burn, wind}', '{1, 2}', null::text, '9999') = 1 passed
+---------------------------------------------------------
+-- Test 145 - TT_MinIndexCopyInt
+---------------------------------------------------------
+UNION ALL
+SELECT '145.1'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Simple test'::text description,
+       TT_MinIndexCopyInt('{1,2,3}', '{1,2,3}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.2'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Simple test 2'::text description,
+       TT_MinIndexCopyInt('{1,2,3,0}', '{1,2,3,0}') = 0 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.3'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Test negative int'::text description,
+       TT_MinIndexCopyInt('{1,2,3,-1}', '{1,2,3,-1}') = -1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.4'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Test null'::text description,
+       TT_MinIndexCopyInt('{1,2,3,null}', '{1,2,3,4}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.5'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Test setNullTo'::text description,
+       TT_MinIndexCopyInt('{1,2,3,null}', '{1,2,3,4}', '0', null::text) = 4 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.6'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Test multiple indexes'::text description,
+       TT_MinIndexCopyInt('{1,1,3}', '{1,2,3}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.7'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Matching indexes return first with null'::text description,
+       TT_MinIndexCopyInt('{1,1,1}', '{1,null,3}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.8'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Matching indexes return first with null'::text description,
+       TT_MinIndexCopyInt('{1,1,1}', '{null,null,3}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '145.9'::text number,
+       'TT_MinIndexCopyInt'::text function_tested,
+       'Test setZeroTo'::text description,
+       TT_MinIndexCopyInt('{2,3,4,0}', '{1,2,3,4}', null::text, '1') = 4 passed
+---------------------------------------------------------
+-- Test 146 - TT_MaxIndexCopyInt
+---------------------------------------------------------
+UNION ALL
+SELECT '146.1'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Simple test'::text description,
+       TT_MaxIndexCopyInt('{1,2,3}', '{1,2,3}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.2'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Simple test 2'::text description,
+       TT_MaxIndexCopyInt('{4,1,2,3}', '{1,2,3,4}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.3'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Test negative int'::text description,
+       TT_MaxIndexCopyInt('{1,2,3,-1}', '{1,2,3,4}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.4'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Test null'::text description,
+       TT_MaxIndexCopyInt('{1,2,3,null}', '{1,2,3,4}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.5'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Test setNullTo'::text description,
+       TT_MaxIndexCopyInt('{1,2,3,null}', '{1,2,3,4}', '4', null::text) = 4 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.6'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Test multiple indexes'::text description,
+       TT_MaxIndexCopyInt('{1,3,3}', '{1,2,3}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.7'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Matching indexes return last with null'::text description,
+       TT_MaxIndexCopyInt('{3,3,3}', '{1,2,3}') = 3 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.8'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Matching indexes return last with null'::text description,
+       TT_MaxIndexCopyInt('{null,null,null}', '{1,2,null}') = 2 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '146.9'::text number,
+       'TT_MaxIndexCopyInt'::text function_tested,
+       'Test setZero'::text description,
+       TT_MaxIndexCopyInt('{1,2,0}', '{1,2,3}', null::text, '3') = 3 passed
   
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
