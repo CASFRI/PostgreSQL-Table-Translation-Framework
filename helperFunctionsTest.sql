@@ -213,6 +213,7 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexIsBetween'::text,      33,          4         UNION ALL
     SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
     SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
+    SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -255,7 +256,8 @@ WITH test_nb AS (
     SELECT 'TT_MinIndexMapInt'::text,        143,          7         UNION ALL
     SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
     SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
-    SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         
+    SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
+    SELECT 'TT_LookupTextSubstring'::text,   147,          3
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2256,6 +2258,29 @@ SELECT '35.4'::text number,
        'Test setZero'::text description,
        TT_MaxIndexMatchList('{1,0,3}', '{a,b,c}', '{b, y, z}', null::text, '4') passed
 ---------------------------------------------------------
+-- Test 36 - TT_MatchTableSubstring
+---------------------------------------------------------
+UNION ALL
+SELECT '36.1'::text number,
+       'TT_MatchTableSubstring'::text function_tested,
+       'Simple test text, pass'::text description,
+       TT_MatchTableSubstring('RA00'::text, '1', '2', 'public'::text, 'test_lookuptable1'::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '36.2'::text number,
+       'TT_MatchTableSubstring'::text function_tested,
+       'Simple test text, fail'::text description,
+       TT_MatchTableSubstring('RA00'::text, '1', '3', 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '36.3'::text number,
+       'TT_MatchTableSubstring'::text function_tested,
+       'val NULL text'::text description,
+       TT_MatchTableSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
+  
+  
+  
+---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------
 ---------------------------------------------------------
@@ -3884,6 +3909,26 @@ SELECT '146.9'::text number,
        'TT_MaxIndexCopyInt'::text function_tested,
        'Test setZero'::text description,
        TT_MaxIndexCopyInt('{1,2,0}', '{1,2,3}', null::text, '3') = 3 passed
+---------------------------------------------------------
+-- Test 147 - TT_LookupTextSubstring
+---------------------------------------------------------
+UNION ALL
+SELECT '147.1'::text number,
+       'TT_LookupTextSubstring'::text function_tested,
+       'Simple test text, pass'::text description,
+       TT_LookupTextSubstring('RA00'::text, '1', '2', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) = 'Arbu menz' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '147.2'::text number,
+       'TT_LookupTextSubstring'::text function_tested,
+       'Simple test text, fail'::text description,
+       TT_LookupTextSubstring('RA00'::text, '1', '3', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '147.3'::text number,
+       'TT_LookupTextSubstring'::text function_tested,
+       'val NULL text, NULL gets converted to empty string'::text description,
+       TT_LookupTextSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) = '' passed
   
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

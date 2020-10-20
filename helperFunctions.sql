@@ -64,6 +64,7 @@ RETURNS text AS $$
                   WHEN rule = 'lookuptextmatchlist'     THEN '-9998'
                   WHEN rule = 'geoisvalid'              THEN '-7779'
                   WHEN rule = 'geointersects'           THEN '-7778'
+                  WHEN rule = 'matchtablesubstring'     THEN '-9998'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -100,6 +101,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchlisttwice'          THEN NULL
                   WHEN rule = 'geoisvalid'              THEN NULL
                   WHEN rule = 'geointersects'           THEN NULL
+                  WHEN rule = 'matchtablesubstring'     THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -137,6 +139,7 @@ RETURNS text AS $$
                   WHEN rule = 'lookuptextmatchlist'     THEN 'NOT_IN_SET'
                   WHEN rule = 'geoisvalid'              THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'           THEN 'NO_INTERSECT'
+                  WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -2737,6 +2740,102 @@ RETURNS boolean AS $$
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
+-- TT_MatchTableSubstring
+--
+-- val text - value to test.
+--
+-- startChar - start character to take substring from
+-- forLength - length of substring to take
+--
+-- lookupSchemaName text - Schema name holding lookup table.
+-- lookupTableName text - Lookup table name.
+-- lookupColumnName text - Lookup table column name.
+-- ignoreCase text - Should upper/lower case be ignored? Default to FALSE. 
+-- acceptNull text - Should NULL value return TRUE? Default to FALSE.
+--
+-- Take substring and pass to matchTable
+-- e.g. TT_MatchTableSubstring('BS01', 1, 2, 'public', 'bc08', TRUE)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupColumnName text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _val text;
+    _acceptNull boolean;
+  BEGIN
+    PERFORM TT_ValidateParams('TT_MatchTableSubstring',
+                              ARRAY['acceptNull', acceptNull, 'boolean']);
+    _acceptNull = acceptNull::boolean;
+
+    -- validate source value (return FALSE)
+    IF val IS NULL THEN
+      IF _acceptNull THEN
+        RETURN TRUE;
+      END IF;
+      RETURN FALSE;
+    END IF;
+
+    -- process
+    _val = substring(val, startChar::int, forLength::int);
+    RETURN tt_MatchTable(_val, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, acceptNull);
+  END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupColumnName text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, FALSE::text)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, FALSE::text)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupTableName text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
+$$ LANGUAGE sql STABLE;
+
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Begin Translation Function Definitions...
@@ -5035,3 +5134,87 @@ RETURNS double precision AS $$
     RETURN val1::double precision * val2::double precision;
   END    
 $$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_LookupTextSubstring
+--
+-- val text - value to test.
+--
+-- startChar - start character to take substring from
+-- forLength - length of substring to take
+--
+-- lookupSchemaName text - Schema name holding lookup table.
+-- lookupTableName text - Lookup table name.
+-- lookupColumnName text - Lookup table column name.
+-- ignoreCase text - Should upper/lower case be ignored? Default to FALSE. 
+-- acceptNull text - Should NULL value return TRUE? Default to FALSE.
+--
+-- Take substring and pass to lookupText
+-- e.g. TT_LookupTextSubstring('BS01', 1, 2, 'public', 'bc08', TRUE)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupColumnName text,
+  retrieveCol text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  DECLARE
+    _val text;
+  BEGIN
+
+    -- convert source NULLs into empty strings. This allows NULL source values to be translated into target
+    -- values by using an empty string in the lookup table. If no empty string translation is provided, function
+    -- returns NULL as usual.
+    IF val IS NULL THEN
+      _val = '';
+    ELSE
+      _val = val;
+    END IF;
+
+    -- process
+    _val = substring(val, startChar::int, forLength::int);
+    RETURN TT_LookupText(_val, lookupSchemaName, lookupTableName, lookupColumnName, retrieveCol, ignoreCase);
+  END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text,
+  ignoreCase text
+)
+RETURNS text AS $$
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, ignoreCase)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS text AS $$
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, FALSE::text)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  lookupTableName text,
+  retrieveCol text
+)
+RETURNS text AS $$
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, retrieveCol, FALSE::text)
+$$ LANGUAGE sql STABLE;
