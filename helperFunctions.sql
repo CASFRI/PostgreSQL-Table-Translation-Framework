@@ -53,6 +53,8 @@ RETURNS text AS $$
                   WHEN rule = 'matchlistsubstring'      THEN '-9998'
                   WHEN rule = 'minindexnotnull'         THEN '-8888'
                   WHEN rule = 'maxindexnotnull'         THEN '-8888'
+                  WHEN rule = 'minindexnotempty'        THEN '-8889'
+                  WHEN rule = 'maxindexnotempty'        THEN '-8889'
                   WHEN rule = 'minindexisint'           THEN '-9995'
                   WHEN rule = 'maxindexisint'           THEN '-9995'
                   WHEN rule = 'minindexisbetween'       THEN '-9999'
@@ -90,6 +92,8 @@ RETURNS text AS $$
                   WHEN rule = 'matchlistsubstring'      THEN NULL
                   WHEN rule = 'minindexnotnull'         THEN NULL
                   WHEN rule = 'maxindexnotnull'         THEN NULL
+                  WHEN rule = 'minindexnotempty'        THEN NULL
+                  WHEN rule = 'maxindexnotempty'        THEN NULL
                   WHEN rule = 'minindexisint'           THEN NULL
                   WHEN rule = 'maxindexisint'           THEN NULL
                   WHEN rule = 'minindexisbetween'       THEN NULL
@@ -128,6 +132,8 @@ RETURNS text AS $$
                   WHEN rule = 'matchlistsubstring'      THEN 'NOT_IN_SET'
                   WHEN rule = 'minindexnotnull'         THEN 'NULL_VALUE'
                   WHEN rule = 'maxindexnotnull'         THEN 'NULL_VALUE'
+                  WHEN rule = 'minindexnotempty'        THEN 'EMPTY_STRING'
+                  WHEN rule = 'maxindexnotempty'        THEN 'EMPTY_STRING'
                   WHEN rule = 'minindexisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'maxindexisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'minindexisbetween'       THEN 'OUT_OF_RANGE'
@@ -399,7 +405,6 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- Return TRUE if val is not an empty string.
 -- Return FALSE if val is empty string or padded spaces (e.g. '' or '  ') or NULL.
--- If multiple inputs provided they are concatenated before testing
 -- e.g. TT_NotEmpty('a')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_NotEmpty(
@@ -436,9 +441,9 @@ RETURNS boolean AS $$
     -- return TRUE if any is TRUE and _not_empty_count >0
     -- return TRUE if any is FALSE and _not_empty_count = length of _vals array
     IF _any THEN
-      RETURN _not_empty_count > 0;
+      RETURN _not_empty_count > 0; -- any
     ELSE
-      RETURN _not_empty_count = array_length(_vals, 1);
+      RETURN _not_empty_count = array_length(_vals, 1); -- all
     END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -2351,6 +2356,77 @@ CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
 )
 RETURNS boolean AS $$
   SELECT TT_maxIndexNotNull(intList, testList, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_minIndexNotEmpty(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+--
+-- Same as TT_minIndexNotNull but instead tests notEmpty
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_minIndexNotEmpty(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_minIndexNotEmpty(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
+        
+    -- test with tt_notNull()
+    RETURN tt_notEmpty(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_minIndexNotEmpty(
+  intList text,
+  testList text
+)
+RETURNS boolean AS $$
+  SELECT TT_minIndexNotEmpty(intList, testList, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_maxIndexNotEmpty(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+--
+-- Same as TT_maxIndexNotNull but tests with notEmpty
+---------------------------
+-- DROP FUNCTION IF EXISTS TT_maxIndexNotEmpty(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_maxIndexNotEmpty(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo); 
+    
+    -- test with tt_notNull()
+    RETURN tt_notEmpty(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_maxIndexNotEmpty(
+  intList text,
+  testList text
+)
+RETURNS boolean AS $$
+  SELECT TT_maxIndexNotEmpty(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_minIndexIsInt(text, text, text, text)

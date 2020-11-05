@@ -214,6 +214,8 @@ WITH test_nb AS (
     SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
     SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
     SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
+    SELECT 'TT_MinIndexNotEmpty'::text,       37,          8         UNION ALL
+    SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2277,7 +2279,106 @@ SELECT '36.3'::text number,
        'TT_MatchTableSubstring'::text function_tested,
        'val NULL text'::text description,
        TT_MatchTableSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
-  
+---------------------------------------------------------
+-- Test 37 - TT_minIndexNotEmpty
+---------------------------------------------------------
+UNION ALL
+SELECT '37.1'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Passes basic test, true'::text description,
+       TT_MinIndexNotEmpty('{1990, 2000}', '{burn, wind}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.2'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Passes basic test, false'::text description,
+       TT_MinIndexNotEmpty('{1990, 2000}', '{'', wind}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.3'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Matching ints return first string'::text description,
+       TT_MinIndexNotEmpty('{1990, 1990}', '{wind, ''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.4'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Test setNullTo, true'::text description,
+       TT_MinIndexNotEmpty('{1990, null}', '{'', wind}', '0', null::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.5'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Test setNullTo, false'::text description,
+       TT_MinIndexNotEmpty('{1990, null}', '{burn, ''}', '0', null::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.6'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Test all null ints, should return first not null return value'::text description,
+       TT_MinIndexNotEmpty('{null, null}', '{'', wind}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.7'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Test matching years with null returns'::text description,
+       TT_MinIndexNotEmpty('{2000, 2000}', '{'', ''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '37.8'::text number,
+       'TT_MinIndexNotEmpty'::text function_tested,
+       'Test setZeroTo, true'::text description,
+       TT_MinIndexNotEmpty('{-1, 0}', '{'', wind}', null::text, '-2') passed
+---------------------------------------------------------
+-- Test 38 - TT_MaxIndexNotEmpty
+---------------------------------------------------------
+UNION ALL
+SELECT '38.1'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Passes basic test, true'::text description,
+       TT_MaxIndexNotEmpty('{1990, 2000}', '{burn, wind}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.2'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Passes basic test, false'::text description,
+       TT_MaxIndexNotEmpty('{1990, 2000}', '{burn, ''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.3'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Matching ints return last not null index'::text description,
+       TT_MaxIndexNotEmpty('{1990, 1990}', '{burn, ''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.4'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Test setNullTo, true'::text description,
+       TT_MaxIndexNotEmpty('{1990, null}', '{'', wind}', '9999', null::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.5'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Test setNullTo, false'::text description,
+       TT_MaxIndexNotEmpty('{1990, null}', '{burn, ''}', '9999', null::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.6'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Test all null ints, returns last string'::text description,
+       TT_MaxIndexNotEmpty('{null, null}', '{burn, ''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.7'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Test matching years with null returns'::text description,
+       TT_MaxIndexNotEmpty('{2000, 2000}', '{x, ''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '38.8'::text number,
+       'TT_MaxIndexNotEmpty'::text function_tested,
+       'Test setZeroTo, true'::text description,
+       TT_MaxIndexNotEmpty('{1990, 0}', '{'', wind}', null::text, '9999') passed  
   
   
 ---------------------------------------------------------
