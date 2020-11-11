@@ -97,8 +97,6 @@ DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text, text, text);
-DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text);
-DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text);
@@ -221,7 +219,6 @@ DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text);
 
 
 -- generic and test functions
