@@ -229,12 +229,7 @@ RETURNS text AS $$
     _intersectTableName name;
     _the_geom geometry;
     query text;
-    geoRow RECORD;
-    maxArea double precision = 0;
-    maxAreaVal text;
-    maxVal text;
-    minVal text;
-    count int = 0;
+    result text;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams(callerFctName,
@@ -246,11 +241,11 @@ RETURNS text AS $$
     _intersectSchemaName = intersectSchemaName::name;
     _intersectTableName = intersectTableName::name;
 
-    IF NOT method = any('{"GREATEST_AREA", "LOWEST_VALUE", "HIGHEST_VALUE"}') THEN
+    IF NOT method = ANY('{"GREATEST_AREA", "LOWEST_VALUE", "HIGHEST_VALUE"}') THEN
       RAISE EXCEPTION 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"';
     END IF;
 
-    -- validate source value (return NULL if not valid)
+    -- validate source value (return NULL if not a geometry)
     IF NOT TT_IsGeometry(the_geom) THEN
       RETURN NULL;
     END IF;
@@ -264,34 +259,15 @@ RETURNS text AS $$
 
     -- process
     -- get table of returnCol values and intersecting areas for all intersecting polygons
-    query = 'SELECT ' || returnCol || ' AS return_value, ST_Area(ST_Intersection($1, ' || geoCol || ')) AS int_area
+    query = 'SELECT ' || returnCol || ' AS return_value
     FROM ' || TT_FullTableName(_intersectSchemaName, _intersectTableName) ||
-    ' WHERE ST_Intersects($1, ' || geoCol || ');';
+    ' WHERE ST_Intersects($1, ' || geoCol || ') ' ||
+    CASE WHEN method = 'GREATEST_AREA' THEN 'ORDER BY ST_Area(ST_Intersection($1, ' || geoCol || ')) DESC'
+         WHEN method = 'LOWEST_VALUE' THEN 'ORDER BY return_value ASC'
+         ELSE 'ORDER BY return_value DESC' END || ' LIMIT 1';
 
-    FOR geoRow IN EXECUTE query USING _the_geom LOOP
-      IF geoRow.int_area > maxArea THEN
-        maxArea = geoRow.int_area;
-        maxAreaVal = geoRow.return_value::text;
-      END IF;
-      IF maxVal IS NULL OR geoRow.return_value::text > maxVal THEN
-        maxVal = geoRow.return_value::text;
-      END IF;
-      IF minVal IS NULL OR geoRow.return_value::text < minVal THEN
-        minVal = geoRow.return_value::text;
-      END IF;
-      count = count + 1;
-    END LOOP;
-
-    -- return value based on count and method
-    RETURN CASE WHEN count = 0 THEN
-                     NULL
-                WHEN method = 'GREATEST_AREA' THEN
-                     maxAreaVal
-                WHEN method = 'LOWEST_VALUE' THEN
-                     minVal
-                ELSE
-                     maxVAl
-           END;
+    EXECUTE query INTO result USING _the_geom;
+    RETURN result;
   END;
 $$ LANGUAGE plpgsql STABLE;
 
