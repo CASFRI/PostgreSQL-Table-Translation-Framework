@@ -236,7 +236,7 @@ WITH test_nb AS (
 	  SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
     SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
     SELECT 'TT_SubstringText'::text,         123,         10         UNION ALL
-    SELECT 'TT_SubstringInt'::text,          124,          2         UNION ALL
+    SELECT 'TT_SubstringInt'::text,          124,          3         UNION ALL
     SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
     SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
     SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
@@ -1362,6 +1362,7 @@ UNION ALL
 SELECT (TT_TestNullAndWrongTypeParams(16, 'TT_IsIntSubstring',
                                       ARRAY['startChar', 'int',
                                             'forLength', 'int',
+                                            'removeSpaces', 'boolean', 
                                             'acceptNull', 'boolean'])).*
 ---------------------------------------------------------
 UNION ALL
@@ -1386,7 +1387,7 @@ UNION ALL
 SELECT '16.10'::text number,
        'TT_IsIntSubstring'::text function_tested,
        'Test acceptNull'::text description,
-       TT_IsIntSubstring(NULL::text, 1::text, 4::text, TRUE::text) passed
+       TT_IsIntSubstring(NULL::text, 1::text, 4::text, FALSE::text, TRUE::text) passed
 ---------------------------------------------------------
 -- Test 17 - TT_IsBetweenSubstring
 ---------------------------------------------------------
@@ -3096,6 +3097,12 @@ SELECT '124.1'::text number,
 ---------------------------------------------------------
 UNION ALL
 SELECT '124.2'::text number,
+       'TT_SubstringInt'::text function_tested,
+       'Basic remove spaces'::text description,
+       TT_SubstringInt(' 1234'::text, '1'::text, '3'::text, TRUE::text) = '123' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '124.3'::text number,
        'TT_SubstringInt'::text function_tested,
        'NULL value'::text description,
        TT_IsError('SELECT TT_SubstringInt(NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_SubstringText(): startChar is NULL' passed  

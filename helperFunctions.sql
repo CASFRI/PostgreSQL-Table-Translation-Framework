@@ -2014,22 +2014,19 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
   startChar text,
   forLength text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
   DECLARE
-    _startChar int;
-    _forLength int;
-    _removeSpaces boolean;
     _acceptNull boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsIntSubstring',
                               ARRAY['startChar', startChar, 'int',
                                     'forLength', forLength, 'int',
+                                    'removeSpaces', removeSpaces, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _startChar = startChar::int;
-    _forLength = forLength::int;
     _acceptNull = acceptNull::boolean;
 
     -- validate source value (return FALSE)
@@ -2041,9 +2038,19 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    RETURN TT_IsInt(substring(val from _startChar for _forLength));
+    RETURN TT_IsInt(TT_SubstringText(val, startChar, forLength, removeSpaces));
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
+  val text,
+  startChar text,
+  forLength text,
+  removeSpaces text
+)
+RETURNS boolean AS $$
+  SELECT TT_IsIntSubstring(val, startChar, forLength, removeSpaces, FALSE::text)
+$$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   val text,
@@ -2051,7 +2058,7 @@ CREATE OR REPLACE FUNCTION TT_IsIntSubstring(
   forLength text
 )
 RETURNS boolean AS $$
-  SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text)
+  SELECT TT_IsIntSubstring(val, startChar, forLength, FALSE::text, FALSE::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text)
@@ -2840,6 +2847,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
   lookupTableName text,
   lookupColumnName text,
   ignoreCase text,
+  removeSpaces text,
   acceptNull text
 )
 RETURNS boolean AS $$
@@ -2860,7 +2868,7 @@ RETURNS boolean AS $$
     END IF;
 
     -- process
-    _val = substring(val, startChar::int, forLength::int);
+    _val = TT_SubstringText(val, startChar, forLength, removeSpaces);
     RETURN tt_MatchTable(_val, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, acceptNull);
   END;
 $$ LANGUAGE plpgsql STABLE;
@@ -2872,10 +2880,11 @@ CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
   lookupSchemaName text,
   lookupTableName text,
   lookupColumnName text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, FALSE::text)
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, removeSpaces, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
@@ -2884,10 +2893,11 @@ CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
   forLength text,
   lookupSchemaName text,
   lookupTableName text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, FALSE::text)
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, removeSpaces, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
@@ -2898,7 +2908,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
@@ -2908,7 +2918,7 @@ CREATE OR REPLACE FUNCTION TT_MatchTableSubstring(
   lookupTableName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTableSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
+  SELECT TT_MatchTableSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 -------------------------------------------------------------------------------
@@ -4574,6 +4584,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- val text - input string
 -- startChar text - start character to take substring from
 -- forLength text - length of substring to take
+-- removeSpaces - remove any spaces before taking substring
 --
 -- basic wrapper around postgresql substring(), returning int
 -- e.g. TT_SubstringText('124', 1, 1)
@@ -4582,10 +4593,20 @@ $$ LANGUAGE sql IMMUTABLE;
 CREATE OR REPLACE FUNCTION TT_SubstringInt(
   val text,
   startChar text,
+  forLength text,
+  removeSpaces text
+)
+RETURNS int AS $$
+  SELECT TT_SubstringText(val, startChar, forLength, removeSpaces)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_SubstringInt(
+  val text,
+  startChar text,
   forLength text
 )
 RETURNS int AS $$
-  SELECT TT_SubstringText(val, startChar, forLength)::int
+  SELECT TT_SubstringText(val, startChar, forLength, FALSE::text)::int
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -5237,7 +5258,8 @@ CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
   lookupTableName text,
   lookupColumnName text,
   retrieveCol text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS text AS $$
   DECLARE
@@ -5254,7 +5276,7 @@ RETURNS text AS $$
     END IF;
 
     -- process
-    _val = substring(val, startChar::int, forLength::int);
+    _val = TT_SubstringText(val, startChar, forLength, removeSpaces);
     RETURN TT_LookupText(_val, lookupSchemaName, lookupTableName, lookupColumnName, retrieveCol, ignoreCase);
   END;
 $$ LANGUAGE plpgsql STABLE;
@@ -5266,10 +5288,11 @@ CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
   lookupSchemaName text,
   lookupTableName text,
   retrieveCol text,
-  ignoreCase text
+  ignoreCase text,
+  removeSpaces text
 )
 RETURNS text AS $$
-  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, ignoreCase)
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, ignoreCase, removeSpaces)
 $$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
@@ -5281,7 +5304,7 @@ CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
   retrieveCol text
 )
 RETURNS text AS $$
-  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, FALSE::text)
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, lookupSchemaName, lookupTableName, 'source_val'::text, retrieveCol, FALSE::text, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
