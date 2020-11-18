@@ -342,7 +342,7 @@ Helper functions are used in translation tables to validate and translate source
 
 Helper functions are of two types: validation helper functions are used in the **validation_rules** column of the translation table. They validate the source values and always return TRUE or FALSE. Multiple validation helper functions can be provided by separating them with semi colons. They will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translation_rules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table. Translation helper functions can optionally include a user defined error code.
 
-Helper functions are generally called with the names of the source value attributes to validate or translate as the first arguments, and some other fixed arguments controling other aspects of the validation and translation process. 
+Helper functions are generally called with the names of the source value attributes to validate or translate as the first argument, and some other optional arguments controling  aspects of the validation and translation process. 
 
 Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
 
