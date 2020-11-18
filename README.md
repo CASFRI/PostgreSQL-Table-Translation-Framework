@@ -346,14 +346,14 @@ Helper functions are generally called with the names of the source value attribu
 
 Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
 
-**1. Strings**
+**1. Basic types: string, int, double and boolean**
   * Any arguments wrapped in single or double quotes is interpreted by the engine as a string and passed as-is to the helper function.
     * e.g. CopyText('a string')
     * This would simply return the string 'a string' for every row in the translation.
   * Strings can contain any characters, and escaping of single quotes is supported using \\'.
     * e.g. CopyText('string\\'s')
   * Empty strings can be passed as arguments using '' or "".
-  * Since helper functions only accept arguments as type text, any numeric or boolean values should also be input as strings. The helper function will convert them to the correct type when it runs (e.g. Between(percent_column, '0', '100', 'TRUE', 'TRUE')).
+  * int, double and boolean are passed as is without quotes.
 
 **2. Source table column names**
   * Any word not wrapped in quotes is interpreted as a column name.
@@ -362,25 +362,25 @@ Helper function parameters are grouped into three classes, each of which have a 
     * e.g. CopyText(column_A)
     * This would return the text value from column_A in the source table for each row being translated.
   * If the column name is not found as a column in the source table, it is processed as a string.
-  * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as demonstrated in the example table above for lookupText(sp1, 'public', 'species_lookup', 'target_sp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the "target_sp" column in the public.species_lookup table.
+  * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings, as shown in the example table above for lookupText(sp1, 'public', 'species_lookup', 'target_sp'). This function is using the row value from the source table column sp1, and returning the corresponding value from the "target_sp" column in the public.species_lookup table.
 
 **3. String lists**
   * Some helper functions can take a variable number of inputs. Concatenation functions are an example.
   * Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
-  * String lists can contain both strings and column names following the rules described above.
+  * String lists can contain both basic types and column names following the rules described above.
   * e.g. Concat({column_A, column_B, 'joined'}, '-')
     * the Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
     * This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
-Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation that uses two text columns named col1 and col2. Only one of these columns should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
+Some validation helper functions have an optional 'acceptNull' parameter which returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns. For example, consider a translation depending on two text attributes named col1 and col2, only one of these attribute should have a value, and the value should be either 'A' or 'B'. We can validate this using the following validation rules:
 
-HasCountOfNotNull({col1, col2}, 1|NULL_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET)
+HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET_ERROR); MatchList(col2, {'A', 'B'}, acceptNull=TRUE|NOT_IN_SET_ERROR)
 
-  * HasCountOfNotNull checks that exactly one value is not NULL and returns the NULL_ERROR if the test fails.
+  * HasCountOfNotNull checks that exactly one value is not NULL and returns the NULL_VALUE_ERROR if the test fails.
     * Note that the order of these tests is important. We need to check for NULLs before checking values are in the list.
-  * Now we know that col1 and col2 contain one value and one NULL. We want to test the value using MatchList and ignore the NULL. We test col1 and col2 using MatchList. The column with the value will be evaluated by MatchList, the column with the NULL will be ignored (i.e. the acceptNull parameter will cause TRUE to be returned). Note that if acceptNull was set to FALSE, the null value would trigger a FALSE to be returned which would fail the validation and return the NOT_IN_SET error. This is not the desired behaviour for this case.
+  * Once that the fact that col1 and col2 contain one value and one NULL is validated, the first value is tested using MatchList() with the acceptNull parameter set to TRUE in order to validate it even if it's NULL. Then col2 is validated the same way. Both the attribute with the value and the attribute with the NULL will be validated. Note that if acceptNull was set to FALSE, the NULL value would trigger a FALSE to be returned which would invalidate the rule and return acceptNull. This is not the desired behaviour for this case.
 
 # Provided Helper Functions
 ## Validation Functions
