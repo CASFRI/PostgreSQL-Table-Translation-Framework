@@ -118,6 +118,11 @@ DROP FUNCTION IF EXISTS TT_MatchTableSubstring(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_MatchTableSubstring(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchTableSubstring(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchTableSubstring(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceIsInt(text);
+DROP FUNCTION IF EXISTS TT_CoalesceIsInt(text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
@@ -220,7 +225,11 @@ DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text);
-
+DROP FUNCTION IF EXISTS TT_CoalesceInt(text);
+DROP FUNCTION IF EXISTS TT_CoalesceInt(text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceText(text);
+DROP FUNCTION IF EXISTS TT_CoalesceText(text, text);
+DROP FUNCTION IF EXISTS TT_CoalesceText(text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

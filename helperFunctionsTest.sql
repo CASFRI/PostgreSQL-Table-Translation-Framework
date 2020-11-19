@@ -68,6 +68,7 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
       query = left(query, char_length(query) - 2);
 
       query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
+
       EXECUTE query INTO passed;
       RETURN NEXT;
 
@@ -196,7 +197,7 @@ WITH test_nb AS (
     SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
     SELECT 'TT_IsBetweenSubstring'::text,     17,         23         UNION ALL
     SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
-	  SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
+    SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
     SELECT 'TT_MatchListSubstring'::text,     20,         18         UNION ALL
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
@@ -216,6 +217,8 @@ WITH test_nb AS (
     SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
     SELECT 'TT_MinIndexNotEmpty'::text,       37,          8         UNION ALL
     SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
+    SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
+    SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -233,7 +236,7 @@ WITH test_nb AS (
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-	  SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
+    SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
     SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
     SELECT 'TT_SubstringText'::text,         123,         10         UNION ALL
     SELECT 'TT_SubstringInt'::text,          124,          3         UNION ALL
@@ -259,7 +262,9 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
     SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
     SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
-    SELECT 'TT_LookupTextSubstring'::text,   147,          3
+    SELECT 'TT_LookupTextSubstring'::text,   147,          3         UNION ALL
+    SELECT 'TT_CoalesceText'::text,          148,         14         UNION ALL
+    SELECT 'TT_CoalesceInt'::text,           149,         10
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -2380,11 +2385,136 @@ SELECT '38.8'::text number,
        'TT_MaxIndexNotEmpty'::text function_tested,
        'Test setZeroTo, true'::text description,
        TT_MaxIndexNotEmpty('{1990, 0}', '{'', wind}', null::text, '9999') passed  
-  
-  
+---------------------------------------------------------
+-- Test 39 - TT_CoalesceIsInt
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (2 tests)
+SELECT (TT_TestNullAndWrongTypeParams(39, 'TT_CoalesceIsInt', ARRAY['zeroAsNull', 'boolean'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '39.3'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'Basic test'::text description,
+       TT_CoalesceIsInt('{NULL, ''0'', ''a''}') passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '39.4'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'First non NULL and non zero value not int'::text description,
+       TT_CoalesceIsInt('{NULL, ''0'', ''a''}', TRUE::text) IS FALSE passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.5'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'First non NULL and non zero value int'::text description,
+       TT_CoalesceIsInt('{NULL, ''0'', ''1''}', TRUE::text) passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.6'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'NULL valList'::text description,
+       TT_CoalesceIsInt(NULL) IS FALSE passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.7'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'NULL as string'::text description,
+       TT_CoalesceIsInt('NULL') IS FALSE passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.8'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'valList of one NULL'::text description,
+       TT_CoalesceIsInt('{NULL}') IS FALSE passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.9'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'valList of many NULL'::text description,
+       TT_CoalesceIsInt('{NULL, NULL, NULL}') IS FALSE passed 
+---------------------------------------------------------
+UNION ALL
+SELECT '39.10'::text number,
+       'TT_CoalesceIsInt'::text function_tested,
+       'valList of many NULL'::text description,
+       TT_CoalesceIsInt('{NULL, NULL, NULL, 1}') passed
+---------------------------------------------------------
+-- Test 40 - TT_CoalesceIsBetween
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (12 tests)
+SELECT (TT_TestNullAndWrongTypeParams(40, 'TT_CoalesceIsBetween', 
+                                      ARRAY['min', 'numeric',
+                                            'max', 'numeric',
+                                            'includeMin', 'boolean',
+                                            'includeMax', 'boolean',
+                                            'zeroAsNull', 'boolean'])).*
+---------------------------------------------------------
+UNION ALL
+SELECT '40.3'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'Basic test 1'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0'', ''a''}', 0::text, 5::text) passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.4'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'Basic test 2'::text description,
+       TT_CoalesceIsBetween('{NULL, ''6'', ''a''}', 0::text, 5::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.5'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'Non integer first non-NULL'::text description,
+       TT_CoalesceIsBetween('{NULL, ''a'', ''4''}', 0::text, 5::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.6'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'Only NULLs'::text description,
+       TT_CoalesceIsBetween('{NULL, NULL, NULL}', 0::text, 5::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.7'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 0.0'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''2'', ''a''}', 0::text, 5::text) passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.8'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 0.0 but not included'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''2'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.9'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 0.0 but not included'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''5'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.10'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 2 but not included'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''2'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text, TRUE::text) passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.11'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 5 but not included'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''5'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text, TRUE::text) IS FALSE passed  
+---------------------------------------------------------
+UNION ALL
+SELECT '40.12'::text number,
+       'TT_CoalesceIsBetween'::text function_tested,
+       'First non-NULL value 5 but not included'::text description,
+       TT_CoalesceIsBetween('{NULL, ''0.0'', ''5'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text, TRUE::text) IS FALSE passed  
+
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 101 - TT_CopyText
 ---------------------------------------------------------
@@ -3176,7 +3306,7 @@ SELECT '127.5'::text number,
 UNION ALL
 SELECT '127.6'::text number,
        'TT_LengthMapInt'::text function_tested,
-       'not in set'::text description,
+       'Not in set'::text description,
        TT_LengthMapInt('123'::text, '{6,4,5}'::text, '{1,2,3}'::text) IS NULL passed
 ---------------------------------------------------------
 UNION ALL
@@ -4037,7 +4167,120 @@ SELECT '147.3'::text number,
        'TT_LookupTextSubstring'::text function_tested,
        'val NULL text, NULL gets converted to empty string'::text description,
        TT_LookupTextSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) = '' passed
-  
+---------------------------------------------------------
+-- Test 148 - TT_CoalesceText
+---------------------------------------------------------
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (2 tests)
+SELECT (TT_TestNullAndWrongTypeParams(148, 'TT_CoalesceText', ARRAY['zeroAsNull', 'boolean'])).*
+UNION ALL
+SELECT '148.3'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Simple test 1'::text description,
+       TT_CoalesceText('{''1'', ''2''}') = '1' passed
+UNION ALL
+SELECT '148.4'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Simple test 2'::text description,
+       TT_CoalesceText('{NULL, ''2''}') = '2' passed
+UNION ALL
+SELECT '148.5'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Simple test 3'::text description,
+       TT_CoalesceText('{''2'', NULL}') = '2' passed
+UNION ALL
+SELECT '148.6'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Simple test 3'::text description,
+       TT_CoalesceText('{NULL, ''2'', NULL}') = '2' passed
+UNION ALL
+SELECT '148.7'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test single value'::text description,
+       TT_CoalesceText('''2''') = '2' passed
+UNION ALL
+SELECT '148.8'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test single NULL'::text description,
+       TT_CoalesceText(NULL) IS NULL passed
+UNION ALL
+SELECT '148.9'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test single NULL string'::text description,
+       TT_CoalesceText('NULL') = 'NULL' passed
+UNION ALL
+SELECT '148.10'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test single NULL in stringList'::text description,
+       TT_CoalesceText('{NULL}') IS NULL passed
+UNION ALL
+SELECT '148.11'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test zeroAsNull parameter'::text description,
+       TT_CoalesceText('{NULL, ''0'', ''a''}', TRUE::text) = 'a' passed
+UNION ALL
+SELECT '148.12'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test zeroAsNull parameter with double 00'::text description,
+       TT_CoalesceText('{NULL, ''00'', ''a''}', TRUE::text) = 'a' passed
+UNION ALL
+SELECT '148.13'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test zeroAsNull parameter with float 0'::text description,
+       TT_CoalesceText('{''0.0'', ''00'', ''a''}', TRUE::text) = 'a' passed
+UNION ALL
+SELECT '148.14'::text number,
+       'TT_CoalesceText'::text function_tested,
+       'Test zeroAsNull parameter with float 0'::text description,
+       TT_CoalesceText('{''0.0'', ''00'', ''a''}', FALSE::text) = '0.0' passed
+---------------------------------------------------------
+-- Test 149 - TT_CoalesceInt
+---------------------------------------------------------
+---------------------------------------------------------
+UNION ALL
+-- test all NULLs and wrong types (2 tests)
+SELECT (TT_TestNullAndWrongTypeParams(149, 'TT_CoalesceInt', ARRAY['zeroAsNull', 'boolean'])).*
+UNION ALL
+SELECT '149.3'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Simple test 1'::text description,
+       TT_CoalesceInt('{NULL, ''2''}') = 2 passed
+UNION ALL
+SELECT '149.4'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test non integer value'::text description,
+       TT_CoalesceInt('{NULL, ''a''}') IS NULL passed
+UNION ALL
+SELECT '149.5'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test non float value'::text description,
+       TT_CoalesceInt('{NULL, ''1.2''}') IS NULL passed
+UNION ALL
+SELECT '149.6'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test zeroAsNull parameter'::text description,
+       TT_CoalesceInt('{NULL, ''0'', ''1''}', TRUE::text) = 1 passed
+UNION ALL
+SELECT '149.7'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test zeroAsNull parameter with double 00'::text description,
+       TT_CoalesceInt('{NULL, ''00'', ''1''}', TRUE::text) = 1 passed
+UNION ALL
+SELECT '149.8'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test zeroAsNull parameter with float 0'::text description,
+       TT_CoalesceInt('{''0.0'', ''00'', ''1''}', TRUE::text) = 1 passed
+UNION ALL
+SELECT '149.9'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test with float 0'::text description,
+       TT_CoalesceInt('{''0.0'', ''1'', ''2''}') = 0 passed
+UNION ALL
+SELECT '149.10'::text number,
+       'TT_CoalesceInt'::text function_tested,
+       'Test zeroAsNull parameter with float 0'::text description,
+       TT_CoalesceInt('{''0.0'', ''1'', ''2''}', FALSE::text) = 0 passed
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

@@ -67,6 +67,8 @@ RETURNS text AS $$
                   WHEN rule = 'geoisvalid'              THEN '-7779'
                   WHEN rule = 'geointersects'           THEN '-7778'
                   WHEN rule = 'matchtablesubstring'     THEN '-9998'
+                  WHEN rule = 'coalesceisint'           THEN '-9995'
+                  WHEN rule = 'coalesceisbetween'       THEN '-9999'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -106,6 +108,8 @@ RETURNS text AS $$
                   WHEN rule = 'geoisvalid'              THEN NULL
                   WHEN rule = 'geointersects'           THEN NULL
                   WHEN rule = 'matchtablesubstring'     THEN NULL
+                  WHEN rule = 'coalesceisint'           THEN NULL
+                  WHEN rule = 'coalesceisbetween'       THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -146,6 +150,8 @@ RETURNS text AS $$
                   WHEN rule = 'geoisvalid'              THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'           THEN 'NO_INTERSECT'
                   WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
+                  WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
+                  WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -339,14 +345,96 @@ RETURNS text AS $$
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
 -- Validation functions return only boolean values (TRUE or FALSE).
 -- Consist of a source value to be validated, and any parameters associated
 -- with validation.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+-- Validation function template
+--
+-- Validation functions:
+--
+--    - must begin with "TT_"
+--    - can only accept text parameters
+--    - always return a boolean
+--    - raise an exception on invalid parameters (with the help of the TT_ValidateParams() function)
+--    - never fail on invalid values
+--    - must properly handle NULL and empty values
+--    - must not define DEFAULT parameters (use separate function signatures instead)
+-------------------------------------------------------------------------------
+-- TT_ValidationFctTemplate
+--
+--  valList text (stringList) - Values to test. Can be a single value or a stringList.
+--  param1 text (integer) - First perameter description. Default to 1.
+--  param2 text (boolean) - Second parameter description (e.g. When TRUE, ignore case). Default to TRUE.
+--
+-- Description. e.g. Return TRUE if all vals are not NULL.
+-- Return FALSE if any val is NULL.
+-- e.g. TT_ValidationFctTemplate('a', 5, FALSE)
+-- e.g. TT_ValidationFctTemplate({'a', 'b', 'c'}, 6)
+------------------------------------------------------------
+
+-- CREATE OR REPLACE FUNCTION TT_ValidationFctTemplate(
+--   valList text,
+--   param1 text,
+--   param2 text
+-- )
+-- RETURNS boolean AS $$
+--   DECLARE
+--     _param1 int;
+--     _param2 boolean;
+--     _val text;
+--   BEGIN
+--     -- Validate parameters (trigger EXCEPTION)
+--     PERFORM TT_ValidateParams('TT_ValidationFctTemplate',
+--                               ARRAY['param1', param1, 'int',
+--                                     'param2', param2, 'boolean']);
+--
+--     -- cast all parameters not of type text
+--     _param1 = param1::int;
+--     _param2 = param2::boolean;
+--
+--     -- More specific parameter validation
+--     IF _param1 < 0 OR _param1 > 10 THEN
+--       RAISE EXCEPTION 'ERROR in TT_ValidationFctTemplate(): param1 should be greater than 0 and smaller than 10';
+--     END IF;
+--
+--     -- Validate values (val are not NULL and is a string list)
+--     IF valList IS NULL OR NOT TT_IsStringList(valList) THEN
+--       RETURN FALSE;
+--     END IF;
+--
+--     -- Process value validity taking param1 and param2 into account
+--     FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+--       IF whatever condition determining values invalidity THEN
+--          RETURN FALSE;
+--       END IF;
+--     END LOOP;
+--     RETURN TRUE;
+--   END
+-- $$ LANGUAGE plpgsql IMMUTABLE; -- IMMUTABLE because the function always returns the same value given the same input
+--
+-- -- Variant with default last parameter values
+-- CREATE OR REPLACE FUNCTION TT_ValidationFctTemplate(
+--   valList text,
+--   param1 text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_ValidationFctTemplate(valList, param1, FALSE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+-- -- Variant with all default parameter values
+-- CREATE OR REPLACE FUNCTION TT_ValidationFctTemplate(
+--   valList text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_ValidationFctTemplate(valList, 1::text, FALSE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 -- TT_NotNULL
 --
 --  val text (string list) - Value(s) to test. Can be one or many.
@@ -735,13 +823,11 @@ RETURNS boolean AS $$
   DECLARE
     i text;
   BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    ELSIF NOT TT_IsStringList(val) THEN
+    IF val IS NULL OR NOT TT_IsStringList(val) THEN
       RETURN FALSE;
     ELSE
       FOREACH i IN ARRAY TT_ParseStringList(val, TRUE) LOOP
-        IF NOT TT_IsNumeric(i) THEN
+        IF NOT TT_IsNumeric(i, TRUE::text) THEN
           RETURN FALSE;
         END IF;
       END LOOP;
@@ -764,13 +850,11 @@ RETURNS boolean AS $$
   DECLARE
     i text;
   BEGIN
-    IF val IS NULL THEN
-      RETURN FALSE;
-    ELSIF NOT TT_IsStringList(val) THEN
+    IF val IS NULL OR NOT TT_IsStringList(val) THEN
       RETURN FALSE;
     ELSE
       FOREACH i IN ARRAY TT_ParseStringList(val, TRUE) LOOP
-        IF NOT TT_IsInt(i) THEN
+        IF NOT TT_IsInt(i, TRUE::text) THEN
           RETURN FALSE;
         END IF;
       END LOOP;
@@ -2922,6 +3006,155 @@ RETURNS boolean AS $$
 $$ LANGUAGE sql STABLE;
 
 -------------------------------------------------------------------------------
+-- TT_CoalesceIsInt
+--
+--  valList text (stringList) - Values to test. Can be a single value or a stringList.
+--  zeroAsNull text (boolean) - When TRUE, treat all zeros as NULL. Default to FALSE.
+--
+-- Check that the first non-NULL value in the stringList is an integer.
+-- e.g. TT_CoalesceIsInt({NULL, '0', 'a'}) -- returns TRUE
+-- e.g. TT_CoalesceIsInt({NULL, '0', 'a'}, TRUE) -- returns FALSE
+-- e.g. TT_CoalesceIsInt({NULL, '0', '1'}, TRUE) -- returns TRUE
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CoalesceIsInt(
+  valList text,
+  zeroAsNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _zeroAsNull boolean;
+    _val text;
+  BEGIN
+    -- Validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_CoalesceIsInt',
+                              ARRAY['zeroAsNull', zeroAsNull, 'boolean']);
+
+    -- Cast all parameters not of type text
+    _zeroAsNull = zeroAsNull::boolean;
+
+    -- Validate values (val are not NULL and is a string list)
+    IF valList IS NULL OR NOT TT_IsStringList(valList) THEN
+      RETURN FALSE;
+    END IF;
+
+    -- Process value validity
+    IF _zeroAsNull THEN
+      FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+        IF NOT _val IS NULL AND TT_IsInt(_val) AND _val::int != 0 THEN
+           RETURN TRUE;
+        END IF;
+      END LOOP;
+    ELSE
+      FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+        IF NOT _val IS NULL AND TT_IsInt(_val) THEN
+           RETURN TRUE;
+        END IF;
+      END LOOP;
+    END IF;
+    RETURN FALSE;
+  END
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Variant with default last parameter values
+CREATE OR REPLACE FUNCTION TT_CoalesceIsInt(
+  valList text
+)
+RETURNS boolean AS $$
+  SELECT TT_CoalesceIsInt(valList, FALSE::text);
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_CoalesceIsBetween
+--
+--  valList text (stringList) - Values to test. Can be a single value or a stringList.
+--  min text (numeric) - Minimal bound
+--  max text (numeric) - Miximal bound
+--  includeMin text (boolean) - When TRUE, min is included in the accepted interval. Default to TRUE.
+--  includemax text (boolean) - When TRUE, max is included in the accepted interval. Default to TRUE.
+--  zeroAsNull text (boolean) - When TRUE, treat all zeros (0, 0.0, 00) as NULL. Default to FALSE.
+--
+-- Check that the first non-NULL value in the stringList is between min and max.
+-- e.g. TT_CoalesceIsBetween({NULL, '5'}, 0, 10) -- returns TRUE
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CoalesceIsBetween(
+  valList text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text,
+  zeroAsNull text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _min double precision;
+    _max double precision;
+    _includeMin boolean;
+    _includeMax boolean;
+    _zeroAsNull boolean;
+    _valList text[];
+    _val text;
+  BEGIN
+    -- Validate parameters (trigger EXCEPTION)
+   PERFORM TT_ValidateParams('TT_CoalesceIsBetween',
+                              ARRAY['min', min, 'numeric',
+                                    'max', max, 'numeric',
+                                    'includeMin', includeMin, 'boolean',
+                                    'includeMax', includeMax, 'boolean',
+                                    'zeroAsNull', zeroAsNull, 'boolean']);
+    -- Cast all parameters not of type text
+    _min = min::double precision;
+    _max = max::double precision;
+    _includeMin = includeMin::boolean;
+    _includeMax = includeMax::boolean;
+    _zeroAsNull = zeroAsNull::boolean;
+
+    -- More specific parameter validation
+    IF _min = _max THEN
+      RAISE EXCEPTION 'ERROR in TT_CoalesceIsBetween(): min is equal to max';
+    ELSIF _min > _max THEN
+      RAISE EXCEPTION 'ERROR in TT_CoalesceIsBetween(): min is greater than max';
+    END IF;
+    
+    -- Replace zeros with NULLs if required
+    IF _zeroAsNull THEN
+      _valList = ARRAY[]::text[];
+      FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+        IF NOT (TT_IsInt(_val) AND _val::double precision::int = 0) THEN
+          _valList = array_append(_valList, _val);
+        END IF;
+      END LOOP;
+    ELSE
+      _valList = TT_ParseStringList(valList, TRUE);
+    END IF;
+
+    RETURN TT_IsBetween(TT_CoalesceText(_valList::text), min, max, includeMin, includeMax);
+  END
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Variant with default last parameter values
+CREATE OR REPLACE FUNCTION TT_CoalesceIsBetween(
+  valList text,
+  min text,
+  max text,
+  includeMin text,
+  includeMax text
+)
+RETURNS boolean AS $$
+  SELECT TT_CoalesceIsBetween(valList, min, max, includeMin, includeMax, FALSE::text);
+$$ LANGUAGE sql IMMUTABLE;
+
+-- Variant with default last parameter values
+CREATE OR REPLACE FUNCTION TT_CoalesceIsBetween(
+  valList text,
+  min text,
+  max text
+)
+RETURNS boolean AS $$
+  SELECT TT_CoalesceIsBetween(valList, min, max, TRUE::text, TRUE::text, FALSE::text);
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Begin Translation Function Definitions...
@@ -2930,6 +3163,141 @@ $$ LANGUAGE sql STABLE;
 -- with translation.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Translation function template
+--
+-- Translation functions:
+--
+--    - must begin with "TT_"
+--    - can only accept text parameters
+--    - raise an exception on invalid parameters (with the help of the 
+--      TT_ValidateParams() function)
+--    - must not fail on invalid values even if invalid values should be handled 
+--      by preceding validation rules
+--    - return NULL when encountering errors
+--    - must not define DEFAULT parameters (use separate function signatures 
+--      instead)
+--    - must implement polymorphism (return of values of different types) using 
+--      specific function names e.g. TT_TrFctText() returns a text value and
+--      TT_TrFctInt() returns a int value
+-------------------------------------------------------------------------------
+-- TT_TransationFctTemplateText
+--
+--   valList text (stringList) - Values to test. Can be a single value or a stringList.
+--   param1 text (integer) - First perameter description. Default to 1.
+--   param2 text (boolean) - Second parameter description (e.g. When TRUE, ignore case). Default to TRUE.
+--
+-- Description. e.g. Return TRUE if all vals are not NULL.
+-- Return FALSE if any val is NULL.
+-- e.g. TT_ValidationFctTemplate('a', 5, FALSE)
+-- e.g. TT_ValidationFctTemplate({'a', 'b', 'c'}, 6)
+------------------------------------------------------------
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateText(
+--   valList text,
+--   param1 text,
+--   param2 text,
+--   callerFctName text
+-- )
+-- RETURNS boolean AS $$
+--   DECLARE
+--     _param1 int;
+--     _param2 boolean;
+--     _val text;
+--     _result text;
+--   BEGIN
+--     -- Validate parameters (trigger EXCEPTION)
+--     PERFORM TT_ValidateParams(callerFctName,
+--                               ARRAY['param1', param1, 'int',
+--                                     'param2', param2, 'boolean']);
+--
+--     -- Cast all parameters not of type text
+--     _param1 = param1::int;
+--     _param2 = param2::boolean;
+--
+--     -- More specific parameter validation
+--     IF _param1 < 0 OR _param1 > 10 THEN
+--       RAISE EXCEPTION 'ERROR in TT_TransationFctTemplateText(): param1 should be greater than 0 and smaller than 10';
+--     END IF;
+--
+--     -- Validate values (val are not NULL and is a string list)
+--     IF valList IS NULL OR NOT TT_IsStringList(valList) THEN
+--       RETURN NULL;
+--     END IF;
+--
+--     -- Process to translation taking param1 and param2 into account
+--     FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+--       IF _param2 THEN
+--          _result = whatever translation code;
+--       ELSE
+--          _result = whatever translation code;
+--       END IF;
+--     END LOOP;
+--     RETURN _result;
+--   END
+-- $$ LANGUAGE plpgsql IMMUTABLE; -- IMMUTABLE because the function always returns the same value given the same input
+--
+------------------------
+-- -- Main variant with all paramaters
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateText(
+--   valList text,
+--   param1 text,
+--   param2 text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateText(val, param1, FALSE::text, 'TT_TransationFctTemplateText');
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+------------------------
+-- -- Variant with default last parameter values
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateText(
+--   valList text,
+--   param1 text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateText(val, param1, FALSE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+------------------------
+-- -- Variant with all default parameter values
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateText(
+--   valList text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateText(valList, 1::text, FALSE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+------------------------
+-- -- Main int variant
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateInt(
+--   valList text,
+--   param1 text,
+--   param1 text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateText(valList, param1, param2, 'TT_TransationFctTemplateInt');
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+------------------------
+-- -- int variant with default last parameter values
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateInt(
+--   valList text,
+--   param1 text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateInt(valList, param1, TRUE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
+--
+------------------------
+-- -- int variant with all default parameter values
+-- CREATE OR REPLACE FUNCTION TT_TransationFctTemplateInt(
+--   valList text
+-- )
+-- RETURNS boolean AS $$
+--   SELECT TT_TransationFctTemplateInt(valList, 1::text, TRUE::text);
+-- $$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- TT_CopyText
@@ -3336,11 +3704,9 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MapSubstringText
 --
--- vals text - string list containing values to test. Or a single value to test.-- mapVals text (stringList) - string list of mapping values
---
--- start_char - start character to take substring from
--- for_length - length of substring to take
---
+-- vals text - string list containing values to test. Or a single value to test.
+-- startChar - start character to take substring from
+-- forLength - length of substring to take
 -- mapVals (stringList) text - string list of mapping values
 -- targetVals (stringList) text - string list of target values
 -- ignoreCase - default FALSE. Should upper/lower case be ignored?
@@ -3558,7 +3924,7 @@ RETURNS double precision AS $$
       RETURN (_targetVals)[array_position(_mapVals, _val)];
     ELSE
       _mapVals = TT_ParseStringList(upper(mapVals), TRUE);
-      RETURN (_targetVals)[array_position(_mapVals,upper(_val))];
+      RETURN (_targetVals)[array_position(_mapVals, upper(_val))];
     END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -3978,7 +4344,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- vals1/2/3/4/5/6/7 text - string lists of values to test.
 -- maxRankToConsider int - only consider the first x string lists.
 -- i.e. if maxRankToConsider = 3, only vals1, vals2 and vals3 are condsidered.
--- zeroIsNull = if TRUE, and zero values are counted a null
+-- zeroIsNull = when TRUE zero values are treated as NULL
 --
 -- Returns the number of vals lists where at least one element in the vals list 
 -- is not a null value or an empty string.
@@ -5183,7 +5549,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MapTextCoalesce
+-- TT_MapTextCoalesce()
 --
 -- val1 text - first value to test. Can be text or stringlist.
 -- val2 text - second value to test. Can be text or stringlist.
@@ -5211,7 +5577,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_Multiply
+-- TT_Multiply()
 --
 -- val1 text - The first value to multiply.
 -- val2 text - The second value to multiply.
@@ -5234,7 +5600,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_LookupTextSubstring
+-- TT_LookupTextSubstring()
 --
 -- val text - value to test.
 --
@@ -5317,3 +5683,101 @@ CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
 RETURNS text AS $$
   SELECT TT_LookupTextSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, retrieveCol, FALSE::text)
 $$ LANGUAGE sql STABLE;
+
+-------------------------------------------------------------------------------
+-- TT_CoalesceText()
+--
+-- valList text - stringList of values to test
+--
+-- zeroAsNull text - boolean specifying if 0s are to be treated as NULL
+--
+-- Return the first non-NULL value
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CoalesceText(
+  valList text,
+  zeroAsNull text,
+  callerFctName text
+)
+RETURNS text AS $$
+  DECLARE
+    _zeroAsNull boolean;
+    _val text;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams(callerFctName,
+                              ARRAY['zeroAsNull', zeroAsNull, 'boolean']);
+                          
+    _zeroAsNull = zeroAsNull::boolean;
+    
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsStringList(valList) THEN
+      RETURN NULL;
+    END IF;
+    
+    -- process
+    IF _zeroAsNull THEN
+      FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+        IF NOT _val IS NULL AND (NOT TT_IsNumeric(_val) OR _val::double precision != 0) THEN
+          RETURN _val;
+        END IF;
+      END LOOP;
+    ELSE
+      FOREACH _val IN ARRAY TT_ParseStringList(valList, TRUE) LOOP
+        IF NOT _val IS NULL THEN
+          RETURN _val;
+        END IF;
+      END LOOP;
+    END IF;
+
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CoalesceText(
+  valList text,
+  zeroAsNull text
+)
+RETURNS text AS $$
+  SELECT TT_CoalesceText(valList, zeroAsNull, 'TT_CoalesceText')
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CoalesceText(
+  valList text
+)
+RETURNS text AS $$
+  SELECT TT_CoalesceText(valList, FALSE::text, 'TT_CoalesceText')
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_CoalesceInt()
+--
+-- int returning version of TT_CoalesceText()
+-------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CoalesceInt(
+  valList text,
+  zeroAsNull text
+)
+RETURNS int AS $$
+  DECLARE
+    _zeroAsNull boolean;
+  BEGIN
+    -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_CoalesceInt',
+                              ARRAY['zeroAsNull', zeroAsNull, 'boolean']);
+                          
+    _zeroAsNull = zeroAsNull::boolean;
+
+    -- validate source value (return NULL if not valid)
+    IF NOT TT_IsIntList(valList) THEN
+      RETURN NULL;
+    END IF;
+
+    RETURN TT_CoalesceText(valList, zeroAsNull, 'TT_CoalesceInt')::double precision::int;
+  END
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CoalesceInt(
+  valList text
+)
+RETURNS int AS $$
+  SELECT TT_CoalesceInt(valList, FALSE::text)::int
+$$ LANGUAGE sql IMMUTABLE;
