@@ -507,6 +507,30 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- TT_DropAllTTFct
+--
+--   RETURNS SETOF text     - All DROPed query executed.
+--
+-- DROP all functions starting with 'TT_' (case insensitive).
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_DropAllTTFct();
+CREATE OR REPLACE FUNCTION TT_DropAllTTFct(
+)
+RETURNS SETOF text AS $$
+  DECLARE
+    res RECORD;
+  BEGIN
+    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text || ';' query
+               FROM pg_proc WHERE left(proname, 3) = 'tt_' AND pg_function_is_visible(oid) LOOP
+      EXECUTE res.query;
+      RETURN NEXT res.query;
+    END LOOP;
+  RETURN;
+END
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- TT_DropAllTranslateFct
 --
 --   RETURNS SETOF text     - All DROPed query executed.
