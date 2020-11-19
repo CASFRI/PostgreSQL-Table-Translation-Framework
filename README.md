@@ -500,57 +500,57 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
-* **minIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurrences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches minIndexCopyText, minIndexMapText and minIndexLookupText.
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating the min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
-    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
-    * e.g. minIndexNotNull({1990, null}, {burn, wind}, 2000, 'null')
+    * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
+    * e.g. MinIndexNotNull({1990, null}, {burn, wind}, 2000, 'null')
     
-* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to notNull(). 
     * If there are multiple occurrences of the highest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
-    * e.g. minIndexNotNull({1990, 2000}, {burn, wind})
-    * e.g. minIndexNotNull({1990, 0}, {burn, wind}, 'null', 2000)
+    * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
+    * e.g. MinIndexNotNull({1990, 0}, {burn, wind}, 'null', 2000)
 
-* **minIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Exactly the same as minIndexNotNull but tests the value using isInt().
-    * e.g. minIndexIsInt({1990, 2000}, {111, 222})
-    * e.g. minIndexIsInt({1990, null}, {111, 222}, 2000, 'null')
+* **MinIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Exactly the same as MinIndexNotNull() but tests the value using isInt().
+    * e.g. MinIndexIsInt({1990, 2000}, {111, 222})
+    * e.g. MinIndexIsInt({1990, null}, {111, 222}, 2000, 'null')
     
-* **maxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Exactly the same as maxIndexNotNull but tests the value using isInt().
+* **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+    * Exactly the same as MaxIndexNotNull but tests the value using isInt().
     * e.g. maxIndexIsInt({1990, 2000}, {111, 222})
     * e.g. maxIndexIsInt({1990, null}, {111, 222}, 2000, 'null')
 
-* **minIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
     * If there are multiple occurrences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
     * e.g. minIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
     * e.g. minIndexIsBetween({1990, null}, {111, 222}, 0, 2000, 2000, 'null')
 
-* **maxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
     * If there are multiple occurrences of the lowest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
-    * e.g. maxIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
-    * e.g. maxIndexIsBetween({1990, null}, {111, 222}, 0, 2000, 2000, 'null')
+    * e.g. MaxIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
+    * e.g. MaxIndexIsBetween({1990, null}, {111, 222}, 0, 2000, 2000, 'null')
 
-* **minIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the lowest integer in the intList. Pass it to matchList() along with lst. 
     * If there are multiple occurrences of the lowest value, the **first** non-null value with an index matching the lowest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
-    * e.g. minIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
-    * e.g. minIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+    * e.g. MinIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
+    * e.g. MinIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
 
-* **maxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **lst**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
     * Find the target values from the testList with a matching index to the highest integer in the intList. Pass it to matchList() along with lst. 
     * If there are multiple occurrences of the highest value, the **last** non-null value with an index matching the highest value is tested. This behaviour matches maxIndexCopyText, maxIndexMapText and maxIndexLookupText. 
     * If setNullTo is provided as an integer, nulls in intList are replaced with setNullTo. Otherwise nulls are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the default value of 'null'.
-    * e.g. maxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
-    * e.g. maxIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+    * e.g. MaxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
+    * e.g. MaxIndexMatchList({0, null}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
     
 * **CoalesceIsInt**(*stringList* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Return TRUE if the first non-NULL value in the srcValList string list is an integer.

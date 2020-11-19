@@ -2361,7 +2361,7 @@ RETURNS boolean AS $$
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_minIndexNotNull(text, text, text, text)
+-- TT_MinIndexNotNull(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for notNull
@@ -2379,8 +2379,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexNotNull(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexNotNull(
+-- DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexNotNull(
   intList text,
   testList text,
   setNullTo text,
@@ -2397,16 +2397,16 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexNotNull(
+CREATE OR REPLACE FUNCTION TT_MinIndexNotNull(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_minIndexNotNull(intList, testList, null::text, null::text)
+  SELECT TT_MinIndexNotNull(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_maxIndexNotNull(text, text, text, text)
+-- TT_MaxIndexNotNull(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for notNull
@@ -2423,8 +2423,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexNotNull(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotNull(
   intList text,
   testList text,
   setNullTo text,
@@ -2441,12 +2441,12 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexNotNull(
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotNull(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexNotNull(intList, testList, null::text, null::text)
+  SELECT TT_MaxIndexNotNull(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_minIndexNotEmpty(text, text, text, text)
@@ -2456,7 +2456,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
 -- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
 --
--- Same as TT_minIndexNotNull but instead tests notEmpty
+-- Same as TT_MinIndexNotNull but instead tests notEmpty
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_minIndexNotEmpty(text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_minIndexNotEmpty(
@@ -2492,7 +2492,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
 -- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
 --
--- Same as TT_maxIndexNotNull but tests with notEmpty
+-- Same as TT_MaxIndexNotNull but tests with notEmpty
 ---------------------------
 -- DROP FUNCTION IF EXISTS TT_maxIndexNotEmpty(text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_maxIndexNotEmpty(
@@ -2538,8 +2538,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexIsInt(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexIsInt(
+-- DROP FUNCTION IF EXISTS TT_MinIndexIsInt(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexIsInt(
   intList text,
   testList text,
   setNullTo text,
@@ -2556,12 +2556,12 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexIsInt(
+CREATE OR REPLACE FUNCTION TT_MinIndexIsInt(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_minIndexIsInt(intList, testList, null::text, null::text)
+  SELECT TT_MinIndexIsInt(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_maxIndexIsInt(text, text, text, text)
@@ -2608,7 +2608,7 @@ RETURNS boolean AS $$
   SELECT TT_maxIndexIsInt(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexIsBetween(text, text, text, text, text, text)
+-- TT_MinIndexIsBetween(text, text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2628,8 +2628,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexIsBetween(text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexIsBetween(
+-- DROP FUNCTION IF EXISTS TT_MinIndexIsBetween(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexIsBetween(
   intList text,
   testList text,
   lower_bound text,
@@ -2648,17 +2648,17 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexIsBetween(
+CREATE OR REPLACE FUNCTION TT_MinIndexIsBetween(
   intList text,
   testList text,
   lower_bound text,
   upper_bound text
 )
 RETURNS boolean AS $$
-  SELECT TT_minIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text)
+  SELECT TT_MinIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
--- TT_maxIndexIsBetween(text, text, text, text, text, text)
+-- TT_MaxIndexIsBetween(text, text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2678,8 +2678,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexIsBetween(text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexIsBetween(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexIsBetween(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexIsBetween(
   intList text,
   testList text,
   lower_bound text,
@@ -2698,14 +2698,14 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexIsBetween(
+CREATE OR REPLACE FUNCTION TT_MaxIndexIsBetween(
   intList text,
   testList text,
   lower_bound text,
   upper_bound text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text)
+  SELECT TT_MaxIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsXMinusYBetween(text, text, text, text, text, text, text, text, text)
@@ -2812,7 +2812,7 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexMatchList(text, text, text, text, text)
+-- TT_MinIndexMatchList(text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2831,8 +2831,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexMatchList(text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexMatchList(
+-- DROP FUNCTION IF EXISTS TT_MinIndexMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexMatchList(
   intList text,
   testList text,
   lst text,
@@ -2850,13 +2850,13 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexMatchList(
+CREATE OR REPLACE FUNCTION TT_MinIndexMatchList(
   intList text,
   testList text,
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_minIndexMatchList(intList, testList, lst, null::text, null::text)
+  SELECT TT_MinIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_maxIndexMatchList(text, text, text, text, text)

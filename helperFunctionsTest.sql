@@ -202,8 +202,8 @@ WITH test_nb AS (
     SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
     SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
     SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
-    SELECT 'TT_minIndexNotNull'::text,        24,          8         UNION ALL
-    SELECT 'TT_maxIndexNotNull'::text,        25,          8         UNION ALL
+    SELECT 'TT_MinIndexNotNull'::text,        24,          8         UNION ALL
+    SELECT 'TT_MaxIndexNotNull'::text,        25,          8         UNION ALL
     SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
     SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
     SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
@@ -1810,105 +1810,105 @@ SELECT '23.19'::text number,
        'Passes basic test with removeSpaces even when trim is true and would fail'::text description,
        TT_LengthMatchList(' 12  34 '::text, '{4}', 'TRUE', 'TRUE') passed
 ---------------------------------------------------------
--- Test 24 - TT_minIndexNotNull
+-- Test 24 - TT_MinIndexNotNull
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.1'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Passes basic test, true'::text description,
-       TT_minIndexNotNull('{1990, 2000}', '{burn, wind}') passed
+       TT_MinIndexNotNull('{1990, 2000}', '{burn, wind}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.2'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Passes basic test, false'::text description,
-       TT_minIndexNotNull('{1990, 2000}', '{null, wind}') IS FALSE passed
+       TT_MinIndexNotNull('{1990, 2000}', '{null, wind}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.3'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Matching ints return first not null index'::text description,
-       TT_minIndexNotNull('{1990, 1990}', '{null, wind}') passed
+       TT_MinIndexNotNull('{1990, 1990}', '{null, wind}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.4'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Test setNullTo, true'::text description,
-       TT_minIndexNotNull('{1990, null}', '{null, wind}', '0', null::text) passed
+       TT_MinIndexNotNull('{1990, null}', '{null, wind}', '0', null::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.5'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Test setNullTo, false'::text description,
-       TT_minIndexNotNull('{1990, null}', '{burn, null}', '0', null::text) IS FALSE passed
+       TT_MinIndexNotNull('{1990, null}', '{burn, null}', '0', null::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.6'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Test all null ints, should return first not null return value'::text description,
-       TT_minIndexNotNull('{null, null}', '{null, wind}') passed
+       TT_MinIndexNotNull('{null, null}', '{null, wind}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.7'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Test matching years with null returns'::text description,
-       TT_minIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
+       TT_MinIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '24.8'::text number,
-       'TT_minIndexNotNull'::text function_tested,
+       'TT_MinIndexNotNull'::text function_tested,
        'Test setZeroTo, true'::text description,
-       TT_minIndexNotNull('{-1, 0}', '{null, wind}', null::text, '-2') passed
+       TT_MinIndexNotNull('{-1, 0}', '{null, wind}', null::text, '-2') passed
 ---------------------------------------------------------
--- Test 25 - TT_minIndexNotNull
+-- Test 25 - TT_MinIndexNotNull
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.1'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Passes basic test, true'::text description,
-       TT_maxIndexNotNull('{1990, 2000}', '{burn, wind}') passed
+       TT_MaxIndexNotNull('{1990, 2000}', '{burn, wind}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.2'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Passes basic test, false'::text description,
-       TT_maxIndexNotNull('{1990, 2000}', '{burn, null}') IS FALSE passed
+       TT_MaxIndexNotNull('{1990, 2000}', '{burn, null}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.3'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Matching ints return last not null index'::text description,
-       TT_maxIndexNotNull('{1990, 1990}', '{burn, null}') passed
+       TT_MaxIndexNotNull('{1990, 1990}', '{burn, null}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.4'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Test setNullTo, true'::text description,
-       TT_maxIndexNotNull('{1990, null}', '{null, wind}', '9999', null::text) passed
+       TT_MaxIndexNotNull('{1990, null}', '{null, wind}', '9999', null::text) passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.5'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Test setNullTo, false'::text description,
-       TT_maxIndexNotNull('{1990, null}', '{burn, null}', '9999', null::text) IS FALSE passed
+       TT_MaxIndexNotNull('{1990, null}', '{burn, null}', '9999', null::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.6'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Test all null ints'::text description,
-       TT_maxIndexNotNull('{null, null}', '{burn, null}') passed
+       TT_MaxIndexNotNull('{null, null}', '{burn, null}') passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.7'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Test matching years with null returns'::text description,
-       TT_maxIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
+       TT_MaxIndexNotNull('{2000, 2000}', '{null, null}') IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '25.8'::text number,
-       'TT_maxIndexNotNull'::text function_tested,
+       'TT_MaxIndexNotNull'::text function_tested,
        'Test setZeroTo, true'::text description,
-       TT_maxIndexNotNull('{1990, 0}', '{null, wind}', null::text, '9999') passed
+       TT_MaxIndexNotNull('{1990, 0}', '{null, wind}', null::text, '9999') passed
 ---------------------------------------------------------
 -- Test 26 - TT_IsXMinusYBetween
 ---------------------------------------------------------
