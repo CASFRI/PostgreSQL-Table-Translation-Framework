@@ -3378,19 +3378,19 @@ UNION ALL
 SELECT '130.1'::text number,
        'TT_MinInt'::text function_tested,
        'Simple test'::text description,
-       TT_minInt('{1,2,3}') = 1 passed
+       TT_MinInt('{1,2,3}') = 1 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '130.2'::text number,
        'TT_MinInt'::text function_tested,
        'Simple test with null'::text description,
-       TT_minInt('{null,2}') = 2 passed
+       TT_MinInt('{null,2}') = 2 passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '130.3'::text number,
        'TT_MinInt'::text function_tested,
        'All nulls'::text description,
-       TT_minInt('{null,null}') IS NULL passed
+       TT_MinInt('{null,null}') IS NULL passed
 ---------------------------------------------------------
 -- Test 131 - TT_MaxInt
 ---------------------------------------------------------

@@ -228,7 +228,7 @@ $$ LANGUAGE plpgsql;
 --
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2373,7 +2373,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- notNull().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2532,7 +2532,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isInt().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2576,7 +2576,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isInt().
 -- If there are multiple occurences of the largest value, the
 -- last non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2622,7 +2622,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isBetween().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2672,7 +2672,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isBetween().
 -- If there are multiple occurences of the largest value, the
 -- last non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2825,7 +2825,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- matchList().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2872,7 +2872,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- matchList().
 -- If there are multiple occurences of the largest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of tt_minIndexMapText and tt_minIndexLookupText
+-- match the behaviour of TT_MinIndexMapText() and TT_MinIndexLookupText()
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -5013,12 +5013,12 @@ RETURNS double precision AS $$
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_maxInt()
+-- TT_MaxInt()
 --
 -- vals text - stringList of values to test
 --
 -- returns max value as int.
--- e.g. TT_maxInt({1,2,3})
+-- e.g. TT_MaxInt({1,2,3})
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_MaxInt(text);
 CREATE OR REPLACE FUNCTION TT_MaxInt(
@@ -5038,7 +5038,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- vals text - stringList of values to test
 --
 -- returns min value as int.
--- e.g. TT_maxInt({1,2,3})
+-- e.g. TT_MaxInt({1,2,3})
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_MinInt(text);
 CREATE OR REPLACE FUNCTION TT_MinInt(
@@ -5067,7 +5067,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- If multiple occurences of the smallest value, the first non null value
 -- with a matching index is used.
 -- 
--- e.g. TT_minIndexCopyText({1,2,3}, {a,b,c})
+-- e.g. TT_MinIndexCopyText({1,2,3}, {a,b,c})
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_MinIndexCopyText(text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_MinIndexCopyText(
