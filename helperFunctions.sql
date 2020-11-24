@@ -69,6 +69,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN '-9998'
                   WHEN rule = 'coalesceisint'           THEN '-9995'
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
+                  WHEN rule = 'isLessThanLookupDouble'  THEN '-9999'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -110,6 +111,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN NULL
                   WHEN rule = 'coalesceisint'           THEN NULL
                   WHEN rule = 'coalesceisbetween'       THEN NULL
+                  WHEN rule = 'isLessThanLookupDouble'  THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -152,6 +154,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'isLessThanLookupDouble'  THEN 'OUT_OF_RANGE'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -2793,7 +2796,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- testVal text
 --
 -- run lookupText and pass the result to matchList
--- e.g. lookupIntMatchList(srcval, 'schema', 'lookuptable', 'lookupcol', 1)
+-- e.g. lookupTextMatchList(srcval, 'schema', 'lookuptable', 'lookupcol', 1)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_lookupTextMatchList(
   srcVal text,
@@ -3151,7 +3154,56 @@ CREATE OR REPLACE FUNCTION TT_CoalesceIsBetween(
 RETURNS boolean AS $$
   SELECT TT_CoalesceIsBetween(valList, min, max, TRUE::text, TRUE::text, FALSE::text);
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_isLessThanLookupDouble(text, text, text, text, text, text)
+--
+-- srcVal text
+-- lookupSrcVal text
+-- lookupSchema text
+-- lookupTable text
+-- lookupCol text
+-- retrieveCol text
+-- inclusive text - is upper bound inclusive? Default True.
+--
+-- run lookupText and use the results as the upper bound in isLessThan
+-- lookup table source column must be source_val
+-- e.g. TT_isLessThanLookupDouble(srcval, lookupSrcVal, 'schema', 'lookuptable', 'lookupcol')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+  srcVal text,
+  lookupSrcVal text,
+  lookupSchema text,
+  lookupTable text,
+  lookupCol text,
+  retrieveCol text,
+  inclusive text
+)
+RETURNS boolean AS $$   
+  SELECT tt_isLessThan(srcVal, tt_lookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text, inclusive);
+$$ LANGUAGE sql IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+  srcVal text,
+  lookupSrcVal text,
+  lookupSchema text,
+  lookupTable text,
+  retrieveCol text,
+  inclusive text
+)
+RETURNS boolean AS $$   
+  SELECT TT_isLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, inclusive);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+  srcVal text,
+  lookupSrcVal text,
+  lookupSchema text,
+  lookupTable text,
+  retrieveCol text
+)
+RETURNS boolean AS $$   
+  SELECT TT_isLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

@@ -219,6 +219,7 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
     SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
     SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
+    SELECT 'TT_isLessThanLookupDouble'::text, 41,          5         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2510,7 +2511,38 @@ SELECT '40.12'::text number,
        'TT_CoalesceIsBetween'::text function_tested,
        'First non-NULL value 5 but not included'::text description,
        TT_CoalesceIsBetween('{NULL, ''0.0'', ''5'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text, TRUE::text) IS FALSE passed  
-
+---------------------------------------------------------
+-- Test 41 - TT_isLessThanLookupDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '41.1'::text number,
+       'TT_isLessThanLookupDouble'::text function_tested,
+       'Basic test less than or equal to'::text description,
+       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.2'::text number,
+       'TT_isLessThanLookupDouble'::text function_tested,
+       'Basic test fails is just less than'::text description,
+       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.3'::text number,
+       'TT_isLessThanLookupDouble'::text function_tested,
+       'But passes if srcVal is 1.5'::text description,
+       TT_isLessThanLookupDouble('1.5', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.4'::text number,
+       'TT_isLessThanLookupDouble'::text function_tested,
+       'Test default lookupCol'::text description,
+       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.5'::text number,
+       'TT_isLessThanLookupDouble'::text function_tested,
+       'Test default inclusive'::text description,
+       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------
