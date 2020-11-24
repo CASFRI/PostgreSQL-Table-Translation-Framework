@@ -587,6 +587,15 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE) -- returns FALSE because 0 is not included in the valid interval
     * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE, TRUE) -- returns TRUE because 0 is ignored and 5 is between 0 and 100
 
+* **IsLessThanLookupDouble**(*numeric* **srcVal**, *text* **lookupSrcVal**, *text* **lookupSchema**, *text* **lookupTable**, *text* **lookupCol**, *text* **retrieveCol**\[default source_val]\, *boolean* **inclusive**\[default TRUE]\)
+    * Runs lookupDouble using the **lookupSrcVal**, **lookupSchema**, **lookupTable**, **lookupCol** and **retrieveCol**.
+    * Uses the result from LookupDouble as the upperBound argument in IsLessThan.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol, FALSE) -- Assuming lookupDouble returns 2: returns FALSE because 2 is not less than 2.
+    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol, TRUE) -- Assuming lookupDouble returns 2: returns TRUE because 2 is less than or equal to 2.
+    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, retrieveCol, TRUE) -- defaults to use 'source_val' as **lookupCol**
+    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, retrieveCol) -- defaults to use 'source_val' as **lookupCol** and TRUE as **inclusive**.
+
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fixable**\[default TRUE\])
     * Returns TRUE if **geom** is a valid geometry.
     * When **fixable** is TRUE and **geom** is invalid, will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that setting **fixable** to TRUE does not actually fix the geometry, it only tests to see if the geometry can be fixed.
