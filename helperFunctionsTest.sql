@@ -219,7 +219,7 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
     SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
     SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
-    SELECT 'TT_isLessThanLookupDouble'::text, 41,          5         UNION ALL
+    SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2516,33 +2516,93 @@ SELECT '40.12'::text number,
 ---------------------------------------------------------
 UNION ALL
 SELECT '41.1'::text number,
-       'TT_isLessThanLookupDouble'::text function_tested,
-       'Basic test less than or equal to'::text description,
-       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'TRUE') passed
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error schema is null'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', NULL::text, ''test_table_with_null'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupSchema is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '41.2'::text number,
-       'TT_isLessThanLookupDouble'::text function_tested,
-       'Basic test fails is just less than'::text description,
-       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') IS FALSE passed
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error schema wring type'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''1'', ''test_table_with_null'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupSchema is not a name value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '41.3'::text number,
-       'TT_isLessThanLookupDouble'::text function_tested,
-       'But passes if srcVal is 1.5'::text description,
-       TT_isLessThanLookupDouble('1.5', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') passed
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error table is null'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', NULL::text, ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupTable is NULL' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '41.4'::text number,
-       'TT_isLessThanLookupDouble'::text function_tested,
-       'Test default lookupCol'::text description,
-       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val', 'TRUE') passed
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error table wrong type'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''1'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupTable is not a name value' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '41.5'::text number,
-       'TT_isLessThanLookupDouble'::text function_tested,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error col is null'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', NULL::text, ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupCol is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.6'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error retrieve col wrong type'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''1'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupCol is not a name value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.7'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error retrieve col is null'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', NULL::text, ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): retrieveCol is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.8'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error col wrong type'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''1'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): retrieveCol is not a name value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.9'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error inclusive is null'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''int_val'', NULL::text)') = 'ERROR in TT_isLessThanLookupDouble(): inclusive is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.10'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Error inclusive wrong type'::text description,
+       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''int_val'', ''x'')') = 'ERROR in TT_isLessThanLookupDouble(): inclusive is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.11'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Basic test less than or equal to'::text description,
+       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.12'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Basic test fails is just less than'::text description,
+       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.13'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'But passes if srcVal is 1.5'::text description,
+       TT_IsLessThanLookupDouble('1.5', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.14'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
+       'Test default lookupCol'::text description,
+       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '41.15'::text number,
+       'TT_IsLessThanLookupDouble'::text function_tested,
        'Test default inclusive'::text description,
-       TT_isLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val') passed
+       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------

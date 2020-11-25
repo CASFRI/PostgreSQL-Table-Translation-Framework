@@ -69,7 +69,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN '-9998'
                   WHEN rule = 'coalesceisint'           THEN '-9995'
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
-                  WHEN rule = 'isLessThanLookupDouble'  THEN '-9999'
+                  WHEN rule = 'islessthanlookupdouble'  THEN '-9999'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -111,7 +111,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN NULL
                   WHEN rule = 'coalesceisint'           THEN NULL
                   WHEN rule = 'coalesceisbetween'       THEN NULL
-                  WHEN rule = 'isLessThanLookupDouble'  THEN NULL
+                  WHEN rule = 'islessthanlookupdouble'  THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -154,7 +154,7 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'isLessThanLookupDouble'  THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -3179,8 +3179,26 @@ CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
   inclusive text
 )
 RETURNS boolean AS $$   
-  SELECT tt_isLessThan(srcVal, tt_lookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text, inclusive);
-$$ LANGUAGE sql IMMUTABLE;
+  DECLARE
+    _lookup_val text;
+  BEGIN
+  
+    -- Validate parameters (trigger EXCEPTION)
+   PERFORM TT_ValidateParams('TT_isLessThanLookupDouble',
+                              ARRAY['lookupSchema', lookupSchema, 'name',
+                                    'lookupTable', lookupTable, 'name',
+                                    'lookupCol', lookupCol, 'name',
+                                    'retrieveCol', retrieveCol, 'name',
+                                    'inclusive', inclusive, 'boolean']);
+  
+    IF NOT tt_matchTable(lookupSrcVal, lookupSchema, lookupTable, lookupCol, 'FALSE') THEN
+      RETURN FALSE;
+    ELSE
+      _lookup_val = tt_lookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text;
+      RETURN tt_isLessThan(srcVal, _lookup_val, inclusive);
+    END IF;
+  END
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
   srcVal text,
