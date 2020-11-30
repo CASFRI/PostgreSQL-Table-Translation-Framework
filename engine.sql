@@ -33,13 +33,14 @@ SET tt.debug TO FALSE;
 --
 -- Wrapper to catch error when tt.error is not set.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Debug();
+--DROP FUNCTION IF EXISTS TT_Debug(int);
 CREATE OR REPLACE FUNCTION TT_Debug(
+  level int DEFAULT NULL
 )
 RETURNS boolean AS $$
   DECLARE
   BEGIN
-    RETURN current_setting('tt.debug')::boolean;
+    RETURN current_setting('tt.debug' || CASE WHEN level IS NULL THEN '' ELSE '_l' || level::text END)::boolean;
     EXCEPTION WHEN OTHERS THEN -- if tt.debug is not set
       RETURN FALSE;
   END;
