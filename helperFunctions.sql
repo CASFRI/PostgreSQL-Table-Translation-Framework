@@ -2908,7 +2908,110 @@ CREATE OR REPLACE FUNCTION TT_maxIndexMatchList(
 RETURNS boolean AS $$
   SELECT TT_maxIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_MinIndexMatchTable(text, text, text, text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for isInt
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- lookupSchemaName text - Schema name holding lookup table.
+-- lookupTableName text - Lookup table name.
+-- lookupColumnName text - Lookup table column name.
+--
+-- Find the target values from the testList with a matching 
+-- index to the smallest integer in the intList. Test it with
+-- matchTable().
+-- If there are multiple occurences of the smallest value, the
+-- first non null value with a matching index is used. This is to
+-- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+--
+-- If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating min value.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
+        
+    -- test with tt_matchList()
+    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text
+)
+RETURNS boolean AS $$
+  SELECT TT_MinIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_maxIndexMatchTable(text, text, text, text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for isInt
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- lst - list to test against
+--
+-- Find the target values from the testList with a matching 
+-- index to the largest integer in the intList. Test it with
+-- matchTable().
+-- If there are multiple occurences of the largest value, the
+-- first non null value with a matching index is used. This is to
+-- match the behaviour of TT_MinIndexMapText() and TT_MinIndexLookupText()
+--
+-- If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList. Otherwise nulls ignored 
+-- when calculating min value.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_maxIndexMatchTable(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_maxIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
+        
+    -- test with tt_matchList()
+    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_maxIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text
+)
+RETURNS boolean AS $$
+  SELECT TT_maxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MatchTableSubstring
 --

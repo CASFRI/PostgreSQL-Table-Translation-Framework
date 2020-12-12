@@ -220,6 +220,8 @@ WITH test_nb AS (
     SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
     SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
     SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
+	SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
+    SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2603,6 +2605,52 @@ SELECT '41.15'::text number,
        'TT_IsLessThanLookupDouble'::text function_tested,
        'Test default inclusive'::text description,
        TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val') passed
+---------------------------------------------------------
+-- Test 42 - TT_MinIndexMatchTable
+---------------------------------------------------------
+UNION ALL
+SELECT '42.1'::text number,
+       'TT_MinIndexMatchTable'::text function_tested,
+       'Simple pass'::text description,
+       TT_MinIndexMatchTable('{1,2,3}', '{ACB,b,c}', 'public', 'test_lookuptable1', 'source_val') passed
+UNION ALL
+SELECT '42.2'::text number,
+       'TT_MinIndexMatchTable'::text function_tested,
+       'Simple fail'::text description,
+       TT_MinIndexMatchTable('{1,2,3}', '{a,b,c}', 'public', 'test_lookuptable1', 'source_val') IS FALSE passed
+UNION ALL
+SELECT '42.3'::text number,
+       'TT_MinIndexMatchTable'::text function_tested,
+       'Test setNull'::text description,
+       TT_MinIndexMatchTable('{1,null,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', '0', null::text) passed
+UNION ALL
+SELECT '42.4'::text number,
+       'TT_MinIndexMatchTable'::text function_tested,
+       'Test setZero'::text description,
+       TT_MinIndexMatchTable('{1,0,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', null::text, '0.5') passed
+---------------------------------------------------------
+-- Test 43 - TT_MaxIndexMatchTable
+---------------------------------------------------------
+UNION ALL
+SELECT '43.1'::text number,
+       'TT_MaxIndexMatchTable'::text function_tested,
+       'Simple pass'::text description,
+       TT_MaxIndexMatchTable('{1,2,3}', '{a,b,ACB}', 'public', 'test_lookuptable1', 'source_val') passed
+UNION ALL
+SELECT '43.2'::text number,
+       'TT_MaxIndexMatchTable'::text function_tested,
+       'Simple fail'::text description,
+       TT_MaxIndexMatchTable('{1,2,3}', '{a,b,c}', 'public', 'test_lookuptable1', 'source_val') IS FALSE passed
+UNION ALL
+SELECT '43.3'::text number,
+       'TT_MaxIndexMatchTable'::text function_tested,
+       'Test setNull'::text description,
+       TT_MaxIndexMatchTable('{1,null,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', '4', null::text) passed
+UNION ALL
+SELECT '43.4'::text number,
+       'TT_MaxIndexMatchTable'::text function_tested,
+       'Test setZero'::text description,
+       TT_MaxIndexMatchTable('{1,0,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', null::text, '4') passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------
