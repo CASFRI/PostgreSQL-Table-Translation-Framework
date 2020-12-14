@@ -18,6 +18,7 @@ DROP FUNCTION IF EXISTS TT_GeoIsValid(text);
 DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text);
 DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text);
 DROP FUNCTION IF EXISTS TT_GeoIntersects(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GeoIntersectionGreaterThan(text, text, text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_GeoIntersectionText(text, text, text, text);

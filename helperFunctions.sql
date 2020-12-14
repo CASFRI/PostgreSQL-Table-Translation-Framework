@@ -151,6 +151,7 @@ RETURNS text AS $$
                   WHEN rule = 'lookuptextmatchlist'     THEN 'NOT_IN_SET'
                   WHEN rule = 'geoisvalid'              THEN 'INVALID_VALUE'
                   WHEN rule = 'geointersects'           THEN 'NO_INTERSECT'
+				  WHEN rule = 'geointersectiongreaterthan' THEN 'OUT_OF_RANGE'
                   WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'

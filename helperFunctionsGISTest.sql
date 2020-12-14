@@ -34,6 +34,7 @@ WITH test_nb AS (
     -- Validation functions
     SELECT 'TT_GeoIsValid'::text function_tested, 1 maj_num, 6 nb_test UNION ALL
     SELECT 'TT_GeoIntersects'::text,              2,         7         UNION ALL
+	SELECT 'TT_GeoIntersectionGreaterThan'::text, 3,         4         UNION ALL
     -- Translation functions
     SELECT 'TT_GeoIntersectionText'::text,      101,         13         UNION ALL
     SELECT 'TT_GeoIntersectionDouble'::text,    102,         10         UNION ALL
@@ -129,7 +130,32 @@ SELECT '2.7'::text number,
        'Invalid geometry'::text description,
        TT_GeoIntersects(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text, 'public', 'photo_test', 'the_geom') passed
 ---------------------------------------------------------
-
+-- Test 3 - TT_GeoIntersectionGreaterThan
+---------------------------------------------------------
+UNION ALL
+SELECT '3.1'::text number,
+   'TT_GeoIntersectionGreaterThan'::text function_tested,
+   'Basic pass'::text description,
+   TT_GeoIntersectionGreaterThan(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA', '1')
+---------------------------------------------------------
+UNION ALL
+SELECT '3.2'::text number,
+   'TT_GeoIntersectionGreaterThan'::text function_tested,
+   'Basic fail'::text description,
+   TT_GeoIntersectionGreaterThan(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEAR', 'GREATEST_AREA', '1990') IS FALSE
+---------------------------------------------------------
+UNION ALL
+SELECT '3.3'::text number,
+   'TT_GeoIntersectionGreaterThan'::text function_tested,
+   'Wrong type returned'::text description,
+   TT_GeoIntersectionGreaterThan(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(3 3, 3 5, 5 5, 5 3, 3 3)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA', '1990') IS FALSE
+---------------------------------------------------------
+UNION ALL
+SELECT '3.4'::text number,
+   'TT_GeoIntersectionGreaterThan'::text function_tested,
+   'no intersect'::text description,
+   TT_GeoIntersectionGreaterThan(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(25 25, 25 26, 26 26, 26 25, 25 25)'), 4268)))::text, 'public', 'photo_test', 'the_geom', 'YEARtext', 'GREATEST_AREA', '1') IS FALSE
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 101 - TT_GeoIntersectionText
 ---------------------------------------------------------
