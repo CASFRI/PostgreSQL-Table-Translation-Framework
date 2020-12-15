@@ -1645,7 +1645,7 @@ RETURNS boolean AS $$
     -- check all source vals are int
     -- sum vals
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF NOT TT_isInt(_vals[i]) THEN
+      IF NOT TT_IsInt(_vals[i]) THEN
         RETURN FALSE;
       ELSE
         _valSum = _valSum + _vals[i]::int; -- sum vals
@@ -1811,12 +1811,12 @@ RETURNS boolean AS $$
                               ARRAY['lst1', lst1, 'stringlist',
                                     'lst2', lst2, 'stringlist']);
     
-    _return = tt_matchList(val1, lst1);
+    _return = TT_MatchList(val1, lst1);
     
     IF _return THEN
       RETURN TRUE;
     ELSE
-      RETURN tt_matchList(val2, lst2);
+      RETURN TT_MatchList(val2, lst2);
     END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -1890,7 +1890,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = tt_countOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'FALSE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'FALSE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -2008,7 +2008,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = tt_countOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'TRUE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'TRUE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -2396,8 +2396,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_notNull()
-    RETURN tt_notNull(_testVal);
+    -- test with TT_NotNull()
+    RETURN TT_NotNull(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2440,8 +2440,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo); 
     
-    -- test with tt_notNull()
-    RETURN tt_notNull(_testVal);
+    -- test with TT_NotNull()
+    RETURN TT_NotNull(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2453,7 +2453,7 @@ RETURNS boolean AS $$
   SELECT TT_MaxIndexNotNull(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexNotEmpty(text, text, text, text)
+-- TT_MinIndexNotEmpty(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for notNull
@@ -2462,8 +2462,8 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- Same as TT_MinIndexNotNull but instead tests notEmpty
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_minIndexNotEmpty(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_minIndexNotEmpty(
+-- DROP FUNCTION IF EXISTS TT_MinIndexNotEmpty(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexNotEmpty(
   intList text,
   testList text,
   setNullTo text,
@@ -2475,21 +2475,21 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_notNull()
-    RETURN tt_notEmpty(_testVal);
+    -- test with TT_NotEmpty()
+    RETURN TT_NotEmpty(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_minIndexNotEmpty(
+CREATE OR REPLACE FUNCTION TT_MinIndexNotEmpty(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_minIndexNotEmpty(intList, testList, null::text, null::text)
+  SELECT TT_MinIndexNotEmpty(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_maxIndexNotEmpty(text, text, text, text)
+-- TT_MaxIndexNotEmpty(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for notNull
@@ -2498,8 +2498,8 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- Same as TT_MaxIndexNotNull but tests with notEmpty
 ---------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexNotEmpty(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexNotEmpty(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotEmpty(
   intList text,
   testList text,
   setNullTo text,
@@ -2511,20 +2511,20 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo); 
     
-    -- test with tt_notNull()
-    RETURN tt_notEmpty(_testVal);
+    -- test with TT_NotEmpty()
+    RETURN TT_NotEmpty(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexNotEmpty(
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotEmpty(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexNotEmpty(intList, testList, null::text, null::text)
+  SELECT TT_MaxIndexNotEmpty(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_minIndexIsInt(text, text, text, text)
+-- TT_MinIndexIsInt(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2555,8 +2555,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_isInt()
-    RETURN tt_isInt(_testVal);
+    -- test with TT_IsInt()
+    RETURN TT_IsInt(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2568,7 +2568,7 @@ RETURNS boolean AS $$
   SELECT TT_MinIndexIsInt(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_maxIndexIsInt(text, text, text, text)
+-- TT_MaxIndexIsInt(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2586,8 +2586,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexIsInt(text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexIsInt(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexIsInt(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexIsInt(
   intList text,
   testList text,
   setNullTo text,
@@ -2599,17 +2599,17 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_isInt()
-    RETURN tt_isInt(_testVal);
+    -- test with TT_IsInt()
+    RETURN TT_IsInt(_testVal);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexIsInt(
+CREATE OR REPLACE FUNCTION TT_MaxIndexIsInt(
   intList text,
   testList text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexIsInt(intList, testList, null::text, null::text)
+  SELECT TT_MaxIndexIsInt(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexIsBetween(text, text, text, text, text, text)
@@ -2647,8 +2647,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_isBetween()
-    RETURN tt_isBetween(_testVal, lower_bound, upper_bound);
+    -- test with TT_IsBetween()
+    RETURN TT_IsBetween(_testVal, lower_bound, upper_bound);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2697,8 +2697,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_isBetween()
-    RETURN tt_isBetween(_testVal, lower_bound, upper_bound);
+    -- test with TT_IsBetween()
+    RETURN TT_IsBetween(_testVal, lower_bound, upper_bound);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2788,7 +2788,7 @@ RETURNS boolean AS $$
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
--- TT_lookupTextMatchList(text, text, text, text, text)
+-- TT_LookupTextMatchList(text, text, text, text, text)
 --
 -- srcVal text
 -- lookupSchema text
@@ -2799,7 +2799,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- run lookupText and pass the result to matchList
 -- e.g. lookupTextMatchList(srcval, 'schema', 'lookuptable', 'lookupcol', 1)
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_lookupTextMatchList(
+CREATE OR REPLACE FUNCTION TT_LookupTextMatchList(
   srcVal text,
   lookupSchema text,
   lookupTable text,
@@ -2810,9 +2810,9 @@ RETURNS boolean AS $$
   DECLARE
     lookup_val text;
   BEGIN
-    lookup_val = tt_lookupText(srcVal, lookupSchema, lookupTable, 'source_val'::text, lookupCol);
+    lookup_val = TT_LookupText(srcVal, lookupSchema, lookupTable, 'source_val'::text, lookupCol);
     
-    RETURN tt_matchList(lookup_val, testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
+    RETURN TT_MatchList(lookup_val, testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
@@ -2849,8 +2849,8 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_matchList()
-    RETURN tt_matchList(_testVal, lst);
+    -- test with TT_MatchList()
+    RETURN TT_MatchList(_testVal, lst);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2863,7 +2863,7 @@ RETURNS boolean AS $$
   SELECT TT_MinIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_maxIndexMatchList(text, text, text, text, text)
+-- TT_MaxIndexMatchList(text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2882,8 +2882,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexMatchList(text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexMatchList(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexMatchList(
   intList text,
   testList text,
   lst text,
@@ -2896,18 +2896,18 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_matchList()
-    RETURN tt_matchList(_testVal, lst);
+    -- test with TT_MatchList()
+    RETURN TT_MatchList(_testVal, lst);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexMatchList(
+CREATE OR REPLACE FUNCTION TT_MaxIndexMatchList(
   intList text,
   testList text,
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexMatchList(intList, testList, lst, null::text, null::text)
+  SELECT TT_MaxIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexMatchTable(text, text, text, text, text, text, text)
@@ -2963,7 +2963,7 @@ RETURNS boolean AS $$
   SELECT TT_MinIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_maxIndexMatchTable(text, text, text, text, text, text, text)
+-- TT_MaxIndexMatchTable(text, text, text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
 -- testList stringList - list of target values to test for isInt
@@ -2982,8 +2982,8 @@ $$ LANGUAGE sql IMMUTABLE;
 -- are replaced with the integer in intList. Otherwise nulls ignored 
 -- when calculating min value.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_maxIndexMatchTable(text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_maxIndexMatchTable(
+-- DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
   intList text,
   testList text,
   lookupSchemaName text, 
@@ -3003,7 +3003,7 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_maxIndexMatchTable(
+CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
   intList text,
   testList text,
   lookupSchemaName text, 
@@ -3011,7 +3011,7 @@ CREATE OR REPLACE FUNCTION TT_maxIndexMatchTable(
   lookupColumnName text
 )
 RETURNS boolean AS $$
-  SELECT TT_maxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
+  SELECT TT_MaxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MatchTableSubstring
@@ -3259,7 +3259,7 @@ RETURNS boolean AS $$
   SELECT TT_CoalesceIsBetween(valList, min, max, TRUE::text, TRUE::text, FALSE::text);
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
--- TT_isLessThanLookupDouble(text, text, text, text, text, text)
+-- TT_IsLessThanLookupDouble(text, text, text, text, text, text)
 --
 -- srcVal text
 -- lookupSrcVal text
@@ -3271,9 +3271,9 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- run lookupText and use the results as the upper bound in isLessThan
 -- lookup table source column must be source_val
--- e.g. TT_isLessThanLookupDouble(srcval, lookupSrcVal, 'schema', 'lookuptable', 'lookupcol')
+-- e.g. TT_IsLessThanLookupDouble(srcval, lookupSrcVal, 'schema', 'lookuptable', 'lookupcol')
 ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
   srcVal text,
   lookupSrcVal text,
   lookupSchema text,
@@ -3295,16 +3295,16 @@ RETURNS boolean AS $$
                                     'retrieveCol', retrieveCol, 'name',
                                     'inclusive', inclusive, 'boolean']);
   
-    IF NOT tt_matchTable(lookupSrcVal, lookupSchema, lookupTable, lookupCol, 'FALSE') THEN
+    IF NOT TT_MatchTable(lookupSrcVal, lookupSchema, lookupTable, lookupCol, 'FALSE') THEN
       RETURN FALSE;
     ELSE
-      _lookup_val = tt_lookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text;
-      RETURN tt_isLessThan(srcVal, _lookup_val, inclusive);
+      _lookup_val = TT_LookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text;
+      RETURN TT_IsLessThan(srcVal, _lookup_val, inclusive);
     END IF;
   END
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
   srcVal text,
   lookupSrcVal text,
   lookupSchema text,
@@ -3313,10 +3313,10 @@ CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
   inclusive text
 )
 RETURNS boolean AS $$   
-  SELECT TT_isLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, inclusive);
+  SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, inclusive);
 $$ LANGUAGE sql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
+CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
   srcVal text,
   lookupSrcVal text,
   lookupSchema text,
@@ -3324,7 +3324,7 @@ CREATE OR REPLACE FUNCTION TT_isLessThanLookupDouble(
   retrieveCol text
 )
 RETURNS boolean AS $$   
-  SELECT TT_isLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
+  SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -4014,7 +4014,7 @@ RETURNS text AS $$
     -- check all source vals are int
     -- sum vals
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF NOT TT_isInt(_vals[i]) THEN
+      IF NOT TT_IsInt(_vals[i]) THEN
         RETURN NULL;
       ELSE
         _valSum = _valSum + _vals[i]::int; -- sum vals
@@ -5157,7 +5157,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- y text - second value
 --
 -- calculates x - y and returns int.
--- e.g. TT_xMinusYInt('2', '1')
+-- e.g. TT_XMinusYInt('2', '1')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_XMinusYInt(text, text);
 CREATE OR REPLACE FUNCTION TT_XMinusYInt(
@@ -5175,7 +5175,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- y text - second value
 --
 -- calculates x - y and returns double.
--- e.g. TT_xMinusYDouble('2', '1')
+-- e.g. TT_XMinusYDouble('2', '1')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_XMinusYDouble(text, text);
 CREATE OR REPLACE FUNCTION TT_XMinusYDouble(
@@ -5745,7 +5745,7 @@ CREATE OR REPLACE FUNCTION TT_MapTextCoalesce(
 )
 RETURNS text AS $$
     
-  SELECT coalesce(tt_mapText(val1, lst1, map1), tt_mapText(val2, lst2, map2))
+  SELECT coalesce(TT_MapText(val1, lst1, map1), TT_MapText(val2, lst2, map2))
         
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------

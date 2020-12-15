@@ -212,7 +212,7 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionGreaterThan(
   lowerBound text
 )
 RETURNS boolean AS $$  
-  SELECT TT_isGreaterThan(TT_geoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method), lowerBound, 'FALSE')
+  SELECT TT_IsGreaterThan(TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method), lowerBound, 'FALSE')
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 

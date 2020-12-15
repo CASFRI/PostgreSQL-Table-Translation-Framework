@@ -123,13 +123,13 @@ DROP FUNCTION IF EXISTS TT_CoalesceIsInt(text, text);
 DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text);
 DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CoalesceIsBetween(text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_isLessThanLookupDouble(text, text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_isLessThanLookupDouble(text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_isLessThanLookupDouble(text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_minIndexMatchTable(text, text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_minIndexMatchTable(text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_maxIndexMatchTable(text, text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_maxIndexMatchTable(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IsLessThanLookupDouble(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IsLessThanLookupDouble(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IsLessThanLookupDouble(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);

@@ -1311,43 +1311,43 @@ UNION ALL
 SELECT '13.2'::text number,
        'TT_RuleToSQL'::text function_tested,
        'No arguments'::text description,
-       TT_RuleToSQL('fctName', NULL) = 'TT_fctName()' passed
+       TT_RuleToSQL('FctName', NULL) = 'TT_FctName()' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.3'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One NULL argument'::text description,
-       TT_RuleToSQL('fctName', ARRAY[NULL]) IS NULL passed
+       TT_RuleToSQL('FctName', ARRAY[NULL]) IS NULL passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.4'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One NULL string argument'::text description,
-       TT_RuleToSQL('fctName', ARRAY['NULL']) = 'TT_fctName(NULL::text)' passed
+       TT_RuleToSQL('FctName', ARRAY['NULL']) = 'TT_FctName(NULL::text)' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.5'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One column name'::text description,
-       TT_RuleToSQL('fctName', ARRAY['aa']) = 'TT_fctName(aa::text)' passed
+       TT_RuleToSQL('FctName', ARRAY['aa']) = 'TT_FctName(aa::text)' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.6'::text number,
        'TT_RuleToSQL'::text function_tested,
        'Two column names'::text description,
-       TT_RuleToSQL('fctName', ARRAY['aa', 'bb']) = 'TT_fctName(aa::text, bb::text)' passed
+       TT_RuleToSQL('FctName', ARRAY['aa', 'bb']) = 'TT_FctName(aa::text, bb::text)' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.7'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One column name and one string'::text description,
-       TT_RuleToSQL('fctName', ARRAY['aa', '''bb''']) = 'TT_fctName(aa::text, ''bb''::text)' passed
+       TT_RuleToSQL('FctName', ARRAY['aa', '''bb''']) = 'TT_FctName(aa::text, ''bb''::text)' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '13.8'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One column name and one string containing a space'::text description,
-       TT_RuleToSQL('fctName', ARRAY['aa', '''b b''']) = 'TT_fctName(aa::text, ''b b''::text)' passed
+       TT_RuleToSQL('FctName', ARRAY['aa', '''b b''']) = 'TT_FctName(aa::text, ''b b''::text)' passed
 
 --------------------------------------------------------
 ) AS b
