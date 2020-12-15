@@ -182,39 +182,6 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersects(
 RETURNS boolean AS $$
   SELECT TT_GeoIntersects(the_geom, 'public', intersectTableName, 'geom')
 $$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
--- TT_GeoIntersectionGreaterThan
---
--- the_geom text - the geometry from the table that will receive the intersecting value
--- intersectSchemaName text - schema for the intersect table
--- intersectTableName text - table to intersect
--- geoCol text - geometry column from intersect table
--- returnCol text - column containing the values to return
--- method text - intersect method if multiple intersecting polygons (only have area method for text)
---    GREATEST_AREA - return value from intersecting polygon with largest area
---    LOWEST_VALUE - return lowest value
---    HIGHEST_VALUE - return highest value
--- lowerBound - lower bound to test against.
---
--- Return the text value from the intersecting polygon, then pass to tt_isGreaterThan
--- tt_isGreaterThan sets includive to FALSE internally so this test is always using > and not >=
---
--- e.g. TT_GeoIntersectionGreaterThan(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'GREATEST_AREA', '0')
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GeoIntersectionGreaterThan(text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_GeoIntersectionGreaterThan(
-  the_geom text,
-  intersectSchemaName text,
-  intersectTableName text,
-  geoCol text,
-  returnCol text,
-  method text,
-  lowerBound text
-)
-RETURNS boolean AS $$  
-  SELECT TT_IsGreaterThan(TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method), lowerBound, 'FALSE')
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -323,6 +290,43 @@ CREATE OR REPLACE FUNCTION TT_GeoIntersectionText(
 )
 RETURNS text AS $$
   SELECT TT_GeoIntersectionText(the_geom, 'public', intersectTableName, 'geom', returnCol, method)
+$$ LANGUAGE sql STABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- NOTE: TT_GeoIntersectionGreaterThan is a validation function but is defined 
+-- here because it is dependent on the ST_GeometryFromText translation function
+-------------------------------------------------------------------------------
+-- TT_GeoIntersectionGreaterThan
+--
+-- the_geom text - the geometry from the table that will receive the intersecting value
+-- intersectSchemaName text - schema for the intersect table
+-- intersectTableName text - table to intersect
+-- geoCol text - geometry column from intersect table
+-- returnCol text - column containing the values to return
+-- method text - intersect method if multiple intersecting polygons (only have area method for text)
+--    GREATEST_AREA - return value from intersecting polygon with largest area
+--    LOWEST_VALUE - return lowest value
+--    HIGHEST_VALUE - return highest value
+-- lowerBound - lower bound to test against.
+--
+-- Return the text value from the intersecting polygon, then pass to TT_IsGreaterThan
+-- TT_IsGreaterThan sets includive to FALSE internally so this test is always using > and not >=
+--
+-- e.g. TT_GeoIntersectionGreaterThan(ST_GeometryFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), 'public', 'bc08', 'geom', 'YEAR', 'GREATEST_AREA', '0')
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GeoIntersectionGreaterThan(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GeoIntersectionGreaterThan(
+  the_geom text,
+  intersectSchemaName text,
+  intersectTableName text,
+  geoCol text,
+  returnCol text,
+  method text,
+  lowerBound text
+)
+RETURNS boolean AS $$  
+  SELECT TT_IsGreaterThan(TT_GeoIntersectionText(the_geom, intersectSchemaName, intersectTableName, geoCol, returnCol, method), lowerBound, 'FALSE')
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
