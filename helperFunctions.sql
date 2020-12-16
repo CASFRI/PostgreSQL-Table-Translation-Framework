@@ -68,6 +68,7 @@ RETURNS text AS $$
                   WHEN rule = 'lookuptextmatchlist'     THEN '-9998'
                   WHEN rule = 'geoisvalid'              THEN '-7779'
                   WHEN rule = 'geointersects'           THEN '-7778'
+                  WHEN rule = 'geointersectiongreaterthan' THEN '-9999'
                   WHEN rule = 'matchtablesubstring'     THEN '-9998'
                   WHEN rule = 'coalesceisint'           THEN '-9995'
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
@@ -105,11 +106,14 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN NULL
                   WHEN rule = 'minindexmatchlist'       THEN NULL
                   WHEN rule = 'maxindexmatchlist'       THEN NULL
+                  WHEN rule = 'minindexmatchtable'      THEN NULL
+                  WHEN rule = 'maxindexmatchtable'      THEN NULL
                   WHEN rule = 'isxminusybetween'        THEN NULL
                   WHEN rule = 'lookuptextmatchlist'     THEN NULL
                   WHEN rule = 'matchlisttwice'          THEN NULL
                   WHEN rule = 'geoisvalid'              THEN NULL
                   WHEN rule = 'geointersects'           THEN NULL
+                  WHEN rule = 'geointersectiongreaterthan' THEN NULL
                   WHEN rule = 'matchtablesubstring'     THEN NULL
                   WHEN rule = 'coalesceisint'           THEN NULL
                   WHEN rule = 'coalesceisbetween'       THEN NULL
@@ -148,6 +152,8 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'minindexmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'maxindexmatchlist'       THEN 'NOT_IN_SET'
+                  WHEN rule = 'minindexmatchtable'      THEN 'NOT_IN_SET'
+                  WHEN rule = 'maxindexmatchtable'      THEN 'NOT_IN_SET'
                   WHEN rule = 'isxminusybetween'        THEN 'OUT_OF_RANGE'
                   WHEN rule = 'matchlisttwice'          THEN 'NOT_IN_SET'
                   WHEN rule = 'lookuptextmatchlist'     THEN 'NOT_IN_SET'
