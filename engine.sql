@@ -1616,7 +1616,7 @@ RETURNS SETOF RECORD AS $$
          IF isValid THEN
            query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.target_attribute_type || 
                    ', FALSE);';
-           IF debug THEN RAISE NOTICE '_TT_Translate 77 query=%', query;END IF;
+           IF debug THEN RAISE NOTICE '_TT_Translate 77 query=% with fctName=%, args=% and jsonbRow=%', query, (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow;END IF;
            BEGIN
              EXECUTE query
              USING (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow
