@@ -234,7 +234,7 @@ WITH test_nb AS (
     SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
     SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
-    SELECT 'TT_Concat'::text,                111,          4         UNION ALL
+    SELECT 'TT_Concat'::text,                111,          6         UNION ALL
     SELECT 'TT_PadConcat'::text,             112,         16         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
@@ -3159,6 +3159,18 @@ SELECT '111.4'::text number,
        'TT_Concat'::text function_tested,
        'Test sep with empty string'::text description,
        TT_Concat('{''cas'', ''id'', ''test''}'::text, ''::text) = 'casidtest' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '111.5'::text number,
+       'TT_Concat'::text function_tested,
+       'Test null value with nullToEmpty FALSE'::text description,
+       TT_Concat('{''cas'', NULL, ''test''}'::text, '-'::text) = 'cas-test' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '111.6'::text number,
+       'TT_Concat'::text function_tested,
+       'Test null value with nullToEmpty TRUE'::text description,
+       TT_Concat('{''cas'', NULL, ''test''}'::text, '-'::text, 'TRUE') = 'cas--test' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 112 - TT_PadConcat

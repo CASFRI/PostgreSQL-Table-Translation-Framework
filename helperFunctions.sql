@@ -4356,29 +4356,50 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 --  val text (stringList) - comma separated string of strings to concatenate
 --  sep text - Separator (e.g. '_'). If no sep required use '' as second argument.
+--  nullToEmpty - should null values be converted to empty strings? If FALSE, nulls
+--    are dropped before concatenating. If TRUE, two sep characters will be printed
+--    where the null was. Default is FALSE.
 --
 -- Return the concatenated value.
 -- e.g. TT_Concat({'a', 'b', 'c'}, '-')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Concat(
   val text,
-  sep text
+  sep text,
+  nullToEmpty text
 )
 RETURNS text AS $$
+  DECLARE
+    _nullToEmpty boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_Concat',
-                             ARRAY['sep', sep, 'char']);
-                             
+                             ARRAY['sep', sep, 'char',
+								  'nullToEmpty', nullToEmpty, 'boolean']);
+                            
+    _nullToEmpty = nullToEmpty::boolean;
+	
     -- validate source value (return NULL if not valid)
     IF NOT TT_IsStringList(val) THEN
       RETURN NULL;
     END IF;
 
     -- process
-    RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
+	IF _nullToEmpty IS FALSE THEN
+      RETURN array_to_string(TT_ParseStringList(val, TRUE), sep);
+	ELSE
+	  RETURN array_to_string(TT_ParseStringList(val, TRUE), sep, '');
+	END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_Concat(
+  val text,
+  sep text
+)
+RETURNS text AS $$
+  SELECT TT_Concat(val, sep, 'FALSE')
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
