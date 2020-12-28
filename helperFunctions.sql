@@ -5984,3 +5984,324 @@ CREATE OR REPLACE FUNCTION TT_CoalesceInt(
 RETURNS int AS $$
   SELECT TT_CoalesceInt(valList, FALSE::text)::int
 $$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_CountOfNotNullMapText()
+--
+-- vals1/2/3/4/5/6/7 text - string lists of values to test.
+-- maxRankToConsider int - only consider the first x string lists.
+-- resultList - list of values to match the results from countOfNotNull
+-- mappingList - List of mappings to return
+--
+-- Run countofNotNull then pass result to mapText. zeroIsNull in countofnotnull is set to FALSE.
+-- e.g. TT_CountOfNotNullMapText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {a,b,c,d,e,f,g})
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_MapText(
+	  TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, 'FALSE')::text,
+	  resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_CountOfNotNullMapInt()
+--
+-- Wrapper around TT_CountOfNotNullMapText
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_CountOfNotNullMapDouble()
+--
+-- Wrapper around TT_CountOfNotNullMapText
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)::double precision
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;

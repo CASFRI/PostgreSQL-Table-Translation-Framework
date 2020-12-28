@@ -238,6 +238,27 @@ DROP FUNCTION IF EXISTS TT_CoalesceInt(text, text);
 DROP FUNCTION IF EXISTS TT_CoalesceText(text);
 DROP FUNCTION IF EXISTS TT_CoalesceText(text, text);
 DROP FUNCTION IF EXISTS TT_CoalesceText(text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

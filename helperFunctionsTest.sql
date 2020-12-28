@@ -267,7 +267,10 @@ WITH test_nb AS (
     SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
     SELECT 'TT_LookupTextSubstring'::text,   147,          3         UNION ALL
     SELECT 'TT_CoalesceText'::text,          148,         14         UNION ALL
-    SELECT 'TT_CoalesceInt'::text,           149,         10
+    SELECT 'TT_CoalesceInt'::text,           149,         10         UNION ALL
+	SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
+	SELECT 'TT_CountOfNotNullMapInt'::text,  151,          4         UNION ALL
+	SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -4433,6 +4436,92 @@ SELECT '149.10'::text number,
        'TT_CoalesceInt'::text function_tested,
        'Test zeroAsNull parameter with float 0'::text description,
        TT_CoalesceInt('{''0.0'', ''1'', ''2''}', FALSE::text) = 0 passed
+---------------------------------------------------------
+-- Test 150 - TT_CountOfNotNullMapText
+---------------------------------------------------------
+UNION ALL
+SELECT '150.1'::text number,
+       'TT_CountOfNotNullMapText'::text function_tested,
+       'Simple test 1'::text description,
+       TT_CountOfNotNullMapText('{a, b}', '{NULL}', '2', '{1,2,3}', '{A, B, C}') = 'A' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '150.2'::text number,
+       'TT_CountOfNotNullMapText'::text function_tested,
+       'Simple test 2'::text description,
+       TT_CountOfNotNullMapText('{a, b}', '{c}', '2', '{1,2,3}', '{A, B, C}') = 'B' passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '150.3'::text number,
+       'TT_CountOfNotNullMapText'::text function_tested,
+       'Simple test 3'::text description,
+       TT_CountOfNotNullMapText('{}', '{}', '2', '{1,2,0}', '{A, B, C}') = 'C' passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '150.4'::text number,
+       'TT_CountOfNotNullMapText'::text function_tested,
+       'Not in set'::text description,
+       TT_CountOfNotNullMapText('{}', '{}', '2', '{1,2,3}', '{A, B, C}') IS NULL passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '150.5'::text number,
+       'TT_CountOfNotNullMapText'::text function_tested,
+       'Check errors pass from mapText'::text description,
+       TT_isError('SELECT TT_CountOfNotNullMapText(''{}'', ''{}'', ''2'', ''{1}'', ''{A, B, C}'')') = 'ERROR in TT_MapText(): number of mapVals values (1) is different from number of targetVals values (3)...' passed	
+---------------------------------------------------------
+-- Test 151 - TT_CountOfNotNullMapInt
+---------------------------------------------------------
+UNION ALL
+SELECT '151.1'::text number,
+       'TT_CountOfNotNullMapInt'::text function_tested,
+       'Simple test 1'::text description,
+       TT_CountOfNotNullMapInt('{a, b}', '{NULL}', '2', '{1,2,3}', '{1, 2, 3}') = 1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '151.2'::text number,
+       'TT_CountOfNotNullMapInt'::text function_tested,
+       'Simple test 2'::text description,
+       TT_CountOfNotNullMapInt('{a, b}', '{c}', '2', '{1,2,3}', '{1, 2, 3}') = 2 passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '151.3'::text number,
+       'TT_CountOfNotNullMapInt'::text function_tested,
+       'Simple test 3'::text description,
+       TT_CountOfNotNullMapInt('{}', '{}', '2', '{1,2,0}', '{1, 2, 3}') = 3 passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '151.4'::text number,
+       'TT_CountOfNotNullMapInt'::text function_tested,
+       'Not in set'::text description,
+       TT_CountOfNotNullMapInt('{}', '{}', '2', '{1,2,3}', '{1, 2, 3}') IS NULL passed	
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 152 - TT_CountOfNotNullMapDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '152.1'::text number,
+       'TT_CountOfNotNullMapDouble'::text function_tested,
+       'Simple test 1'::text description,
+       TT_CountOfNotNullMapDouble('{a, b}', '{NULL}', '2', '{1,2,3}', '{1.1, 2.2, 3.3}') = 1.1 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '152.2'::text number,
+       'TT_CountOfNotNullMapDouble'::text function_tested,
+       'Simple test 2'::text description,
+       TT_CountOfNotNullMapDouble('{a, b}', '{c}', '2', '{1,2,3}', '{1.1, 2.2, 3.3}') = 2.2 passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '152.3'::text number,
+       'TT_CountOfNotNullMapDouble'::text function_tested,
+       'Simple test 3'::text description,
+       TT_CountOfNotNullMapDouble('{}', '{}', '2', '{1,2,0}', '{1.1, 2.2, 3.3}') = 3.3 passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '152.4'::text number,
+       'TT_CountOfNotNullMapDouble'::text function_tested,
+       'Not in set'::text description,
+       TT_CountOfNotNullMapDouble('{}', '{}', '2', '{1,2,3}', '{1.1, 2.2, 3.3}') IS NULL passed	
+---------------------------------------------------------	
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int
