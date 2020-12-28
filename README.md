@@ -733,10 +733,22 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **IfElseCountOfNotNullText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Calls CountOfNotNull() and tests if the returned value matches the count.
     * If returned value is less than or equal to count, returns **returnIf**, else returns **returnElse**.
+    * zeroIsNull in countOfNotNull is set to FALSE.
     * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 
 * **IfElseCountOfNotNullInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Simple wrapper around IfElseCountOfNotNullText() that returns an int.
+    
+* **CountOfNotNullMapText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
+    * Calls CountOfNotNull() and passes the returned value to mapText using the resultList and mappingList.
+    * zeroIsNull in countOfNotNull is set to FALSE.
+    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {a,b,c,d,e,f,g})
+
+* **CountOfNotNullMapInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
+    * Simple wrapper around CountOfNotNullMapText returning int.
+    
+* **CountOfNotNullMapDouble**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
+    * Simple wrapper around CountOfNotNullMapText returning double precision.
     
 * **SubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *boolean* **removeSpaces**\[default FALSE\])
     * Returns a substring of **srcVal** from **startChar** for **forLength**.
