@@ -227,7 +227,6 @@ DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text
 DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_DivideInt(text, text);
 DROP FUNCTION IF EXISTS TT_DivideDouble(text, text);
-DROP FUNCTION IF EXISTS TT_MapTextCoalesce(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_Multiply(text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextSubstring(text, text, text, text, text, text, text, text);
@@ -259,6 +258,15 @@ DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text,
 DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

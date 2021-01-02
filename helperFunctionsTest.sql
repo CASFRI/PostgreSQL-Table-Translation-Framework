@@ -259,7 +259,6 @@ WITH test_nb AS (
     SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
     SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
     SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
-    SELECT 'TT_MapTextCoalesce'::text,       141,          6         UNION ALL
     SELECT 'TT_Multiply'::text,              142,          3         UNION ALL
     SELECT 'TT_MinIndexMapInt'::text,        143,          7         UNION ALL
     SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
@@ -270,7 +269,8 @@ WITH test_nb AS (
     SELECT 'TT_CoalesceInt'::text,           149,         10         UNION ALL
 	SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
 	SELECT 'TT_CountOfNotNullMapInt'::text,  151,          4         UNION ALL
-	SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         
+	SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         UNION ALL
+	SELECT 'TT_MapTextNotNullIndex'::text,   153,          9
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -4045,44 +4045,6 @@ SELECT '140.2'::text number,
        'Simple test, rounding a double to int'::text description,
        TT_DivideInt(5::text, 2::text) = 3 passed  
 ---------------------------------------------------------
--- Test 141 - TT_MapTextCoalesce
----------------------------------------------------------
-UNION ALL
-SELECT '141.1'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'First val returns a value'::text description,
-       TT_MapTextCoalesce('a','b','{''a''}','{''b''}','{''A''}','{''B''}') = 'A' passed
----------------------------------------------------------
-UNION ALL
-SELECT '141.2'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'Second val returns a value'::text description,
-       TT_MapTextCoalesce('a','b','{''c''}','{''b''}','{''A''}','{''B''}') = 'B' passed
----------------------------------------------------------
-UNION ALL
-SELECT '141.3'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'Neither val returns a value'::text description,
-       TT_MapTextCoalesce('a','b','{''c''}','{''c''}','{''A''}','{''B''}') IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '141.4'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'val null'::text description,
-       TT_MapTextCoalesce(NULL::text,'b','{''c''}','{''b''}','{''A''}','{''B''}') = 'B' passed
----------------------------------------------------------
-UNION ALL
-SELECT '141.5'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'val2 null'::text description,
-       TT_MapTextCoalesce('a',NULL::text,'{''c''}','{''b''}','{''A''}','{''B''}') IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '141.6'::text number,
-       'TT_MapTextCoalesce'::text function_tested,
-       'val1 and val2 null'::text description,
-       TT_MapTextCoalesce(NULL::text,NULL::text,'{''c''}','{''b''}','{''A''}','{''B''}') IS NULL passed
----------------------------------------------------------
 -- Test 142 - TT_Multiply
 ---------------------------------------------------------
 UNION ALL
@@ -4521,7 +4483,71 @@ SELECT '152.4'::text number,
        'TT_CountOfNotNullMapDouble'::text function_tested,
        'Not in set'::text description,
        TT_CountOfNotNullMapDouble('{}', '{}', '2', '{1,2,3}', '{1.1, 2.2, 3.3}') IS NULL passed	
----------------------------------------------------------	
+---------------------------------------------------------
+---------------------------------------------------------
+---------------------------------------------------------
+-- Test 152 - TT_CountOfNotNullMapDouble
+---------------------------------------------------------
+UNION ALL
+SELECT '153.1'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Test wrong type for index'::text description,
+       TT_IsError('SELECT TT_MapTextNotNullIndex(''a'',''{a,b}'',''{A,B}'', ''b'',''{a,b}'',''{A,B}'', ''a'')') = 'ERROR in TT_MapTextNotNullIndex(): indexToReturn is not a int value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.2'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Test null for index'::text description,
+       TT_IsError('SELECT TT_MapTextNotNullIndex(''a'',''{a,b}'',''{A,B}'', ''b'',''{a,b}'',''{A,B}'', NULL)') = 'ERROR in TT_MapTextNotNullIndex(): indexToReturn is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.3'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Simple test 1'::text description,
+       TT_MapTextNotNullIndex('a','{a,b}','{A,B}', 'b','{a,b}','{A,B}', '1') = 'A' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.4'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Simple test 2'::text description,
+       TT_MapTextNotNullIndex('a','{a,b}','{A,B}', 'b','{a,b}','{A,B}', '2') = 'B' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.5'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Index doesnt exist'::text description,
+       TT_MapTextNotNullIndex('a','{a,b}','{A,B}', 'b','{a,b}','{A,B}', '3') IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.6'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Simple test all 10'::text description,
+       TT_MapTextNotNullIndex('a','{a,b}','{A,B}', 'b','{a,b}','{A,B}', 'c','{c,d}','{C,D}', 'd','{c,d}','{C,D}', 'e','{e,f}','{E,F}', 'f','{e,f}','{E,F}',
+							  'g','{g,h}','{G,H}', 'h','{g,h}','{G,H}', 'i','{i,j}','{I,J}', 'j','{i,j}','{I,J}', '10') = 'J' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '153.7'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Simple test all 10'::text description,
+       TT_MapTextNotNullIndex('a','{a,b}','{A,B}', 'b','{a,b}','{A,B}', 'c','{c,d}','{C,D}', 'd','{c,d}','{C,D}', 'e','{e,f}','{E,F}', 'f','{e,f}','{E,F}',
+							  'g','{g,h}','{G,H}', 'h','{g,h}','{G,H}', 'i','{i,j}','{I,J}', 'j','{i,j}','{I,J}', '5') = 'E' passed	
+---------------------------------------------------------
+UNION ALL
+SELECT '153.8'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Test with some null sources'::text description,
+       TT_MapTextNotNullIndex(NULL,'{a,b}','{A,B}', NULL,'{a,b}','{A,B}', 'c','{c,d}','{C,D}', 'd','{c,d}','{C,D}', 'e','{e,f}','{E,F}', 'f','{e,f}','{E,F}',
+							  'g','{g,h}','{G,H}', 'h','{g,h}','{G,H}', 'i','{i,j}','{I,J}', 'j','{i,j}','{I,J}', '5') = 'G' passed		
+---------------------------------------------------------
+UNION ALL
+SELECT '153.9'::text number,
+       'TT_MapTextNotNullIndex'::text function_tested,
+       'Test with some null results'::text description,
+       TT_MapTextNotNullIndex('a','{c,b}','{C,B}', 'b','{a,r}','{A,R}', 'c','{c,d}','{C,D}', 'd','{c,d}','{C,D}', 'e','{e,f}','{E,F}', 'f','{e,f}','{E,F}',
+							  'g','{g,h}','{G,H}', 'h','{g,h}','{G,H}', 'i','{i,j}','{I,J}', 'j','{i,j}','{I,J}', '5') = 'G' passed	
+
+	
+	
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
 ORDER BY maj_num::int, min_num::int

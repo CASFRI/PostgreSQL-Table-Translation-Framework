@@ -5752,34 +5752,6 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- TT_MapTextCoalesce()
---
--- val1 text - first value to test. Can be text or stringlist.
--- val2 text - second value to test. Can be text or stringlist.
--- lst1 text (stringList) - list of values to test val1 against
--- lst2 text (stringList) - list of values to test val2 against
--- map1 text (stringList) - list of return values for val1
--- map2 text (stringList) - list of return values for val2
---
--- If val1 is in lst1, run mapText(val1, lst1)
--- Else run mapText(val2, lst2)
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_MapTextCoalesce(
-  val1 text,
-  val2 text,
-  lst1 text,
-  lst2 text,
-  map1 text,
-  map2 text
-)
-RETURNS text AS $$
-    
-  SELECT coalesce(TT_MapText(val1, lst1, map1), TT_MapText(val2, lst2, map2))
-        
-$$ LANGUAGE sql IMMUTABLE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
 -- TT_Multiply()
 --
 -- val1 text - The first value to multiply.
@@ -6304,4 +6276,263 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
 )
 RETURNS double precision AS $$
     SELECT TT_CountOfNotNullMapDouble(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_MapTextNotNullIndex()
+--
+-- val1
+-- srcList1
+-- targetList1
+-- val2
+-- srcList2
+-- targetList2
+-- etc.
+-- etc.
+-- etc.
+-- indexToReturn
+-- 
+-- Run mapText for each set of val, srcList and targetList, then return the ith non-null result where i = indexToReturn.
+-- If i > count of results NULL will be returned.
+--
+-- e.g. TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, 
+--       val4,srcList4,targetList4, val5,srcList5,targetList5, val6,srcList6,targetList6, val7,srcList7,
+--       targetList7, val8,srcList8,targetList8, val9,srcList9,targetList9, val10,srcList10,targetList10, indexToReturn)
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, 
+--                                               text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  val6 text, srcList6 text, targetList6 text,
+  val7 text, srcList7 text, targetList7 text,
+  val8 text, srcList8 text, targetList8 text,
+  val9 text, srcList9 text, targetList9 text,
+  val10 text, srcList10 text, targetList10 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  DECLARE
+    res1 text;
+	res2 text;
+	res3 text;
+	res4 text;
+	res5 text;
+	res6 text;
+	res7 text;
+	res8 text;
+	res9 text;
+	res10 text;
+	_indexToReturn int;
+	counter int := 0;
+  BEGIN
+  -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_MapTextNotNullIndex',
+                              ARRAY['indexToReturn', indexToReturn, 'int']);
+    _indexToReturn = indexToReturn::int;
+	
+    IF val1 IS NOT NULL THEN
+	  res1 = tt_MapText(val1, srcList1, targetList1);
+	  IF res1 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res1;
+		END IF;
+	  END IF;
+	END IF;
+	IF val2 IS NOT NULL THEN
+	  res2 = tt_MapText(val2, srcList2, targetList2);
+	  IF res2 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res2;
+		END IF;
+	  END IF;
+	END IF;
+	IF val3 IS NOT NULL THEN
+	  res3 = tt_MapText(val3, srcList3, targetList3);
+	  IF res3 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res3;
+		END IF;
+	  END IF;
+	END IF;
+	IF val4 IS NOT NULL THEN
+	  res4 = tt_MapText(val4, srcList4, targetList4);
+	  IF res4 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res4;
+		END IF;
+	  END IF;
+	END IF;
+	IF val5 IS NOT NULL THEN
+	  res5 = tt_MapText(val5, srcList5, targetList5);
+	  IF res5 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res5;
+		END IF;
+	  END IF;
+	END IF;
+	IF val6 IS NOT NULL THEN
+	  res6 = tt_MapText(val6, srcList6, targetList6);
+	  IF res6 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res6;
+		END IF;
+	  END IF;
+	END IF;
+	IF val7 IS NOT NULL THEN
+	  res7 = tt_MapText(val7, srcList7, targetList7);
+	  IF res7 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res7;
+		END IF;
+	  END IF;
+	END IF;
+	IF val8 IS NOT NULL THEN
+	  res8 = tt_MapText(val8, srcList8, targetList8);
+	  IF res8 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res8;
+		END IF;
+	  END IF;
+	END IF;
+	IF val9 IS NOT NULL THEN
+	  res9 = tt_MapText(val9, srcList9, targetList9);
+	  IF res9 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res9;
+		END IF;
+	  END IF;
+	END IF;
+	IF val10 IS NOT NULL THEN
+	  res10 = tt_MapText(val10, srcList10, targetList10);
+	  IF res10 IS NOT NULL THEN
+	    counter = counter + 1;
+		IF counter = _indexToReturn THEN
+		  RETURN res10;
+		END IF;
+	  END IF;
+	END IF;
+	RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  val6 text, srcList6 text, targetList6 text,
+  val7 text, srcList7 text, targetList7 text,
+  val8 text, srcList8 text, targetList8 text,
+  val9 text, srcList9 text, targetList9 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, val5,srcList5,targetList5, 
+						val6,srcList6,targetList6, val7,srcList7,targetList7, val8,srcList8,targetList8, val9,srcList9,targetList9, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  val6 text, srcList6 text, targetList6 text,
+  val7 text, srcList7 text, targetList7 text,
+  val8 text, srcList8 text, targetList8 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, val5,srcList5,targetList5, 
+						val6,srcList6,targetList6, val7,srcList7,targetList7, val8,srcList8,targetList8, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  val6 text, srcList6 text, targetList6 text,
+  val7 text, srcList7 text, targetList7 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, val5,srcList5,targetList5, 
+						val6,srcList6,targetList6, val7,srcList7,targetList7, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  val6 text, srcList6 text, targetList6 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, val5,srcList5,targetList5, 
+						val6,srcList6,targetList6, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  val5 text, srcList5 text, targetList5 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, val5,srcList5,targetList5, 
+						NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  val4 text, srcList4 text, targetList4 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, val4,srcList4,targetList4, NULL::text,NULL::text,NULL::text, 
+						NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  val3 text, srcList3 text, targetList3 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, 
+						NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MapTextNotNullIndex(
+  val1 text, srcList1 text, targetList1 text,
+  val2 text, srcList2 text, targetList2 text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_MapTextNotNullIndex(val1,srcList1,targetList1, val2,srcList2,targetList2, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, 
+						NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, NULL::text,NULL::text,NULL::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
