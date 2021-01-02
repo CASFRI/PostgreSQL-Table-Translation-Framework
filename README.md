@@ -652,9 +652,13 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Calculates the sum  of the values in the **srcValList** string list and passes the sum to MapText() with **matchList** amd **returnList**.
     * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'})
     
-* **MapTextCoalesce**(*text* **srcVal1**, *text* **srcVal2**, *stringList* **matchList**, *stringList* **returnList**, *stringList* **target1**, *stringList* **target2**)
-    * A wrapper function that runs MapText() twice inside a coalesce function. If *MapText(srcVal1, matchList, target1)* returns a value, that value is returned from MapTextCoalesce(). If the result is NULL, then the result of *MapText(srcVal2, lst2, target2)* is returned. 
-    * e.g. MapText('A', 'B', '{'A','B','C'}','{'D','E','F'}', '{'Aa','Bb','Cc'}','{'Dd','Ee','Ff'}')
+* **MapTextNotNullIndex**(*text* **srcVal1**, *stringList* **matchList1**, *stringList* **returnList1**, *text* **srcVal2**, *stringList* **matchList2**, *stringList* **returnList2**, *text* **srcVal3**, *stringList* **matchList3**, *stringList* **returnList3**, *text* **srcVal4**, *stringList* **matchList4**, *stringList* **returnList4**, *text* **srcVal5**, *stringList* **matchList5**, *stringList* **returnList5**, *text* **srcVal6**, *stringList* **matchList6**, *stringList* **returnList6**, *text* **srcVal7**, *stringList* **matchList7**, *stringList* **returnList7**, *text* **srcVal8**, *stringList* **matchList8**, *stringList* **returnList8**, *text* **srcVal9**, *stringList* **matchList9**, *stringList* **returnList9**, *text* **srcVal10**, *stringList* **matchList10**, *stringList* **returnList10**, *integer* indexToReturn)
+    * Runs MapText for each set of val, matchList and returnList, then returns the ith non-null result where i = indexToReturn.
+    * Null srcVals and null results from MapText are dropped when selecting the ith non-null result.
+    * If indexToReturn > the count of results, NULL is returned.
+    * Works with between two and ten sets of srcVal, matchList, and returnList.
+    * e.g. MapTextNotNullIndex(a,{a,b},{A,B}, b,{a,b},{A,B}, 1) returns 'A'.
+    * e.g. MapTextNotNullIndex(NULL,{a,b},{A,B}, NULL,{a,b},{A,B}, c,{c,d},{C,D}, d,{c,d},{C,D}, e,{e,f},{E,F}, f,{e,f},{E,F}, g,{g,h},{G,H}, h,{g,h},{G,H}, i,{i,j},{I,J}, j,{i,j},{I,J}, 5) returns 'G' because the NULL srcVals are ignored.
       
 * **MapDouble**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return double precision value in **returnList** that matches index of **srcVal** in **matchList**. 
