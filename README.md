@@ -481,6 +481,13 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. SumIntMatchList({1,2}, {3, 4, 5})
 
+* **HasCountOfMatchList**(*text* **val1**, *stringList* **matchList1**, *text* **val2**, *stringList* **matchList2**, *text* **val3**, *stringList* **matchList3**, *text* **val4**, *stringList* **matchList4**, *text* **val5**, *stringList* **matchList5**, *text* **val6**, *stringList* **matchList6**, *text* **val7**, *stringList* **matchList7**, *text* **val8**, *stringList* **matchList8**, *text* **val9**, *stringList* **matchList9**, *text* **val10**, *stringList* **matchList10**, *int* **count**, *boolean* **exact**)
+    * Runs matchList() for each set of val and matchList.
+    * Counts the number of TRUE values returned and compares to the **count**.
+    * If exact is TRUE and the number of TRUE matchList results is equal to the **count**, returns TRUE.
+    * If exact is FALSE and the number of TRUE matchList results is greater than or equal to the **count**, returns TRUE.
+    * e.g. HasCountOfMatchList(a, {a,b}, b, {a,b}, c, {a,c}, 2, TRUE) would return TRUE.
+
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt() and NothingDouble().
     * Default error codes are 'NOT_APPLICABLE' for text attributes, -8887 for numeric attributes and NULL for other types.
