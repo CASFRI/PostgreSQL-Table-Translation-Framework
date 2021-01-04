@@ -130,6 +130,15 @@ DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text, text
 DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);

@@ -222,6 +222,7 @@ WITH test_nb AS (
     SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
 	SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
     SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
+	SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2654,6 +2655,62 @@ SELECT '43.4'::text number,
        'TT_MaxIndexMatchTable'::text function_tested,
        'Test setZero'::text description,
        TT_MaxIndexMatchTable('{1,0,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', null::text, '4') passed
+---------------------------------------------------------
+-- Test 44 - TT_HasCountOfMatchList
+---------------------------------------------------------
+UNION ALL
+SELECT '44.1'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Simple pass all 10'::text description,
+       TT_HasCountOfMatchList('a', '{a,b,c}', 'b', '{a,b,c}',  'c', '{a,b,c}', 'd', '{a,b,c}', 'e', '{a,b,c}', 'f', '{a,b,c}', 'g', '{a,b,c}', 'h', '{a,b,c}', 'i', '{a,b,c}', 'j', '{a,b,c}', '3', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.2'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Simple pass 2 tests'::text description,
+       TT_HasCountOfMatchList('a', '{a,b,c}', 'b', '{a,b,c}', '2', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.3'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test a fail with exact TRUE'::text description,
+       TT_HasCountOfMatchList('a', '{a,b,c}', 'd', '{a,b,c}', '2', 'TRUE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.4'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test a pass with exact FALSE'::text description,
+       TT_HasCountOfMatchList('a', '{a,b,c}', 'b', '{a,b,c}', '1', 'FALSE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.4'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test a fail with exact FALSE'::text description,
+       TT_HasCountOfMatchList('a', '{a,b,c}', 'd', '{a,b,c}', '2', 'FALSE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.5'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test count is not int'::text description,
+       TT_IsError('SELECT TT_HasCountOfMatchList(''a'', ''{a,b,c}'', ''d'', ''{a,b,c}'', ''x'', ''FALSE'')') = 'ERROR in TT_HasCountOfMatchList(): count is not a int value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.6'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test count is null'::text description,
+       TT_IsError('SELECT TT_HasCountOfMatchList(''a'', ''{a,b,c}'', ''d'', ''{a,b,c}'', NULL::text, ''FALSE'')') = 'ERROR in TT_HasCountOfMatchList(): count is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.7'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test exact is not boolean'::text description,
+       TT_IsError('SELECT TT_HasCountOfMatchList(''a'', ''{a,b,c}'', ''d'', ''{a,b,c}'', ''1'', ''x'')') = 'ERROR in TT_HasCountOfMatchList(): exact is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '44.8'::text number,
+       'TT_HasCountOfMatchList'::text function_tested,
+       'Test exact is null'::text description,
+       TT_IsError('SELECT TT_HasCountOfMatchList(''a'', ''{a,b,c}'', ''d'', ''{a,b,c}'', ''1'', NULL::text)') = 'ERROR in TT_HasCountOfMatchList(): exact is NULL' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------

@@ -73,6 +73,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisint'           THEN '-9995'
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
                   WHEN rule = 'islessthanlookupdouble'  THEN '-9999'
+				  WHEN rule = 'hascountofmatchlist'     THEN '-9997'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -118,6 +119,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisint'           THEN NULL
                   WHEN rule = 'coalesceisbetween'       THEN NULL
                   WHEN rule = 'islessthanlookupdouble'  THEN NULL
+				  WHEN rule = 'hascountofmatchlist'     THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -164,6 +166,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
+				  WHEN rule = 'hascountofnotnullorzero' THEN 'INVALID_VALUE'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -3334,6 +3337,195 @@ CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
 RETURNS boolean AS $$   
   SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_HasCountOfMatchList()
+--
+-- val1
+-- srcList1
+-- targetList1
+-- val2
+-- srcList2
+-- targetList2
+-- etc.
+-- etc.
+-- etc.
+-- indexToReturn
+-- 
+-- Run up to 10 matchList calls and count the number of TRUEs.
+-- If count is equal to _count and exact is true, return TRUE.
+-- If count is greater than or equal to _count, and exact is FALSE, return TRUE.
+--
+-- e.g. TT_HasCountOfMatchList(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, 
+--       val4,srcList4,targetList4, val5,srcList5,targetList5, val6,srcList6,targetList6, val7,srcList7,
+--       targetList7, val8,srcList8,targetList8, val9,srcList9,targetList9, val10,srcList10,targetList10, count)
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  val6 text, srcList6 text,
+  val7 text, srcList7 text,
+  val8 text, srcList8 text,
+  val9 text, srcList9 text,
+  val10 text, srcList10 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _count int;
+	_exact boolean;
+	_passes int;
+  BEGIN
+  -- validate parameters (trigger EXCEPTION)
+    PERFORM TT_ValidateParams('TT_HasCountOfMatchList',
+                              ARRAY['count', count, 'int',
+								   'exact', exact, 'boolean']);
+    _count = count::int;
+	_exact = exact::boolean;
+	
+	_passes = count(*) 
+				FROM(SELECT tt_matchlist(val1,srcList1) 
+					UNION ALL 
+					SELECT tt_matchlist(val2,srcList2) 
+					UNION ALL
+					SELECT tt_matchlist(val3,srcList3) 
+					UNION ALL
+					SELECT tt_matchlist(val4,srcList4) 
+					UNION ALL
+					SELECT tt_matchlist(val5,srcList5) 
+					UNION ALL
+					SELECT tt_matchlist(val6,srcList6) 
+					UNION ALL
+					SELECT tt_matchlist(val7,srcList7) 
+					UNION ALL
+					SELECT tt_matchlist(val8,srcList8) 
+					UNION ALL
+					SELECT tt_matchlist(val9,srcList9) 
+					UNION ALL
+					SELECT tt_matchlist(val10,srcList10) 
+				)a
+				WHERE tt_matchlist IS TRUE;
+	
+	IF _exact THEN
+	  RETURN _passes = _count;
+	ELSE
+	  RETURN _passes >= _count;
+	END IF;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  val6 text, srcList6 text,
+  val7 text, srcList7 text,
+  val8 text, srcList8 text,
+  val9 text, srcList9 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, val5, srcList5, val6, srcList6, val7, srcList7, val8, srcList8, val9, srcList9, 'a', 'b', count, exact); -- can't use NULL here or the matchList call will throw an error. We just need it to be FALSE
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  val6 text, srcList6 text,
+  val7 text, srcList7 text,
+  val8 text, srcList8 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, val5, srcList5, val6, srcList6, val7, srcList7, val8, srcList8, 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  val6 text, srcList6 text,
+  val7 text, srcList7 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, val5, srcList5, val6, srcList6, val7, srcList7, 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  val6 text, srcList6 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, val5, srcList5, val6, srcList6, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  val5 text, srcList5 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, val5, srcList5, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  val4 text, srcList4 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, val4, srcList4, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  val3 text, srcList3 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, val3, srcList3, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
+  val1 text, srcList1 text,
+  val2 text, srcList2 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
