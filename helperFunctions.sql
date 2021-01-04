@@ -166,7 +166,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
-				  WHEN rule = 'hascountofnotnullorzero' THEN 'INVALID_VALUE'
+				  WHEN rule = 'hascountofmatchlist'     THEN 'INVALID_VALUE'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
