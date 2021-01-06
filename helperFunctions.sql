@@ -378,6 +378,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 --    - never fail on invalid values
 --    - must properly handle NULL and empty values
 --    - must not define DEFAULT parameters (use separate function signatures instead)
+--    - if referring to another table, should be STABLE
 -------------------------------------------------------------------------------
 -- TT_ValidationFctTemplate
 --
@@ -2825,7 +2826,7 @@ RETURNS boolean AS $$
     
     RETURN TT_MatchList(lookup_val, testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexMatchList(text, text, text, text, text)
 --
@@ -2961,7 +2962,7 @@ RETURNS boolean AS $$
     -- test with tt_matchList()
     RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
   intList text,
@@ -2972,7 +2973,7 @@ CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MinIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MaxIndexMatchTable(text, text, text, text, text, text, text)
 --
@@ -3012,7 +3013,7 @@ RETURNS boolean AS $$
     -- test with tt_matchList()
     RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
   intList text,
@@ -3023,7 +3024,7 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MaxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MatchTableSubstring
 --
@@ -3313,7 +3314,7 @@ RETURNS boolean AS $$
       RETURN TT_IsLessThan(srcVal, _lookup_val, inclusive);
     END IF;
   END
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
   srcVal text,
@@ -3325,7 +3326,7 @@ CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
 )
 RETURNS boolean AS $$   
   SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, inclusive);
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
   srcVal text,
@@ -3336,7 +3337,7 @@ CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
 )
 RETURNS boolean AS $$   
   SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_HasCountOfMatchList()
 --
@@ -3554,6 +3555,7 @@ $$ LANGUAGE sql IMMUTABLE;
 --    - must implement polymorphism (return of values of different types) using 
 --      specific function names e.g. TT_TrFctText() returns a text value and
 --      TT_TrFctInt() returns a int value
+--    - If referring to other tables should be STABLE
 -------------------------------------------------------------------------------
 -- TT_TransationFctTemplateText
 --
@@ -5788,7 +5790,7 @@ RETURNS text AS $$
     -- pass _srcVal to lookupText
     RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
   intList text,
@@ -5801,7 +5803,7 @@ CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
 )
 RETURNS text AS $$
   SELECT TT_MinIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
   intList text,
@@ -5812,7 +5814,7 @@ CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
 )
 RETURNS text AS $$
   SELECT TT_MinIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, NULL::text, null::text)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MaxIndexLookupText()
 --
@@ -5863,7 +5865,7 @@ RETURNS text AS $$
     -- pass _testVal to lookupText
     RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
   intList text,
@@ -5876,7 +5878,7 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
 )
 RETURNS text AS $$
   SELECT TT_MaxIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
   intList text,
@@ -5887,7 +5889,7 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
 )
 RETURNS text AS $$
   SELECT TT_MaxIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text, null::text)
-$$ LANGUAGE sql IMMUTABLE;
+$$ LANGUAGE sql STABLE;
 
 -------------------------------------------------------------------------------
 -- TT_DivideDouble()
