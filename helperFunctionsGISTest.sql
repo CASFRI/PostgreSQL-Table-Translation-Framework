@@ -207,7 +207,7 @@ UNION ALL
 SELECT '101.12'::text number,
        'TT_GeoIntersectionText'::text function_tested,
        'Invalid method'::text description,
-       TT_IsError('SELECT TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(5 5, 5 6, 6 6, 6 5, 5 5)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''YEARtext'', ''area2'')') = 'ERROR in TT_geoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"' passed
+       TT_IsError('SELECT TT_GeoIntersectionText(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText(''LINESTRING(5 5, 5 6, 6 6, 6 5, 5 5)''), 4268)))::text, ''public'', ''photo_test'', ''the_geom'', ''YEARtext'', ''area2'')') = 'ERROR in TT_GeoIntersectionText(): method is not one of "GREATEST_AREA", "LOWEST_VALUE", or "HIGHEST_VALUE"' passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '101.13'::text number,
@@ -310,7 +310,7 @@ UNION ALL
 SELECT '104.2'::text number,
        'TT_GeoMakeValid'::text function_tested,
        'Bad geo'::text description,
-       ST_AsText(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text)) = 'MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))' passed
+       ST_Equals(TT_GeoMakeValid(ST_Multi(ST_MakePolygon(ST_SetSRID(ST_GeomFromText('LINESTRING(0 0, 0 1, 2 1, 2 2, 1 2, 1 0, 0 0)'), 4268)))::text), ST_SetSRID(ST_GeomFromText('MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)),((1 1,1 2,2 2,2 1,1 1)))'), 4268)) passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 105 - TT_GeoArea
