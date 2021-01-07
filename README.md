@@ -459,6 +459,13 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. looke('sp1', public, species_lookup, TRUE)
 
+* **MatchTableSubstring**(*text* **srcVal**, *integer* **startChar**, *integer* **forLength**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if **srcVal** is present in the **lookupColumnName** column of the **lookupSchemaName**.**lookupTableName** table.
+    * When **ignoreCase** is TRUE, case is ignored.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchTable() to return TRUE.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. looke('sp1', public, species_lookup, TRUE)
+
 * **MatchList**(*stringList* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if **srcVal** is in **matchList**.
     * When **ignoreCase** is TRUE, case is ignored.
