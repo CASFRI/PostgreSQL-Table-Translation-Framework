@@ -645,6 +645,10 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * When **ignoreCase** is TRUE, case is ignored.
     * e.g. LookupInt(20, 'public', 'species_lookup', 'sp_percent', TRUE)
 
+* **LookupTextSubstring**(*text* **srcVal**, *integer* **startChar**, *integer* **forLength**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Takes the substring of **srcVal** using **startChar** and **forLength** and passes it to lookupText.
+    * e.g. LookupTextSubstring('sp1', '1', '2', 'public', 'species_lookup', 'target_sp', FALSE, FALSE)
+
 * **MapText**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value from **returnList** that matches index of **srcVal** in **matchList**. 
     * When **ignoreCase** is TRUE, case is ignored.
