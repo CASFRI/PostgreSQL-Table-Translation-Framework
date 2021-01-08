@@ -167,6 +167,30 @@ $$ LANGUAGE sql VOLATILE;
 -------------------------------------------------------------------------------]
 
 -------------------------------------------------------------------------------
+-- TT_GetGeomColName
+--
+-- schemaName text
+-- tableName text
+--
+-- Return text
+--
+-- Determine the name of the first geometry column if it exists (otherwise return NULL)
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_GetGeomColName(text, text);
+CREATE OR REPLACE FUNCTION TT_GetGeomColName(
+  schemaName text,
+  tableName text
+)
+RETURNS text AS $$
+  SELECT column_name FROM information_schema.columns
+  WHERE table_schema = lower(schemaName) AND table_name = lower(tableName) AND udt_name= 'geometry'
+  LIMIT 1
+$$ LANGUAGE sql VOLATILE;
+
+--SELECT TT_GetGeomColName('rawfri', 'AB16r')
+-------------------------------------------------------------------------------]
+
+-------------------------------------------------------------------------------
 -- TT_LogInit
 --
 -- schemaName text
@@ -1533,6 +1557,7 @@ RETURNS SETOF RECORD AS $$
     logTableName text;
     logMsg text;
     sourceRowWhere text = '';
+    geomColName name;
   BEGIN
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
@@ -1570,11 +1595,18 @@ RETURNS SETOF RECORD AS $$
       RAISE NOTICE '_TT_Translate(): ROW_TRANSLATION_RULE is%', sourceRowWhere;
     END IF;
     
-    FOR sourceRow IN EXECUTE 'SELECT * FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere 
+    -- Get the name of the geometry column if there is one
+    geomColName = TT_GetGeomColName(sourceTableSchema, sourceTable);
+
+    FOR sourceRow IN EXECUTE 'SELECT *' || coalesce(', ' || geomColName || ' sdt_geometry_col_name', '') || ' FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere 
     LOOP
        -- convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
-
+       -- Replace the geometry converted to jsonb by the WKB string
+       IF NOT geomColName IS NULL THEN
+         jsonbRow = jsonb_set(jsonbRow, '{wkb_geometry}', to_jsonb(sourceRow.sdt_geometry_col_name::text));
+       END IF;
+       
        -- identify the first rowid for logging
        IF NOT logTableName IS NULL AND currentRowNb % logFrequency = 1 THEN
          lastFirstRowID = jsonbRow->>sourceRowIdColumn;
