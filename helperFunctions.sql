@@ -6050,7 +6050,7 @@ CREATE OR REPLACE FUNCTION TT_LookupTextSubstring(
   retrieveCol text
 )
 RETURNS text AS $$
-  SELECT TT_LookupTextSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, retrieveCol, FALSE::text)
+  SELECT TT_LookupTextSubstring(val, startChar, forLength, 'public', lookupTableName, 'source_val'::text, retrieveCol, FALSE::text, FALSE::text)
 $$ LANGUAGE sql STABLE;
 
 -------------------------------------------------------------------------------
