@@ -1572,12 +1572,15 @@ RETURNS SETOF RECORD AS $$
     jsonbRow jsonb;
     currentRowNb int = 1;
     debug boolean = TT_Debug();
+    debug_l3 boolean = TT_Debug(3); -- tt.debug_l3
     lastFirstRowID text;
     logTableName text;
     logMsg text;
     sourceRowWhere text = '';
     geomColName name;
     startTime timestamptz;
+    attStartTime timestamptz;
+    rowStartTime timestamptz;
     percentDone numeric;
     remainingSeconds int;
     expectedRowNb int;
@@ -1586,7 +1589,9 @@ RETURNS SETOF RECORD AS $$
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- FOR each row of the source table
+    IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
+    IF debug_l3 THEN RAISE NOTICE 'DEBUG LEVEL 3 ACTIVATED...';END IF;
 --RAISE NOTICE '_TT_Translate BEGIN';
     -- initialize logging table
     IF sourceRowIdColumn IS NULL THEN
@@ -1615,7 +1620,7 @@ RETURNS SETOF RECORD AS $$
 --RAISE NOTICE '_TT_Translate 11 sourceRowWhere=%', sourceRowWhere;
       END LOOP;
       -- Remove the last 'OR'
-      sourceRowWhere = left(sourceRowWhere, char_length(sourceRowWhere) - 3);
+      sourceRowWhere = left(sourceRowWhere, char_length(sourceRowWhere) - 4);
       RAISE NOTICE '_TT_Translate(): ROW_TRANSLATION_RULE is%', sourceRowWhere;
     END IF;
     
@@ -1623,7 +1628,7 @@ RETURNS SETOF RECORD AS $$
     geomColName = TT_GetGeomColName(sourceTableSchema, sourceTable);
     
     -- Estimate the number of rows to return
-    RAISE NOTICE 'Computing the number of rows to translate...';
+    RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere;
 
     EXECUTE 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
     INTO expectedRowNb;
@@ -1632,6 +1637,7 @@ RETURNS SETOF RECORD AS $$
     -- Main loop
     FOR sourceRow IN EXECUTE 'SELECT *' || coalesce(', ' || geomColName || ' sdt_geometry_col_name', '') || ' FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
     LOOP
+       IF debug_l3 THEN rowStartTime = clock_timestamp();END IF;
        -- convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
        -- Replace the geometry converted to jsonb by the WKB string
@@ -1649,6 +1655,7 @@ RETURNS SETOF RECORD AS $$
        -- iterate over each translation table row. One row per target attribute
        FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, FALSE)
                              WHERE target_attribute != 'ROW_TRANSLATION_RULE' LOOP
+         IF debug_l3 THEN attStartTime = clock_timestamp();END IF;
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationRow=%', translationRow;END IF;
          -- iterate over each validation rule
          isValid = TRUE;
@@ -1715,6 +1722,7 @@ RETURNS SETOF RECORD AS $$
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationRow.target_attribute_type || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationRow.target_attribute_type=%, finalQuery=%', finalVal, translationRow.target_attribute_type, finalQuery;END IF;
+         IF debug_l3 THEN RAISE NOTICE '% computing time: % s', translationRow.target_attribute, EXTRACT(EPOCH FROM clock_timestamp() - attStartTime);END IF;
        END LOOP; -- FOR TRANSLATION ROW
 
        -- Execute the final query building the returned RECORD
@@ -1734,6 +1742,8 @@ RETURNS SETOF RECORD AS $$
          RAISE NOTICE '%/% rows translated (% %%) - % remaining...', currentRowNb, expectedRowNb, round(percentDone, 3), 
               TT_PrettyDuration(remainingSeconds);
        END IF;
+       IF debug_l3 THEN RAISE NOTICE 'ROW computing time: % s', EXTRACT(EPOCH FROM clock_timestamp() - rowStartTime);END IF;
+       IF debug_l3 THEN RAISE NOTICE '---------------------------';END IF;
        currentRowNb = currentRowNb + 1;
        
     END LOOP; -- FOR sourceRow
