@@ -202,7 +202,7 @@ CREATE OR REPLACE FUNCTION TT_PrettyDuration(
   seconds int
 )
 RETURNS text AS $$
-  SELECT CASE WHEN seconds >= 36*3600 THEN seconds/24*3600 || 'd' ELSE '' END || 
+  SELECT CASE WHEN seconds >= 36*3600 THEN seconds/(24*3600) || 'd' ELSE '' END || 
          CASE WHEN seconds >= 5400 THEN lpad(((seconds - seconds/(24*3600)*24*3600)/3600)::text, 2, '0') || 'h' ELSE '' END || 
          CASE WHEN seconds >= 60 THEN lpad(((seconds - seconds/3600*3600)/60)::text, 2, '0') || 'm' ELSE '' END || 
          lpad((seconds - (seconds - seconds/3600*3600)/60*60)::text, 2, '0') || 's';
