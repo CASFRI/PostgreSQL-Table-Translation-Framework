@@ -202,11 +202,24 @@ CREATE OR REPLACE FUNCTION TT_PrettyDuration(
   seconds int
 )
 RETURNS text AS $$
-  SELECT CASE WHEN seconds >= 36*3600 THEN seconds/(24*3600) || 'd' ELSE '' END || 
-         CASE WHEN seconds >= 5400 THEN lpad(((seconds - seconds/(24*3600)*24*3600)/3600)::text, 2, '0') || 'h' ELSE '' END || 
-         CASE WHEN seconds >= 60 THEN lpad(((seconds - seconds/3600*3600)/60)::text, 2, '0') || 'm' ELSE '' END || 
-         lpad((seconds - (seconds - seconds/3600*3600)/60*60)::text, 2, '0') || 's';
-$$ LANGUAGE sql IMMUTABLE;
+  DECLARE
+    nbDays int;
+    nbHours int;
+    nbMinutes int;
+  BEGIN
+    nbDays = seconds/(24*3600);
+    seconds = seconds - nbDays*24*3600;
+    nbHours = seconds/3600;
+    seconds = seconds - nbHours*3600;
+    nbMinutes = seconds/60;
+    seconds = seconds - nbMinutes*60;
+    
+    RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' || lpad(nbHours::text, 2, '0') || 'h' || lpad(nbMinutes::text, 2, '0') || 'm'
+                WHEN nbHours > 0 THEN lpad(nbHours::text, 2, '0') || 'h' || lpad(nbMinutes::text, 2, '0') || 'm'
+                WHEN nbMinutes > 0 THEN lpad(nbMinutes::text, 2, '0') || 'm' 
+                ELSE '' END || lpad(seconds::text, 2, '0') || 's';
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
