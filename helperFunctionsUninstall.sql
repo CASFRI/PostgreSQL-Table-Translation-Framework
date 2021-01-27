@@ -79,6 +79,7 @@ DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text)
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupTextMatchList(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsIntSubstring(text, text, text);
 DROP FUNCTION IF EXISTS TT_IsBetweenSubstring(text, text, text, text, text, text, text, text, text);
@@ -95,6 +96,8 @@ DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_MinIndexNotNull(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexNotEmpty(text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexNotEmpty(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotEmpty(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text, text, text, text);

@@ -182,13 +182,45 @@ CREATE OR REPLACE FUNCTION TT_GetGeomColName(
   tableName text
 )
 RETURNS text AS $$
-  SELECT column_name FROM information_schema.columns
+  SELECT column_name::text FROM information_schema.columns
   WHERE table_schema = lower(schemaName) AND table_name = lower(tableName) AND udt_name= 'geometry'
   LIMIT 1
 $$ LANGUAGE sql VOLATILE;
 
 --SELECT TT_GetGeomColName('rawfri', 'AB16r')
--------------------------------------------------------------------------------]
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_PrettyDuration
+--
+-- seconds int
+--
+-- Format pased number of seconds into a pretty print time interval
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_PrettyDuration(int);
+CREATE OR REPLACE FUNCTION TT_PrettyDuration(
+  seconds int
+)
+RETURNS text AS $$
+  DECLARE
+    nbDays int;
+    nbHours int;
+    nbMinutes int;
+  BEGIN
+    nbDays = seconds/(24*3600);
+    seconds = seconds - nbDays*24*3600;
+    nbHours = seconds/3600;
+    seconds = seconds - nbHours*3600;
+    nbMinutes = seconds/60;
+    seconds = seconds - nbMinutes*60;
+    
+    RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' || lpad(nbHours::text, 2, '0') || 'h' || lpad(nbMinutes::text, 2, '0') || 'm'
+                WHEN nbHours > 0 THEN lpad(nbHours::text, 2, '0') || 'h' || lpad(nbMinutes::text, 2, '0') || 'm'
+                WHEN nbMinutes > 0 THEN lpad(nbMinutes::text, 2, '0') || 'm' 
+                ELSE '' END || lpad(seconds::text, 2, '0') || 's';
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LogInit
@@ -1546,23 +1578,33 @@ RETURNS SETOF RECORD AS $$
     translationRow RECORD;
     translatedRow RECORD;
     rule TT_RuleDef;
-    query text;
+    fctEvalQuery text;
     finalQuery text;
     finalVal text;
     isValid boolean;
     jsonbRow jsonb;
     currentRowNb int = 1;
     debug boolean = TT_Debug();
+    debug_l3 boolean = TT_Debug(3); -- tt.debug_l3
     lastFirstRowID text;
     logTableName text;
     logMsg text;
     sourceRowWhere text = '';
     geomColName name;
+    startTime timestamptz;
+    attStartTime timestamptz;
+    rowStartTime timestamptz;
+    percentDone numeric;
+    remainingSeconds int;
+    expectedRowNb int;
   BEGIN
+    startTime = clock_timestamp();
     -- Validate the existence of the source table. TODO
     -- Determine if we must resume from last execution or not. TODO
     -- FOR each row of the source table
+    IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE '_TT_Translate BEGIN';END IF;
+    IF debug_l3 THEN RAISE NOTICE 'DEBUG LEVEL 3 ACTIVATED...';END IF;
 --RAISE NOTICE '_TT_Translate BEGIN';
     -- initialize logging table
     IF sourceRowIdColumn IS NULL THEN
@@ -1591,15 +1633,24 @@ RETURNS SETOF RECORD AS $$
 --RAISE NOTICE '_TT_Translate 11 sourceRowWhere=%', sourceRowWhere;
       END LOOP;
       -- Remove the last 'OR'
-      sourceRowWhere = left(sourceRowWhere, char_length(sourceRowWhere) - 3);
+      sourceRowWhere = left(sourceRowWhere, char_length(sourceRowWhere) - 4);
       RAISE NOTICE '_TT_Translate(): ROW_TRANSLATION_RULE is%', sourceRowWhere;
     END IF;
     
     -- Get the name of the geometry column if there is one
     geomColName = TT_GetGeomColName(sourceTableSchema, sourceTable);
+    
+    -- Estimate the number of rows to return
+    RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere;
 
-    FOR sourceRow IN EXECUTE 'SELECT *' || coalesce(', ' || geomColName || ' sdt_geometry_col_name', '') || ' FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere 
+    EXECUTE 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
+    INTO expectedRowNb;
+    RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
+
+    -- Main loop
+    FOR sourceRow IN EXECUTE 'SELECT *' || coalesce(', ' || geomColName || ' sdt_geometry_col_name', '') || ' FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
     LOOP
+       IF debug_l3 THEN rowStartTime = clock_timestamp();END IF;
        -- convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
        jsonbRow = to_jsonb(sourceRow);
        -- Replace the geometry converted to jsonb by the WKB string
@@ -1617,6 +1668,7 @@ RETURNS SETOF RECORD AS $$
        -- iterate over each translation table row. One row per target attribute
        FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, FALSE)
                              WHERE target_attribute != 'ROW_TRANSLATION_RULE' LOOP
+         IF debug_l3 THEN attStartTime = clock_timestamp();END IF;
          IF debug THEN RAISE NOTICE '_TT_Translate 22 translationRow=%', translationRow;END IF;
          -- iterate over each validation rule
          isValid = TRUE;
@@ -1646,11 +1698,11 @@ RETURNS SETOF RECORD AS $$
 
          -- if all validation rule passed, execute the translation rule
          IF isValid THEN
-           query = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.target_attribute_type || 
+           fctEvalQuery = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.target_attribute_type || 
                    ', FALSE);';
-           IF debug THEN RAISE NOTICE '_TT_Translate 77 query=% with fctName=%, args=% and jsonbRow=%', query, (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow;END IF;
+           IF debug THEN RAISE NOTICE '_TT_Translate 77 fctEvalQuery=% with fctName=%, args=% and jsonbRow=%', fctEvalQuery, (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow;END IF;
            BEGIN
-             EXECUTE query
+             EXECUTE fctEvalQuery
              USING (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow
              INTO STRICT finalVal;
            EXCEPTION WHEN OTHERS THEN
@@ -1683,6 +1735,7 @@ RETURNS SETOF RECORD AS $$
          -- Built the return query while computing values
          finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationRow.target_attribute_type || ',';
          IF debug THEN RAISE NOTICE '_TT_Translate AA finalVal=%, translationRow.target_attribute_type=%, finalQuery=%', finalVal, translationRow.target_attribute_type, finalQuery;END IF;
+         IF debug_l3 THEN RAISE NOTICE '% computing time: % s', translationRow.target_attribute, EXTRACT(EPOCH FROM clock_timestamp() - attStartTime);END IF;
        END LOOP; -- FOR TRANSLATION ROW
 
        -- Execute the final query building the returned RECORD
@@ -1696,8 +1749,16 @@ RETURNS SETOF RECORD AS $$
          PERFORM TT_Log(translationTableSchema, logTableName, dupLogEntriesHandling, 
                 'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
        END IF;
-
+       IF currentRowNb % 10 = 0 THEN
+         percentDone = currentRowNb::numeric/expectedRowNb*100;
+         remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
+         RAISE NOTICE '%/% rows translated (% %%) - % remaining...', currentRowNb, expectedRowNb, round(percentDone, 3), 
+              TT_PrettyDuration(remainingSeconds);
+       END IF;
+       IF debug_l3 THEN RAISE NOTICE 'ROW computing time: % s', EXTRACT(EPOCH FROM clock_timestamp() - rowStartTime);END IF;
+       IF debug_l3 THEN RAISE NOTICE '---------------------------';END IF;
        currentRowNb = currentRowNb + 1;
+       
     END LOOP; -- FOR sourceRow
     -- log progress
     currentRowNb = currentRowNb - 1;
@@ -1705,6 +1766,8 @@ RETURNS SETOF RECORD AS $$
       PERFORM TT_Log(translationTableSchema, logTableName, dupLogEntriesHandling,
               'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, currentRowNb % logFrequency);
     END IF;
+    RAISE NOTICE 'TOTAL TIME: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - startTime)::int);
+
     IF debug THEN RAISE NOTICE '_TT_Translate END';END IF;
     RETURN;
   END;
