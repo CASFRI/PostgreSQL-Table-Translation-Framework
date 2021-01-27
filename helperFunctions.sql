@@ -1883,6 +1883,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   count text,
   exact text
 )
@@ -1902,7 +1903,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'FALSE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '8', 'FALSE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -1920,11 +1921,26 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   vals4 text, 
   vals5 text,
   vals6 text,
+  vals7 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1937,7 +1953,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1949,7 +1965,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1960,7 +1976,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1970,7 +1986,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1979,7 +1995,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -2001,6 +2017,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   count text,
   exact text
 )
@@ -2020,7 +2037,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '7', 'TRUE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '8', 'TRUE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -2038,11 +2055,26 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   vals4 text, 
   vals5 text,
   vals6 text,
+  vals7 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2055,7 +2087,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2067,7 +2099,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2078,7 +2110,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2088,7 +2120,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2097,7 +2129,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text, text)
@@ -4738,7 +4770,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_CountOfNotNull()
 --
--- vals1/2/3/4/5/6/7 text - string lists of values to test.
+-- vals1/2/3/4/5/6/7/8 text - string lists of values to test.
 -- maxRankToConsider int - only consider the first x string lists.
 -- i.e. if maxRankToConsider = 3, only vals1, vals2 and vals3 are condsidered.
 -- zeroIsNull = when TRUE zero values are treated as NULL
@@ -4748,7 +4780,7 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- e.g. TT_CountOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, FALSE)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text);
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
@@ -4757,6 +4789,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   maxRankToConsider text,
   zeroIsNull text
 )
@@ -4769,6 +4802,7 @@ RETURNS int AS $$
     _vals5 text[];
     _vals6 text[];
     _vals7 text[];
+    _vals8 text[];
     _maxRankToConsider int;
     _count int;
     _zeroIsNull boolean;
@@ -4785,7 +4819,8 @@ RETURNS int AS $$
        TT_NotNull(vals4) AND NOT TT_IsStringList(vals4) OR
        TT_NotNull(vals5) AND NOT TT_IsStringList(vals5) OR
        TT_NotNull(vals6) AND NOT TT_IsStringList(vals6) OR
-       TT_NotNull(vals7) AND NOT TT_IsStringList(vals7) THEN
+	   TT_NotNull(vals7) AND NOT TT_IsStringList(vals7) OR
+       TT_NotNull(vals8) AND NOT TT_IsStringList(vals8) THEN
       RETURN NULL;
     END IF;
     
@@ -4797,6 +4832,7 @@ RETURNS int AS $$
     _vals5 = TT_ParseStringList(vals5, TRUE);
     _vals6 = TT_ParseStringList(vals6, TRUE);
     _vals7 = TT_ParseStringList(vals7, TRUE);
+    _vals8 = TT_ParseStringList(vals8, TRUE);
     _maxRankToConsider = maxRankToConsider::int;
     _zeroIsNull = zeroIsNull::boolean;
 
@@ -4871,6 +4907,24 @@ RETURNS int AS $$
         )
         SELECT sum(y::int) FROM a INTO _count;
 
+      ELSIF _maxRankToConsider = 7 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+        )
+        SELECT sum(y::int) FROM a INTO _count;
+		
       ELSE
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4886,6 +4940,8 @@ RETURNS int AS $$
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
         )
         SELECT sum(y::int) FROM a INTO _count;
       END IF;
@@ -4959,6 +5015,24 @@ RETURNS int AS $$
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
         )
         SELECT sum(y::int) FROM a INTO _count;
+	  
+	  ELSIF _maxRankToConsider = 7 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+        )
+        SELECT sum(y::int) FROM a INTO _count;
 
       ELSE
         WITH a AS (
@@ -4975,6 +5049,8 @@ RETURNS int AS $$
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
         )
         SELECT sum(y::int) FROM a INTO _count;
       END IF;
@@ -4992,11 +5068,26 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals4 text, 
   vals5 text,
   vals6 text,
+  vals7 text,
   maxRankToConsider text,
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5009,7 +5100,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5021,7 +5112,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5032,7 +5123,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5042,7 +5133,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5051,7 +5142,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -5066,7 +5157,7 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- e.g. TT_IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text, text, text);
+-- DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullText(text, text, text, text, text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals1 text,
   vals2 text,
@@ -5075,6 +5166,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   maxRankToConsider text,
   cutoffVal text,
   str1 text,
@@ -5091,7 +5183,7 @@ RETURNS text AS $$
                                    'str2', str2, 'text']);
     _cutoffVal = cutoffVal::int;
     
-    IF TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, 'FALSE') <= _cutoffVal THEN
+    IF TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, maxRankToConsider, 'FALSE') <= _cutoffVal THEN
       RETURN str1;
     ELSE
       RETURN str2;
@@ -5106,13 +5198,30 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   vals4 text, 
   vals5 text,
   vals6 text,
+  vals7 text,
   maxRankToConsider text,
   cutoffVal text,
   str1 text,
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
+)
+RETURNS text AS $$
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -5127,7 +5236,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -5141,7 +5250,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -5154,7 +5263,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -5166,7 +5275,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
@@ -5177,7 +5286,7 @@ CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullText(
   str2 text
 )
 RETURNS text AS $$
-  SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
+  SELECT TT_IfElseCountOfNotNullText(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, cutoffVal, str1, str2)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -5189,6 +5298,24 @@ $$ LANGUAGE sql IMMUTABLE;
 -- e.g. TT_IfElseCountOfNotNullInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
 ------------------------------------------------------------
 -- DROP FUNCTION IF EXISTS TT_IfElseCountOfNotNullInt(text, text, text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  vals8 text,
+  maxRankToConsider text,
+  cutoffVal text,
+  str1 text,
+  str2 text
+)
+RETURNS int AS $$
+    SELECT TT_IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, maxRankToConsider, cutoffVal, str1, str2)::int
+$$ LANGUAGE sql IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION TT_IfElseCountOfNotNullInt(
   vals1 text,
   vals2 text,
@@ -6184,15 +6311,34 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   maxRankToConsider text,
   resultList text,
   mappingList text
 )
 RETURNS text AS $$
     SELECT TT_MapText(
-	  TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, 'FALSE')::text,
+	  TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, maxRankToConsider, 'FALSE')::text,
 	  resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS text AS $$
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, NULL::text, maxRankToConsider, resultList, mappingList)
+$$ LANGUAGE sql IMMUTABLE;
+
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
@@ -6207,7 +6353,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text, text);
@@ -6222,7 +6368,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text, text);
@@ -6236,7 +6382,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text, text);
@@ -6249,7 +6395,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text, text);
@@ -6261,7 +6407,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapText(text, text, text, text);
@@ -6272,7 +6418,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapText(
   mappingList text
 )
 RETURNS text AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapText(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
@@ -6291,12 +6437,30 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   maxRankToConsider text,
   resultList text,
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)::int
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, maxRankToConsider, resultList, mappingList)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS int AS $$
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text, text);
@@ -6312,7 +6476,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text, text);
@@ -6327,7 +6491,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text, text);
@@ -6341,7 +6505,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text, text);
@@ -6354,7 +6518,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text, text);
@@ -6366,7 +6530,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapInt(text, text, text, text);
@@ -6377,7 +6541,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapInt(
   mappingList text
 )
 RETURNS int AS $$
-    SELECT TT_CountOfNotNullMapInt(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapInt(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
@@ -6394,12 +6558,30 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   vals5 text,
   vals6 text,
   vals7 text,
+  vals8 text,
   maxRankToConsider text,
   resultList text,
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)::double precision
+    SELECT TT_CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, maxRankToConsider, resultList, mappingList)::double precision
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
+  vals1 text,
+  vals2 text,
+  vals3 text,
+  vals4 text, 
+  vals5 text,
+  vals6 text,
+  vals7 text,
+  maxRankToConsider text,
+  resultList text,
+  mappingList text
+)
+RETURNS double precision AS $$
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, vals7, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text, text);
@@ -6415,7 +6597,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text, text);
@@ -6430,7 +6612,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text, text);
@@ -6444,7 +6626,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text, text);
@@ -6457,7 +6639,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, vals3, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text, text);
@@ -6469,7 +6651,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, vals2, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 
 -- DROP FUNCTION IF EXISTS TT_CountOfNotNullMapDouble(text, text, text, text);
@@ -6480,7 +6662,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNullMapDouble(
   mappingList text
 )
 RETURNS double precision AS $$
-    SELECT TT_CountOfNotNullMapDouble(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
+    SELECT TT_CountOfNotNullMapDouble(vals1, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, maxRankToConsider, resultList, mappingList)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
