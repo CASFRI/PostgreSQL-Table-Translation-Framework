@@ -5967,6 +5967,17 @@ RETURNS double precision AS $$
   END    
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_MultiplyInt()
+--
+-- cast to int------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_MultiplyInt(
+  val1 text,
+  val2 text
+)
+RETURNS int AS $$
+  SELECT TT_Multiply(val1, val2)::int    
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- TT_LookupTextSubstring()
