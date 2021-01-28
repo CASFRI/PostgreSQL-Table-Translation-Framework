@@ -393,9 +393,9 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * e.g. NotNull('a')
     * e.g. NotNull({'a', 'b', 'c'})
  
-* **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7**, *int* **count**, *exact* **boolean**)
-    * Counts the number of non-NULL in the **srcVals[1-7]** string lists using the CountOfNotNull() helper function.
-    * Can take between 1 and 7 **srcVal** string lists of input values.
+* **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **count**, *exact* **boolean**)
+    * Counts the number of non-NULL in the **srcVals[1-15]** string lists using the CountOfNotNull() helper function.
+    * Can take between 1 and 15 **srcVal** string lists of input values.
     * When **exact** is TRUE, the number of non-NULLs must matches **count** exactly.
     * When **exact** is FALSE, the number of non-NULLs can be greater than or equal to **count**.
     * Empty strings are treated as NULL.
@@ -744,9 +744,9 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
     * e.g. NothingInt()
 
-* **CountOfNotNull**(*stringList* **scrVals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
-    * Returns the number of string list input arguments that have at least one list element that is not NULL or empty string. Up to a maximum of 7.
-    * Between 1 and 7 string lists can be provided.
+* **CountOfNotNull**(*stringList* **scrVals1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
+    * Returns the number of string list input arguments that have at least one list element that is not NULL or empty string. Up to a maximum of 15.
+    * Between 1 and 15 string lists can be provided.
     * Only the first **maxRankToConsider** string lists will be considered for the calculation. For example, if **maxRankToConsider** is one, only the first string list will be considered and the maximum values that could be returned would be 1.
     * When **zeroIsNull** is TRUE, zero values ('0') are counted as NULL.
     * **maxRankToConsider** and **zeroIsNull** always need to provided.
