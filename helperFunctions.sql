@@ -1876,14 +1876,11 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- e.g. TT_HasCountOfNotNull({'a'},{'b'},{'c'}, 3, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
-  vals7 text,
-  vals8 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text, vals14 text, vals15 text,
   count text,
   exact text
 )
@@ -1903,7 +1900,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '8', 'FALSE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, vals15, '15', 'FALSE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -1915,57 +1912,128 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text, vals14 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
   vals7 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
+  vals1 text, vals2 text,
+  vals3 text, vals4 text, 
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1976,7 +2044,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1986,7 +2054,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
@@ -1995,7 +2063,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNull(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
@@ -2010,14 +2078,11 @@ $$ LANGUAGE sql IMMUTABLE;
 -- e.g. TT_HasCountOfNotNullOrZero({'a'},{'b'},{'c'}, 3, TRUE)
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
-  vals7 text,
-  vals8 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text, vals14 text, vals15 text,
   count text,
   exact text
 )
@@ -2037,7 +2102,7 @@ RETURNS boolean AS $$
     _exact = exact::boolean;
 
     -- process
-    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '8', 'TRUE');
+    _counted_nulls = TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, vals15, '15', 'TRUE');
 
     IF _exact THEN
       RETURN _counted_nulls = _count;
@@ -2049,57 +2114,128 @@ RETURNS boolean AS $$
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text, vals14 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  vals13 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, vals12 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text, vals11 text, 
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  vals10 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text, vals9 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
+  vals7 text, vals8 text,
+  count text,
+  exact text
+)
+RETURNS boolean AS $$
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
   vals7 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text, vals6 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
+  vals1 text, vals2 text, vals3 text,
+  vals4 text, vals5 text,
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
+  vals1 text, vals2 text,
+  vals3 text, vals4 text, 
   count text,
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2110,7 +2246,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2120,7 +2256,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
@@ -2129,7 +2265,7 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfNotNullOrZero(
   exact text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasCountOfNotNullOrZero(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
+  SELECT TT_HasCountOfNotNullOrZero(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', count, exact)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsIntSubstring(text, text, text, text)
@@ -4770,7 +4906,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_CountOfNotNull()
 --
--- vals1/2/3/4/5/6/7/8 text - string lists of values to test.
+-- vals1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 text - string lists of values to test.
 -- maxRankToConsider int - only consider the first x string lists.
 -- i.e. if maxRankToConsider = 3, only vals1, vals2 and vals3 are condsidered.
 -- zeroIsNull = when TRUE zero values are treated as NULL
@@ -4780,7 +4916,7 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- e.g. TT_CountOfNotNull({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, FALSE)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text, text);
+-- DROP FUNCTION IF EXISTS TT_CountOfNotNull(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
@@ -4790,6 +4926,13 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals6 text,
   vals7 text,
   vals8 text,
+  vals9 text,
+  vals10 text,
+  vals11 text,
+  vals12 text,
+  vals13 text,
+  vals14 text,
+  vals15 text,
   maxRankToConsider text,
   zeroIsNull text
 )
@@ -4803,6 +4946,13 @@ RETURNS int AS $$
     _vals6 text[];
     _vals7 text[];
     _vals8 text[];
+    _vals9 text[];
+    _vals10 text[];
+    _vals11 text[];
+    _vals12 text[];
+    _vals13 text[];
+    _vals14 text[];
+    _vals15 text[];
     _maxRankToConsider int;
     _count int;
     _zeroIsNull boolean;
@@ -4820,7 +4970,14 @@ RETURNS int AS $$
        TT_NotNull(vals5) AND NOT TT_IsStringList(vals5) OR
        TT_NotNull(vals6) AND NOT TT_IsStringList(vals6) OR
 	   TT_NotNull(vals7) AND NOT TT_IsStringList(vals7) OR
-       TT_NotNull(vals8) AND NOT TT_IsStringList(vals8) THEN
+       TT_NotNull(vals8) AND NOT TT_IsStringList(vals8) OR
+	   TT_NotNull(vals9) AND NOT TT_IsStringList(vals9) OR
+       TT_NotNull(vals10) AND NOT TT_IsStringList(vals10) OR
+       TT_NotNull(vals11) AND NOT TT_IsStringList(vals11) OR
+       TT_NotNull(vals12) AND NOT TT_IsStringList(vals12) OR
+       TT_NotNull(vals13) AND NOT TT_IsStringList(vals13) OR
+	   TT_NotNull(vals14) AND NOT TT_IsStringList(vals14) OR
+       TT_NotNull(vals15) AND NOT TT_IsStringList(vals15) THEN
       RETURN NULL;
     END IF;
     
@@ -4833,6 +4990,13 @@ RETURNS int AS $$
     _vals6 = TT_ParseStringList(vals6, TRUE);
     _vals7 = TT_ParseStringList(vals7, TRUE);
     _vals8 = TT_ParseStringList(vals8, TRUE);
+	_vals9 = TT_ParseStringList(vals9, TRUE);
+    _vals10 = TT_ParseStringList(vals10, TRUE);
+    _vals11 = TT_ParseStringList(vals11, TRUE);
+    _vals12 = TT_ParseStringList(vals12, TRUE);
+    _vals13 = TT_ParseStringList(vals13, TRUE);
+    _vals14 = TT_ParseStringList(vals14, TRUE);
+    _vals15 = TT_ParseStringList(vals15, TRUE);
     _maxRankToConsider = maxRankToConsider::int;
     _zeroIsNull = zeroIsNull::boolean;
 
@@ -4843,28 +5007,22 @@ RETURNS int AS $$
         RETURN 0;
       ELSEIF _maxRankToConsider = 1 THEN 
         WITH a AS (
-          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSEIF _maxRankToConsider = 2 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSEIF _maxRankToConsider = 3 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 4 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4873,10 +5031,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 5 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4887,10 +5043,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 6 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4903,10 +5057,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 7 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4921,10 +5073,176 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
 		  UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-		
+	  ELSIF _maxRankToConsider = 8 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 9 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+      ELSIF _maxRankToConsider = 10 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+      ELSIF _maxRankToConsider = 11 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 12 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 13 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 14 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals14) x WHERE TT_NotEmpty(x)) > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
       ELSE
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x)) > 0 as y
@@ -4938,11 +5256,24 @@ RETURNS int AS $$
           SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x)) > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x)) > 0 as y
-          UNION ALL
+		  UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x)) > 0 as y
 		  UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x)) > 0 as y
-        )
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals14) x WHERE TT_NotEmpty(x)) > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals15) x WHERE TT_NotEmpty(x)) > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
       END IF;
       
@@ -4952,28 +5283,22 @@ RETURNS int AS $$
         RETURN 0;
       ELSEIF _maxRankToConsider = 1 THEN 
         WITH a AS (
-          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSEIF _maxRankToConsider = 2 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSEIF _maxRankToConsider = 3 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 4 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
@@ -4982,10 +5307,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 5 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
@@ -4996,10 +5319,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
       ELSIF _maxRankToConsider = 6 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
@@ -5012,10 +5333,8 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-	  
 	  ELSIF _maxRankToConsider = 7 THEN
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
@@ -5030,10 +5349,176 @@ RETURNS int AS $$
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
 		  UNION ALL
-          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
-
+      ELSIF _maxRankToConsider = 8 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 9 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 10 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 11 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 12 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 13 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
+	  ELSIF _maxRankToConsider = 14 THEN
+        WITH a AS (
+          SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals2) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals3) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals4) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+          UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals14) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
+        SELECT sum(y::int) FROM a INTO _count;
       ELSE
         WITH a AS (
           SELECT(SELECT count(*) FROM unnest(_vals1) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
@@ -5047,83 +5532,156 @@ RETURNS int AS $$
           SELECT(SELECT count(*) FROM unnest(_vals5) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
           UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals6) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-          UNION ALL
+		  UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals7) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
 		  UNION ALL
           SELECT(SELECT count(*) FROM unnest(_vals8) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
-        )
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals9) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals10) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals11) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals12) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals13) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals14) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y
+		  UNION ALL
+          SELECT(SELECT count(*) FROM unnest(_vals15) x WHERE TT_NotEmpty(x) AND x != '0') > 0 as y)
         SELECT sum(y::int) FROM a INTO _count;
       END IF;
     END IF;
     -- Return count
     RETURN _count;
-    
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
-  vals7 text,
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text, vals10 text, 
+  vals11 text, vals12 text, vals13 text, vals14 text,
   maxRankToConsider text,
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text, vals10 text, 
+  vals11 text, vals12 text, vals13 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text, vals10 text, 
+  vals11 text, vals12 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text, vals10 text, 
+  vals11 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text, vals10 text, 
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text, vals9 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text, vals8 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text, vals3 text, vals4 text, vals5 text, 
+  vals6 text, vals7 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text,
+  vals3 text, vals4 text, 
+  vals5 text, vals6 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text,
+  vals3 text, vals4 text, vals5 text,
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
+  vals1 text, vals2 text,
+  vals3 text, vals4 text, 
+  maxRankToConsider text,
+  zeroIsNull text
+)
+RETURNS int AS $$
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   vals1 text,
   vals2 text,
   vals3 text,
-  vals4 text, 
-  vals5 text,
-  vals6 text,
   maxRankToConsider text,
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  vals5 text,
-  maxRankToConsider text,
-  zeroIsNull text
-)
-RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, vals5, '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  vals4 text, 
-  maxRankToConsider text,
-  zeroIsNull text
-)
-RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, vals4, '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
-  vals1 text,
-  vals2 text,
-  vals3 text,
-  maxRankToConsider text,
-  zeroIsNull text
-)
-RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, vals3, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5133,7 +5691,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, vals2, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
@@ -5142,7 +5700,7 @@ CREATE OR REPLACE FUNCTION TT_CountOfNotNull(
   zeroIsNull text
 )
 RETURNS int AS $$
-  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
+  SELECT TT_CountOfNotNull(vals1, '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', '{NULL}', maxRankToConsider, zeroIsNull)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
