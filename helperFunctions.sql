@@ -6654,7 +6654,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MultiplyInt()
 --
--- cast to int------------------------------------------------------------
+-- cast to int
+------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_MultiplyInt(
   val1 text,
   val2 text
@@ -6662,6 +6663,21 @@ CREATE OR REPLACE FUNCTION TT_MultiplyInt(
 RETURNS int AS $$
   SELECT TT_Multiply(val1, val2)::int    
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_SubstringMultiplyInt()
+--
+-- take substring, cast to int, multiply
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_SubstringMultiplyInt(
+  srcVal text,
+  _from text,
+  _for text,
+  val text
+)
+RETURNS int AS $$
+  SELECT TT_Multiply(TT_SubstringInt(srcVal, _from, _for)::text, val)::int    
+$$ LANGUAGE sql IMMUTABLE;
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

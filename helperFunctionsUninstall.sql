@@ -307,6 +307,7 @@ DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_SubstringMultiplyInt(text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);

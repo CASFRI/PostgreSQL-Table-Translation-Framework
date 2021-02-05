@@ -271,7 +271,8 @@ WITH test_nb AS (
 	SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
 	SELECT 'TT_CountOfNotNullMapInt'::text,  151,          4         UNION ALL
 	SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         UNION ALL
-	SELECT 'TT_MapTextNotNullIndex'::text,   153,          9
+	SELECT 'TT_MapTextNotNullIndex'::text,   153,          9         UNION ALL
+	SELECT 'TT_SubstringMultiplyInt'::text,  154,          3
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -4602,7 +4603,27 @@ SELECT '153.9'::text number,
        'Test with some null results'::text description,
        TT_MapTextNotNullIndex('a','{c,b}','{C,B}', 'b','{a,r}','{A,R}', 'c','{c,d}','{C,D}', 'd','{c,d}','{C,D}', 'e','{e,f}','{E,F}', 'f','{e,f}','{E,F}',
 							  'g','{g,h}','{G,H}', 'h','{g,h}','{G,H}', 'i','{i,j}','{I,J}', 'j','{i,j}','{I,J}', '5') = 'G' passed	
-
+---------------------------------------------------------
+-- Test 154 - TT_SubstringMultiplyInt
+---------------------------------------------------------
+UNION ALL
+SELECT '154.1'::text number,
+       'TT_SubstringMultiplyInt'::text function_tested,
+       'Test 100'::text description,
+       TT_SubstringMultiplyInt('JP10', '3', '2', '10') = 100 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '154.2'::text number,
+       'TT_SubstringMultiplyInt'::text function_tested,
+       'Test 08'::text description,
+       TT_SubstringMultiplyInt('JP08', '3', '2', '10') = 80 passed
+---------------------------------------------------------
+UNION ALL
+SELECT '154.3'::text number,
+       'TT_SubstringMultiplyInt'::text function_tested,
+       'Test error'::text description,
+       TT_IsError('SELECT TT_SubstringMultiplyInt(''JPJP'', ''3'', ''2'', ''10'')') = 'invalid input syntax for integer: "JP"' passed
+---------------------------------------------------------
 	
 	
 ) AS b
