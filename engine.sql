@@ -2007,7 +2007,7 @@ $$ LANGUAGE sql VOLATILE;
 --DROP FUNCTION IF EXISTS _TT_Translate2(name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate2(
   translationQuery text,
-	rowTranslationRuleClause text,
+  rowTranslationRuleClause text,
   sourceTableSchema name,
   sourceTable name,
   sourceRowIdColumn name,
@@ -2056,21 +2056,6 @@ RETURNS SETOF RECORD AS $$
     IF debug_l3 THEN RAISE NOTICE 'DEBUG LEVEL 3 ACTIVATED...';END IF;
 --RAISE NOTICE '_TT_Translate BEGIN';
 
-    -- Initialize logging table
-    IF sourceRowIdColumn IS NULL THEN
-      RAISE NOTICE '_TT_Translate(): sourceRowIdColumn is NULL. No logging with be performed...';
-    ELSE
-      dupLogEntriesHandling = upper(dupLogEntriesHandling);
-      IF NOT dupLogEntriesHandling IN ('ALL_GROUPED', 'ALL_OWN_ROW') AND NOT TT_IsInt(dupLogEntriesHandling) THEN
-        RAISE EXCEPTION '_TT_Translate() ERROR: Invalid dupLogEntriesHandling parameter (%). Should be ''ALL_GROUPED'', ''ALL_OWN_ROW'' or a an integer...', dupLogEntriesHandling;
-      END IF;
-      logTableName = TT_LogInit(translationTableSchema, translationTable, sourceTable, incrementLog, dupLogEntriesHandling);
-      IF logTableName = 'FALSE' THEN
-        RAISE EXCEPTION '_TT_Translate() ERROR: Logging initialization failed...';
-      END IF;
-    END IF;
---RAISE NOTICE '_TT_Translate BEGIN2';
-
     -- Estimate the number of rows to return
     RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || rowTranslationRuleClause;
 
@@ -2081,11 +2066,6 @@ RETURNS SETOF RECORD AS $$
     -- Main loop
 		FOR sourceRow IN EXECUTE translationQuery || CHR(10) || 'FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause
 		LOOP
-       -- Identify the first rowid for logging
-       IF NOT logTableName IS NULL AND currentRowNb % logFrequency = 1 THEN
-         lastFirstRowID = sourceRow.std_rowid_col_name;
-       END IF;
-       finalQuery = 'SELECT';
        IF debug THEN RAISE NOTICE '_TT_Translate 22 translationRow=%', translationRow;END IF;
        IF currentRowNb % 10 = 0 THEN
          percentDone = currentRowNb::numeric/expectedRowNb*100;
