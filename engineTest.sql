@@ -73,7 +73,8 @@ SELECT '1' rule_id,
        'Test'::text description,
        'TRUE' desc_uptodate_with_rules;
 
-SELECT TT_Prepare('test_translationtable');
+SELECT TT_PrepareWithLogging('public', 'test_translationtable', '_with_logging');
+SELECT TT_Prepare('public', 'test_translationtable', '_without_logging');
 -------------------------------------------------------------------------------
 -- TT_IsError(text)
 -- Function to test if helper functions return errors
@@ -165,13 +166,14 @@ WITH test_nb AS (
     SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          7         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
-    SELECT 'TT_Prepare'::text,                       7,          8         UNION ALL
+    SELECT 'TT_PrepareWithLogging'::text,            7,          8         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,         15         UNION ALL
     SELECT 'TT_ParseStringList'::text,              10,         36         UNION ALL
     SELECT 'TT_RepackStringList'::text,             11,         74         UNION ALL
     SELECT 'TT_IsCastableTo'::text,                 12,          2         UNION ALL
-    SELECT 'TT_RuleToSQL'::text,                    13,          8
+    SELECT 'TT_RuleToSQL'::text,                    13,          8         UNION ALL
+    SELECT 'TT_Prepare'::text,                      14,          8
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -453,55 +455,55 @@ SELECT '6.3'::text number,
        'Basic test'::text description,
         TT_TextFctExists('isbetween', '3') passed
 --------------------------------------------------------
--- Test 7 - TT_Prepare
+-- Test 7 - TT_PrepareWithLogging
 --------------------------------------------------------
 UNION ALL
 SELECT '7.1'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Basic test, check if created function exists'::text description,
-        TT_FctExists('public', 'translate', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'text', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('public', 'translate_with_logging', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'text', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.2'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test without schema name'::text description,
-        TT_FctExists('translate', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'text', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
+        TT_FctExists('translate_with_logging', ARRAY['name', 'name', 'name', 'boolean', 'boolean', 'text', 'integer', 'boolean', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.3'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test without parameters'::text description,
-        TT_FctExists('translate') IS TRUE passed
+        TT_FctExists('translate_with_logging') IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.4'::text number,
-       'TT_Prepare'::text function_tested,
-       'Test upper and lower case caracters'::text description,
-        TT_FctExists('Public', 'translate', ARRAY['Name', 'Name', 'name', 'boOlean', 'booLean', 'text', 'intEger', 'booleaN', 'boolean', 'boolean']) IS TRUE passed
+       'TT_PrepareWithLogging'::text function_tested,
+       'Test upper and lower case characters'::text description,
+        TT_FctExists('Public', 'translate_with_logging', ARRAY['Name', 'Name', 'name', 'boOlean', 'booLean', 'text', 'intEger', 'booleaN', 'boolean', 'boolean']) IS TRUE passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.5'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test without schema name'::text description,
-        TT_Prepare('test_translationtable') = 'SELECT * FROM TT_Translate(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
+        TT_PrepareWithLogging('test_translationtable') = 'SELECT * FROM TT_Translate(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.6'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test suffix'::text description,
-        TT_Prepare('public', 'test_translationtable', '_01') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
+        TT_PrepareWithLogging('public', 'test_translationtable', '_01') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.7'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test with ref translation table having less'::text description,
-        TT_IsError('SELECT TT_Prepare(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'TT_Prepare() ERROR: Translation table ''public.test_translationtable'' has more attributes than reference table ''public.test_translationtable2''...' passed
+        TT_IsError('SELECT TT_PrepareWithLogging(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'TT_PrepareWithLogging() ERROR: Translation table ''public.test_translationtable'' has more attributes than reference table ''public.test_translationtable2''...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '7.8'::text number,
-       'TT_Prepare'::text function_tested,
+       'TT_PrepareWithLogging'::text function_tested,
        'Test with identical ref translation table'::text description,
-        TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
+        TT_PrepareWithLogging('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
 --------------------------------------------------------
 -- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------
@@ -1348,7 +1350,57 @@ SELECT '13.8'::text number,
        'TT_RuleToSQL'::text function_tested,
        'One column name and one string containing a space'::text description,
        TT_RuleToSQL('FctName', ARRAY['aa', '''b b''']) = 'TT_FctName(aa::text, ''b b''::text)' passed
-
+--------------------------------------------------------
+-- Test 14 - TT_Prepare
+--------------------------------------------------------
+UNION ALL
+SELECT '14.1'::text number,
+       'TT_Prepare'::text function_tested,
+       'Basic test, check if created function exists'::text description,
+        TT_FctExists('public', 'translate_without_logging', ARRAY['name', 'name']) IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.2'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without schema name'::text description,
+        TT_FctExists('translate_without_logging',ARRAY['name', 'name']) IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.3'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without parameters'::text description,
+        TT_FctExists('translate_without_logging') IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.4'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test upper and lower case characters'::text description,
+        TT_FctExists('Public', 'translate_without_logging', ARRAY['Name', 'Name']) IS TRUE passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.5'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test without schema name'::text description,
+        TT_Prepare('test_translationtable') = 'SELECT * FROM TT_Translate(''schemaName'', ''tableName'');' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.6'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test suffix'::text description,
+        TT_Prepare('public', 'test_translationtable', '_01') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'');' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.7'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test with ref translation table having less'::text description,
+        TT_IsError('SELECT TT_Prepare(''public'', ''test_translationtable'', ''_01'', ''test_translationtable2'');') = 'TT_Prepare() ERROR: Translation table ''public.test_translationtable'' has more attributes than reference table ''public.test_translationtable2''...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '14.8'::text number,
+       'TT_Prepare'::text function_tested,
+       'Test with identical ref translation table'::text description,
+        TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'');' passed
+--------------------------------------------------------
 --------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)
