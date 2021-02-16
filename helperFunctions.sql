@@ -4885,6 +4885,7 @@ $$ LANGUAGE sql IMMUTABLE;
 --  includeEmpty text - should empty vals be included or ignored? Default TRUE.
 --
 --  Return the concatenated values with the padding.
+--  Remove and spaces before concatenating. 
 --  Error if number of val, length and pad values not equal.
 --  Error if missing length or pad values
 --
@@ -4907,6 +4908,7 @@ RETURNS text AS $$
     _pads text[];
     _result text;
     _includeEmpty boolean;
+	_trimmedVal text;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_PadConcat',
@@ -4946,10 +4948,11 @@ RETURNS text AS $$
     -- for each val in array, pad and merge to comma separated string
     _result = '{';
     FOR i IN 1..array_length(_vals,1) LOOP
-      IF _vals[i] = '' AND _includeEmpty = FALSE THEN
+      _trimmedVal = replace(_vals[i], ' ', '');
+	  IF _trimmedVal = '' AND _includeEmpty = FALSE THEN
         -- do nothing
       ELSE
-        _result = _result || '''' || TT_Pad(_vals[i], _lengths[i], _pads[i]) || ''',';
+        _result = _result || '''' || TT_Pad(_trimmedVal, _lengths[i], _pads[i]) || ''',';
       END IF;
     END LOOP;
     -- run comma separated string through concat with sep
