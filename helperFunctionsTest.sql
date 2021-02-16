@@ -236,7 +236,7 @@ WITH test_nb AS (
     SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
     SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
     SELECT 'TT_Concat'::text,                111,          6         UNION ALL
-    SELECT 'TT_PadConcat'::text,             112,         16         UNION ALL
+    SELECT 'TT_PadConcat'::text,             112,         17         UNION ALL
     SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
     SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
     SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
@@ -3292,6 +3292,12 @@ SELECT '112.16'::text number,
        'TT_PadConcat'::text function_tested,
        'Zero length'::text description,
        TT_PadConcat('{''ab06'', ''GB_S21_TWP'', ''81145'', ''811451038'', ''1''}', '{''4'',''0'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06--xxxxx81145-0811451038-0000001' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '112.17'::text number,
+       'TT_PadConcat'::text function_tested,
+       'test spaces'::text description,
+       TT_PadConcat('{''ab  06'', ''GB_S21_TWP'', ''  81145  '', ''811451038'', ''1''}', '{''4'',''15'',''10'',''10'',''7''}', '{''x'',''x'',''x'',''0'',''0''}'::text, '-'::text, FALSE::text) = 'ab06-xxxxxGB_S21_TWP-xxxxx81145-0811451038-0000001' passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 118 - TT_NothingText
