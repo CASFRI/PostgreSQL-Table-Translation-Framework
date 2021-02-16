@@ -27,6 +27,81 @@ SET tt.debug TO FALSE;
 -------------------------------------------------------------------------------
 -- Function Definitions...
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TT_IsError(text)
+-- Function to test if helper functions return errors
+-------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsError(
+  functionString text
+)
+RETURNS text AS $$
+  DECLARE
+    result boolean;
+  BEGIN
+    EXECUTE functionString INTO result;
+    RETURN 'FALSE';
+  EXCEPTION WHEN OTHERS THEN
+    RETURN SQLERRM;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+-- TT_FctExist
+-- Function to test if a function exists.
+------------------------------------------------------------
+-- Self contained example:
+--
+-- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'})
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]);
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  schemaName name,
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  DECLARE
+    cnt int = 0;
+    debug boolean = TT_Debug();
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
+    fctName = 'tt_' || fctName;
+    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    IF fctName = '' OR fctName = '.' THEN
+      RETURN FALSE;
+    END IF;
+    fctName = lower(fctName);
+    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF;
+    SELECT count(*)
+    FROM pg_proc
+    WHERE schemaName = '' AND argTypes IS NULL AND proname = fctName OR
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    INTO cnt;
+
+    IF cnt > 0 THEN
+      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF;
+      RETURN TRUE;
+    END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF;
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql STABLE;
+---------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  SELECT TT_FctExists(''::name, fctName, argTypes)
+$$ LANGUAGE sql STABLE;
+---------------------------------------------------
 -- TT_Debug
 --
 --   RETURNS boolean  - True if tt_debug is set to true. False if set to false or not set.
