@@ -1424,6 +1424,7 @@ RETURNS text AS $f$
     paramlist text[];
     refParamlist text[];
     i integer;
+    fctName text;
   BEGIN
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
@@ -1457,12 +1458,12 @@ RETURNS text AS $f$
         END LOOP;
       END IF;
     END IF;
-
+    fctName = 'TT_Translate' || coalesce(fctNameSuf, '');
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS ' || fctName || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
     EXECUTE query;
 
-    query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
+    query = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
                sourceTableSchema name,
                sourceTable name,
                sourceTableIdColumn name DEFAULT NULL,
@@ -1476,7 +1477,8 @@ RETURNS text AS $f$
              )
              RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
              BEGIN
-               RETURN QUERY SELECT * FROM _TT_TranslateWithLogging(sourceTableSchema,
+               RETURN QUERY SELECT * FROM _TT_TranslateWithLogging(''' || fctName || ''',
+                                                        sourceTableSchema,
                                                         sourceTable,
                                                         sourceTableIdColumn, ' ||
                                                         '''' || translationTableSchema || ''', ' ||
@@ -1634,6 +1636,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS _TT_TranslateWithLogging(name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_TranslateWithLogging(
+  callingFctName name,
   sourceTableSchema name,
   sourceTable name,
   sourceRowIdColumn name,
@@ -1827,7 +1830,7 @@ RETURNS SETOF RECORD AS $$
        IF currentRowNb % 100 = 0 THEN
          percentDone = currentRowNb::numeric/expectedRowNb*100;
          remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%/% rows translated (% %%) - % remaining...', currentRowNb, expectedRowNb, round(percentDone, 3), 
+         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
               TT_PrettyDuration(remainingSeconds);
        END IF;
        IF debug_l3 THEN RAISE NOTICE 'ROW computing time: % s', EXTRACT(EPOCH FROM clock_timestamp() - rowStartTime);END IF;
@@ -1888,6 +1891,7 @@ RETURNS text AS $f$
     paramlist text[];
     refParamlist text[];
     i integer;
+    fctName text;
   BEGIN
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
@@ -1923,7 +1927,8 @@ RETURNS text AS $f$
     END IF;
 
     -- Drop any existing TT_Translate function with the same suffix
-    fctQuery = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
+    fctName = 'TT_Translate' || coalesce(fctNameSuf, '');
+    fctQuery = 'DROP FUNCTION IF EXISTS ' || fctName || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
     EXECUTE fctQuery;
     
     -- Build the translation query
@@ -1978,17 +1983,18 @@ RETURNS text AS $f$
     END IF;
 
 
-    fctQuery = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
-               sourceTableSchema name,
-               sourceTable name)
-             RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
-             BEGIN
-               RETURN QUERY SELECT * FROM _TT_Translate(' || quote_literal(translationQuery) || ', ' ||
-							                                          quote_literal(rowTranslationRuleClause) || ', 
-																												sourceTableSchema,
-                                                        sourceTable, ' ||
-                                                        '''' || translationTableSchema || ''', ' ||
-                                                        '''' || translationTable || ''') AS t(' || array_to_string(paramlist, ', ') || ');
+    fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
+                  sourceTableSchema name,
+                  sourceTable name)
+                RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
+                  BEGIN
+                   RETURN QUERY SELECT * FROM _TT_Translate('''  || fctName || ''',' ||
+                                                                 quote_literal(translationQuery) || ', ' ||
+                                                                 quote_literal(rowTranslationRuleClause) || ', 
+                                                                 sourceTableSchema,
+                                                                 sourceTable, ' ||
+                                                         '''' || translationTableSchema || ''', ' ||
+                                                         '''' || translationTable || ''') AS t(' || array_to_string(paramlist, ', ') || ');
                RETURN;
              END;
              $$ LANGUAGE plpgsql VOLATILE;';
@@ -2051,6 +2057,7 @@ $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS _TT_Translate(text, text, name, name, name, name);
 CREATE OR REPLACE FUNCTION _TT_Translate(
+  callingFctName name,
   translationQuery text,
   rowTranslationRuleClause text,
   sourceTableSchema name,
@@ -2086,7 +2093,7 @@ RETURNS SETOF RECORD AS $$
        IF currentRowNb % 100 = 0 THEN
          percentDone = currentRowNb::numeric/expectedRowNb*100;
          remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%/% rows translated (% %%) - % remaining...', currentRowNb, expectedRowNb, round(percentDone, 3), 
+         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
               TT_PrettyDuration(remainingSeconds);
        END IF;
        currentRowNb = currentRowNb + 1;
