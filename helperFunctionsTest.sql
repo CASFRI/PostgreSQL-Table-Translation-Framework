@@ -15,111 +15,6 @@ SET lc_messages TO 'en_US.UTF-8';
 SET tt.debug TO TRUE;
 SET tt.debug TO FALSE;
 
--- Create a generic NULL and wrong type tester function
-CREATE OR REPLACE FUNCTION TT_TestNullAndWrongTypeParams(
-  baseNumber int,
-  fctName text,
-  params text[]
-)
-RETURNS TABLE(number text, function_tested text, description text, passed boolean) AS $$
-  DECLARE
-    query text;
-    i integer;
-    j integer;
-    paramName text;
-    paramType text;
-    subnbr int = 0;
-  BEGIN
-    function_tested = fctName;
-    -- check that all parameters have an associated type (that the number of params parameters is a multiple of 2)
-    IF array_upper(params, 1) % 2 != 0 THEN
-      RAISE EXCEPTION 'ERROR when calling TT_TestNullAndWrongTypeParams(): params ARRAY must have an even number of parameters';
-    END IF;
-    FOR i IN 1..array_upper(params, 1)/2 LOOP
-      subnbr = subnbr + 1;
-      number = baseNumber::text || '.' || subnbr::text;
-      paramName = params[(i - 1) * 2 + 1];
-      description = 'NULL ' || paramName;
-      -- test not NULL
-      query = 'SELECT TT_IsError(''SELECT ' || function_tested || '(''''val'''', ';
-      FOR j IN 1..array_upper(params, 1)/2 LOOP
-        paramType = params[(j - 1) * 2 + 2];
-        IF j = i THEN -- set this parameter to NULL
-          query = query || 'NULL::text, ';
-        ELSE -- set other parameters to a valid value
-          query = query || CASE WHEN paramType = 'int' OR paramType = 'numeric' THEN
-                                     '1::text, '
-                                WHEN paramType = 'char' THEN
-                                     '0::text, '
-                                WHEN paramType = 'boolean' THEN
-                                     'TRUE::text, '
-                                WHEN paramType = 'stringlist' OR paramType = 'charlist' THEN
-                                     '''''{''''''''a'''''''', ''''''''b''''''''}''''::text, '
-                                WHEN paramType = 'doublelist' THEN
-                                     '''''{''''''''1.3'''''''', ''''''''3.4''''''''}''''::text, '
-                                WHEN paramType = 'intlist' THEN
-                                     '''''{''''''''3'''''''', ''''''''4''''''''}''''::text, '
-                                ELSE --text
-                                     '''''randomtext'''', '
-                           END;
-        END IF;
-      END LOOP;
-      -- remove the last comma.
-      query = left(query, char_length(query) - 2);
-
-      query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
-
-      EXECUTE query INTO passed;
-      RETURN NEXT;
-
-      -- test wrong type (not necessary to test text as everything is valid text)
-      IF params[(i - 1) * 2 + 2] != 'text' THEN
-      subnbr = subnbr + 1;
-      number = baseNumber::text || '.' || subnbr::text;
-        description = paramName || ' wrong type';
-        query = 'SELECT TT_IsError(''SELECT ' || function_tested || '(''''val'''', ';
-        FOR j IN 1..array_upper(params, 1)/2 LOOP
-          paramType = params[(j - 1) * 2 + 2];
-          IF j = i THEN
-            -- test an invalid value
-            query = query || CASE WHEN paramType = 'int' OR paramType = 'numeric' THEN
-                                       '''''1a'''', '
-                                  WHEN paramType = 'char' THEN
-                                       '''''aa''''::text, '
-                                  WHEN paramType = 'stringlist' OR paramType = 'doublelist' OR paramType = 'intlist'  OR paramType = 'charlist'THEN
-                                       '''''{''''''''string1'''''''',}'''', '
-                                  ELSE -- boolean
-                                       '2::text, '
-                             END;
-          ELSE
-            -- set other to valid value
-            query = query || CASE WHEN paramType = 'int' OR paramType = 'numeric' THEN
-                                       '1::text, '
-                                  WHEN paramType = 'char' THEN
-                                       '0::text, '
-                                  WHEN paramType = 'boolean' THEN
-                                       'TRUE::text, '
-                                  WHEN paramType = 'stringlist' OR paramType = 'charlist' THEN
-                                       '''''{''''''''a'''''''', ''''''''b''''''''}''''::text, '
-                                  WHEN paramType = 'doublelist' OR paramType = 'intlist' THEN
-                                       '''''{''''''''1'''''''', ''''''''2''''''''}''''::text, '
-                                  ELSE
-                                       '''''randomtext'''', '
-                             END;
-          END IF;
-        END LOOP;
-        -- remove the last comma.
-        query = left(query, char_length(query) - 2);
-        paramType = params[(i - 1) * 2 + 2];
-        query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is not a ' || paramType || ' value'';';
-
-        EXECUTE query INTO passed;
-        RETURN NEXT;
-      END IF;
-    END LOOP;
-    RETURN;
-  END;
-$$ LANGUAGE plpgsql STABLE;
 -----------------------------------------------------------
 -- Create some test lookup table
 DROP TABLE IF EXISTS test_lookuptable1;
@@ -178,100 +73,100 @@ SELECT * FROM (
 -- It is required to list tests which would not appear because they failed
 -- by returning nothing.
 WITH test_nb AS (
-    -- Validation functions
-    SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 14 nb_test UNION ALL
-    SELECT 'TT_NotEmpty'::text,                2,         16         UNION ALL
-    SELECT 'TT_Length'::text,                  3,          5         UNION ALL
-    SELECT 'TT_IsInt'::text,                   4,         12         UNION ALL
-    SELECT 'TT_IsNumeric'::text,               5,          8         UNION ALL
-    SELECT 'TT_IsBoolean'::text,               6,          8         UNION ALL
-    SELECT 'TT_IsBetween'::text,               7,         31         UNION ALL
-    SELECT 'TT_IsGreaterThan'::text,           8,         13         UNION ALL
-    SELECT 'TT_IsLessThan'::text,              9,         13         UNION ALL
-    SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
-    SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
-    SELECT 'TT_MatchList'::text,              12,         38         UNION ALL
-    SELECT 'TT_False'::text,                  13,          1         UNION ALL
-    SELECT 'TT_True'::text,                   14,          1         UNION ALL
-    SELECT 'TT_HasCountOfNotNull'::text,      15,         10         UNION ALL
-    SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
-    SELECT 'TT_IsBetweenSubstring'::text,     17,         23         UNION ALL
-    SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
-    SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
-    SELECT 'TT_MatchListSubstring'::text,     20,         18         UNION ALL
-    SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
-    SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
-    SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
-    SELECT 'TT_MinIndexNotNull'::text,        24,          8         UNION ALL
-    SELECT 'TT_MaxIndexNotNull'::text,        25,          8         UNION ALL
-    SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
-    SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
-    SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
-    SELECT 'TT_LookupTextMatchList'::text,    29,          5         UNION ALL
-    SELECT 'TT_MinIndexIsInt'::text,          30,          5         UNION ALL
-    SELECT 'TT_MaxIndexIsInt'::text,          31,          5         UNION ALL
-    SELECT 'TT_MinIndexIsBetween'::text,      32,          4         UNION ALL
-    SELECT 'TT_MaxIndexIsBetween'::text,      33,          4         UNION ALL
-    SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
-    SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
-    SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
-    SELECT 'TT_MinIndexNotEmpty'::text,       37,          8         UNION ALL
-    SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
-    SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
-    SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
-    SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
-	SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
-    SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
-	SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
+  -- Validation functions
+  SELECT 'TT_NotNull'::text function_tested, 1 maj_num, 14 nb_test UNION ALL
+  SELECT 'TT_NotEmpty'::text,                2,         16         UNION ALL
+  SELECT 'TT_Length'::text,                  3,          5         UNION ALL
+  SELECT 'TT_IsInt'::text,                   4,         12         UNION ALL
+  SELECT 'TT_IsNumeric'::text,               5,          8         UNION ALL
+  SELECT 'TT_IsBoolean'::text,               6,          8         UNION ALL
+  SELECT 'TT_IsBetween'::text,               7,         31         UNION ALL
+  SELECT 'TT_IsGreaterThan'::text,           8,         13         UNION ALL
+  SELECT 'TT_IsLessThan'::text,              9,         13         UNION ALL
+  SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
+  SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
+  SELECT 'TT_MatchList'::text,              12,         38         UNION ALL
+  SELECT 'TT_False'::text,                  13,          1         UNION ALL
+  SELECT 'TT_True'::text,                   14,          1         UNION ALL
+  SELECT 'TT_HasCountOfNotNull'::text,      15,         10         UNION ALL
+  SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
+  SELECT 'TT_IsBetweenSubstring'::text,     17,         23         UNION ALL
+  SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
+  SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
+  SELECT 'TT_MatchListSubstring'::text,     20,         18         UNION ALL
+  SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
+  SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
+  SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
+  SELECT 'TT_MinIndexNotNull'::text,        24,          8         UNION ALL
+  SELECT 'TT_MaxIndexNotNull'::text,        25,          8         UNION ALL
+  SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
+  SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
+  SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
+  SELECT 'TT_LookupTextMatchList'::text,    29,          5         UNION ALL
+  SELECT 'TT_MinIndexIsInt'::text,          30,          5         UNION ALL
+  SELECT 'TT_MaxIndexIsInt'::text,          31,          5         UNION ALL
+  SELECT 'TT_MinIndexIsBetween'::text,      32,          4         UNION ALL
+  SELECT 'TT_MaxIndexIsBetween'::text,      33,          4         UNION ALL
+  SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
+  SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
+  SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
+  SELECT 'TT_MinIndexNotEmpty'::text,       37,          8         UNION ALL
+  SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
+  SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
+  SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
+  SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
+  SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
+  SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
+  SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
 
-    -- Translation functions
-    SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
-    SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
-    SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
-    SELECT 'TT_LookupText'::text,            104,         17         UNION ALL
-    SELECT 'TT_LookupDouble'::text,          105,         14         UNION ALL
-    SELECT 'TT_LookupInt'::text,             106,         14         UNION ALL
-    SELECT 'TT_MapText'::text,               107,         19         UNION ALL
-    SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
-    SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
-    SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
-    SELECT 'TT_Concat'::text,                111,          6         UNION ALL
-    SELECT 'TT_PadConcat'::text,             112,         16         UNION ALL
-    SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
-    SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
-    SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
-    SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
-    SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
-    SELECT 'TT_SubstringText'::text,         123,         10         UNION ALL
-    SELECT 'TT_SubstringInt'::text,          124,          3         UNION ALL
-    SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
-    SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
-    SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
-    SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4         UNION ALL
-    SELECT 'TT_XMinusYInt'::text,            129,          3         UNION ALL
-    SELECT 'TT_MinInt'::text,                130,          3         UNION ALL
-    SELECT 'TT_MaxInt'::text,                131,          3         UNION ALL
-    SELECT 'TT_MinIndexCopyText'::text,      132,          9         UNION ALL
-    SELECT 'TT_MaxIndexCopyText'::text,      133,          9         UNION ALL
-    SELECT 'TT_MinIndexMapText'::text,       134,         11         UNION ALL
-    SELECT 'TT_MaxIndexMapText'::text,       135,         11         UNION ALL
-    SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
-    SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
-    SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
-    SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
-    SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
-    SELECT 'TT_Multiply'::text,              142,          3         UNION ALL
-    SELECT 'TT_MinIndexMapInt'::text,        143,          7         UNION ALL
-    SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
-    SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
-    SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
-    SELECT 'TT_LookupTextSubstring'::text,   147,          3         UNION ALL
-    SELECT 'TT_CoalesceText'::text,          148,         14         UNION ALL
-    SELECT 'TT_CoalesceInt'::text,           149,         10         UNION ALL
-	SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
-	SELECT 'TT_CountOfNotNullMapInt'::text,  151,          4         UNION ALL
-	SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         UNION ALL
-	SELECT 'TT_MapTextNotNullIndex'::text,   153,          9
+  -- Translation functions
+  SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
+  SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
+  SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
+  SELECT 'TT_LookupText'::text,            104,         17         UNION ALL
+  SELECT 'TT_LookupDouble'::text,          105,         14         UNION ALL
+  SELECT 'TT_LookupInt'::text,             106,         14         UNION ALL
+  SELECT 'TT_MapText'::text,               107,         19         UNION ALL
+  SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
+  SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
+  SELECT 'TT_Pad'::text,                   110,         17         UNION ALL
+  SELECT 'TT_Concat'::text,                111,          6         UNION ALL
+  SELECT 'TT_PadConcat'::text,             112,         16         UNION ALL
+  SELECT 'TT_NothingText'::text,           118,          1         UNION ALL
+  SELECT 'TT_NothingDouble'::text,         119,          1         UNION ALL
+  SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
+  SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
+  SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
+  SELECT 'TT_SubstringText'::text,         123,         10         UNION ALL
+  SELECT 'TT_SubstringInt'::text,          124,          3         UNION ALL
+  SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
+  SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
+  SELECT 'TT_LengthMapInt'::text,          127,          8         UNION ALL
+  SELECT 'TT_IfElseCountOfNotNullInt'::text,128,         4         UNION ALL
+  SELECT 'TT_XMinusYInt'::text,            129,          3         UNION ALL
+  SELECT 'TT_MinInt'::text,                130,          3         UNION ALL
+  SELECT 'TT_MaxInt'::text,                131,          3         UNION ALL
+  SELECT 'TT_MinIndexCopyText'::text,      132,          9         UNION ALL
+  SELECT 'TT_MaxIndexCopyText'::text,      133,          9         UNION ALL
+  SELECT 'TT_MinIndexMapText'::text,       134,         11         UNION ALL
+  SELECT 'TT_MaxIndexMapText'::text,       135,         11         UNION ALL
+  SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
+  SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
+  SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
+  SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
+  SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
+  SELECT 'TT_Multiply'::text,              142,          3         UNION ALL
+  SELECT 'TT_MinIndexMapInt'::text,        143,          7         UNION ALL
+  SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
+  SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
+  SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
+  SELECT 'TT_LookupTextSubstring'::text,   147,          3         UNION ALL
+  SELECT 'TT_CoalesceText'::text,          148,         14         UNION ALL
+  SELECT 'TT_CoalesceInt'::text,           149,         10         UNION ALL
+  SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
+  SELECT 'TT_CountOfNotNullMapInt'::text,  151,          4         UNION ALL
+  SELECT 'TT_CountOfNotNullMapDouble'::text,152,         4         UNION ALL
+  SELECT 'TT_MapTextNotNullIndex'::text,   153,          9
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested

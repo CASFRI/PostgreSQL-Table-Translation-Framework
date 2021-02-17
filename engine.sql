@@ -27,6 +27,81 @@ SET tt.debug TO FALSE;
 -------------------------------------------------------------------------------
 -- Function Definitions...
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TT_IsError(text)
+-- Function to test if helper functions return errors
+-------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_IsError(
+  functionString text
+)
+RETURNS text AS $$
+  DECLARE
+    result boolean;
+  BEGIN
+    EXECUTE functionString INTO result;
+    RETURN 'FALSE';
+  EXCEPTION WHEN OTHERS THEN
+    RETURN SQLERRM;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+-- TT_FctExist
+-- Function to test if a function exists.
+------------------------------------------------------------
+-- Self contained example:
+--
+-- SELECT TT_FctExists('TT_FctEval', {'text', 'text[]', 'jsonb', 'anyelement'})
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_FctExists(text, text, text[]);
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  schemaName name,
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  DECLARE
+    cnt int = 0;
+    debug boolean = TT_Debug();
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_FctExists BEGIN';END IF;
+    fctName = 'tt_' || fctName;
+    IF lower(schemaName) = 'public' OR schemaName IS NULL THEN
+      schemaName = '';
+    END IF;
+    IF schemaName != '' THEN
+      fctName = schemaName || '.' || fctName;
+    END IF;
+    IF fctName IS NULL THEN
+      RETURN NULL;
+    END IF;
+    IF fctName = '' OR fctName = '.' THEN
+      RETURN FALSE;
+    END IF;
+    fctName = lower(fctName);
+    IF debug THEN RAISE NOTICE 'TT_FctExists 11 fctName=%, args=%', fctName, array_to_string(TT_LowerArr(argTypes), ',');END IF;
+    SELECT count(*)
+    FROM pg_proc
+    WHERE schemaName = '' AND argTypes IS NULL AND proname = fctName OR
+          oid::regprocedure::text = fctName || '(' || array_to_string(TT_LowerArr(argTypes), ',') || ')'
+    INTO cnt;
+
+    IF cnt > 0 THEN
+      IF debug THEN RAISE NOTICE 'TT_FctExists END TRUE';END IF;
+      RETURN TRUE;
+    END IF;
+    IF debug THEN RAISE NOTICE 'TT_FctExists END FALSE';END IF;
+    RETURN FALSE;
+  END;
+$$ LANGUAGE plpgsql STABLE;
+---------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_FctExists(
+  fctName name,
+  argTypes text[] DEFAULT NULL
+)
+RETURNS boolean AS $$
+  SELECT TT_FctExists(''::name, fctName, argTypes)
+$$ LANGUAGE sql STABLE;
+---------------------------------------------------
 -- TT_Debug
 --
 --   RETURNS boolean  - True if tt_debug is set to true. False if set to false or not set.
@@ -1349,6 +1424,7 @@ RETURNS text AS $f$
     paramlist text[];
     refParamlist text[];
     i integer;
+    fctName text;
   BEGIN
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
@@ -1382,12 +1458,12 @@ RETURNS text AS $f$
         END LOOP;
       END IF;
     END IF;
-
+    fctName = 'TT_Translate' || coalesce(fctNameSuf, '');
     -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS TT_Translate' || coalesce(fctNameSuf, '') || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
+    query = 'DROP FUNCTION IF EXISTS ' || fctName || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
     EXECUTE query;
 
-    query = 'CREATE OR REPLACE FUNCTION TT_Translate' || coalesce(fctNameSuf, '') || '(
+    query = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
                sourceTableSchema name,
                sourceTable name,
                sourceTableIdColumn name DEFAULT NULL,
@@ -1401,7 +1477,8 @@ RETURNS text AS $f$
              )
              RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
              BEGIN
-               RETURN QUERY SELECT * FROM _TT_Translate(sourceTableSchema,
+               RETURN QUERY SELECT * FROM _TT_Translate(''' || fctName || ''',
+                                                        sourceTableSchema,
                                                         sourceTable,
                                                         sourceTableIdColumn, ' ||
                                                         '''' || translationTableSchema || ''', ' ||
@@ -1557,8 +1634,9 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
 CREATE OR REPLACE FUNCTION _TT_Translate(
+  callingFctName name,
   sourceTableSchema name,
   sourceTable name,
   sourceRowIdColumn name,
@@ -1749,10 +1827,10 @@ RETURNS SETOF RECORD AS $$
          PERFORM TT_Log(translationTableSchema, logTableName, dupLogEntriesHandling, 
                 'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
        END IF;
-       IF currentRowNb % 10 = 0 THEN
+       IF currentRowNb % 100 = 0 THEN
          percentDone = currentRowNb::numeric/expectedRowNb*100;
          remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%/% rows translated (% %%) - % remaining...', currentRowNb, expectedRowNb, round(percentDone, 3), 
+         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
               TT_PrettyDuration(remainingSeconds);
        END IF;
        IF debug_l3 THEN RAISE NOTICE 'ROW computing time: % s', EXTRACT(EPOCH FROM clock_timestamp() - rowStartTime);END IF;
