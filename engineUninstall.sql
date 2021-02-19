@@ -11,8 +11,9 @@
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
 SELECT TT_DropAllTranslateFct();
-DROP FUNCTION IF EXISTS _TT_TranslateWithLogging(name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
-DROP FUNCTION IF EXISTS _TT_Translate(text, text, name, name, name, name);
+DROP FUNCTION  IF EXISTS TT_DropAllTTFct();
+DROP FUNCTION IF EXISTS _TT_TranslateWithLogging(name, name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS _TT_Translate(name, text, text, name, name, name, name);
 DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name, text, name, name);
 DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name, text, name);
 DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name, text);
@@ -55,7 +56,6 @@ DROP FUNCTION IF EXISTS TT_Log(text, text, text, text, text, text, int, int);
 DROP FUNCTION IF EXISTS TT_TextFctQuery(text, text[], jsonb, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_RuleToSQL(text, text[]);
 DROP FUNCTION IF EXISTS TT_ReportError(text, name, name, text, text, text[], jsonb, text, text, int, text, boolean, boolean);
-DROP FUNCTION IF EXISTS TT_DefaultErrorCode(text, text);
 DROP FUNCTION IF EXISTS TT_DefaultProjectErrorCode(text, text);
 DROP FUNCTION IF EXISTS TT_GetGeomColName(text, text);
 DROP FUNCTION IF EXISTS TT_PrettyDuration(int);
