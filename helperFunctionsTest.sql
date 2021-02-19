@@ -118,6 +118,7 @@ WITH test_nb AS (
 	SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
     SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
 	SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
+    SELECT 'TT_AlphaNumericMatchList'::text,  45,          6         UNION ALL	
 
     -- Translation functions
     SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
@@ -2607,6 +2608,45 @@ SELECT '44.8'::text number,
        'TT_HasCountOfMatchList'::text function_tested,
        'Test exact is null'::text description,
        TT_IsError('SELECT TT_HasCountOfMatchList(''a'', ''{a,b,c}'', ''d'', ''{a,b,c}'', ''1'', NULL::text)') = 'ERROR in TT_HasCountOfMatchList(): exact is NULL' passed
+---------------------------------------------------------
+-- Test 45 - TT_AlphaNumericMatchList
+---------------------------------------------------------
+UNION ALL
+SELECT '45.1'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Simple pass'::text description,
+       TT_AlphaNumericMatchList('ab1cd2ef3', '{''xx0xx0xx0''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '45.2'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Simple fail'::text description,
+       TT_AlphaNumericMatchList('ab1cd2efg', '{''xx0xx0xx0''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '45.3'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Remove spaces'::text description,
+       TT_AlphaNumericMatchList('ab1 cd2ef3', '{''xx0xx0xx0''}', 'FALSE', 'TRUE', 'TRUE') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '45.4'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Spaces fail'::text description,
+       TT_AlphaNumericMatchList('ab1 cd2ef3', '{''xx0xx0xx0''}', 'FALSE', 'TRUE', 'FALSE') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '45.5'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Spaces pass'::text description,
+       TT_AlphaNumericMatchList('ab1 cd2ef3', '{''xx0xx0xx0'', ''xx0 xx0xx0''}') passed
+---------------------------------------------------------
+UNION ALL
+SELECT '45.6'::text number,
+       'TT_AlphaNumericMatchList'::text function_tested,
+       'Check special characters carry through'::text description,
+       TT_AlphaNumericMatchList('ab1cd2ef/', '{''xx0xx0xx0'', ''xx0xx0xx/''}') passed
+
 ---------------------------------------------------------
 ---------------------------------------------------------
 --------------- Translation functions -------------------

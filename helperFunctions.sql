@@ -74,6 +74,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
                   WHEN rule = 'islessthanlookupdouble'  THEN '-9999'
 				  WHEN rule = 'hascountofmatchlist'     THEN '-9997'
+				  WHEN rule = 'alphaNumericMatchList'   THEN '-9997'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -120,6 +121,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisbetween'       THEN NULL
                   WHEN rule = 'islessthanlookupdouble'  THEN NULL
 				  WHEN rule = 'hascountofmatchlist'     THEN NULL
+				  WHEN rule = 'alphaNumericMatchList'   THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -167,6 +169,7 @@ RETURNS text AS $$
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
 				  WHEN rule = 'hascountofmatchlist'     THEN 'INVALID_VALUE'
+				  WHEN rule = 'alphaNumericMatchList'   THEN 'NOT_IN_SET'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -3237,7 +3240,7 @@ RETURNS boolean AS $$
   BEGIN
     _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
         
-    -- test with tt_matchList()
+    -- test with tt_matchTable()
     RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
   END;
 $$ LANGUAGE plpgsql STABLE;
@@ -3803,6 +3806,57 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_HasCountOfMatchList(val1, srcList1, val2, srcList2, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', count, exact);
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_AlphaNumericMatchList
+--
+-- val - value to test.
+-- lst text (stringList) - string containing comma separated vals.
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
+-- removeSpaces text - remove all empty spaces? Default True.
+--
+-- Convert val to alphanumeric code where a-z are converted to 'x' 
+-- and 1-9 are converted to '0'. Then test if code is in list of codes?
+-- e.g. TT_AlphaNumericMatchList('a1', {'x0','0x'})
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
+  val text,
+  lst text,
+  acceptNull text,
+  matches text,
+  removeSpaces text
+)
+RETURNS boolean AS $$  	
+	SELECT tt_matchList(translate(val, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), lst, 'FALSE', acceptNull, matches, removeSpaces)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
+  val text,
+  lst text,
+  matches text,
+  removeSpaces text
+)
+RETURNS boolean AS $$  	
+	SELECT TT_AlphaNumericMatchList(val, lst, 'FALSE', matches, removeSpaces)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
+  val text,
+  lst text,
+  removeSpaces text
+)
+RETURNS boolean AS $$  	
+	SELECT TT_AlphaNumericMatchList(val, lst, 'FALSE', 'TRUE', removeSpaces)
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
+  val text,
+  lst text
+)
+RETURNS boolean AS $$  	
+	SELECT TT_AlphaNumericMatchList(val, lst, 'FALSE', 'TRUE', 'FALSE')
 $$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------

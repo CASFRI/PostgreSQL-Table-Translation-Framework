@@ -157,6 +157,10 @@ DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
