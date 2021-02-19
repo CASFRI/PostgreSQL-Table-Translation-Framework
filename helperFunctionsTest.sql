@@ -118,7 +118,7 @@ WITH test_nb AS (
   SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
   SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
   SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
-    SELECT 'TT_AlphaNumericMatchList'::text,  45,          6         UNION ALL	
+  SELECT 'TT_AlphaNumericMatchList'::text,  45,          6         UNION ALL	
 
   -- Translation functions
   SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
