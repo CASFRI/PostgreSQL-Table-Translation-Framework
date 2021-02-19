@@ -10,6 +10,7 @@
 --                         Marc Edwards <medwards219@gmail.com>,
 --                         Pierre Vernier <pierre.vernier@gmail.com>
 -------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS TT_DefaultErrorCode(text, text);
 
 -- validation helper functions
 DROP FUNCTION IF EXISTS TT_NotNull(text);
@@ -79,6 +80,7 @@ DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text, text)
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasCountOfNotNullOrZero(text, text, text, text, text, text, text, text, text, text, text, text, text, text);
@@ -312,6 +314,7 @@ DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SubstringMultiplyInt(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MultiplyInt(text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
