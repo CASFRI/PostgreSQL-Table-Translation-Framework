@@ -61,6 +61,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN '-9999'
                   WHEN rule = 'minindexmatchlist'       THEN '-9998'
                   WHEN rule = 'maxindexmatchlist'       THEN '-9998'
+				  WHEN rule = 'minindexnotmatchlist'    THEN '-9998'
+                  WHEN rule = 'maxindexnotmatchlist'    THEN '-9998'
+				  WHEN rule = 'getindexnotmatchlist'    THEN '-9998'
                   WHEN rule = 'minindexmatchtable'      THEN '-9998'
                   WHEN rule = 'maxindexmatchtable'      THEN '-9998'
                   WHEN rule = 'isxminusybetween'        THEN '-9999'
@@ -114,6 +117,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN NULL
                   WHEN rule = 'minindexmatchlist'       THEN NULL
                   WHEN rule = 'maxindexmatchlist'       THEN NULL
+				  WHEN rule = 'minindexnotmatchlist'    THEN NULL
+                  WHEN rule = 'maxindexnotmatchlist'    THEN NULL
+				  WHEN rule = 'getindexnotmatchlist'    THEN NULL
                   WHEN rule = 'minindexmatchtable'      THEN NULL
                   WHEN rule = 'maxindexmatchtable'      THEN NULL
                   WHEN rule = 'isxminusybetween'        THEN NULL
@@ -168,6 +174,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'minindexmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'maxindexmatchlist'       THEN 'NOT_IN_SET'
+				  WHEN rule = 'minindexnotmatchlist'    THEN 'NOT_IN_SET'
+                  WHEN rule = 'maxindexnotmatchlist'    THEN 'NOT_IN_SET'
+				  WHEN rule = 'getindexnotmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'minindexmatchtable'      THEN 'NOT_IN_SET'
                   WHEN rule = 'maxindexmatchtable'      THEN 'NOT_IN_SET'
                   WHEN rule = 'isxminusybetween'        THEN 'OUT_OF_RANGE'
@@ -3393,6 +3402,38 @@ RETURNS boolean AS $$
   SELECT TT_MinIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_MinIndexNotMatchList(text, text, text, text, text)
+--
+-- Call notMatchList
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MinIndexNotMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MinIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
+        
+    -- test with TT_MatchList()
+    RETURN TT_NotMatchList(_testVal, lst);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MinIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_MinIndexNotMatchList(intList, testList, lst, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 -- TT_MaxIndexMatchList(text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
@@ -3440,6 +3481,38 @@ RETURNS boolean AS $$
   SELECT TT_MaxIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_MaxIndexNotMatchList(text, text, text, text, text)
+--
+-- Call notMatchList
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_MaxIndexNotMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text,
+  setNullTo text,
+  setZeroTo text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
+        
+    -- test with TT_MatchList()
+    RETURN TT_NotMatchList(_testVal, lst);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_MaxIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text
+)
+RETURNS boolean AS $$
+  SELECT TT_MaxIndexNotMatchList(intList, testList, lst, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 -- TT_GetIndexMatchList(text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
@@ -3479,6 +3552,40 @@ CREATE OR REPLACE FUNCTION TT_GetIndexMatchList(
 )
 RETURNS boolean AS $$
   SELECT TT_GetIndexMatchList(intList, testList, lst, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexNotMatchList(text, text, text, text, text)
+--
+-- Same as TT_GetIndexMatchList but uses NotMatchList
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexNotMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_MatchList()
+    RETURN TT_NotMatchList(_testVal, lst);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexNotMatchList(
+  intList text,
+  testList text,
+  lst text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexNotMatchList(intList, testList, lst, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexMatchTable(text, text, text, text, text, text, text)
