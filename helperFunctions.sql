@@ -75,6 +75,12 @@ RETURNS text AS $$
                   WHEN rule = 'islessthanlookupdouble'  THEN '-9999'
 				  WHEN rule = 'hascountofmatchlist'     THEN '-9997'
 				  WHEN rule = 'alphaNumericMatchList'   THEN '-9997'
+				  WHEN rule = 'getindexnotnull'         THEN '-8888'
+                  WHEN rule = 'getindexnotempty'        THEN '-8889'
+                  WHEN rule = 'getindexisint'           THEN '-9995'
+                  WHEN rule = 'getindexisbetween'       THEN '-9999'
+                  WHEN rule = 'getindexmatchlist'       THEN '-9998'
+                  WHEN rule = 'getindexmatchtable'      THEN '-9998'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -122,6 +128,12 @@ RETURNS text AS $$
                   WHEN rule = 'islessthanlookupdouble'  THEN NULL
 				  WHEN rule = 'hascountofmatchlist'     THEN NULL
 				  WHEN rule = 'alphaNumericMatchList'   THEN NULL
+				  WHEN rule = 'getindexnotnull'         THEN NULL
+                  WHEN rule = 'getindexnotempty'        THEN NULL
+                  WHEN rule = 'getindexisint'           THEN NULL
+                  WHEN rule = 'getindexisbetween'       THEN NULL
+                  WHEN rule = 'getindexmatchlist'       THEN NULL
+                  WHEN rule = 'getindexmatchtable'      THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -170,6 +182,13 @@ RETURNS text AS $$
                   WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
 				  WHEN rule = 'hascountofmatchlist'     THEN 'INVALID_VALUE'
 				  WHEN rule = 'alphaNumericMatchList'   THEN 'NOT_IN_SET'
+				  WHEN rule = 'getindexnotnull'         THEN 'NULL_VALUE'
+                  WHEN rule = 'getindexnotempty'        THEN 'EMPTY_STRING'
+                  WHEN rule = 'getindexisint'           THEN 'WRONG_TYPE'
+                  WHEN rule = 'getindexisbetween'       THEN 'OUT_OF_RANGE'
+                  WHEN rule = 'getindexmatchlist'       THEN 'NOT_IN_SET'
+                  WHEN rule = 'getindexmatchtable'      THEN 'NOT_IN_SET'
+				  
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -471,7 +490,65 @@ RETURNS text AS $$
     RETURN _returnVals[array_length(_returnVals, 1)];        
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
-
+-------------------------------------------------------------------------------
+-- TT_getIndexTestVal(text, text, text, text)
+--
+-- intList stringList - list of integers to order
+-- testList stringList - list of target values to pass to other functions
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+--
+-- Order testList by intList and return requested index. 
+--
+-- Matching values should stay in the same order
+--
+-- If setNullTo is provided as an integer, nulls
+-- are replaced with the integer in intList.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexTestVal(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  DECLARE
+    _intList double precision[];
+    _testList text[];
+	_setNullTo double precision;
+    _setZeroTo double precision;
+  BEGIN
+  
+    -- parse lists to arrays
+    _intList = TT_ParseStringList(intList, TRUE);
+    _testList = TT_ParseStringList(testList, TRUE);
+	
+	-- if setNullTo is provided, replace any nulls with it
+    IF upper(setNullTo) != 'NULL' THEN
+      _setNullTo = setNullTo::double precision;
+      _intList = array_replace(_intList, null::double precision, _setNullTo);
+    END IF;
+    
+     -- if setZeroTo is provided, replace any zeros with it
+    IF upper(setZeroTo) != 'NULL' THEN
+      _setZeroTo = setZeroTo::double precision;
+      _intList = array_replace(_intList, 0::double precision, _setZeroTo);
+    END IF;
+    
+    RETURN (ARRAY( -- converts table to array
+      SELECT testVal FROM(
+        SELECT a testVal, b intVal, a IS NULL::int not_null_order, ROW_NUMBER() OVER () org_order -- concatenates values in column a and b, add index
+        FROM unnest(
+          _testList, 
+          _intList
+        ) AS t(a,b) -- converts arrays to a table
+        ORDER BY intVal, not_null_order, org_order asc -- order by the values, ties are ordered by not null values first, then ordered by their original order in the string
+      ) x
+    ))[indexToReturn::int];
+  END; 
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
@@ -2746,6 +2823,49 @@ RETURNS boolean AS $$
   SELECT TT_MaxIndexNotNull(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_GetIndexNotNull(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn text - which value to return
+--
+-- Order testList by intList and test the value with the requested index.
+-- Matching values in intList stay in the original order.
+-- Set any null or zero values in the intList using setNullTo and setZeroTo.
+--
+-- In the case of ties in the int list, any non-null testList values are ordered first, remaining ties
+-- are ordered by their original order in intList.
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexNotNull(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexNotNull(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_NotNull()
+    RETURN TT_NotNull(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexNotNull(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexNotNull(intList, testList, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 -- TT_MinIndexNotEmpty(text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
@@ -2780,7 +2900,6 @@ CREATE OR REPLACE FUNCTION TT_MinIndexNotEmpty(
 RETURNS boolean AS $$
   SELECT TT_MinIndexNotEmpty(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
-
 -------------------------------------------------------------------------------
 -- TT_MaxIndexNotEmpty(text, text, text, text)
 --
@@ -2815,6 +2934,44 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexNotEmpty(
 )
 RETURNS boolean AS $$
   SELECT TT_MaxIndexNotEmpty(intList, testList, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexNotEmpty(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- 
+--
+-- Same as TT_GetIndexNotNull but instead tests notEmpty
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexNotEmpty(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexNotEmpty(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_NotEmpty()
+    RETURN TT_NotEmpty(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexNotEmpty(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexNotEmpty(intList, testList, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexIsInt(text, text, text, text)
@@ -2903,6 +3060,44 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexIsInt(
 )
 RETURNS boolean AS $$
   SELECT TT_MaxIndexIsInt(intList, testList, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexIsInt(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn text - which value to return
+--
+-- Same as TT_GetIndexNotNull but instead tests isInt
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexIsInt(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexIsInt(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_IsInt()
+    RETURN TT_IsInt(_testVal);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexIsInt(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexIsInt(intList, testList, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexIsBetween(text, text, text, text, text, text)
@@ -3003,6 +3198,48 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexIsBetween(
 )
 RETURNS boolean AS $$
   SELECT TT_MaxIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexIsBetween(text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for notNull
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn text - which value to return
+--
+-- Same as TT_GetIndexNotNull but instead tests isBetween
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexIsBetween(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexIsBetween(
+  intList text,
+  testList text,
+  lower_bound text,
+  upper_bound text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_IsBetween()
+    RETURN TT_IsBetween(_testVal, lower_bound, upper_bound);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexIsBetween(
+  intList text,
+  testList text,
+  lower_bound text,
+  upper_bound text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexIsBetween(intList, testList, lower_bound, upper_bound, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsXMinusYBetween(text, text, text, text, text, text, text, text, text)
@@ -3203,6 +3440,47 @@ RETURNS boolean AS $$
   SELECT TT_MaxIndexMatchList(intList, testList, lst, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_GetIndexMatchList(text, text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for isInt
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn -- the index to test
+-- lst - list to test against
+--
+-- Same as getIndexNotNull() but passes value to matchList with lst
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexMatchList(text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexMatchList(
+  intList text,
+  testList text,
+  lst text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with TT_MatchList()
+    RETURN TT_MatchList(_testVal, lst);
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexMatchList(
+  intList text,
+  testList text,
+  lst text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexMatchList(intList, testList, lst, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 -- TT_MinIndexMatchTable(text, text, text, text, text, text, text)
 --
 -- intList stringList - list of integers to test with min()
@@ -3305,6 +3583,50 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
 )
 RETURNS boolean AS $$
   SELECT TT_MaxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
+$$ LANGUAGE sql STABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexMatchTable(text, text, text, text, text, text, text)
+--
+-- intList stringList - list of integers to test with min()
+-- testList stringList - list of target values to test for isInt
+-- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- lst - list to test against
+--
+-- Same as getIndexNotNull() but passes value to matchTable with lst
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+        
+    -- test with tt_matchList()
+    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
+  END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexMatchTable(
+  intList text,
+  testList text,
+  lookupSchemaName text, 
+  lookupTableName text, 
+  lookupColumnName text,
+  indexToReturn text
+)
+RETURNS boolean AS $$
+  SELECT TT_GetIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MatchTableSubstring
@@ -3858,7 +4180,59 @@ CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
 RETURNS boolean AS $$  	
 	SELECT TT_AlphaNumericMatchList(val, lst, 'FALSE', 'TRUE', 'FALSE')
 $$ LANGUAGE sql IMMUTABLE;
-
+-------------------------------------------------------------------------------
+-- TT_AlphaNumericLookupTextMatchList(text, text, text, text, text)
+--
+-- srcVal text
+-- lookupSchema text
+-- lookupTable text
+-- lookupCol text
+-- testVal text
+--
+-- convert srcVal to alpha numeric code, run lookup text and pass the result to matchList
+-- e.g. TT_AlphaNumericLookupTextMatchList(srcval, 'schema', 'lookuptable', 'lookupcol', 1)
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_AlphaNumericLookupTextMatchList(
+  srcVal text,
+  lookupSchema text,
+  lookupTable text,
+  lookupCol text,
+  testVal text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _alphaNumeric text;
+	lookup_val text;
+  BEGIN
+    _alphaNumeric = replace(translate(srcVal, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), ' ', '');
+    lookup_val = TT_LookupText(_alphaNumeric, lookupSchema, lookupTable, 'source_val'::text, lookupCol);
+    
+    RETURN TT_MatchList(lookup_val, testVal, FALSE::text, FALSE::text, TRUE::text, FALSE::text); -- set removeSpaces to FALSE.
+  END;
+$$ LANGUAGE plpgsql STABLE;
+-------------------------------------------------------------------------------
+-- TT_AlphaNumericMatchTable(text, text, text, text, text)
+--
+-- srcVal text
+-- lookupSchema text
+-- lookupTable text
+--
+-- convert srcVal to alpha numeric code, run match table using source_val
+-- e.g. TT_AlphaNumericMatchTable(srcval, 'schema', 'lookuptable')
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchTable(
+  srcVal text,
+  lookupSchema text,
+  lookupTable text
+)
+RETURNS boolean AS $$
+  DECLARE
+    _alphaNumeric text;
+  BEGIN
+    _alphaNumeric = replace(translate(srcVal, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), ' ', '');
+    RETURN TT_MatchTable(_alphaNumeric, lookupSchema, lookupTable);    
+  END;
+$$ LANGUAGE plpgsql STABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -6396,7 +6770,6 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexCopyText(
 RETURNS text AS $$
   SELECT TT_MaxIndexCopyText(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
-
 -------------------------------------------------------------------------------
 -- TT_MaxIndexCopyInt()
 --
@@ -6420,7 +6793,62 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexCopyInt(
 RETURNS int AS $$
   SELECT TT_MaxIndexCopyInt(intList, testList, null::text, null::text)
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexCopyText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the return value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn text - which index to pass to copyText
+--
+-- Same as getIndexNotNull() but passes value to copyText
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexCopyText(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexCopyText(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION TT_GetIndexCopyText(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexCopyText(intList, testList, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexCopyInt()
+--
+-- Casts TT_GetIndexCopyText to int
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexCopyInt(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexCopyInt(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS int AS $$
+  SELECT TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexCopyInt(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS int AS $$
+  SELECT TT_GetIndexCopyInt(intList, testList, null::text, null::text, indexToReturn)::int
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_MinIndexMapText()
 --
@@ -6593,6 +7021,90 @@ RETURNS int AS $$
   SELECT TT_MaxIndexMapInt(intList, testList, mapVals, targetVals, null::text, null::text);
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
+-- TT_GetIndexMapText()
+--
+-- intList text - stringList of values to test
+-- returnList - stringList from which to select the value to pass to mapText
+-- mapVals - list of source values for mapText
+-- targetVals - list of target values for mapText
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn
+--
+-- Same as getIndexNotNull() but passes value to MapText using mapVals and targetVals
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexMapText(
+  intList text,
+  testList text,
+  mapVals text,
+  targetVals text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
+    PERFORM TT_ValidateParams('TT_GetIndexMapText',
+                              ARRAY['mapVals', mapVals, 'stringlist',
+                                    'targetVals', targetVals, 'stringlist',
+							        'indexToReturn', indexToReturn, 'int']);
+                                   
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+    
+    -- pass _srcVal to mapText
+    RETURN TT_MapText(_testVal, mapVals, targetVals);
+
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexMapText(
+  intList text,
+  testList text,
+  mapVals text,
+  targetVals text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexMapText(intList, testList, mapVals, targetVals, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_GetIndexMapInt()
+--
+-- Cast TT_GetIndexMapText to int
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexMapInt(text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexMapInt(
+  intList text,
+  testList text,
+  mapVals text,
+  targetVals text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS int AS $$
+    SELECT TT_GetIndexMapText(intList, testList, mapVals, targetVals, setNullTo, setZeroTo, indexToReturn)::int
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexMapInt(
+  intList text,
+  testList text,
+  mapVals text,
+  targetVals text,
+  indexToReturn text
+)
+RETURNS int AS $$
+  SELECT TT_GetIndexMapInt(intList, testList, mapVals, targetVals, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
 -- TT_MinIndexLookupText()
 --
 -- intList text - stringList of values to test
@@ -6742,7 +7254,80 @@ CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
 RETURNS text AS $$
   SELECT TT_MaxIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text, null::text)
 $$ LANGUAGE sql STABLE;
+-------------------------------------------------------------------------------
+-- TT_GetIndexLookupText()
+--
+-- intList text - stringList of values to test
+-- testList - stringList from which to select the value to pass to mapText
+-- lookupSchemaName text - schema name containing lookup table
+-- lookupTableName text - lookup table name
+-- lookupCol text - column to look up for the value
+-- retrieveCol - column from which to retrieve the matching value
+-- setNullTo - defaults to null - optionally convert any nulls in intList to this value
+-- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
+-- indexToReturn
+--
+-- Same as GetIndexNotNull but passes value to lookupText
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
+  intList text,
+  testList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  lookupCol text,
+  retrieveCol text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  DECLARE
+    _testVal text;
+  BEGIN
+  
+    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
+    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
+    -- and valid arguments in the test script.
+    PERFORM TT_ValidateParams('TT_GetIndexLookupText',
+                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
+                                'lookupTableName', lookupTableName, 'name',
+                                'lookupCol', lookupCol, 'name',
+                                'retrieveCol', retrieveCol, 'name',
+							     'indexToReturn', indexToReturn, 'int']);
 
+    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
+    
+    -- pass _testVal to lookupText
+    RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
+  END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
+  intList text,
+  testList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo, indexToReturn)
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
+  intList text,
+  testList text,
+  lookupSchemaName text,
+  lookupTableName text,
+  retrieveCol text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text, null::text, indexToReturn)
+$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_DivideDouble()
 --

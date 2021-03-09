@@ -163,6 +163,20 @@ DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text, text);
 DROP FUNCTION IF EXISTS TT_AlphaNumericMatchList(text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericLookupTextMatchList(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_AlphaNumericMatchTable(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotNull(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotNull(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotEmpty(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotEmpty(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexIsInt(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexIsInt(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexIsBetween(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexIsBetween(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMatchList(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMatchList(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
@@ -315,6 +329,15 @@ DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, tex
 DROP FUNCTION IF EXISTS TT_MapTextNotNullIndex(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_SubstringMultiplyInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MultiplyInt(text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexCopyText(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexCopyText(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMapInt(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMapInt(text, text, text, text, text);
 
 -- generic and test functions
 DROP FUNCTION IF EXISTS TT_ValidateParams(text, text[]);
