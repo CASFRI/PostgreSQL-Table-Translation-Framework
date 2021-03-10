@@ -177,6 +177,12 @@ DROP FUNCTION IF EXISTS TT_GetIndexMatchList(text, text, text, text, text, text)
 DROP FUNCTION IF EXISTS TT_GetIndexMatchList(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotMatchList(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexNotMatchList(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexNotMatchList(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MaxIndexNotMatchList(text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexNotMatchList(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MinIndexNotMatchList(text, text, text);
 
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
@@ -331,8 +337,10 @@ DROP FUNCTION IF EXISTS TT_SubstringMultiplyInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MultiplyInt(text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexCopyText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexCopyText(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexCopyInt(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexCopyInt(text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text, text, text, text, text);
-DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text);
+DROP FUNCTION IF EXISTS TT_GetIndexMapText(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text);
@@ -349,4 +357,5 @@ DROP FUNCTION IF EXISTS TT_Max_Internal(double precision[]);
 DROP FUNCTION IF EXISTS TT_Min_Max_Indexes_Internal(double precision[], text);
 DROP FUNCTION IF EXISTS TT_minIndex_getTestVal(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_maxIndex_getTestVal(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_getIndexTestVal(text, text, text, text, text);
 
