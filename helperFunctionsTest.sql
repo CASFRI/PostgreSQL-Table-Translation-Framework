@@ -4810,7 +4810,7 @@ UNION ALL
 SELECT '154.3'::text number,
        'TT_SubstringMultiplyInt'::text function_tested,
        'Test error'::text description,
-       TT_IsError('SELECT TT_SubstringMultiplyInt(''JPJP'', ''3'', ''2'', ''10'')') = 'invalid input syntax for integer: "JP"' passed
+       TT_IsError('SELECT TT_SubstringMultiplyInt(''JPJP'', ''3'', ''2'', ''10'')') = 'invalid input syntax for type integer: "JP"' passed
 ---------------------------------------------------------
 -- Test 155 - TT_GetIndexCopyText
 ---------------------------------------------------------
