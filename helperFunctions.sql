@@ -988,7 +988,7 @@ RETURNS boolean AS $$
   SELECT CASE WHEN argStr IS NULL OR 
                    upper(argStr) = 'TRUE' OR 
                    upper(argStr) = 'FALSE' THEN FALSE 
-              ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' 
+              ELSE argStr ~ ('^' || TT_NameRegex() || '$')
          END
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
