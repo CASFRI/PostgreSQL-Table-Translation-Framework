@@ -4036,10 +4036,8 @@ $$ LANGUAGE sql STABLE;
 --
 -- val1
 -- srcList1
--- targetList1
 -- val2
 -- srcList2
--- targetList2
 -- etc.
 -- etc.
 -- etc.
@@ -4049,9 +4047,9 @@ $$ LANGUAGE sql STABLE;
 -- If count is equal to _count and exact is true, return TRUE.
 -- If count is greater than or equal to _count, and exact is FALSE, return TRUE.
 --
--- e.g. TT_HasCountOfMatchList(val1,srcList1,targetList1, val2,srcList2,targetList2, val3,srcList3,targetList3, 
---       val4,srcList4,targetList4, val5,srcList5,targetList5, val6,srcList6,targetList6, val7,srcList7,
---       targetList7, val8,srcList8,targetList8, val9,srcList9,targetList9, val10,srcList10,targetList10, count)
+-- e.g. TT_HasCountOfMatchList(val1,srcList1, val2,srcList2, val3,srcList3, 
+--       val4,srcList4, val5,srcList5, val6,srcList6, val7,srcList7,
+--        val8,srcList8, val9,srcList9, val10,srcList10, count, exact)
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_HasCountOfMatchList(text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
@@ -4065,8 +4063,8 @@ CREATE OR REPLACE FUNCTION TT_HasCountOfMatchList(
   val8 text, srcList8 text,
   val9 text, srcList9 text,
   val10 text, srcList10 text,
-  count text,
-  exact text
+	  count text,
+	  exact text
 )
 RETURNS boolean AS $$
   DECLARE
