@@ -410,10 +410,11 @@ RETURNS text AS $$
     nbMinutes = seconds/60;
     seconds = seconds - nbMinutes*60;
     
+    -- Display unit when is different than 0 or when in between two units different than 0
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
-           CASE WHEN nbHours > 0 THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
-           CASE WHEN nbMinutes > 0 THEN lpad(nbMinutes::text, 2, '0') || 'm'  ELSE '' END ||
-                lpad(seconds::text, 2, '0') || 's';
+           CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
+           CASE WHEN nbMinutes > 0 OR ((nbDays > 0 OR nbHours > 0) AND (seconds > 0)) THEN lpad(nbMinutes::text, 2, '0') || 'm' ELSE '' END ||
+           CASE WHEN seconds > 0 THEN lpad(seconds::text, 2, '0') || 's' ELSE '' END;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
@@ -2319,10 +2320,10 @@ RETURNS text AS $f$
 		IF rowTranslationRuleClause = 'WHERE ' THEN
 		   rowTranslationRuleClause = '';
 		ELSE
-      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 4);
+      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5);
     END IF;
 
-RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || ' || CHR(10) || rowTranslationRuleClause || ';';
+RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM sourceTableSchema.sourceTable' || CHR(10) || rowTranslationRuleClause || ';';
 
     fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
                   sourceTableSchema name,
@@ -2555,7 +2556,7 @@ RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinA
       END LOOP;
     END IF;
 
-    RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || leftJoinClause || CHR(10) || rowTranslationRuleClause || ';';
+    RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM sourceTableSchema.sourceTable maintable ' || leftJoinClause || CHR(10) || rowTranslationRuleClause || ';';
     translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || TT_EscapeSingleQuotes(leftJoinClause) || CHR(10) || TT_EscapeSingleQuotes(rowTranslationRuleClause) || ';';
 
     fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
@@ -2641,6 +2642,7 @@ RETURNS SETOF RECORD AS $$
     percentDone numeric;
     remainingSeconds int;
     expectedRowNb int;
+    countQuery text;
   BEGIN
     IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE 'TT_ShowProgress BEGIN';END IF;
@@ -2648,10 +2650,10 @@ RETURNS SETOF RECORD AS $$
 RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
 
     -- Estimate the number of rows to return
-    RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause;
+    countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
 
-    EXECUTE 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause
-    INTO expectedRowNb;
+    RAISE NOTICE 'Computing the number of rows to translate... (%)', countQuery;
+    EXECUTE countQuery INTO expectedRowNb;
     RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
 
     startTime = clock_timestamp();
@@ -2659,15 +2661,16 @@ RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
 		--FOR translatedRow IN EXECUTE translationQuery || CHR(10) || 'FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause
 		FOR translatedRow IN EXECUTE translationQuery
     LOOP
-       IF currentRowNb % 100 = 0 THEN
-         percentDone = currentRowNb::numeric/expectedRowNb*100;
-         remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
-              TT_PrettyDuration(remainingSeconds);
-       END IF;
-       currentRowNb = currentRowNb + 1;
-			 RETURN NEXT translatedRow;
-  		END LOOP;
+      IF currentRowNb % 100 = 0 THEN
+        percentDone = currentRowNb::numeric/expectedRowNb*100;
+        remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
+        RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
+             TT_PrettyDuration(remainingSeconds);
+      END IF;
+      currentRowNb = currentRowNb + 1;
+			RETURN NEXT translatedRow;
+    END LOOP;
+    RAISE NOTICE 'TOTAL TIME: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - startTime)::int);
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
