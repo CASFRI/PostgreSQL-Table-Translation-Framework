@@ -73,7 +73,7 @@ SELECT '1' rule_id,
        'Test'::text description,
        'TRUE' desc_uptodate_with_rules;
 
-SELECT TT_PrepareWithLogging('public', 'test_translationtable', '_with_logging');
+--SELECT TT_PrepareWithLogging('public', 'test_translationtable', '_with_logging');
 SELECT TT_Prepare('public', 'test_translationtable', '_without_logging');
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -92,14 +92,16 @@ WITH test_nb AS (
     SELECT 'TT_ParseRules'::text,                    4,          8         UNION ALL
     SELECT 'TT_ValidateTTable'::text,                5,          7         UNION ALL
     SELECT 'TT_TextFctExists'::text,                 6,          3         UNION ALL
-    SELECT 'TT_PrepareWithLogging'::text,            7,          8         UNION ALL
+    --SELECT 'TT_PrepareWithLogging'::text,            7,          8         UNION ALL
     SELECT 'TT_TextFctReturnType'::text,             8,          1         UNION ALL
     SELECT 'TT_TextFctEval'::text,                   9,         15         UNION ALL
     SELECT 'TT_ParseStringList'::text,              10,         36         UNION ALL
     SELECT 'TT_RepackStringList'::text,             11,         74         UNION ALL
     SELECT 'TT_IsCastableTo'::text,                 12,          2         UNION ALL
     SELECT 'TT_RuleToSQL'::text,                    13,          8         UNION ALL
-    SELECT 'TT_Prepare'::text,                      14,          8
+    SELECT 'TT_Prepare'::text,                      14,          8         UNION ALL
+    SELECT 'TT_ReplaceAroundChars'::text,           15,         19         UNION ALL
+    SELECT 'TT_PrepareFctCalls'::text,              16,          9
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -262,49 +264,49 @@ UNION ALL
 SELECT '4.1'::text number,
        'TT_ParseRules'::text function_tested,
        'Basic test, space and numeric'::text description,
-        TT_ParseRules('test1(aa, bb,''-999.55''); test2(cc, dd,''222.22'')') = ARRAY[('test1', '{aa,bb,''-999.55''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test2', '{cc,dd,''222.22''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules_old('test1(aa, bb,''-999.55''); test2(cc, dd,''222.22'')') = ARRAY[('test1', '{aa,bb,''-999.55''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old, ('test2', '{cc,dd,''222.22''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old]::TT_RuleDef_old[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.2'::text number,
        'TT_ParseRules'::text function_tested,
        'Test NULL'::text description,
-        TT_ParseRules() IS NULL passed
+        TT_ParseRules_old() IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.3'::text number,
        'TT_ParseRules'::text function_tested,
        'Test empty'::text description,
-        TT_ParseRules('') IS NULL passed
+        TT_ParseRules_old('') IS NULL passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.4'::text number,
        'TT_ParseRules'::text function_tested,
        'Test empty function'::text description,
-        TT_ParseRules('test1()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules_old('test1()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old]::TT_RuleDef_old[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.5'::text number,
        'TT_ParseRules'::text function_tested,
        'Test many empty functions'::text description,
-        TT_ParseRules('test1(); test2();  test3()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test2', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef, ('test3', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules_old('test1(); test2();  test3()') = ARRAY[('test1', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old, ('test2', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old, ('test3', NULL, 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old]::TT_RuleDef_old[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.6'::text number,
        'TT_ParseRules'::text function_tested,
        'Test quoted arguments'::text description,
-        TT_ParseRules('test1(''aa'', ''bb'')') =  ARRAY[('test1', '{''aa'',''bb''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules_old('test1(''aa'', ''bb'')') =  ARRAY[('test1', '{''aa'',''bb''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old]::TT_RuleDef_old[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.7'::text number,
        'TT_ParseRules'::text function_tested,
        'Test quoted arguments containing comma and special chars'::text description,
-        TT_ParseRules('test1(''a,a'', ''b@b'')') =  ARRAY[('test1', '{"''a,a''",''b@b''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef]::TT_RuleDef[] passed
+        TT_ParseRules_old('test1(''a,a'', ''b@b'')') =  ARRAY[('test1', '{"''a,a''",''b@b''}', 'NO_DEFAULT_ERROR_CODE', FALSE)::TT_RuleDef_old]::TT_RuleDef_old[] passed
 ---------------------------------------------------------
 UNION ALL
 SELECT '4.8'::text number,
        'TT_ParseRules'::text function_tested,
        'Test what''s in the test translation table'::text description,
-        array_agg(TT_ParseRules(validation_rules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef]::TT_RuleDef[]] passed
+        array_agg(TT_ParseRules_old(validation_rules)) = ARRAY[ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef_old, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef_old]::TT_RuleDef_old[], ARRAY[('notNull', '{crown_closure}', -8888, FALSE)::TT_RuleDef_old, ('isbetween', '{crown_closure, ''0'', ''100''}', -9999, FALSE)::TT_RuleDef_old]::TT_RuleDef_old[]] passed
 FROM public.test_translationtable
 ---------------------------------------------------------
 -- Test 5 - TT_ValidateTTable
@@ -315,21 +317,21 @@ SELECT '5.1'::text number,
        'Basic test'::text description,
         array_agg(rec)::text =
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
-FROM (SELECT TT_ValidateTTable('public', 'test_translationtable') rec) foo
+FROM (SELECT TT_ValidateTTable_old('public', 'test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.2'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test for NULL'::text description,
         array_agg(rec)::text IS NULL passed
-FROM (SELECT TT_ValidateTTable(NULL) rec) foo
+FROM (SELECT TT_ValidateTTable_old(NULL) rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.3'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test for empties'::text description,
         array_agg(rec)::text IS NULL passed
-FROM (SELECT TT_ValidateTTable('', '') rec) foo
+FROM (SELECT TT_ValidateTTable_old('', '') rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.4'::text number,
@@ -337,20 +339,20 @@ SELECT '5.4'::text number,
        'Test default schema to public'::text description,
         array_agg(rec)::text =
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")","(CROWN_CLOSURE_LOWER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
-FROM (SELECT TT_ValidateTTable('test_translationtable') rec) foo
+FROM (SELECT TT_ValidateTTable_old('test_translationtable') rec) foo
 --------------------------------------------------------
 UNION ALL
 SELECT '5.5'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Invalid target attribute name'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable2''::text);') =
+       TT_IsError('SELECT TT_ValidateTTable_old(''public'', ''test_translationtable2''::text);') =
                      'ERROR IN TRANSLATION TABLE AT RULE_ID # 1: Target attribute name (CROWN CLOSURE UPPER) is invalid...' passed
 --------------------------------------------------------
 UNION ALL
 SELECT '5.6'::text number,
        'TT_ValidateTTable'::text function_tested,
        'Test wrong translation error type'::text description,
-       TT_IsError('SELECT TT_ValidateTTable(''public'', ''test_translationtable4''::text);')
+       TT_IsError('SELECT TT_ValidateTTable_old(''public'', ''test_translationtable4''::text);')
                 = 'ERROR IN TRANSLATION TABLE AT RULE_ID # 1 (CROWN_CLOSURE_UPPER): Error code (WRONG_TYPE) cannot be cast to the target attribute type (integer) for translation rule ''copyInt()''...' passed
 --------------------------------------------------------
 UNION ALL
@@ -359,7 +361,7 @@ SELECT '5.7'::text number,
        'Test NULL validation error type'::text description,
        array_agg(rec)::text = 
 '{"(CROWN_CLOSURE_UPPER,integer,\"{\"\"(notNull,{crown_closure},-8888,f)\"\",\"\"(isbetween,\\\\\"\"{crown_closure,''0'',''100''}\\\\\"\",-9999,f)\"\"}\",\"(copyInt,{crown_closure},-3333,f)\")"}' passed
-FROM (SELECT TT_ValidateTTable('public', 'test_translationtable3'::text) rec) foo
+FROM (SELECT TT_ValidateTTable_old('public', 'test_translationtable3'::text) rec) foo
 --------------------------------------------------------
 -- Test 6 - TT_TextFctExists
 --------------------------------------------------------
@@ -380,6 +382,7 @@ SELECT '6.3'::text number,
        'TT_TextFctExists'::text function_tested,
        'Basic test'::text description,
         TT_TextFctExists('isbetween', '3') passed
+/*
 --------------------------------------------------------
 -- Test 7 - TT_PrepareWithLogging
 --------------------------------------------------------
@@ -430,6 +433,7 @@ SELECT '7.8'::text number,
        'TT_PrepareWithLogging'::text function_tested,
        'Test with identical ref translation table'::text description,
         TT_PrepareWithLogging('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'', ''uniqueIDColumn'');' passed
+*/
 --------------------------------------------------------
 -- Test 8 - TT_TextFctReturnType
 --------------------------------------------------------
@@ -1327,6 +1331,183 @@ SELECT '14.8'::text number,
        'Test with identical ref translation table'::text description,
         TT_Prepare('public', 'test_translationtable', '_01', 'test_translationtable') = 'SELECT * FROM TT_Translate_01(''schemaName'', ''tableName'');' passed
 --------------------------------------------------------
+-- Test 15 - TT_ReplaceAroundChars
+--------------------------------------------------------
+UNION ALL
+SELECT '15.1'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Test all NULL parameters'::text description,
+        TT_ReplaceAroundChars(NULL, NULL, NULL, NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.2'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Test first parameter NULL'::text description,
+        TT_ReplaceAroundChars(NULL, '''', ',', '_comma_') IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.3'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Test second parameter NULL'::text description,
+        TT_ReplaceAroundChars('te,st', NULL, ',', '_comma_') = 'te,st' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.4'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Test third parameter NULL'::text description,
+        TT_ReplaceAroundChars('aa, ''b,b''', '''', NULL, '_comma_') = 'aa, ''b,b''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.5'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Test fourth parameter NULL'::text description,
+        TT_IsError('SELECT TT_ReplaceAroundChars(''aa, ''''b,b'''''', '''''''', '','', NULL)') = 'TT_ReplaceAroundChars() ERROR: replacementStrings is NULL...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.6'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Incorrect number of chars'::text description,
+        TT_IsError('SELECT TT_ReplaceAroundChars(''aa, ''''b,b'''''', ARRAY['''''''', ''"'', ''(''], '','', NULL)') = 'TT_ReplaceAroundChars() ERROR: Number of chars must be 2 not 3...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.7'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Empty chars'::text description,
+        TT_IsError('SELECT TT_ReplaceAroundChars(''aa, ''''b,b'''''', '''', ARRAY['',''], ARRAY[''_comma_'', ''_semicolumn_''])') = 'TT_ReplaceAroundChars() ERROR: Both chars () and () must be one and only one character long...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.8'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Unequal number of replacement strings'::text description,
+        TT_IsError('SELECT TT_ReplaceAroundChars(''aa, ''''b,b'''''', '''''''', ARRAY['',''], ARRAY[''_comma_'', ''_semicolumn_''])') = 'TT_ReplaceAroundChars() ERROR: Number of searchStrings (1) different from number of replacementStrings(2)...' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.9'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Simple case'::text description,
+        TT_ReplaceAroundChars('''a,a''', '''', ',', '_comma_') = '''a_comma_a''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.10'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Simple case inside single quotes'::text description,
+        TT_ReplaceAroundChars('aa, ''bb,bb''', '''', ',', '_comma_') = 'aa, ''bb_comma_bb''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.11'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Simple case outside single quotes'::text description,
+        TT_ReplaceAroundChars('aa, ''bb,bb''', '''', ',', '_comma_', TRUE) = 'aa_comma_ ''bb,bb''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.12'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Two search strings'::text description,
+        TT_ReplaceAroundChars('aa, ''b;b,bb'', ''cc;cc''', '''', ARRAY[',', ';'], ARRAY['_comma_', '_semicolumn_']) = 'aa, ''b_semicolumn_b_comma_bb'', ''cc_semicolumn_cc''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.13'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Two search strings'::text description,
+        TT_ReplaceAroundChars('aa, ''b;b,bb'', ''cc;cc''', '''', ARRAY[',', ';'], ARRAY['_comma_', '_semicolumn_'], TRUE) = 'aa_comma_ ''b;b,bb''_comma_ ''cc;cc''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.14'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Inside parenthesis'::text description,
+        TT_ReplaceAroundChars('a;a, b(c, c;)', ARRAY['(', ')'], ARRAY[',', ';'], ARRAY['_comma_', '_semicolumn_']) = 'a;a, b(c_comma_ c_semicolumn_)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.15'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Outside parenthesis'::text description,
+        TT_ReplaceAroundChars('a;a, b(c, c;)', ARRAY['(', ')'], ARRAY[',', ';'], ARRAY['_comma_', '_semicolumn_'], TRUE) = 'a_semicolumn_a_comma_ b(c, c;)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.16'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Extra spaces after comman outside songle quote'::text description,
+        TT_ReplaceAroundChars('a,a,  a,    ''b(c,  c;)''', '''', '\,\s*\', ', ', TRUE) = 'a, a, a, ''b(c,  c;)''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.17'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Search regex with replacement'::text description,
+        TT_ReplaceAroundChars('a, b(c), ''d(e), f''', '''', '\([a-z]\()\', 'TT_\1', TRUE) = 'a, TT_b(c), ''d(e), f''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.18'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Suffix any variable with ''::text'''::text description,
+        TT_ReplaceAroundChars('a, b(c), ''d(e), f''', '''', '\([^\(])(?=[\,\)])\', '\1::text\2', TRUE) = 'a::text, b(c::text)::text, ''d(e), f''' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '15.19'::text number,
+       'TT_ReplaceAroundChars'::text function_tested,
+       'Unquote quoted numbers'::text description,
+        TT_ReplaceAroundChars('1, 2, ''3''', '''', '\''([0-9]*)''\', '\1') = '1, 2, 3' passed
+--------------------------------------------------------
+-- Test 16 - TT_PrepareFctCalls
+--------------------------------------------------------
+UNION ALL
+SELECT '16.1'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test NULL parameters'::text description,
+        TT_PrepareFctCalls(NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.2'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test simple name'::text description,
+        TT_PrepareFctCalls('aa') = 'maintable.aa::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.3'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test name surrounded with spaces'::text description,
+        TT_PrepareFctCalls(' aa ') = ' maintable.aa::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.4'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test two names'::text description,
+        TT_PrepareFctCalls('aa, bb') = 'maintable.aa::text, maintable.bb::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.5'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test one name between single quotes'::text description,
+        TT_PrepareFctCalls('aa, ''bb'', cc') = 'maintable.aa::text, ''bb'', maintable.cc::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.6'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test one numbers'::text description,
+        TT_PrepareFctCalls('1') = '(1)::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.7'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test two numbers'::text description,
+        TT_PrepareFctCalls('1, 2.2, -3.4') = '(1)::text, (2.2)::text, (-3.4)::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.7'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test string list'::text description,
+        TT_PrepareFctCalls('{1, 2.2, -3.4}') = 'ARRAY[(1)::text, (2.2)::text, (-3.4)::text]::text[]::text' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.8'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test functions'::text description,
+        TT_PrepareFctCalls('fct(aa, 1, ''bb'')') = 'TT_fct(maintable.aa::text, (1)::text, ''bb'')' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '16.9'::text number,
+       'TT_PrepareFctCalls'::text function_tested,
+       'Test complex function'::text description,
+        TT_PrepareFctCalls('fct({1, 2.2, -3.4, aa}, bb, cc(dd))') = 'TT_fct(ARRAY[(1)::text, (2.2)::text, (-3.4)::text, maintable.aa::text]::text[]::text, maintable.bb::text, TT_cc(maintable.dd::text))' passed
 --------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

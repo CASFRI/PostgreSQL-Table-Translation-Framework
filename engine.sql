@@ -13,10 +13,18 @@
 -------------------------------------------------------------------------------
 -- Types Definitions...
 -------------------------------------------------------------------------------
---DROP TYPE TT_RuleDef CASCADE;
-CREATE TYPE TT_RuleDef AS (
+--DROP TYPE TT_RuleDef_old CASCADE;
+CREATE TYPE TT_RuleDef_old AS (
   fctName text,
   args text[],
+  errorCode text,
+  stopOnInvalid boolean
+);
+
+--DROP TYPE TT_RuleDef2 CASCADE;
+CREATE TYPE TT_RuleDef AS (
+  fctName text,
+  args text,
   errorCode text,
   stopOnInvalid boolean
 );
@@ -44,6 +52,119 @@ RETURNS text AS $$
     RETURN SQLERRM;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
+-------------------------------------------------------------------------------
+-- TT_NameRegex
+-------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_NameRegex();
+CREATE OR REPLACE FUNCTION TT_NameRegex()
+RETURNS text AS $$
+  SELECT '(?:[[:alpha:]_][[:alnum:]_]*|"[^" ]*")'
+  --SELECT '(?:\A(?:[[:alpha:]_][[:alnum:]_]*|(?:"[^" ]*")+)\M)'
+$$ LANGUAGE sql STRICT;
+
+/*
+SELECT TT_IsName('"12_toto"') -- TRUE
+SELECT TT_IsName('"12 toto"')-- FALSE
+SELECT TT_IsName('12_toto') -- FALSE
+SELECT TT_IsName('a12_toto') -- TRUE
+SELECT TT_IsName('aa') -- TRUE
+SELECT 'true' ~  TT_NameRegex() -- TRUE
+SELECT '"1true"' ~  TT_NameRegex() -- TRUE
+SELECT ' "1true"' ~  TT_NameRegex() -- FALSE
+SELECT ' true' ~  TT_NameRegex() -- FALSE
+SELECT 'true ' ~  TT_NameRegex() -- TRUE
+SELECT 'true' ~  '(?:[[:alpha:]_][[:alnum:]_]*|(?:"[^" ]*")+)' -- TRUE
+SELECT regexp_matches(' true false', '(' || TT_NameRegex() || ')', 'g')
+*/
+-------------------------------------------------------------------------------
+-- TT_AllSpecialCharsRegex
+-------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_AllSpecialCharsRegex();
+CREATE OR REPLACE FUNCTION TT_AllSpecialCharsRegex()
+RETURNS text AS $$
+  SELECT '\s\|\(\)\[\]\{\}\^\$\.\*\?\+\\'
+$$ LANGUAGE sql STRICT;
+
+--SELECT TT_AllSpecialCharsRegex();
+-------------------------------------------------------------------------------
+-- TT_AnythingBetweenSingleQuotesRegex
+-------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_AnythingBetweenSingleQuotesRegex();
+CREATE OR REPLACE FUNCTION TT_AnythingBetweenSingleQuotesRegex()
+RETURNS text AS $$
+  SELECT '''(?:[^'']|'''')*'''
+$$ LANGUAGE sql STRICT;
+
+/*
+SELECT 'aa' ~ ('^' || TT_AnythingBetweenSingleQuotesRegex() || '$');
+SELECT '''aa''' ~ ('^' || TT_AnythingBetweenSingleQuotesRegex() || '$');
+SELECT '''aa''''bb''' ~ ('^' || TT_AnythingBetweenSingleQuotesRegex() || '$');
+SELECT '''aa'',''bb''' ~ ('^' || TT_AnythingBetweenSingleQuotesRegex() || '$');
+*/
+-------------------------------------------------------------------------------
+-- TT_NumberRegex
+-------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_NumberRegex();
+CREATE OR REPLACE FUNCTION TT_NumberRegex()
+RETURNS text AS $$
+  SELECT '(?<![^[:space:],\{\[\(])-?\d+\.?\d*(?![^[:space:],\}\]\):])'
+$$ LANGUAGE sql STRICT;
+
+/*
+WITH tests AS (
+  SELECT '''037365'' ~ (''^'' || TT_NumberRegex() || ''$'')' test, true expect
+  UNION ALL
+  SELECT '''037365'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''p1'' ~ TT_NumberRegex()' test, false
+  UNION ALL
+  SELECT '''10::'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''p1,34'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''p1,34'' ~ (''^'' || TT_NumberRegex() || ''$'')' test, false
+  UNION ALL
+  SELECT '''p1-34'' ~ TT_NumberRegex()' test, false
+  UNION ALL
+  SELECT '''p1(-34)'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''p1([-34])'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''p1({-34})'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''-37465.4567'' ~ (''^'' || TT_NumberRegex() || ''$'')' test, true
+  UNION ALL
+  SELECT '''-37465.4567'' ~ TT_NumberRegex()' test, true
+  UNION ALL
+  SELECT '''- 37465.4567'' ~ (''^'' || TT_NumberRegex() || ''$'')' test, false
+  UNION ALL
+  SELECT '''11b'' ~ (''^'' || TT_NumberRegex() || ''$'')' test, false
+  UNION ALL
+  SELECT '''11b'' ~ TT_NumberRegex()' test, false
+)
+SELECT test, eval(test) = expect::text passed
+FROM tests
+*/
+-------------------------------------------------------------------------------
+-- TT_OneLevelFctCallRegex
+-------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_OneLevelFctCallRegex();
+CREATE OR REPLACE FUNCTION TT_OneLevelFctCallRegex()
+RETURNS text AS $$
+  --SELECT TT_NameRegex() || '\((?:' || TT_NumberRegex() || '\s*,?\s*|' || TT_NameRegex() || '\s*,?\s*|' || TT_AnythingBetweenSingleQuotesRegex() || '\s*,?\s*)*\)'
+  SELECT TT_NameRegex() || '\((?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || ')?(?:\s*,\s*(?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '))*\)'
+$$ LANGUAGE sql STRICT;
+
+/*
+SELECT 'aa()' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(bbb)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(11)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(11b)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(''bbb'')' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(''bb'', cc)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT 'aa(bb(''cc'', dd))' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+*/
+
 -------------------------------------------------------------------------------
 -- TT_FctExist
 -- Function to test if a function exists.
@@ -289,10 +410,11 @@ RETURNS text AS $$
     nbMinutes = seconds/60;
     seconds = seconds - nbMinutes*60;
     
+    -- Display unit when is different than 0 or when in between two units different than 0
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
-           CASE WHEN nbHours > 0 THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
-           CASE WHEN nbMinutes > 0 THEN lpad(nbMinutes::text, 2, '0') || 'm'  ELSE '' END ||
-                lpad(seconds::text, 2, '0') || 's';
+           CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
+           CASE WHEN nbMinutes > 0 OR ((nbDays > 0 OR nbHours > 0) AND (seconds > 0)) THEN lpad(nbMinutes::text, 2, '0') || 'm' ELSE '' END ||
+           CASE WHEN seconds > 0 THEN lpad(seconds::text, 2, '0') || 's' ELSE '' END;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
@@ -573,6 +695,7 @@ RETURNS boolean AS $$
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 -- TT_IsSingleQuoted
 -- DROP FUNCTION IF EXISTS TT_IsSingleQuoted(text);
@@ -615,6 +738,162 @@ CREATE OR REPLACE FUNCTION TT_EscapeDoubleQuotesAndBackslash(
 RETURNS text AS $$
   SELECT replace(replace(str, '\', '\\'), '"', '\"'); -- '''
 $$ LANGUAGE sql IMMUTABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_IsSurroundedByChars
+-- DROP FUNCTION IF EXISTS TT_IsSurroundedByChars(text, text[]);
+CREATE OR REPLACE FUNCTION TT_IsSurroundedByChars(
+  str text,
+  chars text[]
+)
+RETURNS boolean AS $$
+  DECLARE
+  BEGIN
+    IF cardinality(chars) != 2 THEN
+      RAISE EXCEPTION 'TT_IsSurroundedByChars() ERROR: Number of chars must be 2 not %...', cardinality(chars);
+    END IF;
+
+    IF char_length(chars[1]) != 1 OR char_length(chars[2]) != 1 THEN
+      RAISE EXCEPTION 'TT_IsSurroundedByChars() ERROR: Both chars (%) and (%) must be one and only one character long...', chars[1], chars[2];
+    END IF;
+    RETURN left(str, 1) = chars[1] AND right(str, 1) = chars[2];
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_IsSurroundedByChars(text, text);
+CREATE OR REPLACE FUNCTION TT_IsSurroundedByChars(
+  inStr text,
+  chars text
+)
+RETURNS text AS $$
+  SELECT TT_IsSurroundedByChars(inStr, ARRAY[chars, chars]);
+$$ LANGUAGE sql IMMUTABLE;
+
+/*
+SELECT TT_IsSurroundedByChars('''aa', '''')
+SELECT TT_IsSurroundedByChars('''aa''', '''')
+SELECT TT_IsSurroundedByChars('aa)', ARRAY['(', ')'])
+SELECT TT_IsSurroundedByChars('(aa)', ARRAY['(', ')'])
+*/
+-------------------------------------------------------------------------------
+-- TT_ReplaceAroundChars()
+---------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_ReplaceAroundChars(text, text[], text[], text[], boolean);
+CREATE OR REPLACE FUNCTION TT_ReplaceAroundChars(
+  inStr text,
+  chars text[],
+  searchStrings text[],
+  replacementStrings text[],
+  outside boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  DECLARE
+    i int;
+    newStr text;
+    returnStr text;
+    str text[];
+    strArr text[];
+    searchRegex text;
+    surrounded boolean;
+    escapedChars text[];
+  BEGIN
+--RAISE NOTICE 'TT_ReplaceAroundChars() 11 inStr=%', inStr;
+    IF cardinality(chars) != 2 THEN
+      RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: Number of chars must be 2 not %...', cardinality(chars);
+    END IF;
+    IF char_length(chars[1]) != 1 OR char_length(chars[2]) != 1 THEN
+      RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: Both chars (%) and (%) must be one and only one character long...', chars[1], chars[2];
+    END IF;
+    IF searchStrings IS NULL OR searchStrings[1] IS NULL THEN
+      RETURN inStr;
+    END IF;
+    IF replacementStrings IS NULL OR replacementStrings[1] IS NULL THEN
+      RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: replacementStrings is NULL...';
+    END IF;
+    IF cardinality(searchStrings) != cardinality(replacementStrings) THEN
+      RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: Number of searchStrings (%) different from number of replacementStrings(%)...', cardinality(searchStrings), cardinality(replacementStrings);
+    END IF;
+
+    -- Escape both chars before being used as regex
+    escapedChars[1] = regexp_replace(chars[1], '([' || TT_AllSpecialCharsRegex() || '])', '\\\1');
+    escapedChars[2] = regexp_replace(chars[2], '([' || TT_AllSpecialCharsRegex() || '])', '\\\1');
+
+    -- Build the array of substring to replace into
+    searchRegex = '(?:' || escapedChars[1] || '[^' || escapedChars[1] || escapedChars[2] || ']*' || escapedChars[2] || '|[^' || escapedChars[1] || escapedChars[2] || ']*)';
+    returnStr = inStr;
+
+    FOR str IN SELECT regexp_matches(returnStr, searchRegex, 'g') LOOP
+--RAISE NOTICE 'TT_ReplaceAroundChars() 22 str=%', str;
+      newStr = str[1];
+      surrounded = TT_IsSurroundedByChars(newStr, chars);
+
+      IF (outside AND NOT surrounded) OR (NOT outside AND surrounded) THEN
+        -- Replace all provided search string with the corresponding replacement string
+        FOR i IN 1..cardinality(searchStrings) LOOP
+--RAISE NOTICE 'TT_ReplaceAroundChars() 33 searchStrings[%]=%', i, searchStrings[i];
+          IF searchStrings[i] IS NULL THEN
+            RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: searchStrings # % is NULL...', i;
+          END IF;
+          IF replacementStrings[i] IS NULL THEN
+            RAISE EXCEPTION 'TT_ReplaceAroundChars() ERROR: replacementStrings # % is NULL...', i;
+          END IF;
+          IF TT_IsSurroundedByChars(searchStrings[i], '\') THEN
+            newStr = regexp_replace(newStr, btrim(searchStrings[i], '\\'), replacementStrings[i], 'g');
+          ELSE
+            newStr = replace(newStr, searchStrings[i], replacementStrings[i]);
+          END IF;
+--RAISE NOTICE 'TT_ReplaceAroundChars() 44 newStr=%', newStr;
+        END LOOP;
+        -- Replace the quoted string with the new string in the final string
+        returnStr = replace(returnStr, str[1], newStr);
+--RAISE NOTICE 'TT_ReplaceAroundChars() 55 returnStr=%', returnStr;
+      END IF;
+    END LOOP;
+    RETURN returnStr;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_ReplaceAroundChars(text, text, text, text, boolean);
+CREATE OR REPLACE FUNCTION TT_ReplaceAroundChars(
+  inStr text,
+  chars text,
+  searchStrings text,
+  replacementStrings text,
+  outside boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  SELECT TT_ReplaceAroundChars(inStr, ARRAY[chars, chars], ARRAY[searchStrings], ARRAY[replacementStrings], outside);
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_ReplaceAroundChars(text, text, text[], text[], boolean);
+CREATE OR REPLACE FUNCTION TT_ReplaceAroundChars(
+  inStr text,
+  chars text,
+  searchStrings text[],
+  replacementStrings text[],
+  outside boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  SELECT TT_ReplaceAroundChars(inStr, ARRAY[chars, chars], searchStrings, replacementStrings, outside);
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_ReplaceAroundChars(text, text[], text text, boolean);
+CREATE OR REPLACE FUNCTION TT_ReplaceAroundChars(
+  inStr text,
+  chars text[],
+  searchStrings text,
+  replacementStrings text,
+  outside boolean DEFAULT FALSE
+)
+RETURNS text AS $$
+  SELECT TT_ReplaceAroundChars(inStr, chars, ARRAY[searchStrings], ARRAY[replacementStrings], outside);
+$$ LANGUAGE sql IMMUTABLE;
+/*
+SELECT TT_ReplaceAroundChars('aa', '''', '\\a\', 'x\1y', TRUE);
+SELECT TT_ReplaceAroundChars('{aa}', '''', ARRAY['\{\', '\}\'], ARRAY['ARRAY[',']'], TRUE);
+
+*/
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -957,6 +1236,77 @@ RETURNS text AS $$
     RETURN queryStr;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+-------------------------------------------------------------------------------
+-- TT_PrepareFctCalls
+--
+--  - fctCall text  - Function call string into which function names must be 
+--                    prefixed with "TT_".
+--
+--    RETURNS text
+--
+-- Reconstruct a query string from passed function name and arguments.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_PrepareFctCalls(text);
+CREATE OR REPLACE FUNCTION TT_PrepareFctCalls(
+  fctCall text
+)
+RETURNS text AS $$
+  BEGIN
+    -- Remove useless single quotes around numbers
+    fctCall = TT_ReplaceAroundChars(fctCall, '''', '\''(' || TT_NumberRegex() || ')''\', '\1');
+
+    -- Prefix function names with 'TT_', suffix variables and function with '::text' and prefix variable name with 'maintable.'
+    fctCall = TT_ReplaceAroundChars(fctCall, '''', 
+                                    ARRAY['\(' || TT_NameRegex() || ')\s*\(\',
+                                          '\(' || TT_NameRegex() || '|' || TT_NumberRegex() || ')\s*(?=[\,\)\]\}])\', 
+                                          '\(' || TT_NameRegex() || '|' || TT_NumberRegex() || ')\s*$\',
+                                          '\([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])::text\',
+                                          '\(' || TT_NameRegex() || ')::text\',
+                                          '\(' || TT_NumberRegex() || ')::text\',
+                                          '\{\', '\}\'
+                                         ], 
+                                    ARRAY['TT_\1(', 
+                                          '\1::text', 
+                                          '\1::text',
+                                          '''\1''::text',
+                                          'maintable.\1::text',
+                                          '(\1)::text',
+                                          'ARRAY[', ']::text[]::text'
+                                         ], TRUE);
+
+    RETURN fctCall;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+/*
+SELECT TT_PrepareFctCalls('a_a(bb (''a,bc'', xyz, cc()))')
+SELECT TT_PrepareFctCalls('))')
+SELECT TT_PrepareFctCalls('ab')
+SELECT TT_PrepareFctCalls('a() , b()')
+SELECT TT_PrepareFctCalls('fct(''a,a'', var)')
+SELECT TT_PrepareFctCalls('fct(aa, var)')
+SELECT TT_PrepareFctCalls('''fct(aa, var)''')
+SELECT TT_PrepareFctCalls('2')
+SELECT TT_PrepareFctCalls('''2''')
+SELECT TT_PrepareFctCalls('fct(1, 2)')
+SELECT TT_PrepareFctCalls('fct(1, 2.2, -3.3)')
+SELECT TT_PrepareFctCalls('fct(sp1, 1, 2.2, ''aa'', -3.3, ''-10.4567'')')
+SELECT 1::text, 2.2::text, 'aa', (-3.3)::text, (-10.4567)::text
+SELECT (1)::text, (2.2)::text, 'aa', (-3.3)::text, (-10.4567)::text
+SELECT TT_PrepareFctCalls('{1, 2}')
+SELECT TT_PrepareFctCalls('true')
+SELECT TT_PrepareFctCalls('TT_padConcat({inventory_id, src_filename, geocode_1_10, geocode_11_20, ''''''''}, {4,15,10,10,7}, {''x'',''x'',''x'',0}, ''-'', ''TRUE'', ''TRUE'')');
+
+SELECT TT_PrepareFctCalls('TT_padConcat({inventory_id::text})');
+SELECT TT_PrepareFctCalls('TT_padConcat(inventory_id)');
+
+SELECT TT_ReplaceAroundChars('a(1)', '''', '\(' || TT_NumberRegex() || ')\', 'x\1x', TRUE)
+SELECT TT_ReplaceAroundChars('a(1)', '''', '\(' || TT_NameRegex() || '|' || TT_NumberRegex() || ')\', 'x\1x', TRUE)
+SELECT TT_ReplaceAroundChars('a(1,2)', '''', '\(' || TT_NameRegex() || '|' || TT_NumberRegex() || ')\s*(?=[\,\)\]\}])\', '\1::text', TRUE)
+SELECT TT_ReplaceAroundChars('fct(1, 2.2, -3.3)', '''', '\(' || TT_NameRegex() || '|' || TT_NumberRegex() || ')\s*(?=[\,\)\]\}])\', '\1::text', TRUE)
+*/
+
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1154,22 +1504,22 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 --
 --  ruleStr text - Rule string to parse into its different components.
 --
---  RETURNS TT_RuleDef[]
+--  RETURNS TT_RuleDef_old[]
 --
 -- Parse a rule string into function name, arguments, error code and
 -- stopOnInvalid flag.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_ParseRules(text);
-CREATE OR REPLACE FUNCTION TT_ParseRules(
+-- DROP FUNCTION IF EXISTS TT_ParseRules_old(text);
+CREATE OR REPLACE FUNCTION TT_ParseRules_old(
   ruleStr text DEFAULT NULL,
   targetType text DEFAULT NULL,
   isTranslation boolean DEFAULT FALSE
 )
-RETURNS TT_RuleDef[] AS $$
+RETURNS TT_RuleDef_old[] AS $$
   DECLARE
     rules text[];
-    ruleDef TT_RuleDef;
-    ruleDefs TT_RuleDef[];
+    ruleDef TT_RuleDef_old;
+    ruleDefs TT_RuleDef_old[];
   BEGIN
     -- Split the ruleStr into each separate rule: function name, list of arguments, error code and stopOnInvalid flag
     FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)' ||       -- fonction name
@@ -1195,8 +1545,240 @@ RETURNS TT_RuleDef[] AS $$
     RETURN ruleDefs;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION TT_ParseRules(
+  ruleStr text DEFAULT NULL,
+  targetType text DEFAULT NULL,
+  isTranslation boolean DEFAULT FALSE
+)
+RETURNS TT_RuleDef[] AS $$
+  DECLARE
+    rules text[];
+    ruleDef TT_RuleDef;
+    ruleDefs TT_RuleDef[];
+  BEGIN
+    -- Split the ruleStr into each separate rule: function name, list of arguments, error code and stopOnInvalid flag
+    FOR rules IN SELECT regexp_matches(ruleStr, '(\w+)' ||       -- fonction name
+                                                '\s*' ||         -- any space
+                                                '\(' ||          -- first parenthesis
+                                                '([^;|]*)' ||    -- a list of arguments
+                                                '\|?\s*' ||      -- a vertical bar followed by any spaces
+                                                '([^;,|]+)?' ||  -- the error code
+                                                ',?\s*' ||       -- a comma followed by any spaces
+                                                '([Ss][Tt][Oo][Pp])?\)'-- STOP or not
+                                                , 'g') LOOP
+      ruleDef.fctName = rules[1];
+      ruleDef.args = rules[2];
+      ruleDef.errorCode = TT_DefaultProjectErrorCode(CASE WHEN isTranslation THEN 'translation_error' ELSE ruleDef.fctName END, targetType);
+      IF upper(rules[3]) = 'STOP' THEN
+        ruleDef.stopOnInvalid = TRUE;
+      ELSE
+        ruleDef.errorCode = coalesce(rules[3], ruleDef.errorCode);
+        ruleDef.stopOnInvalid = (NOT upper(rules[4]) IS NULL AND upper(rules[4]) = 'STOP');
+      END IF;
+      ruleDefs = array_append(ruleDefs, ruleDef);
+    END LOOP;
+    RETURN ruleDefs;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- TT_ParseJoinFctCall
+--
+--  fctCall
+--
+--  RETURNS text[]
+--
+-- Returns all the parameters of a TT_MatchTable() call.
+-- First is the variable to match
+-- Second is the schameName of the table
+-- Third is the tableName
+-- Fourth is the name of the columnName to match
+-- Fifth is ignoreCase default to FALSE
+-- Sixth is acceptNull as acceptable value (return TRUE)
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_ParseJoinFctCall(text, boolean);
+CREATE OR REPLACE FUNCTION TT_ParseJoinFctCall(
+  fctCall text,
+  lookup boolean DEFAULT FALSE
+)
+RETURNS text[] AS $$
+-- RETURN TABLE(variable text,
+--           schema_name text,
+--           table_name text,
+--           column_name text,
+--           ignore_case boolean
+--           accept_null boolean) AS 
+  DECLARE
+    regex text;
+    result text[];
+  BEGIN
+    regex = CASE WHEN lookup THEN '^lookup(?:text|int|double)\s*\(' ELSE '^matchtable\s*\(' END || -- fct name
+                          '(' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '|' || TT_OneLevelFctCallRegex() || ')' || -- any attribute name, quoted string or fct call
+                          --'(' || TT_NameRegex() || ')' || -- any attribute name, quoted string or fct call
+                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
+                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
+                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- column name to match
+                          CASE WHEN lookup THEN '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' ELSE '' END ||
+                          '(?:\s*\,\s*\''?(FALSE|TRUE)\''?)?' || -- ignoreCase
+                          '(?:\s*\,\s*\''?(TRUE)\''?)?' || -- acceptNull
+                          '\)$';
+--RAISE NOTICE 'regex=%', regex;
+    result = regexp_match(fctCall, regex, 'i');
+
+--   variable = result[1];
+--   schema_name = result[2];
+--   table_name = result[3];
+--   column_name = result[4];
+--   ignore_case = coalesce(upper(result[5]), 'FALSE')::boolean;
+--   accept_null = coalesce(upper(result[6]), 'FALSE')::boolean;
+--   IF variable IS NULL OR schema_name IS NULL OR table_name IS NULL OR column_name IS NULL THEN
+/*
+RAISE NOTICE 'result[1]=%', result[1];
+RAISE NOTICE 'result[2]=%', result[2];
+RAISE NOTICE 'result[3]=%', result[3];
+RAISE NOTICE 'result[4]=%', result[4];
+RAISE NOTICE 'result[5]=%', result[5];
+RAISE NOTICE 'result[6]=%', result[6];
+*/
+    IF result[1] IS NULL OR result[2] IS NULL OR result[3] IS NULL OR result[4] IS NULL OR (lookup AND result[5] IS NULL) THEN
+      RAISE EXCEPTION 'TT_ParseJoinFctCall() ERROR: Could not parse matchTable() or lookup() rule (%)...', fctCall;
+    END IF;
+    result[1] = TT_PrepareFctCalls(result[1]);
+    -- 
+    IF lookup THEN
+      result[6] = coalesce(upper(result[6]), 'FALSE')::boolean;
+      result[7] = coalesce(upper(result[7]), 'FALSE')::boolean;
+    ELSE
+      result[7] = coalesce(upper(result[6]), 'FALSE')::boolean;
+      result[6] = coalesce(upper(result[5]), 'FALSE')::boolean;
+      result[5] = NULL;
+    END IF;
+/*
+RAISE NOTICE 'result[1]=%', result[1];
+RAISE NOTICE 'result[2]=%', result[2];
+RAISE NOTICE 'result[3]=%', result[3];
+RAISE NOTICE 'result[4]=%', result[4];
+RAISE NOTICE 'result[5]=%', result[5];
+RAISE NOTICE 'result[6]=%', result[6];
+RAISE NOTICE 'result[7]=%', result[7];
+*/
+    RETURN result;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+/*
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''),  ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''TrUE'', ''true'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', TrUE, true)'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''FALSE'', ''TrUE'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''TrUE'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'', ''ab_species_codes'', TRUE)'))
+SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(''SP'', ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(''S''''P'', ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'', ''column_name'')'));
+SELECT unnest(TT_ParseJoinFctCall('lookuptext(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'', ''TrUE'')', TRUE));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')', TRUE));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')', TRUE));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(subtype, ''translation'', ''mb_fri01_productivity_lookup'', ''source_val'', ''productivity_type'')', TRUE));
+
+*/
+
+-------------------------------------------------------------------------------
+-- TT_AppendParsedJoinToArr
+--
+--  pJoinArr text[][]
+--  pJoin text[]
+--
+--  RETURNS text[]
+--
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_AppendParsedJoinToArr(text[][], text[]);
+CREATE OR REPLACE FUNCTION TT_AppendParsedJoinToArr(
+  pJoinArr text[][],
+  pJoin text[]
+)
+RETURNS text[][] AS $$
+  DECLARE
+    currentPJoin text[];
+    similarFound boolean = FALSE;
+    i int = 1;
+  BEGIN
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 00 pJoinArr=%',pJoinArr;
+    IF pJoinArr IS NULL THEN -- First insertion
+      pJoin[8] = '1';
+      pJoin[9] = 'last';
+      RETURN ARRAY[pJoin];
+    ELSE -- Search for an identical join in the join array where retreiveCol is NULL
+      FOREACH currentPJoin SLICE 1 IN ARRAY pJoinArr LOOP
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 22 pJoinArr=%', pJoinArr;
+        pJoinArr[i][9] = '';
+        -- Compare only the parameter that affect the LEFT JOIN
+        IF currentPJoin[1] = pJoin[1] AND -- value
+           currentPJoin[2] = pJoin[2] AND -- schema
+           currentPJoin[3] = pJoin[3] AND -- table
+           currentPJoin[4] = pJoin[4] AND -- lookupcol
+           currentPJoin[6] = pJoin[6] -- ignoreCase
+        THEN
+          -- Assign the last retrieveCol and the last acceptNull
+          pJoinArr[i][5] = coalesce(pJoin[5], pJoinArr[i][5]);
+          pJoinArr[i][7] = coalesce(pJoin[7], pJoinArr[i][7]);
+          pJoinArr[i][9] = 'last';
+          similarFound = TRUE;
+        END IF;
+        i = i + 1;
+      END LOOP;
+    END IF;
+    IF similarFound THEN
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 33 pJoinArr=%', pJoinArr;
+      RETURN pJoinArr;
+    END IF;
+    
+    -- Nothing found, append the join array at the end
+    pJoin[8] = (array_length(pJoinArr, 1) + 1)::text;
+    pJoin[9] = 'last';
+    RETURN pJoinArr || pJoin;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+/*
+SELECT ARRAY[ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', 'FALSE'], ARRAY['e', 'f', 'g', 'h', NULL, 'FALSE', 'FALSE']] 
+SELECT TT_AppendParsedJoinToArr(NULL, ARRAY['e', 'f', 'g', 'h', NULL, 'FALSE', 'FALSE'])
+SELECT TT_AppendParsedJoinToArr(ARRAY[ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', 'FALSE', '1', 'last']], ARRAY['e', 'f', 'g', 'h', NULL, 'FALSE', 'FALSE'])
+SELECT TT_AppendParsedJoinToArr(ARRAY[ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', 'FALSE', '1', 'last']], ARRAY['a', 'b', 'c', 'd', 'e', 'FALSE', 'FALSE'])
+SELECT TT_AppendParsedJoinToArr(ARRAY[ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', NULL, '1', 'last']], ARRAY['a', 'b', 'c', 'd', 'e', 'TRUE', 'TRUE'])
+SELECT TT_AppendParsedJoinToArr(ARRAY[ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', NULL, '1', ''], ARRAY['a', 'b', 'c', 'd', NULL, 'FALSE', NULL, '2', 'last']], ARRAY['a', 'b', 'c', 'd', 'e', 'TRUE', 'TRUE'])
+*/
+-------------------------------------------------------------------------------
+-- TT_LastJoinAdded
+--
+--  pJoinArr text[][]
+--
+--  RETURNS text[]
+------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_LastJoinAdded(text[][]);
+CREATE OR REPLACE FUNCTION TT_LastJoinAdded(
+  pJoinArr text[][]
+)
+RETURNS text[] AS $$
+  DECLARE
+    currentPJoin text[];
+  BEGIN
+    FOREACH currentPJoin SLICE 1 IN ARRAY pJoinArr LOOP
+      IF cardinality(currentPJoin) = 9 AND NOT currentPJoin[9] IS NULL AND currentPJoin[9] = 'last' THEN
+        return currentPJoin;
+      END IF;
+    END LOOP;
+    -- Return the last one if none is set to 'last'
+    RETURN currentPJoin;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+/*
+SELECT TT_LastJoinAdded(ARRAY[ARRAY['a', 'a', 'a', 'a', NULL, 'FALSE', NULL, '1', ''], ARRAY['b', 'b', 'b', 'b', NULL, 'FALSE', NULL, '2', 'last']])
+SELECT TT_LastJoinAdded(ARRAY[ARRAY['a', 'a', 'a', 'a', NULL, 'FALSE', NULL, '1', 'last'], ARRAY['b', 'b', 'b', 'b', NULL, 'FALSE', NULL, '2', '']])
+
+*/
 -------------------------------------------------------------------------------
 -- TT_ValidateTTable
 --
@@ -1226,21 +1808,21 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 --  Return an error and stop the process if any invalid value is found in the
 --  translation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ValidateTTable(name, name, boolean);
-CREATE OR REPLACE FUNCTION TT_ValidateTTable(
+--DROP FUNCTION IF EXISTS TT_ValidateTTable_old(name, name, boolean);
+CREATE OR REPLACE FUNCTION TT_ValidateTTable_old(
   translationTableSchema name,
   translationTable name,
   validate boolean DEFAULT TRUE
 )
 RETURNS TABLE (target_attribute text, 
                target_attribute_type text, 
-               validation_rules TT_RuleDef[], 
-               translation_rule TT_RuleDef) AS $$
+               validation_rules TT_RuleDef_old[], 
+               translation_rule TT_RuleDef_old) AS $$
   DECLARE
     row RECORD;
     query text;
     debug boolean = TT_Debug();
-    rule TT_RuleDef;
+    rule TT_RuleDef_old;
     error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
     warning_msg_start text = 'WARNING FOR TRANSLATION TABLE AT RULE_ID #';
   BEGIN
@@ -1266,8 +1848,8 @@ RETURNS TABLE (target_attribute text,
       -- validate attributes and assign values
       target_attribute = row.target_attribute;
       target_attribute_type = row.target_attribute_type;
-      validation_rules = (TT_ParseRules(row.validation_rules, row.target_attribute_type))::TT_RuleDef[];
-      translation_rule = ((TT_ParseRules(row.translation_rules, row.target_attribute_type, TRUE))[1])::TT_RuleDef;
+      validation_rules = (TT_ParseRules_old(row.validation_rules, row.target_attribute_type))::TT_RuleDef_old[];
+      translation_rule = ((TT_ParseRules_old(row.translation_rules, row.target_attribute_type, TRUE))[1])::TT_RuleDef_old;
       --description = coalesce(row.description, '');
       --desc_uptodate_with_rules should not be null or empty
       --desc_uptodate_with_rules = (row.desc_uptodate_with_rules)::boolean;
@@ -1380,6 +1962,167 @@ RETURNS TABLE (target_attribute text,
   END;
 $$ LANGUAGE plpgsql STABLE;
 ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_ValidateTTable_old(
+  translationTable name,
+  validate boolean DEFAULT TRUE
+)
+RETURNS TABLE (target_attribute text, target_attribute_type text, validation_rules TT_RuleDef_old[], translation_rule TT_RuleDef_old) AS $$
+  SELECT TT_ValidateTTable_old('public', translationTable, validate);
+$$ LANGUAGE sql STABLE;
+-------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_ValidateTTable(
+  translationTableSchema name,
+  translationTable name,
+  validate boolean DEFAULT TRUE
+)
+RETURNS TABLE (target_attribute text, 
+               target_attribute_type text, 
+               validation_rules TT_RuleDef[], 
+               translation_rule TT_RuleDef) AS $$
+  DECLARE
+    row RECORD;
+    query text;
+    debug boolean = TT_Debug();
+    rule TT_RuleDef;
+    error_msg_start text = 'ERROR IN TRANSLATION TABLE AT RULE_ID #';
+    warning_msg_start text = 'WARNING FOR TRANSLATION TABLE AT RULE_ID #';
+  BEGIN
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable BEGIN';END IF;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 11';END IF;
+    IF translationTable IS NULL OR translationTable = '' THEN
+      RETURN;
+    END IF;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 22';END IF;
+
+    -- loop through each row in the translation table
+    query = 'SELECT rule_id::text, 
+                    target_attribute::text, 
+                    target_attribute_type::text, 
+                    validation_rules::text, 
+                    translation_rules::text, 
+                    description::text, 
+                    desc_uptodate_with_rules::text
+             FROM ' || TT_FullTableName(translationTableSchema, translationTable) || 
+           ' ORDER BY to_number(rule_id::text, ''999999'');';
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable 33 query=%', query;END IF;
+    FOR row IN EXECUTE query LOOP
+      -- validate attributes and assign values
+      target_attribute = row.target_attribute;
+      target_attribute_type = row.target_attribute_type;
+      validation_rules = (TT_ParseRules(row.validation_rules, row.target_attribute_type))::TT_RuleDef[];
+      translation_rule = ((TT_ParseRules(row.translation_rules, row.target_attribute_type, TRUE))[1])::TT_RuleDef;
+      --description = coalesce(row.description, '');
+      --desc_uptodate_with_rules should not be null or empty
+      --desc_uptodate_with_rules = (row.desc_uptodate_with_rules)::boolean;
+
+      IF validate THEN
+        -- rule_id should be integer, not null, not empty string
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 44, row=%', row::text;END IF;
+        IF NOT TT_NotEmpty(row.rule_id) THEN
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: At least one rule_id is NULL or empty...';
+        END IF;
+        IF NOT TT_IsInt(row.rule_id) THEN
+          RAISE EXCEPTION 'ERROR IN TRANSLATION TABLE: rule_id (%) is not an integer...', row.rule_id;
+        END IF;
+
+        -- target_attribute should not be null or empty string, should be word with underscore allowed but no special characters
+        IF NOT TT_NotEmpty(row.target_attribute) THEN
+          RAISE EXCEPTION '% %: Target attribute is NULL or empty...', error_msg_start, row.rule_id;
+        END IF;
+        IF NOT TT_IsName(row.target_attribute) THEN -- ~ '^(\d|\w)+$' THEN
+          RAISE EXCEPTION '% %: Target attribute name (%) is invalid...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+
+        -- target_attribute_type should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 55';END IF;
+        IF NOT TT_NotEmpty(row.target_attribute_type) THEN
+          RAISE EXCEPTION '% % (%): Target attribute type is NULL or empty...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+
+        -- validation_rules should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 66';END IF;
+        IF NOT TT_NotEmpty(row.validation_rules) THEN
+          RAISE EXCEPTION '% % (%): Validation rules is NULL or empty...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+
+        -- translation_rules should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 77';END IF;
+        IF NOT TT_NotEmpty(row.translation_rules) THEN
+          RAISE EXCEPTION '% % (%): Translation rule is NULL or empty...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+
+        -- description should not be null or empty
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 88';END IF;
+        IF NOT TT_NotEmpty(row.description) THEN
+          RAISE EXCEPTION '% % (%): Description is NULL or empty...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable 99';END IF;
+        IF NOT TT_NotEmpty(row.desc_uptodate_with_rules) THEN
+          RAISE EXCEPTION '% % (%): desc_uptodate_with_rules is NULL or empty...', error_msg_start, row.rule_id, row.target_attribute;
+        END IF;
+        
+        -- target_attribute_type should be equal to NA when target_attribute = ROW_TRANSLATION_RULE
+        IF row.target_attribute = 'ROW_TRANSLATION_RULE' AND upper(row.target_attribute_type) != 'NA' THEN
+          RAISE NOTICE '% % (%): target_attribute_type (%) should be equal to ''NA'' for special target_attribute ROW_TRANSLATION_RULE...', warning_msg_start, row.rule_id, row.target_attribute, row.target_attribute_type;
+        END IF;
+
+        IF row.target_attribute = 'ROW_TRANSLATION_RULE' AND upper(row.translation_rules) != 'NA'  THEN
+          RAISE NOTICE '% % (%): translation_rules (%) should be equal to ''NA'' for special target_attribute ''ROW_TRANSLATION_RULE''...', warning_msg_start, row.rule_id, row.target_attribute, row.translation_rules;
+        END IF;
+
+        IF debug THEN RAISE NOTICE 'TT_ValidateTTable AA';END IF;
+        -- Check validation functions exist, error code is not null, and error code can be cast to target attribute type
+        FOREACH rule IN ARRAY validation_rules LOOP
+          -- Check function exists
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable BB function name: %, arguments: %', rule.fctName, rule.args;END IF;
+          --IF NOT TT_TextFctExists(rule.fctName, coalesce(cardinality(rule.args), 0)) THEN
+          --  RAISE EXCEPTION '% % (%): Validation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
+          --END IF;
+
+          -- check error code is not null
+          IF rule.errorCode = '' OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
+            RAISE EXCEPTION '% % (%): No error code defined for validation rule ''%()''. Define or update your own project TT_DefaultProjectErrorCode() function...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
+          END IF;
+
+          -- Check error code can be cast to attribute type, catch error with EXCEPTION
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', row.target_attribute_type, rule.errorCode;END IF;
+          IF rule.errorCode IS NULL THEN
+            RAISE NOTICE '% % (%): Error code for target attribute type (%) and validation rule ''%()'' is NULL.', warning_msg_start, row.rule_id, row.target_attribute, row.target_attribute_type, rule.fctName;
+          END IF;
+          IF row.target_attribute != 'ROW_TRANSLATION_RULE' AND NOT TT_IsCastableTo(rule.errorCode, row.target_attribute_type) THEN
+            RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for validation rule ''%()''.', error_msg_start, row.rule_id, row.target_attribute, rule.errorCode, row.target_attribute_type, rule.fctName;
+          END IF;
+        END LOOP;
+
+        -- Validate translation_rule only when for target_attribute other then ROW_TRANSLATION_RULE
+        IF row.target_attribute != 'ROW_TRANSLATION_RULE' THEN
+          -- check translation function exists
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translation_rule.fctName, translation_rule.args;END IF;
+          --IF NOT TT_TextFctExists(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) THEN
+          --  RAISE EXCEPTION '% % (%): Translation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, row.target_attribute, translation_rule.fctName, btrim(repeat('text,', coalesce(cardinality(translation_rule.args), 0)), ',');
+          --END IF;
+
+          -- Check translation rule return type matches target attribute type
+          --IF NOT TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) = row.target_attribute_type THEN
+          --  RAISE EXCEPTION '% % (%): Translation rule return type (%) does not match translation helper function return type (%)...', error_msg_start, row.rule_id, row.target_attribute, target_attribute_type, TT_TextFctReturnType(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0));
+          --END IF;
+          IF translation_rule.errorCode IS NULL THEN
+            RAISE NOTICE '% % (%): Error code for target attribute type (%) and translation rule ''%()'' is NULL.', warning_msg_start, row.rule_id, row.target_attribute, target_attribute_type, translation_rule.fctName;
+          END IF;
+          -- If not null, check translation error code can be cast to attribute type
+          IF NOT TT_IsCastableTo(translation_rule.errorCode, row.target_attribute_type) THEN
+            IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', row.target_attribute_type, translation_rule.errorCode;END IF;
+            RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for translation rule ''%()''...', error_msg_start, row.rule_id, row.target_attribute, translation_rule.errorCode, row.target_attribute_type, translation_rule.fctName;
+          END IF;
+        END IF;
+      END IF;
+      RETURN NEXT;
+    END LOOP;
+    IF debug THEN RAISE NOTICE 'TT_ValidateTTable END';END IF;
+    RETURN;
+  END;
+$$ LANGUAGE plpgsql STABLE;
+------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_ValidateTTable(
   translationTable name,
   validate boolean DEFAULT TRUE
@@ -1387,155 +2130,6 @@ CREATE OR REPLACE FUNCTION TT_ValidateTTable(
 RETURNS TABLE (target_attribute text, target_attribute_type text, validation_rules TT_RuleDef[], translation_rule TT_RuleDef) AS $$
   SELECT TT_ValidateTTable('public', translationTable, validate);
 $$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- TT_PrepareWithLogging
---
---   translationTableSchema name    - Name of the schema containing the 
---                                    translation table.
---   translationTable name          - Name of the translation table.
---   fctName name                   - Name of the function to create. Default to
---                                    'TT_Translate'.
---   refTranslationTableSchema name - Name of the schema containing the reference 
---                                    translation table.
---   refTranslationTable name       - Name of the reference translation table.
---
---   RETURNS text                - Name of the function created.
---
--- Create the base translation function to execute when tranlating. This
--- function exists in order to palliate the fact that PostgreSQL does not allow
--- creating functions able to return SETOF rows of arbitrary variable types.
--- The function created by this function "freeze" and declare the return type
--- of the actual translation funtion enabling the package to return rows of
--- arbitrary typed rows.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
-CREATE OR REPLACE FUNCTION TT_PrepareWithLogging(
-  translationTableSchema name,
-  translationTable name,
-  fctNameSuf text,
-  refTranslationTableSchema name,
-  refTranslationTable name
-)
-RETURNS text AS $f$
-  DECLARE
-    query text;
-    paramlist text[];
-    refParamlist text[];
-    i integer;
-    fctName text;
-  BEGIN
-    IF NOT TT_NotEmpty(translationTable) THEN
-      RETURN NULL;
-    END IF;
-
-    -- Validate the translation table
-    PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
-
-    -- Build the list of attribute names and types for the target table
-    query = 'SELECT array_agg(target_attribute || '' '' || target_attribute_type ORDER BY rule_id::int) ' ||
-            'FROM ' || TT_FullTableName(translationTableSchema, translationTable) || 
-           ' WHERE target_attribute != ''ROW_TRANSLATION_RULE'';';
-    EXECUTE query INTO STRICT paramlist;
-
-    IF TT_NotEmpty(refTranslationTableSchema) AND TT_NotEmpty(refTranslationTable) THEN
-      -- Build the list of attribute names and types for the reference table
-      query = 'SELECT array_agg(target_attribute || '' '' || target_attribute_type ORDER BY rule_id::int) ' ||
-              'FROM ' || TT_FullTableName(refTranslationTableSchema, refTranslationTable) || 
-             ' WHERE target_attribute != ''ROW_TRANSLATION_RULE'';';
-      EXECUTE query INTO STRICT refParamlist;
-
-      IF cardinality(paramlist) < cardinality(refParamlist) THEN
-        RAISE EXCEPTION 'TT_PrepareWithLogging() ERROR: Translation table ''%.%'' has less attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
-      ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
-        RAISE EXCEPTION 'TT_PrepareWithLogging() ERROR: Translation table ''%.%'' has more attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
-      ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
-        FOR i IN 1..cardinality(paramlist) LOOP
-          IF paramlist[i] != refParamlist[i] THEN
-            RAISE EXCEPTION 'TT_PrepareWithLogging() ERROR: Translation table ''%.%'' attribute ''%'' is different from reference table ''%.%'' attribute ''%''...', translationTableSchema, translationTable, paramlist[i], refTranslationTableSchema, refTranslationTable, refParamlist[i];
-          END IF;
-        END LOOP;
-      END IF;
-    END IF;
-    fctName = 'TT_Translate' || coalesce(fctNameSuf, '');
-    -- Drop any existing TT_Translate function with the same suffix
-    query = 'DROP FUNCTION IF EXISTS ' || fctName || '(name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);';
-    EXECUTE query;
-
-    query = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
-               sourceTableSchema name,
-               sourceTable name,
-               sourceTableIdColumn name DEFAULT NULL,
-               stopOnInvalidSource boolean DEFAULT FALSE,
-               stopOnTranslationError boolean DEFAULT FALSE,
-               dupLogEntriesHandling text DEFAULT ''100'',
-               logFrequency int DEFAULT 500,
-               incrementLog boolean DEFAULT TRUE,
-               resume boolean DEFAULT FALSE,
-               ignoreDescUpToDateWithRules boolean DEFAULT FALSE
-             )
-             RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
-             BEGIN
-               RETURN QUERY SELECT * FROM _TT_TranslateWithLogging(''' || fctName || ''',
-                                                        sourceTableSchema,
-                                                        sourceTable,
-                                                        sourceTableIdColumn, ' ||
-                                                        '''' || translationTableSchema || ''', ' ||
-                                                        '''' || translationTable || ''', 
-                                                        stopOnInvalidSource,
-                                                        stopOnTranslationError,
-                                                        dupLogEntriesHandling, 
-                                                        logFrequency,
-                                                        incrementLog,
-                                                        resume,
-                                                        ignoreDescUpToDateWithRules) AS t(' || array_to_string(paramlist, ', ') || ');
-               RETURN;
-             END;
-             $$ LANGUAGE plpgsql VOLATILE;';
-    EXECUTE query;
-    RETURN 'SELECT * FROM TT_Translate' || coalesce(fctNameSuf, '') || '(''schemaName'', ''tableName'', ''uniqueIDColumn'');';
-  END;
-$f$ LANGUAGE plpgsql VOLATILE;
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name, text, name);
-CREATE OR REPLACE FUNCTION TT_PrepareWithLogging(
-  translationTableSchema name,
-  translationTable name,
-  fctNameSuf text,
-  refTranslationTable name
-)
-RETURNS text AS $$
-  SELECT TT_PrepareWithLogging(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable);
-$$ LANGUAGE sql VOLATILE;
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name, text);
-CREATE OR REPLACE FUNCTION TT_PrepareWithLogging(
-  translationTableSchema name,
-  translationTable name,
-  fctNameSuf text
-)
-RETURNS text AS $$
-  SELECT TT_PrepareWithLogging(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name);
-$$ LANGUAGE sql VOLATILE;
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PrepareWithLogging(name, name);
-CREATE OR REPLACE FUNCTION TT_PrepareWithLogging(
-  translationTableSchema name,
-  translationTable name
-)
-RETURNS text AS $$
-  SELECT TT_PrepareWithLogging(translationTableSchema, translationTable, NULL, NULL::name, NULL::name);
-$$ LANGUAGE sql VOLATILE;
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_PrepareWithLogging(
-  translationTable name
-)
-RETURNS text AS $$
-  SELECT TT_PrepareWithLogging('public', translationTable, NULL::text, NULL::name, NULL::name);
-$$ LANGUAGE sql VOLATILE;
-------------------------------------------------------------------------------
-
 ------------------------------------------------------------------------------
 -- TT_ReportError
 ------------------------------------------------------------------------------
@@ -1597,259 +2191,6 @@ RETURNS SETOF RECORD AS $$
 $$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------
--- _TT_TranslateWithLogging
---
---   sourceTableSchema name      - Name of the schema containing the source table.
---   sourceTable name            - Name of the source table.
---   sourceRowIdColumn name      - Name of the source unique identifier column used 
---                                 for logging.
---   translationTableSchema name - Name of the schema containing the translation
---                                 table.
---   translationTable name       - Name of the translation table.
---   stopOnInvalidSource         - Boolean indicating if the engine should stop when
---                                 a source value is declared invalid
---   stopOnTranslationError      - Boolean indicating if the engine should stop when
---                                 the translation rule result into a NULL value
---   dupLogEntriesHandling       - Determine how logging handles invalid entries:
---                               - ALL_GROUPED: log all invalid entries grouped with 
---                               -              a count (slowest option).
---                               - ALL_OWN_ROW: log all invalid entries on their own 
---                               -              row (fastest option).
---                               - integer (as string): log a limited number of invalid.
---                               -                      entries grouped with a count.
---                               - Default is '100'.
---   logFrequency int            - Number of line to report progress in the log table.
---                                 Default to 500.
---   incrementLog                - Boolean indicating if log table names should be 
---                                 incremented or not. Default to TRUE.
---   resume                      - Boolean indicating if translation should resume 
---                                 from last execution. Default to FALSE.
---   ignoreDescUpToDateWithRules - Boolean indicating if translation engine should 
---                                 ignore rules that are not up to date with their 
---                                 descriptions and resume translation. Stop the 
---                                 translation engine otherwise. Default to FALSE.
---
---   RETURNS SETOF RECORDS
---
--- Translate a source table according to the rules defined in a tranlation table.
-------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_TranslateWithLogging(name, name, name, name, name, boolean, boolean, text, int, boolean, boolean, boolean);
-CREATE OR REPLACE FUNCTION _TT_TranslateWithLogging(
-  callingFctName name,
-  sourceTableSchema name,
-  sourceTable name,
-  sourceRowIdColumn name,
-  translationTableSchema name,
-  translationTable name,
-  stopOnInvalidSource boolean DEFAULT FALSE,
-  stopOnTranslationError boolean DEFAULT FALSE,
-  dupLogEntriesHandling text DEFAULT '100',
-  logFrequency int DEFAULT 500,
-  incrementLog boolean DEFAULT TRUE,
-  resume boolean DEFAULT FALSE,
-  ignoreDescUpToDateWithRules boolean DEFAULT FALSE
-)
-RETURNS SETOF RECORD AS $$
-  DECLARE
-    sourceRow RECORD;
-    translationRow RECORD;
-    translatedRow RECORD;
-    rule TT_RuleDef;
-    fctEvalQuery text;
-    finalQuery text;
-    finalVal text;
-    isValid boolean;
-    jsonbRow jsonb;
-    currentRowNb int = 1;
-    debug boolean = TT_Debug();
-    debug_l3 boolean = TT_Debug(3); -- tt.debug_l3
-    lastFirstRowID text;
-    logTableName text;
-    logMsg text;
-    sourceRowWhere text = '';
-    geomColName name;
-    startTime timestamptz;
-    attStartTime timestamptz;
-    rowStartTime timestamptz;
-    percentDone numeric;
-    remainingSeconds int;
-    expectedRowNb int;
-  BEGIN
-    startTime = clock_timestamp();
-    -- Validate the existence of the source table. TODO
-    -- Determine if we must resume from last execution or not. TODO
-    -- FOR each row of the source table
-    IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
-    IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging BEGIN';END IF;
-    IF debug_l3 THEN RAISE NOTICE 'DEBUG LEVEL 3 ACTIVATED...';END IF;
---RAISE NOTICE '_TT_TranslateWithLogging BEGIN';
-    -- initialize logging table
-    IF sourceRowIdColumn IS NULL THEN
-      RAISE NOTICE '_TT_TranslateWithLogging(): sourceRowIdColumn is NULL. No logging with be performed...';
-    ELSE
-      dupLogEntriesHandling = upper(dupLogEntriesHandling);
-      IF NOT dupLogEntriesHandling IN ('ALL_GROUPED', 'ALL_OWN_ROW') AND NOT TT_IsInt(dupLogEntriesHandling) THEN
-        RAISE EXCEPTION '_TT_TranslateWithLogging() ERROR: Invalid dupLogEntriesHandling parameter (%). Should be ''ALL_GROUPED'', ''ALL_OWN_ROW'' or a an integer...', dupLogEntriesHandling;
-      END IF;
-      logTableName = TT_LogInit(translationTableSchema, translationTable, sourceTable, incrementLog, dupLogEntriesHandling);
-      IF logTableName = 'FALSE' THEN
-        RAISE EXCEPTION '_TT_TranslateWithLogging() ERROR: Logging initialization failed...';
-      END IF;
-    END IF;
---RAISE NOTICE '_TT_TranslateWithLogging BEGIN2';
-
-    -- Get the ROW_TRANSLATION_RULE if it exists
-    SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, TRUE)
-    WHERE target_attribute = 'ROW_TRANSLATION_RULE' INTO translationRow;
-    IF NOT translationRow IS NULL THEN
-      sourceRowWhere = ' WHERE ';
---RAISE NOTICE '_TT_TranslateWithLogging 00 translationRow=%', translationRow;
-      FOREACH rule IN ARRAY translationRow.validation_rules LOOP
---RAISE NOTICE '_TT_TranslateWithLogging 11 rule.args=%', rule.args;
-        sourceRowWhere = sourceRowWhere || TT_RuleToSQL(rule.fctName, rule.args) || ' OR ';
---RAISE NOTICE '_TT_TranslateWithLogging 11 sourceRowWhere=%', sourceRowWhere;
-      END LOOP;
-      -- Remove the last 'OR'
-      sourceRowWhere = left(sourceRowWhere, char_length(sourceRowWhere) - 4);
-      RAISE NOTICE '_TT_TranslateWithLogging(): ROW_TRANSLATION_RULE is%', sourceRowWhere;
-    END IF;
-    
-    -- Get the name of the geometry column if there is one
-    geomColName = TT_GetGeomColName(sourceTableSchema, sourceTable);
-    
-    -- Estimate the number of rows to return
-    RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere;
-
-    EXECUTE 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
-    INTO expectedRowNb;
-    RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
-
-    -- Main loop
-    FOR sourceRow IN EXECUTE 'SELECT *' || coalesce(', ' || geomColName || ' sdt_geometry_col_name', '') || ' FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || sourceRowWhere
-    LOOP
-       IF debug_l3 THEN rowStartTime = clock_timestamp();END IF;
-       -- convert the row to a json object so we can pass it to TT_TextFctEval() (PostgreSQL does not allow passing RECORD to functions)
-       jsonbRow = to_jsonb(sourceRow);
-       -- Replace the geometry converted to jsonb by the WKB string
-       IF NOT geomColName IS NULL THEN
-         jsonbRow = jsonb_set(jsonbRow, '{wkb_geometry}', to_jsonb(sourceRow.sdt_geometry_col_name::text));
-       END IF;
-       
-       -- identify the first rowid for logging
-       IF NOT logTableName IS NULL AND currentRowNb % logFrequency = 1 THEN
-         lastFirstRowID = jsonbRow->>sourceRowIdColumn;
-       END IF;
-       IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 11 sourceRow=%', jsonbRow;END IF;
-
-       finalQuery = 'SELECT';
-       -- iterate over each translation table row. One row per target attribute
-       FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, FALSE)
-                             WHERE target_attribute != 'ROW_TRANSLATION_RULE' LOOP
-         IF debug_l3 THEN attStartTime = clock_timestamp();END IF;
-         IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 22 translationRow=%', translationRow;END IF;
-         -- iterate over each validation rule
-         isValid = TRUE;
-         FOREACH rule IN ARRAY translationRow.validation_rules LOOP
-           EXIT WHEN NOT isValid; -- exit the loop as soon as one rule is invalidated
-           IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 33 rule=%', rule;END IF;
-           -- evaluate the rule and catch errors
-           BEGIN
-             isValid = TT_TextFctEval(rule.fctName, rule.args, jsonbRow, NULL::boolean, FALSE);
-           EXCEPTION WHEN OTHERS THEN
-             PERFORM TT_ReportError('INVALID_PARAMETER', translationTableSchema, logTableName, dupLogEntriesHandling, 
-                                    rule.fctName, rule.args, jsonbRow, translationRow.target_attribute, NULL,
-                                    currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
-           END;
-           IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 44 isValid=%', isValid;END IF;
-
-           -- initialize the final value
-           finalVal = rule.errorCode;
-           
-           -- report an error on invalid values
-           IF NOT isValid AND (rule.stopOnInvalid OR stopOnInvalidSource OR NOT sourceRowIdColumn IS NULL) THEN
-             PERFORM TT_ReportError('INVALID_VALUE', translationTableSchema, logTableName, dupLogEntriesHandling,
-                                    rule.fctName, rule.args, jsonbRow, translationRow.target_attribute, finalVal,
-                                    currentRowNb, lastFirstRowID, rule.stopOnInvalid, stopOnInvalidSource);
-           END IF;
-         END LOOP; -- FOREACH rule
-
-         -- if all validation rule passed, execute the translation rule
-         IF isValid THEN
-           fctEvalQuery = 'SELECT TT_TextFctEval($1, $2, $3, NULL::' || translationRow.target_attribute_type || 
-                   ', FALSE);';
-           IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 77 fctEvalQuery=% with fctName=%, args=% and jsonbRow=%', fctEvalQuery, (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow;END IF;
-           BEGIN
-             EXECUTE fctEvalQuery
-             USING (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow
-             INTO STRICT finalVal;
-           EXCEPTION WHEN OTHERS THEN
-             PERFORM TT_ReportError('INVALID_TRANSLATION_PARAMETER', translationTableSchema, logTableName, dupLogEntriesHandling, 
-                                    (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, jsonbRow, translationRow.target_attribute, NULL,
-                                    currentRowNb, lastFirstRowID, (translationRow.translation_rule).stopOnInvalid, 
-                                    stopOnInvalidSource);
-           END;
-
-           IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging 88 finalVal=%', finalVal;END IF;
-
-           IF finalVal IS NULL THEN
-             -- determine the proper error code
-             IF (translationRow.translation_rule).errorCode IS NULL THEN -- if no error code provided, use the defaults
-               IF translationRow.target_attribute_type IN ('text', 'char', 'character', 'varchar', 'character varying') THEN
-                 finalVal = 'TRANSLATION_ERROR';
-               ELSE
-                 finalVal = -3333;
-               END IF;
-             ELSE -- if translation error code provided, return it
-               finalVal = (translationRow.translation_rule).errorCode;
-             END IF;
-             PERFORM TT_ReportError('TRANSLATION_ERROR', translationTableSchema, logTableName, dupLogEntriesHandling,
-                                    (translationRow.translation_rule).fctName, (translationRow.translation_rule).args, 
-                                    jsonbRow, translationRow.target_attribute, finalVal,
-                                    currentRowNb, lastFirstRowID, (translationRow.translation_rule).stopOnInvalid, 
-                                    stopOnInvalidSource);
-           END IF;
-         END IF;
-         -- Built the return query while computing values
-         finalQuery = finalQuery || ' ''' || finalVal || '''::'  || translationRow.target_attribute_type || ',';
-         IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging AA finalVal=%, translationRow.target_attribute_type=%, finalQuery=%', finalVal, translationRow.target_attribute_type, finalQuery;END IF;
-         IF debug_l3 THEN RAISE NOTICE '% computing time: % s', translationRow.target_attribute, EXTRACT(EPOCH FROM clock_timestamp() - attStartTime);END IF;
-       END LOOP; -- FOR TRANSLATION ROW
-
-       -- Execute the final query building the returned RECORD
-       finalQuery = left(finalQuery, char_length(finalQuery) - 1);
-       IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging BB finalQuery=%', finalQuery;END IF;
-       EXECUTE finalQuery INTO translatedRow;
-       RETURN NEXT translatedRow;
-
-       -- log progress
-       IF NOT logTableName IS NULL AND currentRowNb % logFrequency = 0 THEN
-         PERFORM TT_Log(translationTableSchema, logTableName, dupLogEntriesHandling, 
-                'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, logFrequency);
-       END IF;
-       IF currentRowNb % 100 = 0 THEN
-         percentDone = currentRowNb::numeric/expectedRowNb*100;
-         remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
-              TT_PrettyDuration(remainingSeconds);
-       END IF;
-       IF debug_l3 THEN RAISE NOTICE 'ROW computing time: % s', EXTRACT(EPOCH FROM clock_timestamp() - rowStartTime);END IF;
-       IF debug_l3 THEN RAISE NOTICE '---------------------------';END IF;
-       currentRowNb = currentRowNb + 1;
-       
-    END LOOP; -- FOR sourceRow
-    -- log progress
-    currentRowNb = currentRowNb - 1;
-    IF NOT logTableName IS NULL AND currentRowNb % logFrequency != 0 THEN
-      PERFORM TT_Log(translationTableSchema, logTableName, dupLogEntriesHandling,
-              'PROGRESS', lastFirstRowID, currentRowNb || ' rows processed...', currentRowNb, currentRowNb % logFrequency);
-    END IF;
-    RAISE NOTICE 'TOTAL TIME: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - startTime)::int);
-
-    IF debug THEN RAISE NOTICE '_TT_TranslateWithLogging END';END IF;
-    RETURN;
-  END;
-$$ LANGUAGE plpgsql VOLATILE;
 -------------------------------------------------------------------------------
 -- TT_Prepare
 --
@@ -1871,8 +2212,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- of the actual translation funtion enabling the package to return rows of
 -- arbitrary typed rows.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
-CREATE OR REPLACE FUNCTION TT_Prepare(
+--DROP FUNCTION IF EXISTS TT_Prepare_old(name, name, text, name, name);
+CREATE OR REPLACE FUNCTION TT_Prepare_old(
   translationTableSchema name,
   translationTable name,
   fctNameSuf text,
@@ -1887,7 +2228,7 @@ RETURNS text AS $f$
 		returnQuery text;
     errorCode text;
     translationRow RECORD;
-    rule TT_RuleDef;
+    rule TT_RuleDef_old;
     paramlist text[];
     refParamlist text[];
     i integer;
@@ -1898,7 +2239,7 @@ RETURNS text AS $f$
     END IF;
 
     -- Validate the translation table
-    PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
+    PERFORM TT_ValidateTTable_old(translationTableSchema, translationTable);
 
     -- Build the list of attribute names and types for the target table
     fctQuery = 'SELECT array_agg(target_attribute || '' '' || target_attribute_type ORDER BY rule_id::int) ' ||
@@ -1934,7 +2275,7 @@ RETURNS text AS $f$
     -- Build the translation query
     translationQuery = 'SELECT ' || CHR(10);
 		rowTranslationRuleClause = 'WHERE ';
-		FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, FALSE)
+		FOR translationRow IN SELECT * FROM TT_ValidateTTable_old(translationTableSchema, translationTable, FALSE)
     LOOP
       IF translationRow.target_attribute != 'ROW_TRANSLATION_RULE' THEN
         translationQuery = translationQuery || '  CASE ' || CHR(10);
@@ -1979,9 +2320,10 @@ RETURNS text AS $f$
 		IF rowTranslationRuleClause = 'WHERE ' THEN
 		   rowTranslationRuleClause = '';
 		ELSE
-      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 4);
+      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5);
     END IF;
 
+RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM sourceTableSchema.sourceTable' || CHR(10) || rowTranslationRuleClause || ';';
 
     fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
                   sourceTableSchema name,
@@ -2004,6 +2346,234 @@ RETURNS text AS $f$
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
 
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare_old(name, name, text, name);
+CREATE OR REPLACE FUNCTION TT_Prepare_old(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  refTranslationTable name
+)
+RETURNS text AS $$
+  SELECT TT_Prepare_old(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare_old(name, name, text);
+CREATE OR REPLACE FUNCTION TT_Prepare_old(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text
+)
+RETURNS text AS $$
+  SELECT TT_Prepare_old(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare_old(name, name);
+CREATE OR REPLACE FUNCTION TT_Prepare_old(
+  translationTableSchema name,
+  translationTable name
+)
+RETURNS text AS $$
+  SELECT TT_Prepare_old(translationTableSchema, translationTable, NULL, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_Prepare_old(
+  translationTable name
+)
+RETURNS text AS $$
+  SELECT TT_Prepare_old('public', translationTable, NULL::text, NULL::name, NULL::name);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  refTranslationTableSchema name,
+  refTranslationTable name
+)
+RETURNS text AS $f$
+  DECLARE
+    fctQuery text;
+    translationQuery text;
+		rowTranslationRuleClause text;
+    leftJoinClause text = '';
+		returnQuery text;
+    errorCode text;
+    translationRow RECORD;
+    rule TT_RuleDef;
+    paramlist text[];
+    refParamlist text[];
+    i integer;
+    fctName text;
+    leftJoinArr text[][];
+    currentJoinArr text[];
+    fullRule text;
+  BEGIN
+    IF NOT TT_NotEmpty(translationTable) THEN
+      RETURN NULL;
+    END IF;
+
+    -- Validate the translation table
+    PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
+
+    -- Build the list of attribute names and types for the target table
+    fctQuery = 'SELECT array_agg(target_attribute || '' '' || target_attribute_type ORDER BY rule_id::int) ' ||
+            'FROM ' || TT_FullTableName(translationTableSchema, translationTable) || 
+           ' WHERE target_attribute != ''ROW_TRANSLATION_RULE'';';
+    EXECUTE fctQuery INTO STRICT paramlist;
+
+    -- Compare the list of target attribute with the reference table if it is provided
+    IF TT_NotEmpty(refTranslationTableSchema) AND TT_NotEmpty(refTranslationTable) THEN
+      -- Build the list of attribute names and types for the reference table
+      fctQuery = 'SELECT array_agg(target_attribute || '' '' || target_attribute_type ORDER BY rule_id::int) ' ||
+              'FROM ' || TT_FullTableName(refTranslationTableSchema, refTranslationTable) || 
+             ' WHERE target_attribute != ''ROW_TRANSLATION_RULE'';';
+      EXECUTE fctQuery INTO STRICT refParamlist;
+
+      -- Compare the lists
+      IF cardinality(paramlist) < cardinality(refParamlist) THEN
+        RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' has less attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
+      ELSIF cardinality(paramlist) > cardinality(refParamlist) THEN
+        RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' has more attributes than reference table ''%.%''...', translationTableSchema, translationTable, refTranslationTableSchema, refTranslationTable;
+      ELSIF TT_LowerArr(paramlist) != TT_LowerArr(refParamlist) THEN
+        FOR i IN 1..cardinality(paramlist) LOOP
+          IF paramlist[i] != refParamlist[i] THEN
+            RAISE EXCEPTION 'TT_Prepare() ERROR: Translation table ''%.%'' attribute ''%'' is different from reference table ''%.%'' attribute ''%''...', translationTableSchema, translationTable, paramlist[i], refTranslationTableSchema, refTranslationTable, refParamlist[i];
+          END IF;
+        END LOOP;
+      END IF;
+    END IF;
+
+    -- Drop any existing TT_Translate function with the same suffix
+    fctName = 'TT_Translate' || coalesce(fctNameSuf, '');
+    fctQuery = 'DROP FUNCTION IF EXISTS ' || fctName || '(name, name);';
+    EXECUTE fctQuery;
+    
+    -- Build the translation query
+    translationQuery = 'SELECT ' || CHR(10);
+		rowTranslationRuleClause = 'WHERE ';
+		FOR translationRow IN SELECT * FROM TT_ValidateTTable(translationTableSchema, translationTable, FALSE)
+    LOOP
+      IF translationRow.target_attribute != 'ROW_TRANSLATION_RULE' THEN
+        translationQuery = translationQuery || '  CASE ' || CHR(10);
+      END IF;
+		  -- Build the validation part and the ROW_TRANSLATION_RULE part at the same time
+      FOREACH rule IN ARRAY translationRow.validation_rules 
+			LOOP
+        fullRule = rule.fctName || '(' || rule.args || ')';
+			  IF translationRow.target_attribute = 'ROW_TRANSLATION_RULE' THEN
+          --rowTranslationRuleClause = rowTranslationRuleClause || TT_RuleToSQL(rule.fctName, rule.args) || ' OR ' || CHR(10);
+          rowTranslationRuleClause = rowTranslationRuleClause || TT_PrepareFctCalls(fullRule) || ' OR ' || CHR(10);
+				ELSE
+          -- Determine validation error code
+          errorCode = coalesce(rule.errorCode, coalesce(TT_DefaultProjectErrorCode(rule.fctName, translationRow.target_attribute_type), 'NULL'));
+          -- Single quote error code for text types
+          IF translationRow.target_attribute_type IN ('text', 'char', 'character', 'varchar', 'character varying') OR 
+             (translationRow.target_attribute_type = 'geometry' AND errorCode != 'NULL') THEN
+            errorCode = '''' || errorCode || '''';
+          END IF;
+
+          -- If the rule begins with matchTable parse it
+          IF lower(fullRule) ~ '^matchtable\s*\(' THEN
+            leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, TT_ParseJoinFctCall(fullRule));
+/*
+RAISE NOTICE '------------- matchtable --------------- ';
+RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
+RAISE NOTICE 'TT_ParseJoinFctCall(fullRule)=%', TT_ParseJoinFctCall(fullRule);
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[1]=%', (TT_LastJoinAdded(leftJoinArr))[1];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[2]=%', (TT_LastJoinAdded(leftJoinArr))[2];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[3]=%', (TT_LastJoinAdded(leftJoinArr))[3];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[4]=%', (TT_LastJoinAdded(leftJoinArr))[4];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[5]=%', (TT_LastJoinAdded(leftJoinArr))[5];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[6]=%', (TT_LastJoinAdded(leftJoinArr))[6];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[7]=%', (TT_LastJoinAdded(leftJoinArr))[7];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[8]=%', (TT_LastJoinAdded(leftJoinArr))[8];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinArr))[9];
+*/
+            translationQuery = translationQuery || '    WHEN ' || CASE WHEN (TT_LastJoinAdded(leftJoinArr))[7]::boolean THEN 'NOT (' || (TT_LastJoinAdded(leftJoinArr))[1] || ') IS NULL AND ' ELSE '' END || 'join_' || (TT_LastJoinAdded(leftJoinArr))[8] || '.' || (TT_LastJoinAdded(leftJoinArr))[4] || ' IS NULL THEN ' || errorCode || CHR(10);
+          ELSE
+            translationQuery = translationQuery || '    WHEN NOT ' || TT_PrepareFctCalls(fullRule) || ' THEN ' || errorCode || CHR(10);
+	        END IF;
+	      END IF;
+		  END LOOP; -- FOREACH rule
+
+		  -- Build the translation part
+      IF translationRow.target_attribute != 'ROW_TRANSLATION_RULE' THEN
+        -- Determine translation error code
+        errorCode = CASE WHEN translationRow.target_attribute_type IN ('boolean', 'geometry') 
+                           THEN coalesce((translationRow.translation_rule).errorCode, 'NULL')
+                         WHEN translationRow.target_attribute_type IN ('text', 'char', 'character', 'varchar', 'character varying') 
+                            THEN coalesce('''' || (translationRow.translation_rule).errorCode || '''', '''TRANSLATION_ERROR''')
+                         ELSE  coalesce((translationRow.translation_rule).errorCode, '-3333')
+										END;
+
+        fullRule = (translationRow.translation_rule).fctName || '(' || (translationRow.translation_rule).args || ')';
+        -- If the rule begins with matchTable parse it
+        translationQuery = translationQuery || '    ELSE coalesce((';
+        IF lower(fullRule) ~ '^lookup(?:text|int|double)\s*\(' THEN
+          leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, TT_ParseJoinFctCall(fullRule, TRUE));
+/*
+RAISE NOTICE '------------- lookup --------------- ';
+RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
+RAISE NOTICE 'TT_ParseJoinFctCall(fullRule, TRUE)=%', TT_ParseJoinFctCall(fullRule, TRUE);
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[1]=%', (TT_LastJoinAdded(leftJoinArr))[1];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[2]=%', (TT_LastJoinAdded(leftJoinArr))[2];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[3]=%', (TT_LastJoinAdded(leftJoinArr))[3];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[4]=%', (TT_LastJoinAdded(leftJoinArr))[4];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[5]=%', (TT_LastJoinAdded(leftJoinArr))[5];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[6]=%', (TT_LastJoinAdded(leftJoinArr))[6];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[7]=%', (TT_LastJoinAdded(leftJoinArr))[7];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[8]=%', (TT_LastJoinAdded(leftJoinArr))[8];
+RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinArr))[9];
+*/
+          translationQuery = translationQuery || 'join_'  || (TT_LastJoinAdded(leftJoinArr))[8] || '.' || (TT_LastJoinAdded(leftJoinArr))[5];
+        ELSE
+          translationQuery = translationQuery || TT_PrepareFctCalls(fullRule);
+        END IF;
+        translationQuery = translationQuery || ')::' || translationRow.target_attribute_type || ', (' || errorCode || ')::' || translationRow.target_attribute_type || ') ' || CHR(10) || 
+												     '  END::' || lower(translationRow.target_attribute_type) || ' ' || lower(translationRow.target_attribute) || ',' || CHR(10);
+      END IF;
+    END LOOP; -- FOR TRANSLATION ROW
+		-- Remove the last comma from translationQuery and complete
+		translationQuery = left(translationQuery, char_length(translationQuery) - 2);
+    
+
+		-- Remove the last 'OR' from rowTranslationRuleClause
+		IF rowTranslationRuleClause = 'WHERE ' THEN
+		   rowTranslationRuleClause = '';
+		ELSE
+      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5);
+    END IF;
+
+    -- Generate LEFT JOINs clause
+    i = 1;
+    IF NOT leftJoinArr IS NULL THEN
+      FOREACH currentJoinArr SLICE 1 IN ARRAY leftJoinArr LOOP
+        leftJoinClause = leftJoinClause || CHR(10) ||  'LEFT JOIN ' || TT_FullTableName(currentJoinArr[2], currentJoinArr[3]) || ' join_' || i || 
+                         ' ON (TT_NotEmpty(' || currentJoinArr[1] || ') AND ' || CASE WHEN currentJoinArr[6]::boolean THEN 'lower' ELSE '' END || '(' || currentJoinArr[1] || ') = ' || CASE WHEN currentJoinArr[6]::boolean THEN 'lower' ELSE '' END || '(' || 'join_' || i || '.' || currentJoinArr[4] || '))';
+        i = i + 1;
+      END LOOP;
+    END IF;
+
+    RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM sourceTableSchema.sourceTable maintable ' || leftJoinClause || CHR(10) || rowTranslationRuleClause || ';';
+    translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || TT_EscapeSingleQuotes(leftJoinClause) || CHR(10) || TT_EscapeSingleQuotes(rowTranslationRuleClause) || ';';
+
+    fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
+                  sourceTableSchema name,
+                  sourceTable name)
+                RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
+                  SELECT * FROM TT_ShowProgress('''  || fctName || ''',''' ||
+                                                translationQuery || ''', ''' ||
+                                                TT_EscapeSingleQuotes(rowTranslationRuleClause) || ''', 
+                                                sourceTableSchema,
+                                                sourceTable) AS t(' || array_to_string(paramlist, ', ') || ');
+              $$ LANGUAGE sql VOLATILE;';
+--RAISE NOTICE '%', fctQuery;
+    EXECUTE fctQuery;
+    RETURN 'SELECT * FROM TT_Translate' || coalesce(fctNameSuf, '') || '(''schemaName'', ''tableName'');';
+  END;
+$f$ LANGUAGE plpgsql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
@@ -2043,6 +2613,68 @@ RETURNS text AS $$
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------
+-- TT_ShowProgress
+--
+--   sourceTableSchema name      - Name of the schema containing the source table.
+--   sourceTable name            - Name of the source table.
+--   translationTableSchema name - Name of the schema containing the translation
+--                                 table.
+--   translationTable name       - Name of the translation table.
+--   RETURNS SETOF RECORDS
+--
+-- Translate a source table according to the rules defined in a tranlation table.
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_ShowProgress(text, text, name, name, name, name);
+CREATE OR REPLACE FUNCTION TT_ShowProgress(
+  callingFctName name,
+  translationQuery text,
+  rowTranslationRuleClause text,
+  sourceTableSchema name,
+  sourceTable name
+)
+RETURNS SETOF RECORD AS $$
+  DECLARE
+    translatedRow RECORD;
+    currentRowNb int = 1;
+    debug boolean = TT_Debug();
+    startTime timestamptz;
+    percentDone numeric;
+    remainingSeconds int;
+    expectedRowNb int;
+    countQuery text;
+  BEGIN
+    IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
+    IF debug THEN RAISE NOTICE 'TT_ShowProgress BEGIN';END IF;
+--RAISE NOTICE 'TT_ShowProgress BEGIN';
+RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
+
+    -- Estimate the number of rows to return
+    countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
+
+    RAISE NOTICE 'Computing the number of rows to translate... (%)', countQuery;
+    EXECUTE countQuery INTO expectedRowNb;
+    RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
+
+    startTime = clock_timestamp();
+    -- Main loop
+		--FOR translatedRow IN EXECUTE translationQuery || CHR(10) || 'FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause
+		FOR translatedRow IN EXECUTE translationQuery
+    LOOP
+      IF currentRowNb % 100 = 0 THEN
+        percentDone = currentRowNb::numeric/expectedRowNb*100;
+        remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
+        RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
+             TT_PrettyDuration(remainingSeconds);
+      END IF;
+      currentRowNb = currentRowNb + 1;
+			RETURN NEXT translatedRow;
+    END LOOP;
+    RAISE NOTICE 'TOTAL TIME: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - startTime)::int);
+    RETURN;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+                                    
 ------------------------------------------------------------------------------
 -- _TT_Translate
 --

@@ -988,7 +988,7 @@ RETURNS boolean AS $$
   SELECT CASE WHEN argStr IS NULL OR 
                    upper(argStr) = 'TRUE' OR 
                    upper(argStr) = 'FALSE' THEN FALSE 
-              ELSE argStr ~ '^([[:alpha:]_][[:alnum:]_]*|("[^"]*")+)$' 
+              ELSE argStr ~ ('^' || TT_NameRegex() || '$')
          END
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
@@ -1586,27 +1586,10 @@ CREATE OR REPLACE FUNCTION TT_MatchTable(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  ignoreCase text
+  lookupColumnName text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, ignoreCase, FALSE::text)
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MatchTable(
-  val text,
-  lookupSchemaName text,
-  lookupTableName text
-)
-RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MatchTable(
-  val text,
-  lookupTableName text
-)
-RETURNS boolean AS $$
-  SELECT TT_MatchTable(val, 'public', lookupTableName, 'source_val'::text, FALSE::text, FALSE::text)
+  SELECT TT_MatchTable(val, lookupSchemaName, lookupTableName, lookupColumnName, FALSE::text, FALSE::text)
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
@@ -4335,7 +4318,7 @@ RETURNS boolean AS $$
     _alphaNumeric text;
   BEGIN
     _alphaNumeric = replace(translate(srcVal, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), ' ', '');
-    RETURN TT_MatchTable(_alphaNumeric, lookupSchema, lookupTable);    
+    RETURN TT_MatchTable(_alphaNumeric, lookupSchema, lookupTable, 'source_val');    
   END;
 $$ LANGUAGE plpgsql STABLE;
 -------------------------------------------------------------------------------
@@ -4635,34 +4618,16 @@ RETURNS text AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, ignoreCase, 'TT_LookupText')
 $$ LANGUAGE sql STABLE;
 
-CREATE OR REPLACE FUNCTION TT_LookupText(
-  val text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text,
-  ignoreCase text
-)
-RETURNS text AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupText')
-$$ LANGUAGE sql STABLE;
 
 CREATE OR REPLACE FUNCTION TT_LookupText(
   val text,
   lookupSchemaName text,
   lookupTableName text,
+  lookupCol text,
   retrieveCol text
 )
 RETURNS text AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_LookupText(
-  val text,
-  lookupTableName text,
-  retrieveCol text
-)
-RETURNS text AS $$
-  SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupText')
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, FALSE::text, 'TT_LookupText')
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
@@ -4699,30 +4664,11 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  retrieveCol text,
-  ignoreCase text
-)
-RETURNS double precision AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_LookupDouble(
-  val text,
-  lookupSchemaName text,
-  lookupTableName text,
+  lookupCol text,
   retrieveCol text
 )
 RETURNS double precision AS $$
-  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_LookupDouble(
-  val text,
-  lookupTableName text,
-  retrieveCol text
-)
-RETURNS double precision AS $$
-  SELECT TT_LookupText(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
+  SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
@@ -4767,30 +4713,11 @@ CREATE OR REPLACE FUNCTION TT_LookupInt(
   val text,
   lookupSchemaName text,
   lookupTableName text,
-  retrieveCol text,
-  ignoreCase text
-)
-RETURNS int AS $$
-    SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, ignoreCase);
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_LookupInt(
-  val text,
-  lookupSchemaName text,
-  lookupTableName text,
+  lookupCol text,
   retrieveCol text
 )
 RETURNS int AS $$
-  SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, FALSE::text);
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_LookupInt(
-  val text,
-  lookupTableName text,
-  retrieveCol text
-)
-RETURNS int AS $$
-  SELECT TT_LookupInt(val, 'public', lookupTableName, 'source_val', retrieveCol, FALSE::text);
+    SELECT TT_LookupInt(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, FALSE::text);
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
