@@ -766,7 +766,7 @@ CREATE OR REPLACE FUNCTION TT_IsSurroundedByChars(
   inStr text,
   chars text
 )
-RETURNS text AS $$
+RETURNS boolean AS $$
   SELECT TT_IsSurroundedByChars(inStr, ARRAY[chars, chars]);
 $$ LANGUAGE sql IMMUTABLE;
 
