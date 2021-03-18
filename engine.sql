@@ -21,7 +21,7 @@ CREATE TYPE TT_RuleDef_old AS (
   stopOnInvalid boolean
 );
 
---DROP TYPE TT_RuleDef2 CASCADE;
+--DROP TYPE TT_RuleDef CASCADE;
 CREATE TYPE TT_RuleDef AS (
   fctName text,
   args text,
@@ -145,6 +145,7 @@ WITH tests AS (
 SELECT test, eval(test) = expect::text passed
 FROM tests
 */
+
 -------------------------------------------------------------------------------
 -- TT_OneLevelFctCallRegex
 -------------------------------------------------------------------------------
@@ -152,17 +153,25 @@ FROM tests
 CREATE OR REPLACE FUNCTION TT_OneLevelFctCallRegex()
 RETURNS text AS $$
   --SELECT TT_NameRegex() || '\((?:' || TT_NumberRegex() || '\s*,?\s*|' || TT_NameRegex() || '\s*,?\s*|' || TT_AnythingBetweenSingleQuotesRegex() || '\s*,?\s*)*\)'
-  SELECT TT_NameRegex() || '\((?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || ')?(?:\s*,\s*(?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '))*\)'
+  --SELECT TT_NameRegex() || '\((?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' ||    TT_AnythingBetweenSingleQuotesRegex() || ')?(?:\s*,\s*(?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '))*\)'
+    SELECT TT_NameRegex() || '\(\{?(?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || ')?\}?(?:\s*,\s*\{?(?:' || TT_NumberRegex() || '|' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || ')+\}?)*\)'
 $$ LANGUAGE sql STRICT;
 
 /*
-SELECT 'aa()' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(bbb)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(11)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(11b)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(''bbb'')' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(''bb'', cc)' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
-SELECT 'aa(bb(''cc'', dd))' ~ ('^' || TT_OneLevelFctCallRegex() || '$');
+SELECT unnest(regexp_matches('aa()', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g'));
+SELECT unnest(regexp_matches('aa(bbb)', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('aa(11)', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('aa(11b)', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- false
+SELECT unnest(regexp_matches('aa(''bbb'')', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('aa(''bb'', cc)', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('aa(bb(''cc'', dd))', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- false
+SELECT unnest(regexp_matches('aa({''bbb''})', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('aa({''bbb''}, {11, 44})', ('^' || TT_OneLevelFctCallRegex() || '$'), 'g')); -- true
+SELECT unnest(regexp_matches('matchTable(minIndexCopyText({mod_1_year, mod_2_year},{mod_1,mod_2}),''translation'',''qc_disturbance_lookup'',''source_val'')', TT_OneLevelFctCallRegex(), 'g')); -- true
+SELECT unnest(regexp_matches('minIndexCopyText({mod_1_year, mod_2_year},{mod_1,mod_2})', TT_OneLevelFctCallRegex(), 'g')); -- true
+SELECT unnest(regexp_matches('minIndexCopyText({mod_1,mod_2}, {mod_1,mod_2})', TT_OneLevelFctCallRegex(), 'g')); -- true
+SELECT unnest(regexp_matches('minIndexCopyText(aa, {mod_1,mod_2}, bb)', TT_OneLevelFctCallRegex(), 'g')); -- true
+SELECT unnest(regexp_matches('minIndexCopyText({mod_1,mod_2}, {mod_1,mod_2}, ''9999'', ''9999'')', TT_OneLevelFctCallRegex(), 'g')); -- true
 */
 
 -------------------------------------------------------------------------------
@@ -939,6 +948,7 @@ RETURNS SETOF text AS $$
   RETURN;
 END
 $$ LANGUAGE plpgsql VOLATILE;
+-- SELECT TT_DropAllTTFct();
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -1598,10 +1608,9 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- Fifth is ignoreCase default to FALSE
 -- Sixth is acceptNull as acceptable value (return TRUE)
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_ParseJoinFctCall(text, boolean);
+-- DROP FUNCTION IF EXISTS TT_ParseJoinFctCall(text);
 CREATE OR REPLACE FUNCTION TT_ParseJoinFctCall(
-  fctCall text,
-  lookup boolean DEFAULT FALSE
+  fctCall text
 )
 RETURNS text[] AS $$
 -- RETURN TABLE(variable text,
@@ -1613,17 +1622,27 @@ RETURNS text[] AS $$
   DECLARE
     regex text;
     result text[];
+    containsMatchTable boolean = FALSE;
+    containsLookup boolean = FALSE;
   BEGIN
-    regex = CASE WHEN lookup THEN '^lookup(?:text|int|double)\s*\(' ELSE '^matchtable\s*\(' END || -- fct name
-                          '(' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '|' || TT_OneLevelFctCallRegex() || ')' || -- any attribute name, quoted string or fct call
-                          --'(' || TT_NameRegex() || ')' || -- any attribute name, quoted string or fct call
-                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
-                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
-                          '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- column name to match
-                          CASE WHEN lookup THEN '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' ELSE '' END ||
-                          '(?:\s*\,\s*\''?(FALSE|TRUE)\''?)?' || -- ignoreCase
-                          '(?:\s*\,\s*\''?(TRUE)\''?)?' || -- acceptNull
-                          '\)$';
+--RAISE NOTICE 'fctCall=%', fctCall;
+    containsMatchTable = (fctCall ~* 'matchtable\s*\(');
+    containsLookup = (fctCall ~* 'lookup(?:text|int|double)\s*\(');
+
+    regex = '(.*)' ||
+            --CASE WHEN lookup THEN 'lookup(?:text|int|double)\s*\(' 
+            --    ELSE 'matchtable\s*\(' 
+            --END || -- fct name
+            '(lookup|matchtable)(?:text|int|double)?\s*\(' ||
+            '(' || TT_NameRegex() || '|' || TT_AnythingBetweenSingleQuotesRegex() || '|' || TT_OneLevelFctCallRegex() || ')' || -- any attribute name, quoted string or fct call
+            --'(' || TT_NameRegex() || ')' || -- any attribute name, quoted string or fct call
+            '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
+            '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- schema name and table name
+            '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' || -- column name to match
+            CASE WHEN containsLookup THEN '(?:\s*\,\s*\''(' || TT_NameRegex() || ')\'')' ELSE '' END ||
+            '(?:\s*\,\s*\''?(FALSE|TRUE)\''?)?' || -- ignoreCase
+            '(?:\s*\,\s*\''?(TRUE)\''?)?' || -- acceptNull
+            '\)(.*)';
 --RAISE NOTICE 'regex=%', regex;
     result = regexp_match(fctCall, regex, 'i');
 
@@ -1634,39 +1653,40 @@ RETURNS text[] AS $$
 --   ignore_case = coalesce(upper(result[5]), 'FALSE')::boolean;
 --   accept_null = coalesce(upper(result[6]), 'FALSE')::boolean;
 --   IF variable IS NULL OR schema_name IS NULL OR table_name IS NULL OR column_name IS NULL THEN
-/*
-RAISE NOTICE 'result[1]=%', result[1];
-RAISE NOTICE 'result[2]=%', result[2];
-RAISE NOTICE 'result[3]=%', result[3];
-RAISE NOTICE 'result[4]=%', result[4];
-RAISE NOTICE 'result[5]=%', result[5];
-RAISE NOTICE 'result[6]=%', result[6];
-*/
-    IF result[1] IS NULL OR result[2] IS NULL OR result[3] IS NULL OR result[4] IS NULL OR (lookup AND result[5] IS NULL) THEN
-      RAISE EXCEPTION 'TT_ParseJoinFctCall() ERROR: Could not parse matchTable() or lookup() rule (%)...', fctCall;
+
+    IF result[2] IS NULL OR result[3] IS NULL OR result[4] IS NULL OR result[5] IS NULL OR result[6] IS NULL OR (result[2] = 'lookup' AND result[7] IS NULL) THEN
+      result[1] = fctCall;
+      --RAISE NOTICE 'TT_ParseJoinFctCall() ERROR: Could not parse matchTable() or lookup() rule (%)...', fctCall;
     END IF;
-    result[1] = TT_PrepareFctCalls(result[1]);
+    result[1] = TT_PrepareFctCalls(result[1]); -- preceding string
+    result[2] = lower(result[2]);              -- matchtable or lookup
+    result[3] = TT_PrepareFctCalls(result[3]); -- value to be matched
     -- 
-    IF lookup THEN
-      result[6] = coalesce(upper(result[6]), 'FALSE')::boolean;
-      result[7] = coalesce(upper(result[7]), 'FALSE')::boolean;
+    IF result[2] = 'lookup' THEN
+      result[8] = coalesce(upper(result[8]), 'FALSE')::boolean; -- ignoreCase
+      result[9] = coalesce(upper(result[9]), 'FALSE')::boolean; -- acceptNULL
     ELSE
-      result[7] = coalesce(upper(result[6]), 'FALSE')::boolean;
-      result[6] = coalesce(upper(result[5]), 'FALSE')::boolean;
-      result[5] = NULL;
+      result[10] = result[9]; -- remaining string
+      result[9] = coalesce(upper(result[8]), 'FALSE')::boolean; -- ignoreCase
+      result[8] = coalesce(upper(result[7]), 'FALSE')::boolean; -- acceptNULL
+      result[7] = NULL; -- retreiveCol
     END IF;
+    result[10] = TT_PrepareFctCalls(result[10]); -- remaining string
 /*
-RAISE NOTICE 'result[1]=%', result[1];
-RAISE NOTICE 'result[2]=%', result[2];
-RAISE NOTICE 'result[3]=%', result[3];
-RAISE NOTICE 'result[4]=%', result[4];
-RAISE NOTICE 'result[5]=%', result[5];
-RAISE NOTICE 'result[6]=%', result[6];
-RAISE NOTICE 'result[7]=%', result[7];
+RAISE NOTICE 'result[1]=%', result[1]; -- string preceding matchTable or lookup
+RAISE NOTICE 'result[2]=%', result[2]; -- matchTable or lookup
+RAISE NOTICE 'result[3]=%', result[3]; -- 1st argument (value to be matched)
+RAISE NOTICE 'result[4]=%', result[4]; -- 2nd argument (schemaName)
+RAISE NOTICE 'result[5]=%', result[5]; -- 3rd argument (tableName)
+RAISE NOTICE 'result[6]=%', result[6]; -- 4th argument (lookupCol)
+RAISE NOTICE 'result[7]=%', result[7]; -- 3rd argument (retreiveCol) (only for lookup calls, NULL otherwise)
+RAISE NOTICE 'result[8]=%', result[8]; -- ignoreCase
+RAISE NOTICE 'result[9]=%', result[9]; -- accept NULL (only for matchTable calls, NULL otherwise)
+RAISE NOTICE 'result[10]=%', result[10]; -- remaining string
 */
     RETURN result;
   END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 /*
 SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''),  ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''TrUE'', ''true'')'));
 SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', TrUE, true)'));
@@ -1679,11 +1699,22 @@ SELECT unnest(TT_ParseJoinFctCall('matchTable(''SP'', ''translation'', ''species
 SELECT unnest(TT_ParseJoinFctCall('matchTable(''S''''P'', ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
 SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'')'));
 SELECT unnest(TT_ParseJoinFctCall('matchTable(species_1, ''translation'', ''species_code_mapping'', ''column_name'')'));
-SELECT unnest(TT_ParseJoinFctCall('lookuptext(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'', ''TrUE'')', TRUE));
-SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')', TRUE));
-SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')', TRUE));
-SELECT unnest(TT_ParseJoinFctCall('lookupText(subtype, ''translation'', ''mb_fri01_productivity_lookup'', ''source_val'', ''productivity_type'')', TRUE));
+SELECT unnest(TT_ParseJoinFctCall('lookuptext(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'', ''TrUE'')'));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(qc_prg5_species_translation(species_1, 1), ''translation'', ''species_code_mapping'', ''qc_species_codes'', ''casfri_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(subtype, ''translation'', ''mb_fri01_productivity_lookup'', ''source_val'', ''productivity_type'')'));
 
+SELECT unnest(TT_ParseJoinFctCall('fct(matchTable(species_1, ''schema'', ''table'', ''lookupCol'', false, true), arg2, arg3, ''val1'', ''val2'')'));
+SELECT unnest(TT_ParseJoinFctCall('fct(matchTable(''SP'', ''schema'', ''table'', ''lookupCol'', false, true), arg2, arg3, ''val1'', ''val2'')'));
+SELECT unnest(TT_ParseJoinFctCall('fct(matchTable(''SP'', ''schema'', ''table'', ''lookupCol''), arg2, arg3, ''val1'', ''val2'')'));
+SELECT unnest(TT_ParseJoinFctCall('fct(lookUpText(''SP'', ''schema'', ''table'', ''lookupCol'', ''retreiveCol'', true), arg2, arg3, ''val1'', ''val2'')'));
+
+SELECT unnest(TT_ParseJoinFctCall('matchTable(qc_prg5_species_translation(species_1, ''1''), ''translation'', ''species_code_mapping'', ''qc_species_codes'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(minIndexCopyText({mod_1_year, mod_2_year},{mod_1,mod_2}),''translation'',''qc_disturbance_lookup'',''source_val'')'));
+SELECT unnest(TT_ParseJoinFctCall('matchTable(minIndexCopyText(mod_1_year, mod_2_year,mod_1,mod_2),''translation'',''qc_disturbance_lookup'',''source_val'')'));
+SELECT unnest(TT_ParseJoinFctCall('lookupText(minIndexCopyText({mod_1_year, mod_2_year},{mod_1,mod_2}, 9999, 9999),''translation'',''qc_disturbance_lookup'',''source_val'',''dist_type'')'));
+
+SELECT unnest(TT_ParseJoinFctCall('alphaNumericMatchTable(species, ''translation'', ''on_species_valid_alpha_numeric_codes'')'));
 */
 
 -------------------------------------------------------------------------------
@@ -1695,10 +1726,11 @@ SELECT unnest(TT_ParseJoinFctCall('lookupText(subtype, ''translation'', ''mb_fri
 --  RETURNS text[]
 --
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_AppendParsedJoinToArr(text[][], text[]);
+-- DROP FUNCTION IF EXISTS TT_AppendParsedJoinToArr(text[][], text[], boolean);
 CREATE OR REPLACE FUNCTION TT_AppendParsedJoinToArr(
   pJoinArr text[][],
-  pJoin text[]
+  pJoin text[],
+  whereClause boolean DEFAULT FALSE
 )
 RETURNS text[][] AS $$
   DECLARE
@@ -1706,14 +1738,23 @@ RETURNS text[][] AS $$
     similarFound boolean = FALSE;
     i int = 1;
   BEGIN
---RAISE NOTICE 'TT_AppendParsedJoinToArr() 00 pJoinArr=%',pJoinArr;
+    -- Remove the first element (any string preceding the matchTable of lookup call)
+    -- and second element (matchtable or lookup)
+    pJoin = pJoin[3:array_length(pJoin, 1)];
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 00 pJoinArr=%', pJoinArr;
     IF pJoinArr IS NULL THEN -- First insertion
       pJoin[8] = '1';
       pJoin[9] = 'last';
+      pJoin[10] = '';
+      IF whereClause THEN
+        pJoin[10] = 'where';
+      END IF;
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 11 RETURN=%', ARRAY[pJoin];
       RETURN ARRAY[pJoin];
     ELSE -- Search for an identical join in the join array where retreiveCol is NULL
       FOREACH currentPJoin SLICE 1 IN ARRAY pJoinArr LOOP
 --RAISE NOTICE 'TT_AppendParsedJoinToArr() 22 pJoinArr=%', pJoinArr;
+        -- Reset 'last'
         pJoinArr[i][9] = '';
         -- Compare only the parameter that affect the LEFT JOIN
         IF currentPJoin[1] = pJoin[1] AND -- value
@@ -1723,9 +1764,13 @@ RETURNS text[][] AS $$
            currentPJoin[6] = pJoin[6] -- ignoreCase
         THEN
           -- Assign the last retrieveCol and the last acceptNull
-          pJoinArr[i][5] = coalesce(pJoin[5], pJoinArr[i][5]);
-          pJoinArr[i][7] = coalesce(pJoin[7], pJoinArr[i][7]);
+          pJoinArr[i][5] = coalesce(pJoin[5], pJoinArr[i][5]); -- retrieveCol
+          pJoinArr[i][7] = coalesce(pJoin[7], pJoinArr[i][7]); -- acceptNull
           pJoinArr[i][9] = 'last';
+          pJoinArr[i][10] = coalesce(pJoin[10], pJoinArr[i][10]); -- 'where'
+          IF whereClause THEN
+            pJoinArr[i][10] = 'where';
+          END IF;
           similarFound = TRUE;
         END IF;
         i = i + 1;
@@ -1739,6 +1784,11 @@ RETURNS text[][] AS $$
     -- Nothing found, append the join array at the end
     pJoin[8] = (array_length(pJoinArr, 1) + 1)::text;
     pJoin[9] = 'last';
+    pJoin[10] = '';
+    IF whereClause THEN
+      pJoin[10] = 'where';
+    END IF;
+--RAISE NOTICE 'TT_AppendParsedJoinToArr() 33 pJoinArr=%', pJoinArr;
     RETURN pJoinArr || pJoin;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -1766,7 +1816,7 @@ RETURNS text[] AS $$
     currentPJoin text[];
   BEGIN
     FOREACH currentPJoin SLICE 1 IN ARRAY pJoinArr LOOP
-      IF cardinality(currentPJoin) = 9 AND NOT currentPJoin[9] IS NULL AND currentPJoin[9] = 'last' THEN
+      IF cardinality(currentPJoin) = 10 AND NOT currentPJoin[9] IS NULL AND currentPJoin[9] = 'last' THEN
         return currentPJoin;
       END IF;
     END LOOP;
@@ -1918,13 +1968,14 @@ RETURNS TABLE (target_attribute text,
             RAISE EXCEPTION '% % (%): Validation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
           END IF;
 
-          -- check error code is not null
+          -- Check error code is not null
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC rule.errorCode: %', rule.errorCode;END IF;
           IF rule.errorCode = '' OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
             RAISE EXCEPTION '% % (%): No error code defined for validation rule ''%()''. Define or update your own project TT_DefaultProjectErrorCode() function...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
           END IF;
 
           -- Check error code can be cast to attribute type, catch error with EXCEPTION
-          IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC target attribute type: %, error value: %', row.target_attribute_type, rule.errorCode;END IF;
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable DD target attribute type: %, error value: %', row.target_attribute_type, rule.errorCode;END IF;
           IF rule.errorCode IS NULL THEN
             RAISE NOTICE '% % (%): Error code for target attribute type (%) and validation rule ''%()'' is NULL.', warning_msg_start, row.rule_id, row.target_attribute, row.target_attribute_type, rule.fctName;
           END IF;
@@ -1936,7 +1987,7 @@ RETURNS TABLE (target_attribute text,
         -- Validate translation_rule only when for target_attribute other then ROW_TRANSLATION_RULE
         IF row.target_attribute != 'ROW_TRANSLATION_RULE' THEN
           -- check translation function exists
-          IF debug THEN RAISE NOTICE 'TT_ValidateTTable EE function name: %, arguments: %', translation_rule.fctName, translation_rule.args;END IF;
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF function name: %, arguments: %', translation_rule.fctName, translation_rule.args;END IF;
           IF NOT TT_TextFctExists(translation_rule.fctName, coalesce(cardinality(translation_rule.args), 0)) THEN
             RAISE EXCEPTION '% % (%): Translation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, row.target_attribute, translation_rule.fctName, btrim(repeat('text,', coalesce(cardinality(translation_rule.args), 0)), ',');
           END IF;
@@ -1950,7 +2001,7 @@ RETURNS TABLE (target_attribute text,
           END IF;
           -- If not null, check translation error code can be cast to attribute type
           IF NOT TT_IsCastableTo(translation_rule.errorCode, row.target_attribute_type) THEN
-            IF debug THEN RAISE NOTICE 'TT_ValidateTTable FF target attribute type: %, error value: %', row.target_attribute_type, translation_rule.errorCode;END IF;
+            IF debug THEN RAISE NOTICE 'TT_ValidateTTable GG target attribute type: %, error value: %', row.target_attribute_type, translation_rule.errorCode;END IF;
             RAISE EXCEPTION '% % (%): Error code (%) cannot be cast to the target attribute type (%) for translation rule ''%()''...', error_msg_start, row.rule_id, row.target_attribute, translation_rule.errorCode, row.target_attribute_type, translation_rule.fctName;
           END IF;
         END IF;
@@ -2079,7 +2130,8 @@ RETURNS TABLE (target_attribute text,
           --  RAISE EXCEPTION '% % (%): Validation helper function ''%(%)'' does not exist...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName, btrim(repeat('text,', coalesce(cardinality(rule.args), 0)), ',');
           --END IF;
 
-          -- check error code is not null
+          -- Check error code is not null
+          IF debug THEN RAISE NOTICE 'TT_ValidateTTable CC rule.errorCode: %', rule.errorCode;END IF;
           IF rule.errorCode = '' OR rule.errorCode = 'NO_DEFAULT_ERROR_CODE' THEN
             RAISE EXCEPTION '% % (%): No error code defined for validation rule ''%()''. Define or update your own project TT_DefaultProjectErrorCode() function...', error_msg_start, row.rule_id, row.target_attribute, rule.fctName;
           END IF;
@@ -2384,6 +2436,111 @@ RETURNS text AS $$
   SELECT TT_Prepare_old('public', translationTable, NULL::text, NULL::name, NULL::name);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+-- DROP FUNCTION IF EXISTS TT_BuildJoinExpr(text, text[][], text, text, boolean, text);
+CREATE OR REPLACE FUNCTION TT_BuildJoinExpr(
+  precedingStr text,
+  leftJoinArr text[][],
+  followingStr text,
+  errorCode text,
+  matchTable boolean DEFAULT TRUE,
+  part text DEFAULT 'validation'
+)
+RETURNS text AS $$
+  DECLARE
+    joinExpr text;
+    lastJoinArr text[];
+  BEGIN
+    -- leftJoinArr[1] -- value
+    -- leftJoinArr[2] -- schema
+    -- leftJoinArr[3] -- table
+    -- leftJoinArr[4] -- lookupCol
+    -- leftJoinArr[5] -- retreiveCol
+    -- leftJoinArr[6] -- ignoreCase
+    -- leftJoinArr[7] -- acceptNull
+    -- leftJoinArr[8] -- index
+    -- leftJoinArr[9] -- last or not
+    lastJoinArr = TT_LastJoinAdded(leftJoinArr);
+--RAISE NOTICE 'lastJoinArr=%', lastJoinArr;
+--RAISE NOTICE 'matchTable=%', matchTable;
+--RAISE NOTICE 'part=%', part;
+    IF lastJoinArr IS NULL THEN
+      RETURN '';
+    END IF;
+    precedingStr = coalesce(precedingStr, '');
+    followingStr = coalesce(followingStr, '');
+    -- Handle matchTable and lookup function calls in validation rules
+    IF part = 'validation' OR part = 'whereclause' THEN
+      joinExpr = -- Add the WHEN part when in a validation
+                 CASE WHEN part = 'validation' THEN '    WHEN (' 
+                      ELSE '' 
+                 END ||
+                 -- if acceptNull (7) test only if NOT NULL
+                 CASE WHEN lastJoinArr[7]::boolean THEN 'NOT (' || lastJoinArr[1] || ') IS NULL AND ' 
+                      ELSE '' 
+                 END || 
+                 CASE WHEN (precedingStr != '' AND part != 'whereclause') OR 
+                           (precedingStr = '' AND part = 'whereclause') THEN 'NOT '
+                      ELSE ''
+                 END ||
+                 -- Prepend boolean external function
+                 CASE WHEN precedingStr != '' THEN precedingStr 
+                      ELSE ''
+                 END ||
+                 'join_' || lastJoinArr[8] || '.' || 
+                 -- Append the lookupCol or retreiveCol attribute
+                 CASE WHEN matchTable THEN lastJoinArr[4] 
+                      ELSE lastJoinArr[5]
+                 END || 
+                 -- Append boolean external function arguments
+                 CASE WHEN followingStr != '' THEN followingStr 
+                      ELSE ' IS NULL' 
+                 END || 
+                 -- Append errorCode
+                 CASE WHEN part = 'validation' THEN ') THEN ' || errorCode  || CHR(10)
+                      ELSE ''
+                 END;
+    -- Handle lookup function calls in translation rules
+    ELSE
+      joinExpr = precedingStr || 
+                 'join_'  || lastJoinArr[8] || '.' || 
+                 -- Append the lookupCol or retreiveCol attribute
+                 CASE WHEN matchTable THEN lastJoinArr[4] 
+                      ELSE lastJoinArr[5]
+                 END || 
+                 followingStr;
+    END IF;
+    RETURN joinExpr;
+  END;
+$$ LANGUAGE plpgsql VOLATILE;
+/*
+matchTable
+SELECT TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET');
+SELECT TT_BuildJoinExpr('', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], '', 'NOT_IN_SET');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET');
+
+lookup in validation rule
+SELECT TT_BuildJoinExpr(NULL,   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'validation');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', FALSE, 'validation');
+
+lookup in translation rule
+SELECT TT_BuildJoinExpr(NULL,   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'translation');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', FALSE, 'translation');
+
+lookup in whereclause
+SELECT TT_BuildJoinExpr(NULL,   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'whereclause');
+SELECT TT_BuildJoinExpr(NULL,   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'whereclause');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', FALSE, 'whereclause');
+
+matchTable in whereclause
+SELECT TT_BuildJoinExpr(NULL,   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', TRUE, 'whereclause');
+SELECT TT_BuildJoinExpr('',   ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', TRUE, 'whereclause');
+SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', TRUE, 'whereclause');
+
+*/
+------------------------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
@@ -2397,7 +2554,12 @@ RETURNS text AS $f$
     fctQuery text;
     translationQuery text;
 		rowTranslationRuleClause text;
+    newClause text;
+    leftJoinArr text[][];
+    whereLeftJoinArr text[][];
+    currentJoinArr text[];
     leftJoinClause text = '';
+    whereLeftJoinClause text = '';
 		returnQuery text;
     errorCode text;
     translationRow RECORD;
@@ -2406,8 +2568,6 @@ RETURNS text AS $f$
     refParamlist text[];
     i integer;
     fctName text;
-    leftJoinArr text[][];
-    currentJoinArr text[];
     fullRule text;
   BEGIN
     IF NOT TT_NotEmpty(translationTable) THEN
@@ -2462,9 +2622,21 @@ RETURNS text AS $f$
       FOREACH rule IN ARRAY translationRow.validation_rules 
 			LOOP
         fullRule = rule.fctName || '(' || rule.args || ')';
+
+        -- Parse the rule to find matchtable or lookup and their parameters
+        currentJoinArr = TT_ParseJoinFctCall(fullRule);
+--RAISE NOTICE '00 currentJoinArr=%', currentJoinArr;
+
 			  IF translationRow.target_attribute = 'ROW_TRANSLATION_RULE' THEN
-          --rowTranslationRuleClause = rowTranslationRuleClause || TT_RuleToSQL(rule.fctName, rule.args) || ' OR ' || CHR(10);
-          rowTranslationRuleClause = rowTranslationRuleClause || TT_PrepareFctCalls(fullRule) || ' OR ' || CHR(10);
+          IF currentJoinArr[2] IS NULL THEN
+            rowTranslationRuleClause = rowTranslationRuleClause || TT_PrepareFctCalls(fullRule);
+          ELSE
+            leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, currentJoinArr, TRUE);
+            rowTranslationRuleClause = rowTranslationRuleClause || 
+                                       TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], NULL, (currentJoinArr[2] = 'matchtable'), 'whereclause');
+          END IF;
+          rowTranslationRuleClause = rowTranslationRuleClause || ' OR ' || CHR(10);
+RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
 				ELSE
           -- Determine validation error code
           errorCode = coalesce(rule.errorCode, coalesce(TT_DefaultProjectErrorCode(rule.fctName, translationRow.target_attribute_type), 'NULL'));
@@ -2474,30 +2646,21 @@ RETURNS text AS $f$
             errorCode = '''' || errorCode || '''';
           END IF;
 
-          -- If the rule begins with matchTable parse it
-          IF lower(fullRule) ~ '^matchtable\s*\(' THEN
-            leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, TT_ParseJoinFctCall(fullRule));
-/*
-RAISE NOTICE '------------- matchtable --------------- ';
-RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
-RAISE NOTICE 'TT_ParseJoinFctCall(fullRule)=%', TT_ParseJoinFctCall(fullRule);
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[1]=%', (TT_LastJoinAdded(leftJoinArr))[1];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[2]=%', (TT_LastJoinAdded(leftJoinArr))[2];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[3]=%', (TT_LastJoinAdded(leftJoinArr))[3];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[4]=%', (TT_LastJoinAdded(leftJoinArr))[4];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[5]=%', (TT_LastJoinAdded(leftJoinArr))[5];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[6]=%', (TT_LastJoinAdded(leftJoinArr))[6];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[7]=%', (TT_LastJoinAdded(leftJoinArr))[7];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[8]=%', (TT_LastJoinAdded(leftJoinArr))[8];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinArr))[9];
-*/
-            translationQuery = translationQuery || '    WHEN ' || CASE WHEN (TT_LastJoinAdded(leftJoinArr))[7]::boolean THEN 'NOT (' || (TT_LastJoinAdded(leftJoinArr))[1] || ') IS NULL AND ' ELSE '' END || 'join_' || (TT_LastJoinAdded(leftJoinArr))[8] || '.' || (TT_LastJoinAdded(leftJoinArr))[4] || ' IS NULL THEN ' || errorCode || CHR(10);
+          -- If not matchtable nor lookup
+          IF currentJoinArr[2] IS NULL THEN
+            translationQuery = translationQuery || '    WHEN NOT ' || 
+                               currentJoinArr[1] || ' THEN ' || errorCode || CHR(10);
+--RAISE NOTICE '11 translationQuery=%', translationQuery;
           ELSE
-            translationQuery = translationQuery || '    WHEN NOT ' || TT_PrepareFctCalls(fullRule) || ' THEN ' || errorCode || CHR(10);
+--RAISE NOTICE 'leftJoinArr33=%', leftJoinArr;
+            leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, currentJoinArr);
+--RAISE NOTICE 'leftJoinArr44=%', leftJoinArr;
+            translationQuery = translationQuery || TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], errorCode, (currentJoinArr[2] = 'matchtable'), 'validation');
+--RAISE NOTICE '22 translationQuery=%', translationQuery;
 	        END IF;
 	      END IF;
 		  END LOOP; -- FOREACH rule
-
+--RAISE NOTICE '33 translationQuery=%', translationQuery;
 		  -- Build the translation part
       IF translationRow.target_attribute != 'ROW_TRANSLATION_RULE' THEN
         -- Determine translation error code
@@ -2509,71 +2672,91 @@ RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinA
 										END;
 
         fullRule = (translationRow.translation_rule).fctName || '(' || (translationRow.translation_rule).args || ')';
-        -- If the rule begins with matchTable parse it
+
+        -- Parse the rule to find matchtable or lookup and their parameters
+        currentJoinArr = TT_ParseJoinFctCall(fullRule);
+--RAISE NOTICE '44 currentJoinArr=%', currentJoinArr;
+
         translationQuery = translationQuery || '    ELSE coalesce((';
-        IF lower(fullRule) ~ '^lookup(?:text|int|double)\s*\(' THEN
-          leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, TT_ParseJoinFctCall(fullRule, TRUE));
-/*
-RAISE NOTICE '------------- lookup --------------- ';
-RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
-RAISE NOTICE 'TT_ParseJoinFctCall(fullRule, TRUE)=%', TT_ParseJoinFctCall(fullRule, TRUE);
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[1]=%', (TT_LastJoinAdded(leftJoinArr))[1];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[2]=%', (TT_LastJoinAdded(leftJoinArr))[2];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[3]=%', (TT_LastJoinAdded(leftJoinArr))[3];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[4]=%', (TT_LastJoinAdded(leftJoinArr))[4];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[5]=%', (TT_LastJoinAdded(leftJoinArr))[5];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[6]=%', (TT_LastJoinAdded(leftJoinArr))[6];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[7]=%', (TT_LastJoinAdded(leftJoinArr))[7];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[8]=%', (TT_LastJoinAdded(leftJoinArr))[8];
-RAISE NOTICE '(TT_LastJoinAdded(leftJoinArr))[9]=%', (TT_LastJoinAdded(leftJoinArr))[9];
-*/
-          translationQuery = translationQuery || 'join_'  || (TT_LastJoinAdded(leftJoinArr))[8] || '.' || (TT_LastJoinAdded(leftJoinArr))[5];
-        ELSE
+        -- If the rule does not contain matchtable nor lookup
+        IF currentJoinArr[2] IS NULL THEN
           translationQuery = translationQuery || TT_PrepareFctCalls(fullRule);
+--RAISE NOTICE '55 translationQuery=%', translationQuery;
+        ELSE
+          leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, currentJoinArr);
+          translationQuery = translationQuery || TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], errorCode, (currentJoinArr[2] = 'matchtable'), 'translation');
+--RAISE NOTICE '66 translationQuery=%', translationQuery;
         END IF;
         translationQuery = translationQuery || ')::' || translationRow.target_attribute_type || ', (' || errorCode || ')::' || translationRow.target_attribute_type || ') ' || CHR(10) || 
 												     '  END::' || lower(translationRow.target_attribute_type) || ' ' || lower(translationRow.target_attribute) || ',' || CHR(10);
       END IF;
     END LOOP; -- FOR TRANSLATION ROW
+--RAISE NOTICE '66 translationQuery=%', translationQuery;
 		-- Remove the last comma from translationQuery and complete
 		translationQuery = left(translationQuery, char_length(translationQuery) - 2);
     
-
-		-- Remove the last 'OR' from rowTranslationRuleClause
+		-- Erase rowTranslationRuleClause or simply erase the last 'OR' from it
 		IF rowTranslationRuleClause = 'WHERE ' THEN
-		   rowTranslationRuleClause = '';
+		  rowTranslationRuleClause = ';';
 		ELSE
-      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5);
+      rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5) || ';';
     END IF;
 
+--RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
     -- Generate LEFT JOINs clause
-    i = 1;
     IF NOT leftJoinArr IS NULL THEN
       FOREACH currentJoinArr SLICE 1 IN ARRAY leftJoinArr LOOP
-        leftJoinClause = leftJoinClause || CHR(10) ||  'LEFT JOIN ' || TT_FullTableName(currentJoinArr[2], currentJoinArr[3]) || ' join_' || i || 
-                         ' ON (TT_NotEmpty(' || currentJoinArr[1] || ') AND ' || CASE WHEN currentJoinArr[6]::boolean THEN 'lower' ELSE '' END || '(' || currentJoinArr[1] || ') = ' || CASE WHEN currentJoinArr[6]::boolean THEN 'lower' ELSE '' END || '(' || 'join_' || i || '.' || currentJoinArr[4] || '))';
-        i = i + 1;
+         newClause = 'LEFT JOIN ' || TT_FullTableName(currentJoinArr[2], currentJoinArr[3]) || ' join_' || currentJoinArr[8] || 
+                     ' ON (TT_NotEmpty(' || currentJoinArr[1] || ') AND ' || 
+                     --' ON (' || 
+                     CASE WHEN currentJoinArr[6]::boolean THEN 'lower' 
+                          ELSE '' 
+                     END || '(' || currentJoinArr[1] || ') = ' || 
+                     CASE WHEN currentJoinArr[6]::boolean THEN 'lower' 
+                          ELSE '' 
+                     END || '(' || 'join_' || currentJoinArr[8] || '.' || currentJoinArr[4] || '))' || CHR(10);
+        leftJoinClause = leftJoinClause || newClause;
+        -- Generate WHERE LEFT JOINs clause for future counting purpose
+        IF currentJoinArr[10] = 'where' THEN
+          whereLeftJoinClause = whereLeftJoinClause || newClause;
+        END IF;
       END LOOP;
     END IF;
 
-    RAISE NOTICE '%', translationQuery || CHR(10) || 'FROM sourceTableSchema.sourceTable maintable ' || leftJoinClause || CHR(10) || rowTranslationRuleClause || ';';
-    translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || TT_EscapeSingleQuotes(leftJoinClause) || CHR(10) || TT_EscapeSingleQuotes(rowTranslationRuleClause) || ';';
+--RAISE NOTICE 'rowTranslationRuleClause22=%', rowTranslationRuleClause;
+--RAISE NOTICE 'whereLeftJoinClause=%', whereLeftJoinClause;
+--RAISE NOTICE 'leftJoinClause=%', leftJoinClause;
+    RAISE NOTICE 'translationQuery=%', translationQuery || CHR(10) || 
+                                       'FROM sourceTableSchema.sourceTable maintable ' || CHR(10) || 
+                                       leftJoinClause || 
+                                       rowTranslationRuleClause;
+
+    translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 
+                       'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || CHR(10) || 
+                       TT_EscapeSingleQuotes(leftJoinClause) || 
+                       TT_EscapeSingleQuotes(rowTranslationRuleClause);
+
+    RAISE NOTICE 'rowTranslationRuleClause=%', whereLeftJoinClause  || 
+                                               rowTranslationRuleClause;
+    
+    rowTranslationRuleClause = TT_EscapeSingleQuotes(whereLeftJoinClause) || 
+                               TT_EscapeSingleQuotes(rowTranslationRuleClause);
 
     fctQuery = 'CREATE OR REPLACE FUNCTION ' || fctName || '(
                   sourceTableSchema name,
                   sourceTable name)
                 RETURNS TABLE (' || array_to_string(paramlist, ', ') || ') AS $$
-                  SELECT * FROM TT_ShowProgress('''  || fctName || ''',''' ||
-                                                translationQuery || ''', ''' ||
-                                                TT_EscapeSingleQuotes(rowTranslationRuleClause) || ''', 
+                  SELECT * FROM TT_ShowProgress('''  || fctName || ''', ' ||
+                                                ''''  || translationQuery || ''', ' ||
+                                                ''''  || rowTranslationRuleClause || ''', 
                                                 sourceTableSchema,
                                                 sourceTable) AS t(' || array_to_string(paramlist, ', ') || ');
               $$ LANGUAGE sql VOLATILE;';
---RAISE NOTICE '%', fctQuery;
     EXECUTE fctQuery;
     RETURN 'SELECT * FROM TT_Translate' || coalesce(fctNameSuf, '') || '(''schemaName'', ''tableName'');';
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
+
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
@@ -2646,7 +2829,6 @@ RETURNS SETOF RECORD AS $$
   BEGIN
     IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE 'TT_ShowProgress BEGIN';END IF;
---RAISE NOTICE 'TT_ShowProgress BEGIN';
 RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
 
     -- Estimate the number of rows to return
@@ -2658,7 +2840,6 @@ RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
 
     startTime = clock_timestamp();
     -- Main loop
-		--FOR translatedRow IN EXECUTE translationQuery || CHR(10) || 'FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause
 		FOR translatedRow IN EXECUTE translationQuery
     LOOP
       IF currentRowNb % 100 = 0 THEN
@@ -2687,7 +2868,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS _TT_Translate(text, text, name, name, name, name);
+--DROP FUNCTION IF EXISTS _TT_Translate(name, text, text, name, name, name, name);
 CREATE OR REPLACE FUNCTION _TT_Translate(
   callingFctName name,
   translationQuery text,

@@ -87,8 +87,8 @@ WITH test_nb AS (
   SELECT 'TT_IsNumeric'::text,               5,          8         UNION ALL
   SELECT 'TT_IsBoolean'::text,               6,          8         UNION ALL
   SELECT 'TT_IsBetween'::text,               7,         31         UNION ALL
-  SELECT 'TT_IsGreaterThan'::text,           8,         13         UNION ALL
-  SELECT 'TT_IsLessThan'::text,              9,         13         UNION ALL
+  SELECT 'TT_IsGreaterThan'::text,           8,         12         UNION ALL
+  SELECT 'TT_IsLessThan'::text,              9,         12         UNION ALL
   SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
   SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
   SELECT 'TT_MatchList'::text,              12,         38         UNION ALL
@@ -120,9 +120,6 @@ WITH test_nb AS (
   SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
   SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
   SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
-  SELECT 'TT_IsLessThanLookupDouble'::text, 41,         15         UNION ALL
-  SELECT 'TT_MinIndexMatchTable'::text,     42,          4         UNION ALL
-  SELECT 'TT_MaxIndexMatchTable'::text,     43,          4         UNION ALL
   SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
   SELECT 'TT_AlphaNumericMatchList'::text,  45,          6         UNION ALL	
   SELECT 'TT_AlphaNumericLookupTextMatchList'::text,46,  2         UNION ALL
@@ -164,8 +161,6 @@ WITH test_nb AS (
   SELECT 'TT_MaxIndexCopyText'::text,      133,          9         UNION ALL
   SELECT 'TT_MinIndexMapText'::text,       134,         11         UNION ALL
   SELECT 'TT_MaxIndexMapText'::text,       135,         11         UNION ALL
-  SELECT 'TT_MinIndexLookupText'::text,    136,         14         UNION ALL
-  SELECT 'TT_MaxIndexLookupText'::text,    137,         14         UNION ALL
   SELECT 'TT_XMinusYDouble'::text,         138,          3         UNION ALL
   SELECT 'TT_DivideDouble'::text,          139,          5         UNION ALL
   SELECT 'TT_DivideInt'::text,             140,          2         UNION ALL
@@ -184,7 +179,6 @@ WITH test_nb AS (
   SELECT 'TT_SubstringMultiplyInt'::text,  154,          3         UNION ALL
   SELECT 'TT_GetIndexCopyText'::text,      155,          9         UNION ALL
   SELECT 'TT_GetIndexMapText'::text,       156,         11         UNION ALL
-  SELECT 'TT_GetIndexLookupText'::text,    157,         16         UNION ALL
   SELECT 'TT_GetIndexCopyInt'::text,       158,          9         UNION ALL
   SELECT 'TT_GetIndexMapInt'::text,        159,          7
 ),
@@ -743,50 +737,73 @@ SELECT '7.31'::text number,
 -- Test 8 - TT_IsGreaterThan
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(8, 'TT_IsGreaterThan',
-                                      ARRAY['lowerBound', 'numeric',
-                                            'inclusive', 'boolean',
-                                            'acceptNull', 'boolean'])).*
+SELECT '8.1'::text number,
+       'TT_IsGreaterThan'::text function_tested,
+       'NULL inclusive'::text description,
+       TT_IsError('SELECT TT_IsGreaterThan(2::text, 4::text, NULL::text, TRUE::text)') = 'ERROR in TT_IsGreaterThan(): inclusive is NULL' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.7'::text number,
+SELECT '8.2'::text number,
+       'TT_IsGreaterThan'::text function_tested,
+       'NULL acceptNull'::text description,
+       TT_IsError('SELECT TT_IsGreaterThan(2::text, 4::text, TRUE::text, NULL::text)') = 'ERROR in TT_IsGreaterThan(): acceptNull is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.3'::text number,
+       'TT_IsGreaterThan'::text function_tested,
+       'Invalid inclusive'::text description,
+       TT_IsError('SELECT TT_IsGreaterThan(2::text, 4::text, 10::text, TRUE::text)') = 'ERROR in TT_IsGreaterThan(): inclusive is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.4'::text number,
+       'TT_IsGreaterThan'::text function_tested,
+       'Invalid acceptNull'::text description,
+       TT_IsError('SELECT TT_IsGreaterThan(2::text, 4::text, TRUE::text, 10::text)') = 'ERROR in TT_IsGreaterThan(): acceptNull is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.5'::text number,
+       'TT_IsGreaterThan'::text function_tested,
+       'NULL upper bound'::text description,
+       TT_IsGreaterThan(9::text, NULL::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '8.6'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'Integer, good value'::text description,
        TT_IsGreaterThan(11::text, 10::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.8'::text number,
+SELECT '8.7'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'Integer, bad value'::text description,
        TT_IsGreaterThan(9::text, 10::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.9'::text number,
+SELECT '8.8'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'Double precision, good value'::text description,
        TT_IsGreaterThan(10.3::text, 10.2::text) IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.10'::text number,
+SELECT '8.9'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'Double precision, bad value'::text description,
        TT_IsGreaterThan(10.1::text, 10.2::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.11'::text number,
+SELECT '8.10'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'Inclusive false'::text description,
        TT_IsGreaterThan(10::text, 10.0::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.12'::text number,
+SELECT '8.11'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'NULL val'::text description,
        TT_IsGreaterThan(NULL::text, 10.1::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '8.13'::text number,
+SELECT '8.12'::text number,
        'TT_IsGreaterThan'::text function_tested,
        'NULL val and acceptNull true'::text description,
        TT_IsGreaterThan(NULL::text, 10.1::text, TRUE::text, TRUE::text) passed
@@ -795,50 +812,73 @@ SELECT '8.13'::text number,
 -- Test 9 - TT_IsLessThan
 ---------------------------------------------------------
 UNION ALL
--- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(9, 'TT_IsLessThan',
-                                      ARRAY['upperBound', 'numeric',
-                                            'inclusive', 'boolean',
-                                            'acceptNull', 'boolean'])).*
+SELECT '9.1'::text number,
+       'TT_IsLessThan'::text function_tested,
+       'NULL inclusive'::text description,
+       TT_IsError('SELECT TT_IsLessThan(2::text, 4::text, NULL::text, TRUE::text)') = 'ERROR in TT_IsLessThan(): inclusive is NULL' passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.7'::text number,
+SELECT '9.2'::text number,
+       'TT_IsLessThan'::text function_tested,
+       'NULL acceptNull'::text description,
+       TT_IsError('SELECT TT_IsLessThan(2::text, 4::text, TRUE::text, NULL::text)') = 'ERROR in TT_IsLessThan(): acceptNull is NULL' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.3'::text number,
+       'TT_IsLessThan'::text function_tested,
+       'NULL upper bound'::text description,
+       TT_IsError('SELECT TT_IsLessThan(2::text, 4::text, 10::text, TRUE::text)') = 'ERROR in TT_IsLessThan(): inclusive is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.4'::text number,
+       'TT_IsLessThan'::text function_tested,
+       'NULL upper bound'::text description,
+       TT_IsError('SELECT TT_IsLessThan(2::text, 4::text, TRUE::text, 10::text)') = 'ERROR in TT_IsLessThan(): acceptNull is not a boolean value' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.5'::text number,
+       'TT_IsLessThan'::text function_tested,
+       'NULL upper bound'::text description,
+       TT_IsLessThan(9::text, NULL::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '9.6'::text number,
        'TT_IsLessThan'::text function_tested,
        'Integer, good value'::text description,
        TT_IsLessThan(9::text, 10::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.8'::text number,
+SELECT '9.7'::text number,
        'TT_IsLessThan'::text function_tested,
        'Integer, bad value'::text description,
        TT_IsLessThan(11::text, 10::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.9'::text number,
+SELECT '9.8'::text number,
        'TT_IsLessThan'::text function_tested,
        'Double precision, good value'::text description,
        TT_IsLessThan(10.1::text, 10.7::text) passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.10'::text number,
+SELECT '9.9'::text number,
        'TT_IsLessThan'::text function_tested,
        'Double precision, bad value'::text description,
        TT_IsLessThan(9.9::text, 9.5::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.11'::text number,
+SELECT '9.10'::text number,
        'TT_IsLessThan'::text function_tested,
        'Inclusive false'::text description,
        TT_IsLessThan(10.1::text, 10.1::text, FALSE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.12'::text number,
+SELECT '9.11'::text number,
        'TT_IsLessThan'::text function_tested,
        'NULL val'::text description,
        TT_IsLessThan(NULL::text, 10.1::text, TRUE::text) IS FALSE passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '9.13'::text number,
+SELECT '9.12'::text number,
        'TT_IsLessThan'::text function_tested,
        'NULL val and acceptNull true'::text description,
        TT_IsLessThan(NULL::text, 10.1::text, TRUE::text, TRUE::text) passed
@@ -2433,144 +2473,6 @@ SELECT '40.12'::text number,
        'First non-NULL value 5 but not included'::text description,
        TT_CoalesceIsBetween('{NULL, ''0.0'', ''5'', ''a''}', 0::text, 5::text, FALSE::text, FALSE::text, TRUE::text) IS FALSE passed  
 ---------------------------------------------------------
--- Test 41 - TT_isLessThanLookupDouble
----------------------------------------------------------
-UNION ALL
-SELECT '41.1'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error schema is null'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', NULL::text, ''test_table_with_null'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupSchema is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.2'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error schema wring type'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''1'', ''test_table_with_null'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupSchema is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.3'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error table is null'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', NULL::text, ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupTable is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.4'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error table wrong type'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''1'', ''source_val'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupTable is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.5'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error col is null'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', NULL::text, ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.6'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error retrieve col wrong type'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''1'', ''int_val'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): lookupCol is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.7'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error retrieve col is null'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', NULL::text, ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): retrieveCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.8'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error col wrong type'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''1'', ''TRUE'')') = 'ERROR in TT_isLessThanLookupDouble(): retrieveCol is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.9'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error inclusive is null'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''int_val'', NULL::text)') = 'ERROR in TT_isLessThanLookupDouble(): inclusive is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.10'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Error inclusive wrong type'::text description,
-       TT_IsError('SELECT TT_IsLessThanLookupDouble(''2'', ''b'', ''public'', ''test_table_with_null'', ''source_val'', ''int_val'', ''x'')') = 'ERROR in TT_isLessThanLookupDouble(): inclusive is not a boolean value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.11'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Basic test less than or equal to'::text description,
-       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'TRUE') passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.12'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Basic test fails is just less than'::text description,
-       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.13'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'But passes if srcVal is 1.5'::text description,
-       TT_IsLessThanLookupDouble('1.5', 'b', 'public', 'test_table_with_null', 'source_val', 'int_val', 'FALSE') passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.14'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Test default lookupCol'::text description,
-       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val', 'TRUE') passed
----------------------------------------------------------
-UNION ALL
-SELECT '41.15'::text number,
-       'TT_IsLessThanLookupDouble'::text function_tested,
-       'Test default inclusive'::text description,
-       TT_IsLessThanLookupDouble('2', 'b', 'public', 'test_table_with_null', 'int_val') passed
----------------------------------------------------------
--- Test 42 - TT_MinIndexMatchTable
----------------------------------------------------------
-UNION ALL
-SELECT '42.1'::text number,
-       'TT_MinIndexMatchTable'::text function_tested,
-       'Simple pass'::text description,
-       TT_MinIndexMatchTable('{1,2,3}', '{ACB,b,c}', 'public', 'test_lookuptable1', 'source_val') passed
-UNION ALL
-SELECT '42.2'::text number,
-       'TT_MinIndexMatchTable'::text function_tested,
-       'Simple fail'::text description,
-       TT_MinIndexMatchTable('{1,2,3}', '{a,b,c}', 'public', 'test_lookuptable1', 'source_val') IS FALSE passed
-UNION ALL
-SELECT '42.3'::text number,
-       'TT_MinIndexMatchTable'::text function_tested,
-       'Test setNull'::text description,
-       TT_MinIndexMatchTable('{1,null,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', '0', null::text) passed
-UNION ALL
-SELECT '42.4'::text number,
-       'TT_MinIndexMatchTable'::text function_tested,
-       'Test setZero'::text description,
-       TT_MinIndexMatchTable('{1,0,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', null::text, '0.5') passed
----------------------------------------------------------
--- Test 43 - TT_MaxIndexMatchTable
----------------------------------------------------------
-UNION ALL
-SELECT '43.1'::text number,
-       'TT_MaxIndexMatchTable'::text function_tested,
-       'Simple pass'::text description,
-       TT_MaxIndexMatchTable('{1,2,3}', '{a,b,ACB}', 'public', 'test_lookuptable1', 'source_val') passed
-UNION ALL
-SELECT '43.2'::text number,
-       'TT_MaxIndexMatchTable'::text function_tested,
-       'Simple fail'::text description,
-       TT_MaxIndexMatchTable('{1,2,3}', '{a,b,c}', 'public', 'test_lookuptable1', 'source_val') IS FALSE passed
-UNION ALL
-SELECT '43.3'::text number,
-       'TT_MaxIndexMatchTable'::text function_tested,
-       'Test setNull'::text description,
-       TT_MaxIndexMatchTable('{1,null,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', '4', null::text) passed
-UNION ALL
-SELECT '43.4'::text number,
-       'TT_MaxIndexMatchTable'::text function_tested,
-       'Test setZero'::text description,
-       TT_MaxIndexMatchTable('{1,0,3}', '{a,ACB,c}', 'public', 'test_lookuptable1', 'source_val', null::text, '4') passed
----------------------------------------------------------
 -- Test 44 - TT_HasCountOfMatchList
 ---------------------------------------------------------
 UNION ALL
@@ -4061,178 +3963,6 @@ SELECT '135.11'::text number,
        'setZeroTo'::text description,
        TT_MaxIndexMapText('{0, 2000}', '{burn, wind}', '{burn, wind}', '{BU, WT}', null::text, '2001') = 'BU' passed
 ---------------------------------------------------------
--- Test 136 - TT_MinIndexLookupText
----------------------------------------------------------
-UNION ALL
-SELECT '136.1'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test for null schema'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.2'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test for null table'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.3'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test for null source column'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.4'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test for null return column'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.5'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test invalid schema name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupSchemaName is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.6'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test invalid table name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupTableName is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '136.7'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): lookupCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '136.8'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_MinIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text, NULL::text)') = 'ERROR in TT_MinIndexLookupText(): retrieveCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '136.9'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Simple test'::text description,
-       TT_MinIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.10'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Matching indexes'::text description,
-       TT_MinIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.11'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'null integer'::text description,
-       TT_MinIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.12'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'setNullTo'::text description,
-       TT_MinIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '0', null::text) = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.13'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Matching years, return first'::text description,
-       TT_MinIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'text_val') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '136.14'::text number,
-       'TT_MinIndexLookupText'::text function_tested,
-       'Matching years, return first with null in list'::text description,
-       TT_MinIndexLookupText('{1990, 1990}', '{null, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
----------------------------------------------------------
--- Test 137 - TT_MaxIndexLookupText
----------------------------------------------------------
-UNION ALL
-SELECT '137.1'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test for null schema'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.2'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test for null table'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.3'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test for null source column'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.4'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test for null return column'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.5'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test invalid schema name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupSchemaName is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.6'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test invalid table name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupTableName is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '137.7'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): lookupCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '137.8'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_MaxIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text, NULL::text)') = 'ERROR in TT_MaxIndexLookupText(): retrieveCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '137.9'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Simple test'::text description,
-       TT_MaxIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.10'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Matching indexes'::text description,
-       TT_MaxIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.11'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'null integer'::text description,
-       TT_MaxIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'text_val') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.12'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'setNullTo'::text description,
-       TT_MaxIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '9999', null::text) = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.13'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Matching years return last with null in list'::text description,
-       TT_MaxIndexLookupText('{null, null}', '{null, wind}', 'public', 'index_test_table', 'text_val') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '137.14'::text number,
-       'TT_MaxIndexLookupText'::text function_tested,
-       'Matching years return last with null in list'::text description,
-       TT_MaxIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'text_val') = 'BU' passed
----------------------------------------------------------
 -- Test 138 - TT_XMinusYDouble
 ---------------------------------------------------------
 UNION ALL
@@ -4947,104 +4677,6 @@ SELECT '156.11'::text number,
        'TT_GetIndexMapText'::text function_tested,
        'setZeroTo'::text description,
        TT_GetIndexMapText('{-1, 0}', '{burn, wind}', '{burn, wind}', '{BU, WT}', null::text, '-2', '2') = 'BU' passed
----------------------------------------------------------
--- Test 157 - TT_GetIndexLookupText
----------------------------------------------------------
-UNION ALL
-SELECT '157.1'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test for null schema'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', NULL::text, ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupSchemaName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.2'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test for null table'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', NULL::text, ''source_val'', ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupTableName is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.3'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test for null source column'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', NULL::text, ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.4'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test for null return column'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', NULL::text, NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): retrieveCol is NULL' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.5'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid schema name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''1'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupSchemaName is not a name value' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.6'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid table name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''1'', ''source_val'', ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupTableName is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '157.7'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''1'', ''text_val'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): lookupCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '157.8'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''.0'', NULL::text, NULL::text, ''1'')') = 'ERROR in TT_GetIndexLookupText(): retrieveCol is not a name value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '157.9'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid src col name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text, ''a'')') = 'ERROR in TT_GetIndexLookupText(): indexToReturn is not a int value' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '157.10'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Test invalid target col name'::text description,
-       TT_IsError('SELECT TT_GetIndexLookupText(''{1990, 2000}'', ''{burn, wind}'', ''public'', ''index_test_table'', ''source_val'', ''text_val'', NULL::text, NULL::text, NULL::text)') = 'ERROR in TT_GetIndexLookupText(): indexToReturn is NULL' passed
-------------------------------------------------------------------------------------------------------------------
-UNION ALL
-SELECT '157.11'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Simple test'::text description,
-       TT_GetIndexLookupText('{1990, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val', '1') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.12'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Matching indexes'::text description,
-       TT_GetIndexLookupText('{1990, 1990}', '{burn, wind}', 'public', 'index_test_table', 'text_val', '2') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.13'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'null integer'::text description,
-       TT_GetIndexLookupText('{null, 2000}', '{burn, wind}', 'public', 'index_test_table', 'text_val', '1') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.14'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'setNullTo'::text description,
-       TT_GetIndexLookupText('{1990, null}', '{burn, wind}', 'public', 'index_test_table', 'source_val', 'text_val', '0', null::text, '1') = 'WT' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.15'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Matching years, return first'::text description,
-       TT_GetIndexLookupText('{null, null}', '{burn, null}', 'public', 'index_test_table', 'text_val', '1') = 'BU' passed
----------------------------------------------------------
-UNION ALL
-SELECT '157.16'::text number,
-       'TT_GetIndexLookupText'::text function_tested,
-       'Matching years, return first with null in list'::text description,
-       TT_GetIndexLookupText('{1990, 1990}', '{null, wind}', 'public', 'index_test_table', 'text_val', '1') = 'WT' passed
 ---------------------------------------------------------
 -- Test 158 - TT_GetIndexCopyInt
 ---------------------------------------------------------

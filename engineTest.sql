@@ -101,7 +101,9 @@ WITH test_nb AS (
     SELECT 'TT_RuleToSQL'::text,                    13,          8         UNION ALL
     SELECT 'TT_Prepare'::text,                      14,          8         UNION ALL
     SELECT 'TT_ReplaceAroundChars'::text,           15,         19         UNION ALL
-    SELECT 'TT_PrepareFctCalls'::text,              16,          9
+    SELECT 'TT_PrepareFctCalls'::text,              16,          9         UNION ALL
+    SELECT 'TT_ParseJoinFctCall'::text,             17,         16         UNION ALL
+    SELECT 'TT_BuildJoinExpr'::text,                18,         14
 ),
 test_series AS (
 -- Build a table of function names with a sequence of number for each function to be tested
@@ -1508,6 +1510,204 @@ SELECT '16.9'::text number,
        'TT_PrepareFctCalls'::text function_tested,
        'Test complex function'::text description,
         TT_PrepareFctCalls('fct({1, 2.2, -3.4, aa}, bb, cc(dd))') = 'TT_fct(ARRAY[(1)::text, (2.2)::text, (-3.4)::text, maintable.aa::text]::text[]::text, maintable.bb::text, TT_cc(maintable.dd::text))' passed
+--------------------------------------------------------
+-- Test 17 - TT_ParseJoinFctCall
+--------------------------------------------------------
+UNION ALL
+SELECT '17.1'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Test NULL parameters'::text description,
+        TT_ParseJoinFctCall(NULL) IS NULL passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.2'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple matchtable test with variable name'::text description,
+        TT_ParseJoinFctCall('matchTable(species_1, ''schema'', ''table'', ''lookupCol'')') = ARRAY['', 'matchtable', 'maintable.species_1::text' ,'schema', 'table', 'lookupCol', NULL::text, false::text, false::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.3'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple matchtable test with variable name, false and true'::text description,
+        TT_ParseJoinFctCall('matchTable(species_1, ''schema'', ''table'', ''lookupCol'', FAlse, TRue)') = ARRAY['', 'matchtable', 'maintable.species_1::text' ,'schema','table','lookupCol',NULL::text,false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.4'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple matchtable test with string'::text description,
+        TT_ParseJoinFctCall('matchTable(''SP'', ''schema'', ''table'', ''lookupCol'')') = ARRAY['', 'matchtable', '''SP''' ,'schema','table','lookupCol',NULL::text,false::text,false::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.5'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple matchtable test with string, false and true'::text description,
+        TT_ParseJoinFctCall('matchTable(''SP'', ''schema'', ''table'', ''lookupCol'', FAlse, TRue)') = ARRAY['', 'matchtable', '''SP''' ,'schema','table','lookupCol',NULL::text,false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.6'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'matchtable test with function call'::text description,
+        TT_ParseJoinFctCall('matchTable(fctCall(species, 1, ''aa''), ''schema'', ''table'', ''lookupCol'', False, True)') = ARRAY['', 'matchtable', 'TT_fctCall(maintable.species::text, (1)::text, ''aa'')' ,'schema','table','lookupCol',NULL::text,false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.7'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'matchtable test with function call, false and true'::text description,
+        TT_ParseJoinFctCall('matchTable(fctCall(species, 1, ''aa''), ''schema'', ''table'', ''lookupCol'', False, True)') = ARRAY['', 'matchtable', 'TT_fctCall(maintable.species::text, (1)::text, ''aa'')' ,'schema','table','lookupCol',NULL::text,false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.8'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple lookup test with variable name'::text description,
+        TT_ParseJoinFctCall('lookUpText(species_1, ''schema'', ''table'', ''lookupCol'', ''retreiveCol'')') = ARRAY['', 'lookup', 'maintable.species_1::text' ,'schema','table','lookupCol','retreiveCol',false::text,false::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.9'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple lookup test with variable name, false and true'::text description,
+        TT_ParseJoinFctCall('lookUpInt(species_1, ''schema'', ''table'', ''lookupCol'', ''retreiveCol'', FAlse, TRue)') = ARRAY['', 'lookup', 'maintable.species_1::text' ,'schema','table','lookupCol','retreiveCol',false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.10'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple lookup test with string'::text description,
+        TT_ParseJoinFctCall('lookUpText(''SP'', ''schema'', ''table'', ''lookupCol'', ''retreiveCol'')') = ARRAY['', 'lookup', '''SP''' ,'schema','table','lookupCol','retreiveCol',false::text,false::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.11'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'Simple lookup test with string, false and true'::text description,
+        TT_ParseJoinFctCall('lookUpText(''SP'', ''schema'', ''table'', ''lookupCol'', ''retreiveCol'', FAlse, TRue)') = ARRAY['', 'lookup', '''SP''' ,'schema','table','lookupCol','retreiveCol',false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.12'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'lookup test with function call'::text description,
+        TT_ParseJoinFctCall('lookUpText(fctCall(species, 1, ''aa''), ''schema'', ''table'', ''lookupCol'', ''retreiveCol'')') = ARRAY['', 'lookup', 'TT_fctCall(maintable.species::text, (1)::text, ''aa'')' ,'schema','table','lookupCol','retreiveCol',false::text,false::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.13'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'matchtable test with function call, false and true'::text description,
+        TT_ParseJoinFctCall('lookUpText(fctCall(species, 1, ''aa''), ''schema'', ''table'', ''lookupCol'', ''retreiveCol'', False, True)') = ARRAY['', 'lookup', 'TT_fctCall(maintable.species::text, (1)::text, ''aa'')' ,'schema','table','lookupCol','retreiveCol',false::text,true::text, ''] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.14'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'lookup inside other function call'::text description,
+        TT_ParseJoinFctCall('fct(matchTable(species_1, ''schema'', ''table'', ''lookupCol''))') = ARRAY['TT_fct(', 'matchtable', 'maintable.species_1::text' , 'schema', 'table', 'lookupCol', NULL::text, false::text, false::text, ')'] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.15'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'lookup inside other function call'::text description,
+        TT_ParseJoinFctCall('fct(matchTable(''SP'', ''schema'', ''table'', ''lookupCol'', false, true))') = ARRAY['TT_fct(', 'matchtable', '''SP''' , 'schema', 'table', 'lookupCol', NULL::text, false::text, true::text, ')'] passed
+--------------------------------------------------------
+UNION ALL
+SELECT '17.16'::text number,
+       'TT_ParseJoinFctCall'::text function_tested,
+       'lookup inside other function call'::text description,
+        TT_ParseJoinFctCall('fct(lookUpText(''SP'', ''schema'', ''table'', ''lookupCol'', ''retreiveCol'', true), arg2, arg3, ''val1'', ''val2'')') = ARRAY['TT_fct(', 'lookup', '''SP''' , 'schema', 'table', 'lookupCol', 'retreiveCol', true::text, false::text, ', maintable.arg2::text, maintable.arg3::text, ''val1'', ''val2'')'] passed
+--------------------------------------------------------
+-- Test 18 - TT_ParseJoinFctCall
+--------------------------------------------------------
+UNION ALL
+SELECT '18.1'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in validation rule with NULL as surrounding function strings'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], NULL, '''NOT_IN_SET''') = 
+       '    WHEN (join_1.lookupCol IS NULL) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.2'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in validation rule with '''' as surrounding function strings'::text description,
+        TT_BuildJoinExpr('', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], '', '''NOT_IN_SET''') = 
+       '    WHEN (join_1.lookupCol IS NULL) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.3'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in validation rule with something as surrounding function strings'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, FALSE::text, '1', 'last']], ', arg2, arg3)', '''NOT_IN_SET''') = 
+       '    WHEN (NOT fct(join_1.lookupCol, arg2, arg3)) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.4'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in validation rule with something as surrounding function strings and acceptNull'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', NULL::text, FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', '''NOT_IN_SET''') = 
+       '    WHEN (NOT (value) IS NULL AND NOT fct(join_1.lookupCol, arg2, arg3)) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.5'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in validation rule with NULL as surrounding function strings'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, '''NOT_IN_SET''', FALSE, 'validation') = 
+       '    WHEN (join_1.retreiveCol IS NULL) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.6'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in validation rule with something as surrounding function strings and acceptNull'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', '''NOT_IN_SET''', FALSE, 'validation') = 
+       '    WHEN (NOT (value) IS NULL AND NOT fct(join_1.retreiveCol, arg2, arg3)) THEN ''NOT_IN_SET''' || CHR(10) passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.7'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in translation rule with NULL as surrounding function strings'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, '''NOT_IN_SET''', FALSE, 'translation') = 
+       'join_1.retreiveCol' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.8'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in translation rule with something as surrounding function strings and acceptNull'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', FALSE, 'translation') = 
+       'fct(join_1.retreiveCol, arg2, arg3)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.9'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in where clause rule with NULL as surrounding function strings'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'whereclause') = 
+       'NOT join_1.retreiveCol IS NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.10'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in where clause rule with NULL as surrounding function strings and acceptNull'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], NULL, 'NOT_IN_SET', FALSE, 'whereclause') = 
+       'NOT (value) IS NULL AND NOT join_1.retreiveCol IS NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.11'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test lookup in where clause rule with something as surrounding function strings and acceptNull'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', FALSE, 'whereclause') = 
+       'NOT (value) IS NULL AND fct(join_1.retreiveCol, arg2, arg3)' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.12'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in where clause rule with NULL as surrounding function strings'::text description,
+        TT_BuildJoinExpr(NULL, ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', TRUE, 'whereclause') = 
+       'NOT join_1.lookupCol IS NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.13'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in where clause rule with empty surrounding function strings'::text description,
+        TT_BuildJoinExpr('', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, FALSE::text, '1', 'last']], NULL, 'NOT_IN_SET', TRUE, 'whereclause') = 
+       'NOT join_1.lookupCol IS NULL' passed
+--------------------------------------------------------
+UNION ALL
+SELECT '18.14'::text number,
+       'TT_BuildJoinExpr'::text function_tested,
+       'Test matchtable in where clause rule with something as surrounding function strings'::text description,
+        TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 'lookupCol', 'retreiveCol', FALSE::text, TRUE::text, '1', 'last']], ', arg2, arg3)', 'NOT_IN_SET', TRUE, 'whereclause') = 
+       'NOT (value) IS NULL AND fct(join_1.lookupCol, arg2, arg3)' passed
 --------------------------------------------------------
 ) AS b
 ON (a.function_tested = b.function_tested AND (regexp_split_to_array(number, '\.'))[2] = min_num)

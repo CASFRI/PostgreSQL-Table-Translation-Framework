@@ -61,11 +61,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN '-9999'
                   WHEN rule = 'minindexmatchlist'       THEN '-9998'
                   WHEN rule = 'maxindexmatchlist'       THEN '-9998'
-				  WHEN rule = 'minindexnotmatchlist'    THEN '-9998'
+                  WHEN rule = 'minindexnotmatchlist'    THEN '-9998'
                   WHEN rule = 'maxindexnotmatchlist'    THEN '-9998'
-				  WHEN rule = 'getindexnotmatchlist'    THEN '-9998'
-                  WHEN rule = 'minindexmatchtable'      THEN '-9998'
-                  WHEN rule = 'maxindexmatchtable'      THEN '-9998'
+                  WHEN rule = 'getindexnotmatchlist'    THEN '-9998'
                   WHEN rule = 'isxminusybetween'        THEN '-9999'
                   WHEN rule = 'matchlisttwice'          THEN '-9998'
                   WHEN rule = 'lookuptextmatchlist'     THEN '-9998'
@@ -75,15 +73,13 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN '-9998'
                   WHEN rule = 'coalesceisint'           THEN '-9995'
                   WHEN rule = 'coalesceisbetween'       THEN '-9999'
-                  WHEN rule = 'islessthanlookupdouble'  THEN '-9999'
-				  WHEN rule = 'hascountofmatchlist'     THEN '-9997'
-				  WHEN rule = 'alphaNumericMatchList'   THEN '-9997'
-				  WHEN rule = 'getindexnotnull'         THEN '-8888'
+                  WHEN rule = 'hascountofmatchlist'     THEN '-9997'
+                  WHEN rule = 'alphaNumericMatchList'   THEN '-9997'
+                  WHEN rule = 'getindexnotnull'         THEN '-8888'
                   WHEN rule = 'getindexnotempty'        THEN '-8889'
                   WHEN rule = 'getindexisint'           THEN '-9995'
                   WHEN rule = 'getindexisbetween'       THEN '-9999'
                   WHEN rule = 'getindexmatchlist'       THEN '-9998'
-                  WHEN rule = 'getindexmatchtable'      THEN '-9998'
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSIF targetType = 'geometry' THEN
       RETURN CASE WHEN rule = 'translation_error'       THEN NULL
@@ -117,11 +113,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN NULL
                   WHEN rule = 'minindexmatchlist'       THEN NULL
                   WHEN rule = 'maxindexmatchlist'       THEN NULL
-				  WHEN rule = 'minindexnotmatchlist'    THEN NULL
+                  WHEN rule = 'minindexnotmatchlist'    THEN NULL
                   WHEN rule = 'maxindexnotmatchlist'    THEN NULL
-				  WHEN rule = 'getindexnotmatchlist'    THEN NULL
-                  WHEN rule = 'minindexmatchtable'      THEN NULL
-                  WHEN rule = 'maxindexmatchtable'      THEN NULL
+                  WHEN rule = 'getindexnotmatchlist'    THEN NULL
                   WHEN rule = 'isxminusybetween'        THEN NULL
                   WHEN rule = 'lookuptextmatchlist'     THEN NULL
                   WHEN rule = 'matchlisttwice'          THEN NULL
@@ -131,15 +125,13 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN NULL
                   WHEN rule = 'coalesceisint'           THEN NULL
                   WHEN rule = 'coalesceisbetween'       THEN NULL
-                  WHEN rule = 'islessthanlookupdouble'  THEN NULL
-				  WHEN rule = 'hascountofmatchlist'     THEN NULL
-				  WHEN rule = 'alphaNumericMatchList'   THEN NULL
-				  WHEN rule = 'getindexnotnull'         THEN NULL
+                  WHEN rule = 'hascountofmatchlist'     THEN NULL
+                  WHEN rule = 'alphaNumericMatchList'   THEN NULL
+                  WHEN rule = 'getindexnotnull'         THEN NULL
                   WHEN rule = 'getindexnotempty'        THEN NULL
                   WHEN rule = 'getindexisint'           THEN NULL
                   WHEN rule = 'getindexisbetween'       THEN NULL
                   WHEN rule = 'getindexmatchlist'       THEN NULL
-                  WHEN rule = 'getindexmatchtable'      THEN NULL
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     ELSE
       RETURN CASE WHEN rule = 'translation_error'       THEN 'TRANSLATION_ERROR'
@@ -174,11 +166,9 @@ RETURNS text AS $$
                   WHEN rule = 'maxindexisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'minindexmatchlist'       THEN 'NOT_IN_SET'
                   WHEN rule = 'maxindexmatchlist'       THEN 'NOT_IN_SET'
-				  WHEN rule = 'minindexnotmatchlist'    THEN 'NOT_IN_SET'
+                  WHEN rule = 'minindexnotmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'maxindexnotmatchlist'    THEN 'NOT_IN_SET'
-				  WHEN rule = 'getindexnotmatchlist'    THEN 'NOT_IN_SET'
-                  WHEN rule = 'minindexmatchtable'      THEN 'NOT_IN_SET'
-                  WHEN rule = 'maxindexmatchtable'      THEN 'NOT_IN_SET'
+                  WHEN rule = 'getindexnotmatchlist'    THEN 'NOT_IN_SET'
                   WHEN rule = 'isxminusybetween'        THEN 'OUT_OF_RANGE'
                   WHEN rule = 'matchlisttwice'          THEN 'NOT_IN_SET'
                   WHEN rule = 'lookuptextmatchlist'     THEN 'NOT_IN_SET'
@@ -188,16 +178,13 @@ RETURNS text AS $$
                   WHEN rule = 'matchtablesubstring'     THEN 'NOT_IN_SET'
                   WHEN rule = 'coalesceisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'coalesceisbetween'       THEN 'OUT_OF_RANGE'
-                  WHEN rule = 'islessthanlookupdouble'  THEN 'OUT_OF_RANGE'
-				  WHEN rule = 'hascountofmatchlist'     THEN 'INVALID_VALUE'
-				  WHEN rule = 'alphaNumericMatchList'   THEN 'NOT_IN_SET'
-				  WHEN rule = 'getindexnotnull'         THEN 'NULL_VALUE'
+                  WHEN rule = 'hascountofmatchlist'     THEN 'INVALID_VALUE'
+                  WHEN rule = 'alphaNumericMatchList'   THEN 'NOT_IN_SET'
+                  WHEN rule = 'getindexnotnull'         THEN 'NULL_VALUE'
                   WHEN rule = 'getindexnotempty'        THEN 'EMPTY_STRING'
                   WHEN rule = 'getindexisint'           THEN 'WRONG_TYPE'
                   WHEN rule = 'getindexisbetween'       THEN 'OUT_OF_RANGE'
                   WHEN rule = 'getindexmatchlist'       THEN 'NOT_IN_SET'
-                  WHEN rule = 'getindexmatchtable'      THEN 'NOT_IN_SET'
-				  
                   ELSE 'NO_DEFAULT_ERROR_CODE' END;
     END IF;
   END;
@@ -384,7 +371,7 @@ $$ LANGUAGE plpgsql;
 --
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -1298,12 +1285,16 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsGreaterThan',
-                              ARRAY['lowerBound', lowerBound, 'numeric',
-                                    'inclusive', inclusive, 'boolean',
+                              ARRAY['inclusive', inclusive, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _lowerBound = lowerBound::double precision;
     _inclusive = inclusive::boolean;
     _acceptNull = acceptNull::boolean;
+
+    -- Handle NULL values possibly coming from lookupText()
+    IF lowerBound IS NULL OR NOT TT_IsNumeric(lowerBound) THEN 
+      RETURN FALSE;
+    END IF;
+    _lowerBound = lowerBound::double precision;
 
     -- validate source value
     IF val IS NULL THEN
@@ -1373,13 +1364,17 @@ RETURNS boolean AS $$
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_IsLessThan',
-                              ARRAY['upperBound', upperBound, 'numeric',
-                                    'inclusive', inclusive, 'boolean',
+                              ARRAY['inclusive', inclusive, 'boolean',
                                     'acceptNull', acceptNull, 'boolean']);
-    _upperBound = upperBound::double precision;
     _inclusive = inclusive::boolean;
     _acceptNull = acceptNull::boolean;
-
+    
+    -- Handle NULL values possibly coming from lookupText()
+    IF upperBound IS NULL OR NOT TT_IsNumeric(upperBound) THEN 
+      RETURN FALSE;
+    END IF;
+    _upperBound = upperBound::double precision;
+    
     -- validate source value
     IF val IS NULL THEN
       IF _acceptNull THEN
@@ -2739,7 +2734,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- notNull().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -2978,7 +2973,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isInt().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3022,7 +3017,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isInt().
 -- If there are multiple occurences of the largest value, the
 -- last non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3106,7 +3101,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isBetween().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3156,7 +3151,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- isBetween().
 -- If there are multiple occurences of the largest value, the
 -- last non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3351,7 +3346,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- matchList().
 -- If there are multiple occurences of the smallest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
+-- match the behaviour of TT_MinIndexMapText().
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3430,7 +3425,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -- matchList().
 -- If there are multiple occurences of the largest value, the
 -- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText() and TT_MinIndexLookupText()
+-- match the behaviour of TT_MinIndexMapText() 
 --
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList. Otherwise nulls ignored 
@@ -3570,154 +3565,6 @@ CREATE OR REPLACE FUNCTION TT_GetIndexNotMatchList(
 RETURNS boolean AS $$
   SELECT TT_GetIndexNotMatchList(intList, testList, lst, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
--------------------------------------------------------------------------------
--- TT_MinIndexMatchTable(text, text, text, text, text, text, text)
---
--- intList stringList - list of integers to test with min()
--- testList stringList - list of target values to test for isInt
--- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
--- lookupSchemaName text - Schema name holding lookup table.
--- lookupTableName text - Lookup table name.
--- lookupColumnName text - Lookup table column name.
---
--- Find the target values from the testList with a matching 
--- index to the smallest integer in the intList. Test it with
--- matchTable().
--- If there are multiple occurences of the smallest value, the
--- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText and TT_MinIndexLookupText
---
--- If setNullTo is provided as an integer, nulls
--- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating min value.
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_MinIndexMatchTable(text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS boolean AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-    _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
-        
-    -- test with tt_matchTable()
-    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MinIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text
-)
-RETURNS boolean AS $$
-  SELECT TT_MinIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
--- TT_MaxIndexMatchTable(text, text, text, text, text, text, text)
---
--- intList stringList - list of integers to test with min()
--- testList stringList - list of target values to test for isInt
--- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
--- lst - list to test against
---
--- Find the target values from the testList with a matching 
--- index to the largest integer in the intList. Test it with
--- matchTable().
--- If there are multiple occurences of the largest value, the
--- first non null value with a matching index is used. This is to
--- match the behaviour of TT_MinIndexMapText() and TT_MinIndexLookupText()
---
--- If setNullTo is provided as an integer, nulls
--- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating min value.
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_MaxIndexMatchTable(text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS boolean AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-    _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
-        
-    -- test with tt_matchList()
-    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MaxIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text
-)
-RETURNS boolean AS $$
-  SELECT TT_MaxIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text)
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
--- TT_GetIndexMatchTable(text, text, text, text, text, text, text)
---
--- intList stringList - list of integers to test with min()
--- testList stringList - list of target values to test for isInt
--- setNullTo text - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
--- lst - list to test against
---
--- Same as getIndexNotNull() but passes value to matchTable with lst
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GetIndexMatchTable(text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_GetIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text,
-  setNullTo text,
-  setZeroTo text,
-  indexToReturn text
-)
-RETURNS boolean AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
-        
-    -- test with tt_matchList()
-    RETURN tt_matchTable(_testVal, lookupSchemaName, lookupTableName, lookupColumnName, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_GetIndexMatchTable(
-  intList text,
-  testList text,
-  lookupSchemaName text, 
-  lookupTableName text, 
-  lookupColumnName text,
-  indexToReturn text
-)
-RETURNS boolean AS $$
-  SELECT TT_GetIndexMatchTable(intList, testList, lookupSchemaName, lookupTableName, lookupColumnName, null::text, null::text, indexToReturn)
-$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_MatchTableSubstring
 --
@@ -3963,74 +3810,6 @@ CREATE OR REPLACE FUNCTION TT_CoalesceIsBetween(
 RETURNS boolean AS $$
   SELECT TT_CoalesceIsBetween(valList, min, max, TRUE::text, TRUE::text, FALSE::text);
 $$ LANGUAGE sql IMMUTABLE;
--------------------------------------------------------------------------------
--- TT_IsLessThanLookupDouble(text, text, text, text, text, text)
---
--- srcVal text
--- lookupSrcVal text
--- lookupSchema text
--- lookupTable text
--- lookupCol text
--- retrieveCol text
--- inclusive text - is upper bound inclusive? Default True.
---
--- run lookupText and use the results as the upper bound in isLessThan
--- lookup table source column must be source_val
--- e.g. TT_IsLessThanLookupDouble(srcval, lookupSrcVal, 'schema', 'lookuptable', 'lookupcol')
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
-  srcVal text,
-  lookupSrcVal text,
-  lookupSchema text,
-  lookupTable text,
-  lookupCol text,
-  retrieveCol text,
-  inclusive text
-)
-RETURNS boolean AS $$   
-  DECLARE
-    _lookup_val text;
-  BEGIN
-  
-    -- Validate parameters (trigger EXCEPTION)
-   PERFORM TT_ValidateParams('TT_isLessThanLookupDouble',
-                              ARRAY['lookupSchema', lookupSchema, 'name',
-                                    'lookupTable', lookupTable, 'name',
-                                    'lookupCol', lookupCol, 'name',
-                                    'retrieveCol', retrieveCol, 'name',
-                                    'inclusive', inclusive, 'boolean']);
-  
-    IF NOT TT_MatchTable(lookupSrcVal, lookupSchema, lookupTable, lookupCol, 'FALSE') THEN
-      RETURN FALSE;
-    ELSE
-      _lookup_val = TT_LookupDouble(lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol)::text;
-      RETURN TT_IsLessThan(srcVal, _lookup_val, inclusive);
-    END IF;
-  END
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
-  srcVal text,
-  lookupSrcVal text,
-  lookupSchema text,
-  lookupTable text,
-  retrieveCol text,
-  inclusive text
-)
-RETURNS boolean AS $$   
-  SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, inclusive);
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_IsLessThanLookupDouble(
-  srcVal text,
-  lookupSrcVal text,
-  lookupSchema text,
-  lookupTable text,
-  retrieveCol text
-)
-RETURNS boolean AS $$   
-  SELECT TT_IsLessThanLookupDouble(srcVal, lookupSrcVal, lookupSchema, lookupTable, 'source_val', retrieveCol, 'TRUE');
-$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_HasCountOfMatchList()
 --
@@ -7136,230 +6915,6 @@ CREATE OR REPLACE FUNCTION TT_GetIndexMapInt(
 RETURNS int AS $$
   SELECT TT_GetIndexMapInt(intList, testList, mapVals, targetVals, null::text, null::text, indexToReturn)
 $$ LANGUAGE sql IMMUTABLE;
--------------------------------------------------------------------------------
--- TT_MinIndexLookupText()
---
--- intList text - stringList of values to test
--- testList - stringList from which to select the value to pass to mapText
--- lookupSchemaName text - schema name containing lookup table
--- lookupTableName text - lookup table name
--- lookupCol text - column to look up for the value
--- retrieveCol - column from which to retrieve the matching value
--- setNullTo - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
---
--- passes value from returnList matching the index of the smallest
--- value in intList to  . If setNullTo is provided as an integer, nulls
--- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating min value.
--- If multiple occurences of the smallest value, the first index representing a non-null return value is used.
--- 
--- e.g. TT_MinIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_MinIndexLookupText(text, text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  lookupCol text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS text AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-  
-    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
-    -- and valid arguments in the test script.
-    PERFORM TT_ValidateParams('TT_MinIndexLookupText',
-                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
-                                'lookupTableName', lookupTableName, 'name',
-                                'lookupCol', lookupCol, 'name',
-                                'retrieveCol', retrieveCol, 'name']);
-
-    _testVal = TT_minIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
-    
-    -- pass _srcVal to lookupText
-    RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS text AS $$
-  SELECT TT_MinIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo)
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MinIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text
-)
-RETURNS text AS $$
-  SELECT TT_MinIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, NULL::text, null::text)
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
--- TT_MaxIndexLookupText()
---
--- intList text - stringList of values to test
--- testList - stringList from which to select the value to pass to mapText
--- lookupSchemaName text - schema name containing lookup table
--- lookupTableName text - lookup table name
--- lookupCol text - column to look up for the value
--- retrieveCol - column from which to retrieve the matching value
--- setNullTo - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
---
--- passes value from returnList matching the index of the smallest
--- value in intList to lookupText. If setNullTo is provided as an integer, nulls
--- are replaced with the integer in intList. Otherwise nulls ignored 
--- when calculating min value.
--- If multiple occurences of the largest value, the last index representing a non-null return value is used.
--- 
--- e.g. TT_MaxIndexLookupText({1,2,3}, {a,b,c}, 'lookupSchema', 'lookupTable', 'lookupCol', 'returnCol')
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_MaxIndexLookupText(text, text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  lookupCol text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS text AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-  
-    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
-    -- and valid arguments in the test script.
-    PERFORM TT_ValidateParams('TT_MaxIndexLookupText',
-                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
-                                'lookupTableName', lookupTableName, 'name',
-                                'lookupCol', lookupCol, 'name',
-                                'retrieveCol', retrieveCol, 'name']);
-
-    _testVal = TT_maxIndex_getTestVal(intList, testList, setNullTo, setZeroTo);
-    
-    -- pass _testVal to lookupText
-    RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text
-)
-RETURNS text AS $$
-  SELECT TT_MaxIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo)
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_MaxIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text
-)
-RETURNS text AS $$
-  SELECT TT_MaxIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text, null::text)
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
--- TT_GetIndexLookupText()
---
--- intList text - stringList of values to test
--- testList - stringList from which to select the value to pass to mapText
--- lookupSchemaName text - schema name containing lookup table
--- lookupTableName text - lookup table name
--- lookupCol text - column to look up for the value
--- retrieveCol - column from which to retrieve the matching value
--- setNullTo - defaults to null - optionally convert any nulls in intList to this value
--- setZeroTo text - defaults to null - optionally convert any zeros in intList to this value
--- indexToReturn
---
--- Same as GetIndexNotNull but passes value to lookupText
-------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GetIndexLookupText(text, text, text, text, text, text, text, text);
-CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  lookupCol text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text,
-  indexToReturn text
-)
-RETURNS text AS $$
-  DECLARE
-    _testVal text;
-  BEGIN
-  
-    -- Note we can't validate setNullTo using TT_ValidateParams because null is an expected value
-    -- which is not permitted by TT_ValidateParams. Need to make our own tests for NULL values 
-    -- and valid arguments in the test script.
-    PERFORM TT_ValidateParams('TT_GetIndexLookupText',
-                          ARRAY['lookupSchemaName', lookupSchemaName, 'name',
-                                'lookupTableName', lookupTableName, 'name',
-                                'lookupCol', lookupCol, 'name',
-                                'retrieveCol', retrieveCol, 'name',
-							     'indexToReturn', indexToReturn, 'int']);
-
-    _testVal = TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, indexToReturn);
-    
-    -- pass _testVal to lookupText
-    RETURN TT_LookupText(_testVal, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, 'FALSE');
-  END;
-$$ LANGUAGE plpgsql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text,
-  setNullTo text,
-  setZeroTo text,
-  indexToReturn text
-)
-RETURNS text AS $$
-  SELECT TT_GetIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, setNullTo, setZeroTo, indexToReturn)
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION TT_GetIndexLookupText(
-  intList text,
-  testList text,
-  lookupSchemaName text,
-  lookupTableName text,
-  retrieveCol text,
-  indexToReturn text
-)
-RETURNS text AS $$
-  SELECT TT_GetIndexLookupText(intList, testList, lookupSchemaName, lookupTableName, 'source_val', retrieveCol, null::text, null::text, indexToReturn)
-$$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 -- TT_DivideDouble()
 --
