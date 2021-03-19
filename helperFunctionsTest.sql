@@ -90,7 +90,6 @@ WITH test_nb AS (
   SELECT 'TT_IsGreaterThan'::text,           8,         12         UNION ALL
   SELECT 'TT_IsLessThan'::text,              9,         12         UNION ALL
   SELECT 'TT_IsUnique'::text,               10,         21         UNION ALL
-  SELECT 'TT_MatchTable'::text,             11,         20         UNION ALL
   SELECT 'TT_MatchList'::text,              12,         38         UNION ALL
   SELECT 'TT_False'::text,                  13,          1         UNION ALL
   SELECT 'TT_True'::text,                   14,          1         UNION ALL
@@ -108,22 +107,18 @@ WITH test_nb AS (
   SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
   SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
   SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
-  SELECT 'TT_LookupTextMatchList'::text,    29,          5         UNION ALL
   SELECT 'TT_MinIndexIsInt'::text,          30,          5         UNION ALL
   SELECT 'TT_MaxIndexIsInt'::text,          31,          5         UNION ALL
   SELECT 'TT_MinIndexIsBetween'::text,      32,          4         UNION ALL
   SELECT 'TT_MaxIndexIsBetween'::text,      33,          4         UNION ALL
   SELECT 'TT_MinIndexMatchList'::text,      34,          4         UNION ALL
   SELECT 'TT_MaxIndexMatchList'::text,      35,          4         UNION ALL
-  SELECT 'TT_MatchTableSubstring'::text,    36,          3         UNION ALL
   SELECT 'TT_MinIndexNotEmpty'::text,       37,          8         UNION ALL
   SELECT 'TT_MaxIndexNotEmpty'::text,       38,          8         UNION ALL
   SELECT 'TT_CoalesceIsInt'::text,          39,         10         UNION ALL
   SELECT 'TT_CoalesceIsBetween'::text,      40,         12         UNION ALL
   SELECT 'TT_HasCountOfMatchList'::text,    44,          8         UNION ALL
   SELECT 'TT_AlphaNumericMatchList'::text,  45,          6         UNION ALL	
-  SELECT 'TT_AlphaNumericLookupTextMatchList'::text,46,  2         UNION ALL
-  SELECT 'TT_AlphaNumericMatchTable'::text, 47,          3         UNION ALL
   SELECT 'TT_GetIndexNotNull'::text,        48,          8         UNION ALL
   SELECT 'TT_GetIndexIsInt'::text,          49,          5         UNION ALL
   SELECT 'TT_GetIndexIsBetween'::text,      50,          4         UNION ALL
@@ -134,9 +129,6 @@ WITH test_nb AS (
   SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
   SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
   SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
-  SELECT 'TT_LookupText'::text,            104,         17         UNION ALL
-  SELECT 'TT_LookupDouble'::text,          105,         14         UNION ALL
-  SELECT 'TT_LookupInt'::text,             106,         14         UNION ALL
   SELECT 'TT_MapText'::text,               107,         19         UNION ALL
   SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
   SELECT 'TT_MapInt'::text,                109,         16         UNION ALL
@@ -169,7 +161,6 @@ WITH test_nb AS (
   SELECT 'TT_MaxIndexMapInt'::text,        144,          7         UNION ALL
   SELECT 'TT_MinIndexCopyInt'::text,       145,          9         UNION ALL
   SELECT 'TT_MaxIndexCopyInt'::text,       146,          9         UNION ALL
-  SELECT 'TT_LookupTextSubstring'::text,   147,          3         UNION ALL
   SELECT 'TT_CoalesceText'::text,          148,         14         UNION ALL
   SELECT 'TT_CoalesceInt'::text,           149,         10         UNION ALL
   SELECT 'TT_CountOfNotNullMapText'::text, 150,          5         UNION ALL
@@ -983,102 +974,6 @@ SELECT '10.21'::text number,
        'TT_IsUnique'::text function_tested,
        'Test, text, missing value'::text description,
        TT_IsUnique(NULL::text, 'public'::text, 'test_lookuptable1'::text, 1::text, TRUE::text) passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 11 - TT_MatchTable (lookup table variant)
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (6 tests)
-SELECT (TT_TestNullAndWrongTypeParams(11, 'TT_MatchTable', ARRAY['lookupSchemaName', 'name',
-                                                                 'lookupTableName', 'name',
-                                                                 'lookupColumnName', 'name',
-                                                                 'ignoreCase', 'boolean',
-                                                                 'acceptNull', 'boolean'])).*
----------------------------------------------------------
-UNION ALL
-SELECT '11.7'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test text, pass'::text description,
-       TT_MatchTable('RA'::text, 'public'::text, 'test_lookuptable1'::text, 'source_val'::text) IS TRUE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.8'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test text, fail'::text description,
-       TT_MatchTable('RAA'::text, 'public'::text, 'test_lookuptable1'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.9'::text number,
-       'TT_MatchTable'::text function_tested,
-       'val NULL text'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable1'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.10'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.11'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, fail'::text description,
-       TT_MatchTable(1.5::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.12'::text number,
-       'TT_MatchTable'::text function_tested,
-       'NULL val double precision'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.13'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test integer, pass'::text description,
-       TT_MatchTable(1::text, 'public'::text, 'test_lookuptable2'::text, 'source_val'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.14'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test integer, fail'::text description,
-       TT_MatchTable(5::text, 'public'::text, 'test_lookuptable2'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.15'::text number,
-       'TT_MatchTable'::text function_tested,
-       'NULL val integer'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable2'::text, 'source_val'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.16'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Test ignoreCase when false'::text description,
-       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, 'source_val'::text, FALSE::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.17'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass, ignore case false'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text, FALSE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.18'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Test ignoreCase when true'::text description,
-       TT_MatchTable('ra'::text, 'public'::text, 'test_lookuptable1'::text, 'source_val'::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.19'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Simple test double precision, pass, ingore case true'::text description,
-       TT_MatchTable(1.1::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text, TRUE::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '11.20'::text number,
-       'TT_MatchTable'::text function_tested,
-       'Test null with acceptNull true'::text description,
-       TT_MatchTable(NULL::text, 'public'::text, 'test_lookuptable3'::text, 'source_val'::text, TRUE::text, TRUE::text) passed
----------------------------------------------------------
 ---------------------------------------------------------
 -- Test 12 - TT_MatchList
 ---------------------------------------------------------
@@ -2052,34 +1947,6 @@ SELECT '28.11'::text number,
        'Zero as null'::text description,
        TT_HasCountOfNotNullOrZero('{''a''}'::text, '{''0''}'::text, NULL, 1::text, TRUE::text) passed
 ---------------------------------------------------------
--- Test 29 - TT_LookupTextMatchList
----------------------------------------------------------
-UNION ALL
-SELECT '29.1'::text number,
-       'TT_LookupTextMatchList'::text function_tested,
-       'Matches'::text description,
-       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', 'Popu balb') passed
-UNION ALL
-SELECT '29.2'::text number,
-       'TT_LookupTextMatchList'::text function_tested,
-       'Matches with multiple test vals'::text description,
-       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', '{''Popu balb'', ''Pice mari''}') passed
-UNION ALL
-SELECT '29.3'::text number,
-       'TT_LookupTextMatchList'::text function_tested,
-       'Matches with multiple test vals'::text description,
-       TT_LookupTextMatchList('ACB', 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
-UNION ALL
-SELECT '29.4'::text number,
-       'TT_LookupTextMatchList'::text function_tested,
-       'Matches with multiple test vals'::text description,
-       TT_LookupTextMatchList('', 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
-UNION ALL
-SELECT '29.5'::text number,
-       'TT_LookupTextMatchList'::text function_tested,
-       'Matches with multiple test vals'::text description,
-       TT_LookupTextMatchList(NULL::text, 'public', 'test_lookuptable1', 'target_val', '{''Popu bal'', ''Pice mari''}') IS FALSE passed
----------------------------------------------------------
 -- Test 30 - TT_MinIndexIsInt
 ---------------------------------------------------------
 UNION ALL
@@ -2227,26 +2094,6 @@ SELECT '35.4'::text number,
        'TT_MaxIndexMatchList'::text function_tested,
        'Test setZero'::text description,
        TT_MaxIndexMatchList('{1,0,3}', '{a,b,c}', '{b, y, z}', null::text, '4') passed
----------------------------------------------------------
--- Test 36 - TT_MatchTableSubstring
----------------------------------------------------------
-UNION ALL
-SELECT '36.1'::text number,
-       'TT_MatchTableSubstring'::text function_tested,
-       'Simple test text, pass'::text description,
-       TT_MatchTableSubstring('RA00'::text, '1', '2', 'public'::text, 'test_lookuptable1'::text) passed
----------------------------------------------------------
-UNION ALL
-SELECT '36.2'::text number,
-       'TT_MatchTableSubstring'::text function_tested,
-       'Simple test text, fail'::text description,
-       TT_MatchTableSubstring('RA00'::text, '1', '3', 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
----------------------------------------------------------
-UNION ALL
-SELECT '36.3'::text number,
-       'TT_MatchTableSubstring'::text function_tested,
-       'val NULL text'::text description,
-       TT_MatchTableSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text) IS FALSE passed
 ---------------------------------------------------------
 -- Test 37 - TT_minIndexNotEmpty
 ---------------------------------------------------------
@@ -2567,40 +2414,6 @@ SELECT '45.6'::text number,
        'Check special characters carry through'::text description,
        TT_AlphaNumericMatchList('ab1cd2ef/', '{''xx0xx0xx0'', ''xx0xx0xx/''}') passed
 ---------------------------------------------------------
--- Test 46 - TT_AlphaNumericLookupTextMatchList
----------------------------------------------------------
-UNION ALL
-SELECT '46.1'::text number,
-       'TT_AlphaNumericLookupTextMatchList'::text function_tested,
-       'Simple pass'::text description,
-       TT_AlphaNumericLookupTextMatchList('a 1', 'public', 'alpha_numeric_test_table', 'species_count', '{''1''}') passed
----------------------------------------------------------
-UNION ALL
-SELECT '46.2'::text number,
-       'TT_AlphaNumericLookupTextMatchList'::text function_tested,
-       'Simple pass 2'::text description,
-       TT_AlphaNumericLookupTextMatchList('ab 1xx 9', 'public', 'alpha_numeric_test_table', 'species_count', '{''1'', ''2''}') passed
----------------------------------------------------------
--- Test 47 - TT_AlphaNumericMatchTable
----------------------------------------------------------
-UNION ALL
-SELECT '47.1'::text number,
-       'TT_AlphaNumericMatchTable'::text function_tested,
-       'Simple pass'::text description,
-       TT_AlphaNumericMatchTable('s 0', 'public', 'alpha_numeric_test_table') passed
----------------------------------------------------------
-UNION ALL
-SELECT '47.2'::text number,
-       'TT_AlphaNumericMatchTable'::text function_tested,
-       'Simple pass 2'::text description,
-       TT_AlphaNumericMatchTable('ss 0bs 9', 'public', 'alpha_numeric_test_table') passed
----------------------------------------------------------
-UNION ALL
-SELECT '47.3'::text number,
-       'TT_AlphaNumericMatchTable'::text function_tested,
-       'Simple fail'::text description,
-       TT_AlphaNumericMatchTable('ss 0bs 99', 'public', 'alpha_numeric_test_table') IS FALSE passed
----------------------------------------------------------
 -- Test 48 - TT_GetIndexNotNull
 ---------------------------------------------------------
 UNION ALL
@@ -2868,133 +2681,6 @@ SELECT '103.5'::text number,
        'TT_CopyInt'::text function_tested,
        'Null'::text description,
        TT_CopyInt(NULL::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 104 - TT_LookupText
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (10 tests)
-SELECT (TT_TestNullAndWrongTypeParams(104, 'TT_LookupText',
-                                      ARRAY['lookupSchemaName', 'name',
-                                            'lookupTableName', 'name',
-                                            'lookupCol', 'name',
-                                            'retrieveCol', 'name',
-                                            'ignoreCase', 'boolean'])).*
----------------------------------------------------------
-UNION ALL
-SELECT '104.11'::text number,
-       'TT_LookupText'::text function_tested,
-       'Text usage'::text description,
-       TT_LookupText('a'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text) = 'ACB'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.12'::text number,
-       'TT_LookupText'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupText(NULL::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.13'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text, TRUE::text) = 'ACB'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.14'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupText('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text, FALSE::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.15'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test ignore case, true flipped case'::text description,
-       TT_LookupText('aa'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text, TRUE::text) = 'abcde'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.16'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test new retrieveCol parameter'::text description,
-       TT_LookupText('abcde'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'text_val'::text, 'source_val'::text) = 'AA'::text passed
----------------------------------------------------------
-UNION ALL
-SELECT '104.17'::text number,
-       'TT_LookupText'::text function_tested,
-       'Test new retrieveCol parameter with ignoreCase = TRUE'::text description,
-       TT_LookupText('AbCdE'::text, 'public'::text, 'test_table_with_null'::text, 'text_val'::text, 'source_val'::text, TRUE::text) = 'AA'::text passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 105 - TT_LookupDouble
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (10 tests)
-SELECT (TT_TestNullAndWrongTypeParams(105, 'TT_LookupDouble',
-                                      ARRAY['lookupSchemaName', 'name',
-                                            'lookupTableName', 'name',
-                                            'lookupCol', 'name',
-                                            'retrieveCol', 'name',
-                                            'ignoreCase', 'boolean'])).*
----------------------------------------------------------
-UNION ALL
-SELECT '105.11'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Double precision usage'::text description,
-       TT_LookupDouble('a'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'dbl_val'::text) = 1.1::double precision passed
----------------------------------------------------------
-UNION ALL
-SELECT '105.12'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupDouble(NULL::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'dbl_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '105.13'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'dbl_val'::text, TRUE::text) = 1.1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '105.14'::text number,
-       'TT_LookupDouble'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupDouble('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'dbl_val'::text, FALSE::text) IS NULL passed
----------------------------------------------------------
----------------------------------------------------------
--- Test 106 - TT_LookupInt
----------------------------------------------------------
-UNION ALL
--- test all NULLs and wrong types (10 tests)
-SELECT (TT_TestNullAndWrongTypeParams(106, 'TT_LookupInt',
-                                      ARRAY['lookupSchemaName', 'name',
-                                            'lookupTableName', 'name',
-                                            'lookupCol', 'name',
-                                            'retrieveCol', 'name',
-                                            'ignoreCase', 'boolean'])).*
----------------------------------------------------------
-UNION ALL
-SELECT '106.11'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Int usage'::text description,
-       TT_LookupInt('a'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'int_val'::text) = 1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '106.12'::text number,
-       'TT_LookupInt'::text function_tested,
-       'NULL val'::text description,
-       TT_LookupInt(NULL::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'int_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '106.13'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Test ignore case, true'::text description,
-       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'int_val'::text, TRUE::text) = 1 passed
----------------------------------------------------------
-UNION ALL
-SELECT '106.14'::text number,
-       'TT_LookupInt'::text function_tested,
-       'Test ignore case, false'::text description,
-       TT_LookupInt('A'::text, 'public'::text, 'test_table_with_null'::text, 'source_val'::text, 'int_val'::text, FALSE::text) IS NULL passed
----------------------------------------------------------
 ---------------------------------------------------------
 -- Test 107 - TT_MapText
 ---------------------------------------------------------
@@ -4241,28 +3927,7 @@ SELECT '146.9'::text number,
        'Test setZero'::text description,
        TT_MaxIndexCopyInt('{1,2,0}', '{1,2,3}', null::text, '3') = 3 passed
 ---------------------------------------------------------
--- Test 147 - TT_LookupTextSubstring
----------------------------------------------------------
-UNION ALL
-SELECT '147.1'::text number,
-       'TT_LookupTextSubstring'::text function_tested,
-       'Simple test text, pass'::text description,
-       TT_LookupTextSubstring('RA00'::text, '1', '2', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) = 'Arbu menz' passed
----------------------------------------------------------
-UNION ALL
-SELECT '147.2'::text number,
-       'TT_LookupTextSubstring'::text function_tested,
-       'Simple test text, fail'::text description,
-       TT_LookupTextSubstring('RA00'::text, '1', '3', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) IS NULL passed
----------------------------------------------------------
-UNION ALL
-SELECT '147.3'::text number,
-       'TT_LookupTextSubstring'::text function_tested,
-       'val NULL text, NULL gets converted to empty string'::text description,
-       TT_LookupTextSubstring(NULL::text, '1', '3', 'public'::text, 'test_lookuptable1'::text, 'target_val'::text) = '' passed
----------------------------------------------------------
 -- Test 148 - TT_CoalesceText
----------------------------------------------------------
 ---------------------------------------------------------
 UNION ALL
 -- test all NULLs and wrong types (2 tests)
@@ -4540,7 +4205,7 @@ UNION ALL
 SELECT '154.3'::text number,
        'TT_SubstringMultiplyInt'::text function_tested,
        'Test error'::text description,
-       TT_IsError('SELECT TT_SubstringMultiplyInt(''JPJP'', ''3'', ''2'', ''10'')') = 'invalid input syntax for integer: "JP"' passed
+       TT_IsError('SELECT TT_SubstringMultiplyInt(''JPJP'', ''3'', ''2'', ''10'')') = 'invalid input syntax for type integer: "JP"' passed
 ---------------------------------------------------------
 -- Test 155 - TT_GetIndexCopyText
 ---------------------------------------------------------
