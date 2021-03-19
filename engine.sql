@@ -2625,7 +2625,6 @@ RETURNS text AS $f$
 
         -- Parse the rule to find matchtable or lookup and their parameters
         currentJoinArr = TT_ParseJoinFctCall(fullRule);
---RAISE NOTICE '00 currentJoinArr=%', currentJoinArr;
 
 			  IF translationRow.target_attribute = 'ROW_TRANSLATION_RULE' THEN
           IF currentJoinArr[2] IS NULL THEN
@@ -2636,7 +2635,6 @@ RETURNS text AS $f$
                                        TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], NULL, (currentJoinArr[2] = 'matchtable'), 'whereclause');
           END IF;
           rowTranslationRuleClause = rowTranslationRuleClause || ' OR ' || CHR(10);
-RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
 				ELSE
           -- Determine validation error code
           errorCode = coalesce(rule.errorCode, coalesce(TT_DefaultProjectErrorCode(rule.fctName, translationRow.target_attribute_type), 'NULL'));
@@ -2650,18 +2648,14 @@ RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
           IF currentJoinArr[2] IS NULL THEN
             translationQuery = translationQuery || '    WHEN NOT ' || 
                                currentJoinArr[1] || ' THEN ' || errorCode || CHR(10);
---RAISE NOTICE '11 translationQuery=%', translationQuery;
           ELSE
---RAISE NOTICE 'leftJoinArr33=%', leftJoinArr;
             leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, currentJoinArr);
---RAISE NOTICE 'leftJoinArr44=%', leftJoinArr;
             translationQuery = translationQuery || TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], errorCode, (currentJoinArr[2] = 'matchtable'), 'validation');
---RAISE NOTICE '22 translationQuery=%', translationQuery;
 	        END IF;
 	      END IF;
 		  END LOOP; -- FOREACH rule
---RAISE NOTICE '33 translationQuery=%', translationQuery;
-		  -- Build the translation part
+
+      -- Build the translation part
       IF translationRow.target_attribute != 'ROW_TRANSLATION_RULE' THEN
         -- Determine translation error code
         errorCode = CASE WHEN translationRow.target_attribute_type IN ('boolean', 'geometry') 
@@ -2675,24 +2669,21 @@ RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
 
         -- Parse the rule to find matchtable or lookup and their parameters
         currentJoinArr = TT_ParseJoinFctCall(fullRule);
---RAISE NOTICE '44 currentJoinArr=%', currentJoinArr;
 
         translationQuery = translationQuery || '    ELSE coalesce((';
         -- If the rule does not contain matchtable nor lookup
         IF currentJoinArr[2] IS NULL THEN
           translationQuery = translationQuery || TT_PrepareFctCalls(fullRule);
---RAISE NOTICE '55 translationQuery=%', translationQuery;
         ELSE
           leftJoinArr = TT_AppendParsedJoinToArr(leftJoinArr, currentJoinArr);
           translationQuery = translationQuery || TT_BuildJoinExpr(currentJoinArr[1], leftJoinArr, currentJoinArr[10], errorCode, (currentJoinArr[2] = 'matchtable'), 'translation');
---RAISE NOTICE '66 translationQuery=%', translationQuery;
         END IF;
         translationQuery = translationQuery || ')::' || translationRow.target_attribute_type || ', (' || errorCode || ')::' || translationRow.target_attribute_type || ') ' || CHR(10) || 
 												     '  END::' || lower(translationRow.target_attribute_type) || ' ' || lower(translationRow.target_attribute) || ',' || CHR(10);
       END IF;
     END LOOP; -- FOR TRANSLATION ROW
---RAISE NOTICE '66 translationQuery=%', translationQuery;
-		-- Remove the last comma from translationQuery and complete
+
+    -- Remove the last comma from translationQuery and complete
 		translationQuery = left(translationQuery, char_length(translationQuery) - 2);
     
 		-- Erase rowTranslationRuleClause or simply erase the last 'OR' from it
@@ -2702,7 +2693,6 @@ RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
       rowTranslationRuleClause = left(rowTranslationRuleClause, char_length(rowTranslationRuleClause) - 5) || ';';
     END IF;
 
---RAISE NOTICE 'leftJoinArr=%', leftJoinArr;
     -- Generate LEFT JOINs clause
     IF NOT leftJoinArr IS NULL THEN
       FOREACH currentJoinArr SLICE 1 IN ARRAY leftJoinArr LOOP
@@ -2723,13 +2713,10 @@ RAISE NOTICE 'rowTranslationRuleClause11=%', rowTranslationRuleClause;
       END LOOP;
     END IF;
 
---RAISE NOTICE 'rowTranslationRuleClause22=%', rowTranslationRuleClause;
---RAISE NOTICE 'whereLeftJoinClause=%', whereLeftJoinClause;
---RAISE NOTICE 'leftJoinClause=%', leftJoinClause;
     RAISE NOTICE 'translationQuery=%', translationQuery || CHR(10) || 
                                        'FROM sourceTableSchema.sourceTable maintable ' || CHR(10) || 
                                        leftJoinClause || 
-                                       rowTranslationRuleClause;
+                                       rowTranslationRuleClause || CHR(10);
 
     translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 
                        'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || CHR(10) || 
@@ -2834,7 +2821,7 @@ RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
     -- Estimate the number of rows to return
     countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
 
-    RAISE NOTICE 'Computing the number of rows to translate... (%)', countQuery;
+    RAISE NOTICE 'Counting the number of rows to translate... (%)', countQuery;
     EXECUTE countQuery INTO expectedRowNb;
     RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
 
