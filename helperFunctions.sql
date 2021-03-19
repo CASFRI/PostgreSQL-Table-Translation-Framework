@@ -6977,12 +6977,22 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- returns val1 * val2
 ------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Multiply(text, text);
 CREATE OR REPLACE FUNCTION TT_Multiply(
   val1 text,
   val2 text
 )
 RETURNS double precision AS $$
   BEGIN
+    
+	PERFORM TT_ValidateParams('TT_Multiply',
+                              ARRAY['val2', val2, 'numeric']);
+							  
+	-- check source value is numeric
+    IF NOT tt_isNumeric(val1) THEN
+	  RETURN NULL;
+	END IF;
+	
     IF val1::double precision = 0 OR val2::double precision = 0 THEN
       RETURN NULL;
     END IF;
@@ -6995,6 +7005,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 --
 -- cast to int
 ------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_MultiplyInt(text, text);
 CREATE OR REPLACE FUNCTION TT_MultiplyInt(
   val1 text,
   val2 text
