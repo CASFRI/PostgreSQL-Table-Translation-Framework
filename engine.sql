@@ -423,9 +423,20 @@ RETURNS text AS $$
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
            CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
            CASE WHEN nbMinutes > 0 OR ((nbDays > 0 OR nbHours > 0) AND (seconds > 0)) THEN lpad(nbMinutes::text, 2, '0') || 'm' ELSE '' END ||
-           CASE WHEN seconds > 0 THEN lpad(seconds::text, 2, '0') || 's' ELSE '' END;
+           CASE WHEN seconds > 0 OR (nbDays = 0 AND nbHours = 0 AND nbMinutes = 0) THEN lpad(seconds::text, 2, '0') || 's' ELSE '' END;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+/*
+SELECT TT_PrettyDuration(1); -- '01s'
+SELECT TT_PrettyDuration(0); -- '00s'
+SELECT TT_PrettyDuration(60); -- '01m'
+SELECT TT_PrettyDuration(61); -- '01m01s'
+SELECT TT_PrettyDuration(3600); -- '01h'
+SELECT TT_PrettyDuration(3603); -- '01h00m03s'
+SELECT TT_PrettyDuration(3661); -- '01h01m01s'
+SELECT TT_PrettyDuration(24*3600); -- '1d'
+SELECT TT_PrettyDuration(24*3602); -- '1d00h00m48s'
+*/
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -2816,7 +2827,6 @@ RETURNS SETOF RECORD AS $$
   BEGIN
     IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE 'TT_ShowProgress BEGIN';END IF;
-RAISE NOTICE 'TT_ShowProgress(): translationQuery=%', translationQuery;
 
     -- Estimate the number of rows to return
     countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
