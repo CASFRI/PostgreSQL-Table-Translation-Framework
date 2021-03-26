@@ -1404,6 +1404,6 @@ Some helper functions use dependency tables to facilitate validation or translat
 # Credit
 **Pierre Racine** - Center for forest research, University Laval.
 
-**Pierre Vernier** - Database designer.
+**Marc Edwards** - database design, programming.
 
-**Marc Edwards** - SQL programmer.
+**Pierre Vernier** - database design.
