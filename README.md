@@ -434,9 +434,16 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is between **min** and **max**. FALSE otherwise.
     * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsBetween() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsBetween() return TRUE.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
+
+* **IsXMinusYBetween**(*numeric* **x**, *numeric* **y**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if **x** minus **y** is between **min** and **max**. FALSE otherwise.
+    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.
+    * When **acceptNull** is TRUE, NULL x minus y values make IsBetween() return TRUE.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * e.g. IsXMinusYBetween(50, 5, 0, 100, TRUE, TRUE) returns TRUE.
           
 * **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** >= **lowerBound** and **inclusive** = TRUE or if **srcVal** > **lowerBound** and **inclusive** = FALSE. Returns FALSE otherwise or if **srcVal** is NULL.
@@ -516,7 +523,12 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsIntSubstring() to return TRUE.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. IsIntSubstring('2001-01-01', 1, 4)
- 
+
+* **AlphaNumericMatchList**(*stringList* **srcVal**, *stringList* **matchList**, *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
+    * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'. Then tests if the resulting code is in the **matchList** using MatchList.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. AlphaNumericMatchList('bf50ws50', {'xx00xx00'}) returns TRUE.
+
   * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if the **srcVal** substring starting at character **starChar** for **forLength** is between **min** and **max**.
     * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.  
@@ -750,24 +762,39 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * When **removeSpaces** is TRUE, removes any spaces before calculating length.
     * e.g. Length('12345', {5, 6, 7}, {1, 2, 3})
     
-* **Multiply**(*double precision* **val1**, *double precision* **val2**)
+* **Multiply**(*numeric* **val1**, *numeric* **val2**)
     * Multiplies val1 by val2.
     * Return type is double precision.
     * e.g. Multiply(2.5, 2) returns 5.
 
-* **MultiplyInt**(*double precision* **val1**, *double precision* **val2**)
+* **MultiplyInt**(*numeric* **val1**, *numeric* **val2**)
     * Calls **Multiply** and casts to integer.
     * Return type is integer.
     * e.g. Multiply(2, 3) returns 6.
 
-* **DivideDouble**(*double precision* **srcVal**, *double precision* **divideBy**)
+* **SubstringMultiplyInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *numeric* **val2**)
+    * Runs Substring using **srcVal**, **startChar** and **forLength**, then multiplies the result by **val2** and casts to an integer.
+    * Return type is integer.
+    * e.g. SubstringMultiplyInt('xx2', 3, 1, 2) returns 4.
+
+* **DivideDouble**(*numeric* **srcVal**, *numeric* **divideBy**)
     * Divides **srcVal** by **divideBy**.
     * Return type is double precision.
     * e.g. DivideDouble(2.2, 1.1)
 
-* **DivideInt**(*double precision* **srcVal**, *double precision* **divideBy**)
+* **DivideInt**(*numeric* **srcVal**, *numeric* **divideBy**)
     * A wrapper around DivideDouble() that returns an integer.
     * e.g. DivideInt(2.2, 1.1)
+
+* **XMinusYDouble**(*numeric* **x**, *numeric* **y**)
+    * Returns the result of **x** minus **y**.
+    * Return type is double precision.
+    * e.g. XMinusYDouble(2.2, 1.1) returns 1.1.
+
+* **XMinusYInt**(*numeric* **x**, *numeric* **y**)
+    * Casts the result of **x** minus **y** to an integer.
+    * Return type is integer.
+    * e.g. XMinusYDouble(2, 1) returns 1.
 
 * **Pad**(*text* **srcVal**, *int* **targetLength**, *text* **padChar**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length **targetLength** made up of **srcVal** preceeded with **padChar**.
@@ -834,6 +861,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns value from **returnList** matching the index of the lowest value in **intList**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
+    * Return type is text.
     * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
     * e.g. MaxIndexCopyText({1990, NULL}, {burn, wind}, 2000, 'NULL')
 
@@ -841,34 +869,64 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns value from **returnList** matching the index of the highest value in **intList**.
     * If setNullTo is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * If there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
+    * Return type is text.
     * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
     * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 1990)
 
+* **GetIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
+    * Return the value from the reordered **returnList** that matches the index of **indexToReturn**.
+    * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.    
+    * Return type is text.
+    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
+    * e.g. MaxIndexCopyText({1990, NULL}, {burn, wind}, 2000, 'NULL')
+
 * **MinIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexCopyText() but returns an integer.
+  * Return type is integer.
   
 * **MaxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexCopyText() but returns an integer.
+  * Return type is integer.
+
+* **GetIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+  * Same as GetIndexCopyText() but returns an integer.
+  * Return type is integer.
 
 * **MinIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from **returnList** matching the index of the lowest value in **intList** to MapText(). Runs MapText() using **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
+    * Return type is text.
     * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
     * e.g. MinIndexMapText({NULL, 0}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 2020)
 
 * **MaxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Passes value from returnList matching the index of the highest value in intList to MapText(). Runs MapText() with mapVals and targetVals.
+    * Passes value from returnList matching the index of the highest value in intList to MapText(). Runs MapText() with **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
+    * Return type is text.
     * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
     * e.g. MaxIndexMapText({1990, NULL}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 'NULL')
-    
+
+* **GetIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
+    * Pass the value from the reordered **returnList** that matches the index of **indexToReturn** to MapText along with **mapVals** and **targetVals**.
+    * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
+    * Return type is text.
+    * e.g. GetIndexMapText({1990, 1995, 2000}, {burn, wind, insect}, {burn, wind, insect}, {BU, WT, IN}, 2) returns WT.
+
 * **MinIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexMapText() but returning an integer.
+  * Return type is integer.
 
 * **MaxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexMapText() but returning an integer.
+  * Return type is integer.
+
+* **GetIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+  * Same as GetIndexMapText() but returns an integer.
+  * Return type is integer.
 
 * **CoalesceText**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Returns the first non-NULL value in the **srcValList** string list.
@@ -877,6 +935,10 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **CoalesceInt**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Simple wrapper around CoalesceText() that returns an int.
+
+* **AlphaNumeric**(*stringList* **srcVal**)
+    * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'.
+    * e.g. AlphaNumeric('bf50ws50') returns 'xx00xx00'.
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns the value of the **returnCol** column of the **intersectSchemaName**.**intersectTableName** table where the geometry in the **geoCol** column intersects **geom**.
