@@ -400,7 +400,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Paired with most translation functions to make sure input values are available.
     * When **any** is TRUE, returns TRUE if any value in **srcValList** is not NULL.
     * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
-    * Varients are:
+    * Variants are:
       * NotNull(srcValList, any)
       * NotNull(srcValList)
     * e.g. NotNull('a') returns TRUE.
@@ -412,7 +412,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Paired with translation functions accepting text strings (e.g. CopyText()).
     * When **any** is TRUE, returns TRUE if any **srcValList** value is not an empty strings. 
     * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
-    * Varients are:
+    * Variants are:
       * NotEmpty(srcValList, any)
       * NotEmpty(srcValList)
     * e.g. NotEmpty('a') returns TRUE.
@@ -423,7 +423,7 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Returns TRUE if **srcVal** represents an integer (e.g. '1.0', '1'). Returns FALSE is **srcVal** does not represent an integer (e.g. '1.1', '1a'), or if **srcVal** is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsInt() return TRUE.
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
-    * Varients are:
+    * Variants are:
       * IsInt(srcVal, acceptNull)
       * IsInt(srcVal)
     * e.g. IsInt('1') returns TRUE.
@@ -432,107 +432,172 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Returns TRUE if **srcVal** can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if **srcVal** cannot be cast to double precision (e.g. '1.1.1', '1a'), or if **srcVal** is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsNumeric() return TRUE.
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
-    * Varients are:
+    * Variants are:
       * IsNumeric(srcVal, acceptNull)
       * IsNumeric(srcVal)
     * e.g. IsNumeric('1.1')
    
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is between **min** and **max**. FALSE otherwise.
-    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.
+    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max**. Must include both or neither **includeMin** and **includeMax** parameters.
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsBetween() return TRUE.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. IsBetween(5, 0, 100, TRUE, TRUE)
+    * Variants are:
+      * IsBetween(srcVal, min, max, includeMin, includeMax, acceptNull)
+      * IsBetween(srcVal, min, max, includeMin, includeMax)
+      * IsBetween(srcVal, min, max)
+    * e.g. IsBetween(5, 0, 100) returns TRUE
 
 * **IsXMinusYBetween**(*numeric* **x**, *numeric* **y**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **x** minus **y** is between **min** and **max**. FALSE otherwise.
-    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.
+    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max**. Must include both or neither **includeMin** and **includeMax** parameters.
     * When **acceptNull** is TRUE, NULL x minus y values make IsBetween() return TRUE.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. IsXMinusYBetween(50, 5, 0, 100, TRUE, TRUE) returns TRUE.
+    * Variants are:
+      * IsXMinusYBetween(x, y, min, max, includeMin, includeMax, acceptNull)
+      * IsXMinusYBetween(x, y, min, max, includeMin, includeMax)
+      * IsXMinusYBetween(x, y, min, max) 
+    * e.g. IsXMinusYBetween(50, 5, 0, 100) returns TRUE.
           
 * **IsGreaterThan**(*numeric* **srcVal**, *numeric* **lowerBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** >= **lowerBound** and **inclusive** = TRUE or if **srcVal** > **lowerBound** and **inclusive** = FALSE. Returns FALSE otherwise or if **srcVal** is NULL.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsGreaterThan() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsGreaterThan() return TRUE.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. IsGreaterThan(5, 0, TRUE)
+    * Variants are:
+      * IsGreaterThan(srcVal, lowerBound, inclusive, acceptNull)
+      * IsGreaterThan(srcVal, lowerBound, inclusive)
+      * IsGreaterThan(srcVal, lowerBound)
+    * e.g. IsGreaterThan(5, 4) returns TRUE.
 
 * **IsLessThan**(*numeric* **srcVal**, *numeric* **upperBound**, *boolean* **inclusive**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** <= **lowerBound** and **inclusive** = TRUE or if **srcVal** < **lowerBound** and **inclusive** = FALSE. Returns FALSE otherwise or if **srcVal** is NULL.
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsLessThan() to return TRUE.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. IsLessThan(1, 5, TRUE)
+    * Variants are:
+      * IsLessThan(srcVal, upperBound, inclusive, acceptNull)
+      * IsLessThan(srcVal, upperBound, inclusive)
+      * IsLessThan(srcVal, upperBound)
+    * e.g. IsLessThan(1, 5) returns TRUE.
 
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurrences**\[default 1\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if number of occurrences of **srcVal** in "source_val" column of **lookupSchemaName**.**lookupTableName** equals **occurrences**. Useful for validating lookup tables to make sure **srcVal** only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsUnique() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsUnique() return TRUE.
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
-    * e.g. IsUnique('TA', public, species_lookup, 1)
+    * Variants are:
+      * IsUnique(srcVal, lookupSchemaName, lookupTableName, occurrences, acceptNull)
+      * IsUnique(srcVal, lookupSchemaName, lookupTableName, occurrences)
+      * IsUnique(srcVal, lookupSchemaName, lookupTableName)
+      * IsUnique(srcVal, lookupTableName)
+    * e.g. IsUnique('TA', public, species_lookup, 1) returns TRUE if there is only one 'TA' value in the lookup table source_val column. 
 
 * **HasLength**(*text* **srcVal**, *int* **length**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if the number of characters in **srcVal** matches **length**.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make HasLength() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make HasLength() return TRUE.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. HasLength('123', 3)
+    * Variants are:
+      * HasLength(srcVal, length, acceptNull)
+      * HasLength(srcVal, length)
+    * e.g. HasLength('123', 3) returns TRUE.
 
 * **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **count**, *exact* **boolean**)
-    * Counts the number of non-NULL in the **srcVals[1-15]** string lists using the CountOfNotNull() helper function.
+    * Counts the number of non-NULL results in the **srcVals[1-15]** string lists using the CountOfNotNull() helper function.
     * Can take between 1 and 15 **srcVal** string lists of input values.
-    * When **exact** is TRUE, the number of non-NULLs must matches **count** exactly.
+    * When **exact** is TRUE, the number of non-NULLs must matche **count** exactly.
     * When **exact** is FALSE, the number of non-NULLs can be greater than or equal to **count**.
     * Empty strings are treated as NULL.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
+    * Variants are:
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, vals15, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, vals14, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, vals13, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, vals12, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, vals11, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, vals10, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, vals9, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, vals8, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, vals7, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, vals6, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, vals5, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, vals4, count, exact)
+      * HasCountOfNotNull(vals1, vals2, vals3, count, exact)
+      * HasCountOfNotNull(vals1, vals2, count, exact)
+      * HasCountOfNotNull(vals1, count, exact)
     * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE) returns TRUE.
     * There is also a variant of this function called **HasCountOfNotNullOrZero()** which is exactly the same but counts zero values as NULL.
 
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is present in the **lookupColumnName** column of the **lookupSchemaName**.**lookupTableName** table.
     * When **ignoreCase** is TRUE, case is ignored.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchTable() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchTable() return TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. looke('sp1', public, species_lookup, TRUE)
-
-* **MatchTableSubstring**(*text* **srcVal**, *integer* **startChar**, *integer* **forLength**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if **srcVal** is present in the **lookupColumnName** column of the **lookupSchemaName**.**lookupTableName** table.
-    * When **ignoreCase** is TRUE, case is ignored.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchTable() to return TRUE.
-    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. looke('sp1', public, species_lookup, TRUE)
+    * Variants are:
+      * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, acceptNull)
+      * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase)
+      * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName)
+    * e.g. MatchTable('sp1', public, species_lookup, lookup_column) returns TRUE is value 'sp1' is in the llokup_column.
 
 * **MatchList**(*stringList* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if **srcVal** is in **matchList**.
     * When **ignoreCase** is TRUE, case is ignored.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchList() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchList() return TRUE.
     * When **matches** is FALSE, returns FALSE in the case of a match.
-    * When **removeSpaces** is TRUE, removes any spaces from string before testing matches.
+    * When **removeSpaces** is TRUE, removes any spaces from **srcVal** before testing matches.
     * When multiple input values are provided as a string list, they are concatenated before testing for matches.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. MatchList('a', {'a','b','c'})
-    * e.g. MatchList({'a', 'b'}, {'ab','bb','cc'})
+    * Variants are:
+      * MatchList(srcVal, matchList, ignoreCase, acceptNull, matches, removeSpaces)
+      * MatchList(srcVal, matchList, ignoreCase, acceptNull, matches)
+      * MatchList(srcVal, matchList, ignoreCase, acceptNull)
+      * MatchList(srcVal, matchList, ignoreCase)
+      * MatchList(srcVal, matchList)
+    * e.g. MatchList('a', {'a','b','c'}) returns TRUE.
+    * e.g. MatchList({'a', 'b'}, {'ab','bb','cc'}) returns TRUE.
 
 * **MatchListTwice**(*stringList* **srcVal1**, *stringList* **matchList1**, *stringList* **srcVal2**, *stringList* **matchList2**)
     * Runs matchList with default arguments for **srcVal1** and **matchList1**, then for **srcVal2** and **matchList2**. If either return TRUE, return TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MatchListTwice(srcVal1, matchList1, srcVal2, matchList2)
     * e.g. MatchListTwice('a', {'a','b','c'}, 'x', {'a','b','c'}) returns TRUE
     * e.g. MatchListTwice('x', {'a','b','c'}, 'y', {'a','b','c'}) returns FALSE
     
 * **NotMatchList**(*text* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * A wrapper around MatchList() that sets **matches** to FALSE.
+    * Mostly used to catch values that require a specific error code to be returned (e.g. NotMatchList(species1, 'x'|NULL_VALUE))
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. NotMatchList('d', '{'a','b','c'}')
+    * Variants are:
+      * NotMatchList(srcVal, matchList, ignoreCase, acceptNull, removeSpaces)
+      * NotMatchList(srcVal, matchList, ignoreCase, acceptNull)
+      * NotMatchList(srcVal, matchList, ignoreCase)
+      * NotMatchList(srcVal, matchList)
+    * e.g. NotMatchList('d', '{'a','b','c'}') returns TRUE.
 
 * **SumIntMatchList**(*stringList* **srcValList**, *stringList* **matchValList**, *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\])
     * Returns TRUE if the sums of the values in the **srcValList** string list matches one of the value provided in the **matchValList** string list using the MatchList() helper function.
     * When **acceptNull** is TRUE, NULL values in **srcValList** make SumIntMatchList() to return TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. SumIntMatchList({1,2}, {3, 4, 5})
+    * Variants are:
+      * SumIntMatchList(srcValList, matchValList, acceptNull, matches)
+      * SumIntMatchList(srcValList, matchValList, acceptNull)
+      * SumIntMatchList(srcValList, matchValList)
+    * e.g. SumIntMatchList({1,2}, {3, 4, 5}) returns TRUE.
 
 * **HasCountOfMatchList**(*text* **val1**, *stringList* **matchList1**, *text* **val2**, *stringList* **matchList2**, *text* **val3**, *stringList* **matchList3**, *text* **val4**, *stringList* **matchList4**, *text* **val5**, *stringList* **matchList5**, *text* **val6**, *stringList* **matchList6**, *text* **val7**, *stringList* **matchList7**, *text* **val8**, *stringList* **matchList8**, *text* **val9**, *stringList* **matchList9**, *text* **val10**, *stringList* **matchList10**, *int* **count**, *boolean* **exact**)
     * Runs matchList() for each set of val and matchList.
     * Counts the number of TRUE values returned and compares to the **count**.
     * If exact is TRUE and the number of TRUE matchList results is equal to the **count**, returns TRUE.
     * If exact is FALSE and the number of TRUE matchList results is greater than or equal to the **count**, returns TRUE.
-    * e.g. HasCountOfMatchList(a, {a,b}, b, {a,b}, c, {a,c}, 2, TRUE) would return TRUE.
+    * Variants are:
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, val6, matchList6, val7, matchList7, val8, matchList8, val9, matchList9, val10, matchList10, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, val6, matchList6, val7, matchList7, val8, matchList8, val9, matchList9, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, val6, matchList6, val7, matchList7, val8, matchList8, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, val6, matchList6, val7, matchList7, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, val6, matchList6, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, val5, matchList5, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, val4, matchList4, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, val3, matchList3, count, exact)
+      * HasCountOfMatchList(val1, matchList1, val2, matchList2, count, exact)
+    * e.g. HasCountOfMatchList(a, {a,b}, b, {a,b}, c, {a,c}, 3) returns TRUE.
     
  * **IsIntSubstring**(*text* **srcVal**, *int* **starChar**, *int* **forLength**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if the substring of **srcVal** starting at character **starChar** for **forLength** is an integer.
