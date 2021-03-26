@@ -599,161 +599,260 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
       * HasCountOfMatchList(val1, matchList1, val2, matchList2, count, exact)
     * e.g. HasCountOfMatchList(a, {a,b}, b, {a,b}, c, {a,c}, 3) returns TRUE.
     
- * **IsIntSubstring**(*text* **srcVal**, *int* **starChar**, *int* **forLength**, *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if the substring of **srcVal** starting at character **starChar** for **forLength** is an integer.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsIntSubstring() to return TRUE.
+ * **IsIntSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if the substring of **srcVal** starting at character **startChar** for **forLength** is an integer.
+    * When **removeSpaces** is TRUE, spaces are removed from the string before calculating the substring.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsIntSubstring() return TRUE.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. IsIntSubstring('2001-01-01', 1, 4)
+    * Variants are:
+      * IsIntSubstring(srcVal, startChar, forLength, removeSpaces, acceptNull)
+      * IsIntSubstring(srcVal, startChar, forLength, removeSpaces)
+      * IsIntSubstring(srcVal, startChar, forLength)
+    * e.g. IsIntSubstring('2001-01-01', 1, 4) returns TRUE.
 
 * **AlphaNumericMatchList**(*stringList* **srcVal**, *stringList* **matchList**, *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
-    * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'. Then tests if the resulting code is in the **matchList** using MatchList.
+    * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'. Then tests if the resulting code is in the **matchList** using MatchList. Also passes **acceptNull**, **matches** and **removeSpaces** to MatchList.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * AlphaNumericMatchList(srcVal, matchList, acceptNull, matches, removeSpaces)
+      * AlphaNumericMatchList(srcVal, matchList, matches, removeSpaces)
+      * AlphaNumericMatchList(srcVal, matchList, removeSpaces)
+      * AlphaNumericMatchList(srcVal, matchList)
     * e.g. AlphaNumericMatchList('bf50ws50', {'xx00xx00'}) returns TRUE.
 
-  * **IsBetweenSubstring**(*text* **srcVal**, *int* **star_char**, *int* **for_length**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if the **srcVal** substring starting at character **starChar** for **forLength** is between **min** and **max**.
-    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.  
-    * When **removeSpaces** is TRUE, removes any spaces from string before testing.
+* **IsBetweenSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if the **srcVal** substring starting at character **startChar** for **forLength** is between **min** and **max**.
+    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max**. Must include both or neither **includeMin** and **includeMax** parameters.  
+    * When **removeSpaces** is TRUE, removes any spaces from string before testing in IsBetween.
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsBetweenSubstring() to return TRUE.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100, TRUE, TRUE)
+    * Variants are:
+      * IsBetweenSubstring(srcVal, startChar, forLength, min, max, includeMin, includeMax, removeSpaces, acceptNull)
+      * IsBetweenSubstring(srcVal, startChar, forLength, min, max, includeMin, includeMax, removeSpaces)
+      * IsBetweenSubstring(srcVal, startChar, forLength, min, max, includeMin, includeMax)
+      * IsBetweenSubstring(srcVal, startChar, forLength, min, max)
+    * e.g. IsBetweenSubstring('2001-01-01', 1, 4, 1900, 2100) returns TRUE.
     
-  * **MatchListSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if the **srcVal** substring starting at character **starChar** for **forLength** is in **matchList**.
+* **MatchListSubstring**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if the **srcVal** substring starting at character **startChar** for **forLength** is in **matchList**.
     * When **ignoreCase** is TRUE, case is ignored.
     * When **removeSpaces** is TRUE, removes any spaces from string before testing.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchListSubstring() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make MatchListSubstring() return TRUE.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
-    * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}')
+    * Variants are:
+      * MatchListSubstring(srcVal, startChar, forLength, matchList, ignoreCase, removeSpaces, acceptNull)
+      * MatchListSubstring(srcVal, startChar, forLength, matchList, ignoreCase, removeSpaces)
+      * MatchListSubstring(srcVal, startChar, forLength, matchList, ignoreCase)
+      * MatchListSubstring(srcVal, startChar, forLength, matchList)
+    * e.g. MatchListSubstring('2001-01-01', 1, 4, '{'2000', '2001'}') returns TRUE.
     
-  * **LengthMatchList**(*text* **srcVal**, *stringList* **matchList**, *boolean* **removeSpaces**\[default FALSE\], **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
-    * Calculates length of **srcVal** and check that it matches one of the value in **matchList**.
-    * When **ignoreCase** is TRUE, case is ignored.
+* **LengthMatchList**(*text* **srcVal**, *stringList* **matchList**, *boolean* **trim**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], **matches**\[default TRUE\], )
+    * Calculates length of **srcVal** and checks that it matches one of the value in **matchList**.
     * When **removeSpaces** is TRUE, removes any spaces before calculating length.
+    * When **trim** is TRUE, leading and trailing spaces are removed before calculating length.
     * When **acceptNull** is TRUE, NULL **srcVal** values make LengthMatchList() to return TRUE.
+    * When **matches** is FALSE, returns FALSE in the case of a match.
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * LengthMatchList(srcVal, matchList, trim, removeSpaces, acceptNull, matches)
+      * LengthMatchList(srcVal, matchList, trim, removeSpaces, acceptNull)
+      * LengthMatchList(srcVal, matchList, trim, removeSpaces)
+      * LengthMatchList(srcVal, matchList, trim)
+      * LengthMatchList(srcVal, matchList)
     * e.g. LengthMatchList('12345', {5})
     
 * **MinIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the lowest integer in **intList**. Pass it to NotNull(). 
-    * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested. This behaviour matches MinIndexCopyText(), MinIndexMapText() and MinIndexLookupText().
+    * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested. This behaviour matches MinIndexCopyText() and MinIndexMapText().
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating the min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
-    * e.g. MinIndexNotNull({1990, NULL}, {burn, wind}, 2000, 'NULL')
+    * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexNotNull(intList, testList, setNullTo, setZeroTo)
+      * MinIndexNotNull(intList, testList)
+    * e.g. MinIndexNotNull({1990, 2000}, {burn, NULL}) returns TRUE
     
 * **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the highest integer in **intList**. Pass it to NotNull(). 
-    * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
+    * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested. This behaviour matches MaxIndexCopyText() and MaxIndexMapText(). 
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
-    * e.g. MinIndexNotNull({1990, 0}, {burn, wind}, 'NULL', 2000)
+    * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexNotNull(intList, testList, setNullTo, setZeroTo)
+      * MaxIndexNotNull(intList, testList)
+    * e.g. MaxIndexNotNull({1990, 2000}, {burn, NULL}) returns FALSE.
 
 * **GetIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Reorder the **testList** by the **intList**, matching values in **intList** stay in the original order.
     * Pass the value from the reordered **testList** that matches the index of **indexToReturn** to notNull().
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
+    * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexNotNull(intList, testList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexNotNull(intList, testList, indexToReturn)
     * e.g. GetIndexNotNull({1990, 2000, 2005}, {NULL, burn, NULL}, 2) returns TRUE.
 
 * **MinIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MinIndexNotNull() but tests the value with NotEmpty().
+    * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexNotEmpty(intList, testList, setNullTo, setZeroTo)
+      * MinIndexNotEmpty(intList, testList)
     * e.g. MinIndexNotEmpty({1990, 2000}, {burn, ''}) returns TRUE
-    * e.g. MinIndexNotEmpty({1990, 1980}, {burn, ''}) returns FALSE
 
 * **MaxIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull() but tests the value with NotEmpty().
+    * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexNotEmpty(intList, testList, setNullTo, setZeroTo)
+      * MaxIndexNotEmpty(intList, testList)
     * e.g. MaxIndexNotEmpty({1990, 2000}, {burn, ''}) returns FALSE
-    * e.g. MaxIndexNotEmpty({1990, 1980}, {burn, ''}) returns TRUE
 
 * **GetIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull() but tests the value with NotEmpty().
+    * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexNotEmpty(intList, testList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexNotEmpty(intList, testList, indexToReturn)
     * e.g. GetIndexNotEmpty({1990, 2000, 2005}, {'', burn, ''}, 2) returns TRUE.
 
 * **MinIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MinIndexNotNull() but tests the value with IsInt().
-    * e.g. MinIndexIsInt({1990, 2000}, {111, 222})
-    * e.g. MinIndexIsInt({1990, NULL}, {111, 222}, 2000, 'NULL')
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexIsInt(intList, testList, setNullTo, setZeroTo)
+      * MinIndexIsInt(intList, testList)
+    * e.g. MinIndexIsInt({1990, 2000}, {111, xxx}) returns TRUE
     
 * **MaxIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull but tests the value with IsInt().
-    * e.g. MaxIndexIsInt({1990, 2000}, {111, 222})
-    * e.g. MaxIndexIsInt({1990, NULL}, {111, 222}, 2000, 'NULL')
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexIsInt(intList, testList, setNullTo, setZeroTo)
+      * MaxIndexIsInt(intList, testList)
+    * e.g. MaxIndexIsInt({1990, 2000}, {111, xxx}) returns FALSE
 
 * **GetIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull but tests the value with IsInt().
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexIsInt(intList, testList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexIsInt(intList, testList, indexToReturn)
     * e.g. GetIndexNotNull({1990, 2000, 2005}, {111, 222, 333}) returns TRUE
 
 * **MinIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MinIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
+    * Same as MinIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()). 
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo)
+      * MinIndexIsBetween(intList, testList, min, max)
     * e.g. MinIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns TRUE
     * e.g. MinIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns FALSE
 
 * **MaxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MaxIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()).
+    * Same as MaxIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()).
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo)
+      * MaxIndexIsBetween(intList, testList, min, max)
     * e.g. MaxIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns FALSE
     * e.g. MaxIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns TRUE
 
-* **GetIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**))
-    * Same as GetIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()).
+* **GetIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Same as GetIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()).
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexIsBetween(intList, testList, min, max, indexToReturn)
     * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 1000, 3000}, 0, 2000, 2) returns TRUE
     * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 3000, 1000}, 0, 2000, 2) returns FALSE
 
 * **MinIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MinIndexNotNull but tests the value with MatchList along with the **matchList**.    
+    * Same as MinIndexNotNull but tests the value with MatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexMatchList(intList, testList, matchList, setNullTo, setZeroTo)
+      * MinIndexMatchList(intList, testList, matchList)
     * e.g. MinIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns TRUE.
     
 * **MaxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MaxIndexNotNull but tests the value with MatchList along with the **matchList**.    
+    * Same as MaxIndexNotNull but tests the value with MatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexMatchList(intList, testList, matchList, setNullTo, setZeroTo)
+      * MaxIndexMatchList(intList, testList, matchList)   
     * e.g. MaxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns FALSE.
 
-* **GetIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+* **GetIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull but tests the value with MatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexMatchList(intList, testList, matchList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexMatchList(intList, testList, matchList, indexToReturn)
     * e.g. GetIndexMatchList({1990, 2000, 2010}, {'a', 'b', 'c}, {'c','d','e','f','g'}, 3) returns TRUE.
 
 * **MinIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MinIndexNotNull but tests the value with NotMatchList along with the **matchList**.    
+    * Same as MinIndexNotNull but tests the value with NotMatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MinIndexNotMatchList(intList, testList, matchList, setNullTo, setZeroTo)
+      * MinIndexNotMatchList(intList, testList, matchList)  
     * e.g. MinIndexNotMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns FALSE.
     
 * **MaxIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
-    * Same as MaxIndexNotNull but tests the value with NotMatchList along with the **matchList**.    
+    * Same as MaxIndexNotNull but tests the value with NotMatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * MaxIndexNotMatchList(intList, testList, matchList, setNullTo, setZeroTo)
+      * MaxIndexNotMatchList(intList, testList, matchList)   
     * e.g. MaxIndexNotMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns TRUE.
 
-* **GetIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+* **GetIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull but tests the value with NotMatchList along with the **matchList**.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GetIndexNotMatchList(intList, testList, matchList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexNotMatchList(intList, testList, matchList, indexToReturn)
     * e.g. GetIndexNotMatchList({1990, 2000, 2010}, {'a', 'b', 'c}, {'c','d','e','f','g'}, 3) returns FALSE.
     
 * **CoalesceIsInt**(*stringList* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Return TRUE if the first non-NULL value in the **srcValList** string list is an integer.
     * If **zeroAsNull** is set to TRUE, strings evaluating to zero ('0', '00', '0.0') are treated as NULL.
-    * e.g. coalesceIsInt({NULL, 0, 2000}, TRUE)
+    * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Variants are:
+      * CoalesceIsInt(srcValList, zeroAsNull)
+      * CoalesceIsInt(srcValList)
+    * e.g. CoalesceIsInt({NULL, 0, 2000}, TRUE) returns TRUE
 
 * **CoalesceIsBetween**(*stringList* **srcValList**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], , *boolean* **zeroAsNull**\[default FALSE\])
     * Returns TRUE if the first non-NULL value in the **srcValList** string list is between **min** and **max**.
-    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max*. Must include both or neither **includeMin** and **includeMax** parameters.
+    * When **includeMin** and/or **includeMax** are set to TRUE, the acceptable range of values includes **min** and/or **max**. Must include both or neither **includeMin** and **includeMax** parameters.
     * If **zeroAsNull** is set to TRUE, strings evaluating to zero ('0', '00', '0.0') are treated as NULL.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100) -- returns TRUE because 0 is between 0 and 100 and 0 which are both included in the valid interval
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE) -- returns FALSE because 0 is not included in the valid interval
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE, TRUE) -- returns TRUE because 0 is ignored and 5 is between 0 and 100
-
-* **IsLessThanLookupDouble**(*numeric* **srcVal**, *text* **lookupSrcVal**, *text* **lookupSchema**, *text* **lookupTable**, *text* **lookupCol**, *text* **retrieveCol**\[default source_val]\, *boolean* **inclusive**\[default TRUE]\)
-    * Runs lookupDouble using the **lookupSrcVal**, **lookupSchema**, **lookupTable**, **lookupCol** and **retrieveCol**.
-    * Uses the result from LookupDouble as the upperBound argument in IsLessThan.
-    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
-    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol, FALSE) -- Assuming lookupDouble returns 2: returns FALSE because 2 is not less than 2.
-    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, lookupCol, retrieveCol, TRUE) -- Assuming lookupDouble returns 2: returns TRUE because 2 is less than or equal to 2.
-    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, retrieveCol, TRUE) -- defaults to use 'source_val' as **lookupCol**
-    * e.g. IsLessThanLookupDouble(2, lookupSrcVal, lookupSchema, lookupTable, retrieveCol) -- defaults to use 'source_val' as **lookupCol** and TRUE as **inclusive**.
+    * Variants are:
+      * CoalesceIsBetween(srcValList, min, max, includeMin, mincludeMax, zeroAsNull)
+      * CoalesceIsBetween(srcValList, min, max, includeMin, mincludeMax)
+      * CoalesceIsBetween(srcValList, min, max)
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100) returns TRUE because 0 is between 0 and 100 and 0 which are both included in the valid interval
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE) returns FALSE because 0 is not included in the valid interval
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE, TRUE) returns TRUE because 0 is ignored and 5 is between 0 and 100
 
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fixable**\[default TRUE\])
     * Returns TRUE if **geom** is a valid geometry.
     * When **fixable** is TRUE and **geom** is invalid, will attempt to make a valid geometry and return TRUE if successful. If geometry is invalid returns FALSE. Note that setting **fixable** to TRUE does not actually fix the geometry, it only tests to see if the geometry can be fixed.
     * Default error codes are 'INVALID_VALUE' for text attributes, -7779 for numeric attributes and NULL for other types (including geometry).
-    * e.g. GeoIsValid(POLYGON, TRUE)
+    * Variants are:
+      * GeoIsValid(geom, fixable)
+      * GeoIsValid(geom)
+    * e.g. GeoIsValid(POLYGON, TRUE) returns TRUE is geom is fixable to a valid geometry
     
 * **GeoIntersects**(*geometry* **geom**, *text* **intersectSchemaName**\[default public\], *text* **intersectTableName**, *geometry* **geomCol**\[default geom\])
     * Returns TRUE if **geom** intersects with any features in the **geomCol** column of the **intersectSchemaName**.**intersectTableName** table. Otherwise returns FALSE. Invalid geometries are validated before running the intersection test.
     * Default error codes are 'NO_INTERSECT' for text attributes, -7778 for numeric attributes and NULL for other types (including geometry).
-    * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo)
+    * Variants are:
+      * GeoIntersects(geom, intersectSchemaName, intersectTableName, geomCol)
+      * GeoIntersects(geom, intersectSchemaName, intersectTableName)
+      * GeoIntersects(geom, intersectTableName)
+    * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo) returns TRUE is POLYGON intersects with the intersect_geo
       
 ## Translation Functions
 
@@ -773,50 +872,95 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **CopyText**(*text* **srcVal**)
     * Returns **srcVal** as text without any transformation.
-    * e.g. CopyText('sp1')
+    * Return type is text.
+    * Variants are:
+      * CopyText(srcVal)
+    * e.g. CopyText('sp1') returns 'sp1'
       
 * **CopyDouble**(*numeric* **srcVal**)
     * Returns **srcVal** as double precision without any transformation.
-    * e.g. CopyDouble(1.1)
+    * Return type is double precision
+    * Variants are:
+      * CopyDouble(srcVal)
+    * e.g. CopyDouble(1.1) returns 1.1
 
 * **CopyInt**(*integer* **srcVal**)
     * Returns **srcVal** as integer without any transformation.
-    * e.g. CopyInt(1)
+    * Return type is integer
+    * Variants are:
+      * CopyInt(srcVal)
+    * e.g. CopyInt(1) returns 1
       
-* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+* **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns text value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
     * When **ignoreCase** is TRUE, case is ignored.
-    * e.g. LookupText('sp1', 'public', 'species_lookup', 'target_sp', TRUE)
+    * Return type is text.
+    * Variants are:
+      * LookupText(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
+      * LookupText(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
+    * e.g. LookupText('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the sp1 value in the lookupCol 
       
-* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
+* **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns double precision value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
     * When **ignoreCase** is TRUE, case is ignored.
-    * e.g. LookupDouble(5.5, 'public', 'species_lookup', 'sp_percent', TRUE)
+    * Return type is double precision.
+    * Variants are:
+      * LookupDouble(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
+      * LookupDouble(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
+    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol
 
-* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, boolean **ignoreCase**\[default FALSE\])
+* **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, boolean **ignoreCase**\[default FALSE\])
     * Returns integer value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
     * When **ignoreCase** is TRUE, case is ignored.
-    * e.g. LookupInt(20, 'public', 'species_lookup', 'sp_percent', TRUE)
+    * Return type is integer.
+    * Variants are:
+      * LookupInt(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
+      * LookupInt(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
+    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol
 
 * **MapText**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value from **returnList** that matches index of **srcVal** in **matchList**. 
     * When **ignoreCase** is TRUE, case is ignored.
     * When **removeSpaces** is TRUE, removes any spaces from string before testing.
-    * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE)
+    * Return type is text.
+    * Variants are:
+      * MaptText(srcVal, matchList, returnList, ignoreCase, removeSpaces)
+      * MaptText(srcVal, matchList, returnList, ignoreCase)
+      * MaptText(srcVal, matchList, returnList)
+    * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE) returns 'D'
     
 * **MapSubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Calculates substring of **srcVal** and passes to MapText() using **matchList** and **returnList**.
-    * e.g. MapSubstringText('ABC',1,1,'{'A','B','C'}','{'D','E','F'}')
+    * Return type is text.
+    * Variants are:
+      * MapSubstringText(srcVal, startChar, forLength, matchList, returnList, ignoreCase, removeSpaces)
+      * MapSubstringText(srcVal, startChar, forLength, matchList, returnList, ignoreCase)
+      * MapSubstringText(srcVal, startChar, forLength, matchList, returnList)
+    * e.g. MapSubstringText('ABC',1,1,'{'A','B','C'}','{'D','E','F'}') returns 'D'
     
 * **SumIntMapText**(*stringList* **srcValList**, *stringList* **matchList**, *stringList* **returnList**)
     * Calculates the sum  of the values in the **srcValList** string list and passes the sum to MapText() with **matchList** amd **returnList**.
-    * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'})
+    * Return type is text.
+    * Variants are:
+      * SumIntMapText(srcValList, matchList, returnList)
+    * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'}) returns 'three'
     
 * **MapTextNotNullIndex**(*text* **srcVal1**, *stringList* **matchList1**, *stringList* **returnList1**, *text* **srcVal2**, *stringList* **matchList2**, *stringList* **returnList2**, *text* **srcVal3**, *stringList* **matchList3**, *stringList* **returnList3**, *text* **srcVal4**, *stringList* **matchList4**, *stringList* **returnList4**, *text* **srcVal5**, *stringList* **matchList5**, *stringList* **returnList5**, *text* **srcVal6**, *stringList* **matchList6**, *stringList* **returnList6**, *text* **srcVal7**, *stringList* **matchList7**, *stringList* **returnList7**, *text* **srcVal8**, *stringList* **matchList8**, *stringList* **returnList8**, *text* **srcVal9**, *stringList* **matchList9**, *stringList* **returnList9**, *text* **srcVal10**, *stringList* **matchList10**, *stringList* **returnList10**, *integer* indexToReturn)
     * Runs MapText for each set of val, matchList and returnList, then returns the ith non-null result where i = indexToReturn.
     * Null srcVals and null results from MapText are dropped when selecting the ith non-null result.
     * If indexToReturn > the count of results, NULL is returned.
     * Works with between two and ten sets of srcVal, matchList, and returnList.
+    * Return type is text.
+    * Variants are:
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, srcVal6, matchList6, returnList6, srcVal7, matchList7, returnList7, srcVal8, matchList8, returnList8, srcVal9, matchList9, returnList9, srcVal10, matchList10, returnList10, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, srcVal6, matchList6, returnList6, srcVal7, matchList7, returnList7, srcVal8, matchList8, returnList8, srcVal9, matchList9, returnList9, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, srcVal6, matchList6, returnList6, srcVal7, matchList7, returnList7, srcVal8, matchList8, returnList8, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, srcVal6, matchList6, returnList6, srcVal7, matchList7, returnList7, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, srcVal6, matchList6, returnList6, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, srcVal5, matchList5, returnList5, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, srcVal4, matchList4, returnList4, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, srcVal3, matchList3, returnList3, indexToReturn)
+      * MapTextNotNullIndex(srcVal1, matchList1, returnList1, srcVal2, matchList2, returnList2, indexToReturn)
     * e.g. MapTextNotNullIndex(a,{a,b},{A,B}, b,{a,b},{A,B}, 1) returns 'A'.
     * e.g. MapTextNotNullIndex(NULL,{a,b},{A,B}, NULL,{a,b},{A,B}, c,{c,d},{C,D}, d,{c,d},{C,D}, e,{e,f},{E,F}, f,{e,f},{E,F}, g,{g,h},{G,H}, h,{g,h},{G,H}, i,{i,j},{I,J}, j,{i,j},{I,J}, 5) returns 'G' because the NULL srcVals are ignored.
       
@@ -824,13 +968,23 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return double precision value in **returnList** that matches index of **srcVal** in **matchList**. 
     * When **ignoreCase** is TRUE, case is ignored.
     * When **removeSpaces** is TRUE, removes any spaces from string before testing.
-    * e.g. MapDouble('A',{'A','B','C'},{1.1,1.2,1.3}, TRUE)
+    * Return type is double precision.
+    * Variants are:
+      * MapDouble(srcVal, matchList, returnList, ignoreCase, removeSpaces)
+      * MapDouble(srcVal, matchList, returnList, ignoreCase)
+      * MapDouble(srcVal, matchList, returnList)
+    * e.g. MapDouble('A',{'A','B','C'},{1.1,1.2,1.3}, TRUE) returns 1.1
       
 * **MapInt**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return integer value in **returnList** that matches index of **srcVal** in **matchList**. 
     * When **ignoreCase** is TRUE, case is ignored.
     * When **removeSpaces** is TRUE, removes any spaces from string before testing.
-    * e.g. Map('A',{'A','B','C'},{1,2,3})
+    * Return type is integer.
+    * Variants are:
+      * MapInt(srcVal, matchList, returnList, ignoreCase, removeSpaces)
+      * MapInt(srcVal, matchList, returnList, ignoreCase)
+      * MapInt(srcVal, matchList, returnList)
+    * e.g. Map('A',{'A','B','C'},{1,2,3}) returns 1
       
 * **Length**(*text* **srcVal**, *boolean* **trimSpaces**)
     * Returns the length of the **srcVal** string.
