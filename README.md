@@ -388,47 +388,53 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
 * **False**()
     * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt() and NothingDouble().
     * Default error codes are 'NOT_APPLICABLE' for text attributes, -8887 for numeric attributes and NULL for other types.
-    * e.g. False()
+    * e.g. False() returns FALSE.
 
 * **True**()
     * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
     * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
-    * e.g. True()
+    * e.g. True() returns TRUE.
 
 * **NotNull**(*stringList* **srcValList**, *boolean* **any**\[default FALSE\])
     * Returns TRUE if all values in the **srcValList** string list are not NULL. 
     * Paired with most translation functions to make sure input values are available.
-    * When **any** is TRUE, returns TRUE if any values in **srcValList** is not NULL.
+    * When **any** is TRUE, returns TRUE if any value in **srcValList** is not NULL.
     * Default error codes are 'NULL_VALUE' for text attributes, -8888 for numeric attributes and NULL for other types.
-    * e.g. NotNull('a')
-    * e.g. NotNull({'a', 'b', 'c'})
+    * Varients are:
+      * NotNull(srcValList, any)
+      * NotNull(srcValList)
+    * e.g. NotNull('a') returns TRUE.
+    * e.g. NotNull({'a', 'b', NULL}) returns FALSE.
+    * e.g. NotNull({'a', 'b', NULL}, TRUE) returns TRUE.
  
-* **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **count**, *exact* **boolean**)
-    * Counts the number of non-NULL in the **srcVals[1-15]** string lists using the CountOfNotNull() helper function.
-    * Can take between 1 and 15 **srcVal** string lists of input values.
-    * When **exact** is TRUE, the number of non-NULLs must matches **count** exactly.
-    * When **exact** is FALSE, the number of non-NULLs can be greater than or equal to **count**.
-    * Empty strings are treated as NULL.
-    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE)
-    * There is also a variant of this function called **HasCountOfNotNullOrZero()** which is exactly the same but counts zero values as NULL.
-
-* **NotEmpty**(*text* **srcVal**, *boolean* **any**\[default FALSE\])
-    * Returns TRUE if all **srcVal** values are not empty strings. Returns FALSE if any **srcVal** value is an empty string, padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
-    * When **any** is TRUE, returns TRUE if any **srcVal** value is not an empty strings. 
+* **NotEmpty**(*stringList* **srcValList**, *boolean* **any**\[default FALSE\])
+    * Returns TRUE if all values in the **srcValList** string list are not empty strings, padded spaces (e.g. '' or '  ') or NULL. 
+    * Paired with translation functions accepting text strings (e.g. CopyText()).
+    * When **any** is TRUE, returns TRUE if any **srcValList** value is not an empty strings. 
     * Default error codes are 'EMPTY_STRING' for text attributes, -8889 for numeric attributes and NULL for other types.
-    * e.g. NotEmpty('a')
+    * Varients are:
+      * NotEmpty(srcValList, any)
+      * NotEmpty(srcValList)
+    * e.g. NotEmpty('a') returns TRUE.
+    * e.g. NotEmpty({'a', 'b', ''}) returns FALSE.
+    * e.g. NotEmpty({'a', 'b', ''}, TRUE) returns TRUE.
 
 * **IsInt**(*text* **srcVal**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** represents an integer (e.g. '1.0', '1'). Returns FALSE is **srcVal** does not represent an integer (e.g. '1.1', '1a'), or if **srcVal** is NULL. Paired with translation functions that require integer inputs (e.g. CopyInt).
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsInt() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsInt() return TRUE.
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
-    * e.g. IsInt('1')
+    * Varients are:
+      * IsInt(srcVal, acceptNull)
+      * IsInt(srcVal)
+    * e.g. IsInt('1') returns TRUE.
 
 * **IsNumeric**(*text* **srcVal**, *boolean* **acceptNull**\[default FALSE\]) 
     * Returns TRUE if **srcVal** can be cast to double precision (e.g. '1', '1.1'). Returns FALSE if **srcVal** cannot be cast to double precision (e.g. '1.1.1', '1a'), or if **srcVal** is NULL. Paired with translation functions that require numeric inputs (e.g. CopyDouble()).
-    * When **acceptNull** is TRUE, NULL **srcVal** values make IsNumeric() to return TRUE.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make IsNumeric() return TRUE.
     * Default error codes are 'WRONG_TYPE' for text attributes, -9995 for numeric attributes and NULL for other types.
+    * Varients are:
+      * IsNumeric(srcVal, acceptNull)
+      * IsNumeric(srcVal)
     * e.g. IsNumeric('1.1')
    
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
@@ -468,6 +474,16 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * When **acceptNull** is TRUE, NULL **srcVal** values make HasLength() to return TRUE.
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. HasLength('123', 3)
+
+* **HasCountOfNotNull**(*stringList* **srcVal1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **count**, *exact* **boolean**)
+    * Counts the number of non-NULL in the **srcVals[1-15]** string lists using the CountOfNotNull() helper function.
+    * Can take between 1 and 15 **srcVal** string lists of input values.
+    * When **exact** is TRUE, the number of non-NULLs must matches **count** exactly.
+    * When **exact** is FALSE, the number of non-NULLs can be greater than or equal to **count**.
+    * Empty strings are treated as NULL.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
+    * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE) returns TRUE.
+    * There is also a variant of this function called **HasCountOfNotNullOrZero()** which is exactly the same but counts zero values as NULL.
 
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is present in the **lookupColumnName** column of the **lookupSchemaName**.**lookupTableName** table.
