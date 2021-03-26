@@ -385,6 +385,16 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
 # Provided Helper Functions
 ## Validation Functions
 
+* **False**()
+    * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt() and NothingDouble().
+    * Default error codes are 'NOT_APPLICABLE' for text attributes, -8887 for numeric attributes and NULL for other types.
+    * e.g. False()
+
+* **True**()
+    * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
+    * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
+    * e.g. True()
+
 * **NotNull**(*stringList* **srcValList**, *boolean* **any**\[default FALSE\])
     * Returns TRUE if all values in the **srcValList** string list are not NULL. 
     * Paired with most translation functions to make sure input values are available.
@@ -402,12 +412,6 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
     * e.g. HasCountOfNotNull({'a','b','c'}, {NULL, NULL}, 1, TRUE)
     * There is also a variant of this function called **HasCountOfNotNullOrZero()** which is exactly the same but counts zero values as NULL.
-
-* **HasLength**(*text* **srcVal**, *int* **length**, *boolean* **acceptNull**\[default FALSE\])
-    * Returns TRUE if the number of characters in **srcVal** matches **length**.
-    * When **acceptNull** is TRUE, NULL **srcVal** values make HasLength() to return TRUE.
-    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
-    * e.g. HasLength('123', 3)
 
 * **NotEmpty**(*text* **srcVal**, *boolean* **any**\[default FALSE\])
     * Returns TRUE if all **srcVal** values are not empty strings. Returns FALSE if any **srcVal** value is an empty string, padded spaces (e.g. '' or '  ') or NULL. Paired with translation functions accepting text strings (e.g. CopyText())
@@ -452,6 +456,12 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
     * e.g. IsUnique('TA', public, species_lookup, 1)
 
+* **HasLength**(*text* **srcVal**, *int* **length**, *boolean* **acceptNull**\[default FALSE\])
+    * Returns TRUE if the number of characters in **srcVal** matches **length**.
+    * When **acceptNull** is TRUE, NULL **srcVal** values make HasLength() to return TRUE.
+    * Default error codes are 'INVALID_VALUE' for text attributes, -9997 for numeric attributes and NULL for other types.
+    * e.g. HasLength('123', 3)
+
 * **MatchTable**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *text* **lookupColumnName**\[default 'source_val'\], *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is present in the **lookupColumnName** column of the **lookupSchemaName**.**lookupTableName** table.
     * When **ignoreCase** is TRUE, case is ignored.
@@ -476,6 +486,12 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. MatchList('a', {'a','b','c'})
     * e.g. MatchList({'a', 'b'}, {'ab','bb','cc'})
+
+* **MatchListTwice**(*stringList* **srcVal1**, *stringList* **matchList1**, *stringList* **srcVal2**, *stringList* **matchList2**)
+    * Runs matchList with default arguments for **srcVal1** and **matchList1**, then for **srcVal2** and **matchList2**. If either return TRUE, return TRUE.
+    * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
+    * e.g. MatchListTwice('a', {'a','b','c'}, 'x', {'a','b','c'}) returns TRUE
+    * e.g. MatchListTwice('x', {'a','b','c'}, 'y', {'a','b','c'}) returns FALSE
     
 * **NotMatchList**(*text* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * A wrapper around MatchList() that sets **matches** to FALSE.
@@ -494,16 +510,6 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * If exact is TRUE and the number of TRUE matchList results is equal to the **count**, returns TRUE.
     * If exact is FALSE and the number of TRUE matchList results is greater than or equal to the **count**, returns TRUE.
     * e.g. HasCountOfMatchList(a, {a,b}, b, {a,b}, c, {a,c}, 2, TRUE) would return TRUE.
-
-* **False**()
-    * Returns FALSE. Useful if all rows should contain an error value. All rows will fail so translation function will never run. Often paired with translation functions NothingText(), NothingInt() and NothingDouble().
-    * Default error codes are 'NOT_APPLICABLE' for text attributes, -8887 for numeric attributes and NULL for other types.
-    * e.g. False()
-
-* **True**()
-    * Returns TRUE. Useful if no validation function is required. The validation step will pass for every row and move on to the translation function.
-    * Default error codes are 'NOT_APPLICABLE' for text attributes and -8887 for numeric attributes but are never used since the function always return TRUE.
-    * e.g. True()
     
  * **IsIntSubstring**(*text* **srcVal**, *int* **starChar**, *int* **forLength**, *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if the substring of **srcVal** starting at character **starChar** for **forLength** is an integer.
@@ -535,57 +541,92 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * e.g. LengthMatchList('12345', {5})
     
-* **MinIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the lowest integer in **intList**. Pass it to NotNull(). 
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested. This behaviour matches MinIndexCopyText(), MinIndexMapText() and MinIndexLookupText().
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating the min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
     * e.g. MinIndexNotNull({1990, NULL}, {burn, wind}, 2000, 'NULL')
     
-* **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the highest integer in **intList**. Pass it to NotNull(). 
     * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * e.g. MinIndexNotNull({1990, 2000}, {burn, wind})
     * e.g. MinIndexNotNull({1990, 0}, {burn, wind}, 'NULL', 2000)
 
-* **MinIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **GetIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Reorder the **testList** by the **intList**, matching values in **intList** stay in the original order.
+    * Pass the value from the reordered **testList** that matches the index of **indexToReturn** to notNull().
+    * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
+    * e.g. GetIndexNotNull({1990, 2000, 2005}, {NULL, burn, NULL}, 2) returns TRUE.
+
+* **MinIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MinIndexNotNull() but tests the value with NotEmpty().
+    * e.g. MinIndexNotEmpty({1990, 2000}, {burn, ''}) returns TRUE
+    * e.g. MinIndexNotEmpty({1990, 1980}, {burn, ''}) returns FALSE
+
+* **MaxIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MaxIndexNotNull() but tests the value with NotEmpty().
+    * e.g. MaxIndexNotEmpty({1990, 2000}, {burn, ''}) returns FALSE
+    * e.g. MaxIndexNotEmpty({1990, 1980}, {burn, ''}) returns TRUE
+
+* **GetIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Same as GetIndexNotNull() but tests the value with NotEmpty().
+    * e.g. GetIndexNotEmpty({1990, 2000, 2005}, {'', burn, ''}, 2) returns TRUE.
+
+* **MinIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MinIndexNotNull() but tests the value with IsInt().
     * e.g. MinIndexIsInt({1990, 2000}, {111, 222})
     * e.g. MinIndexIsInt({1990, NULL}, {111, 222}, 2000, 'NULL')
     
-* **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull but tests the value with IsInt().
     * e.g. MaxIndexIsInt({1990, 2000}, {111, 222})
     * e.g. MaxIndexIsInt({1990, NULL}, {111, 222}, 2000, 'NULL')
 
-* **MinIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Find the target values from **testList** with a matching index to the lowest integer in **intList**. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
-    * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
-    * When **setNullTo** is provided as an integer, NULLs in intList are replaced with setNullTo. Otherwise NULLs are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MinIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
-    * e.g. MinIndexIsBetween({1990, NULL}, {111, 222}, 0, 2000, 2000, 'NULL')
+* **GetIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
+    * Same as GetIndexNotNull but tests the value with IsInt().
+    * e.g. GetIndexNotNull({1990, 2000, 2005}, {111, 222, 333}) returns TRUE
 
-* **MaxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Find the target values from **testList** with a matching index to the highest integer in **intList**. Pass it to isBetween() along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
-    * If there are multiple occurrences of the lowest value, the **last** non-NULL value with an index matching the highest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
-    * When **setNullTo** is provided as an integer, NULLs in intList are replaced with setNullTo. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MaxIndexIsBetween({1990, 2000}, {111, 222}, 0, 2000)
-    * e.g. MaxIndexIsBetween({1990, NULL}, {111, 222}, 0, 2000, 2000, 'NULL')
+* **MinIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MinIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()). 
+    * e.g. MinIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns TRUE
+    * e.g. MinIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns FALSE
 
-* **MinIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Find the target values from **testList** with a matching index to the lowest integer in **intList**. Pass it to MatchList() along with **returnList**. 
-    * If there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
-    * When **setNullTo** is provided as an integer, NULLs in intList are replaced with setNullTo. Otherwise NULLs are ignored when calculating min value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MinIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
-    * e.g. MinIndexMatchList({0, NULL}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+* **MaxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MaxIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()).
+    * e.g. MaxIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns FALSE
+    * e.g. MaxIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns TRUE
 
-* **MaxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
-    * Find the target values from **testList** with a matching index to the highest integer in **intList**. Pass it to matchList() along with **returnList**. 
-    * If there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested. This behaviour matches MaxIndexCopyText(), MaxIndexMapText() and MaxIndexLookupText(). 
-    * When **setNullTo** is provided as an integer, NULLs in intList are replaced with setNullTo. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * e.g. MaxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'})
-    * e.g. MaxIndexMatchList({0, NULL}, {'a', 'b'}, {'a','c','d','g'}, 2000, 1990)
+* **GetIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**))
+    * Same as GetIndexNotNull but tests the value with IsBetween along with min and max which are considered inclusive (i.e. the default behavior of isBetween()).
+    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 1000, 3000}, 0, 2000, 2) returns TRUE
+    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 3000, 1000}, 0, 2000, 2) returns FALSE
+
+* **MinIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MinIndexNotNull but tests the value with MatchList along with the **matchList**.    
+    * e.g. MinIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns TRUE.
+    
+* **MaxIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MaxIndexNotNull but tests the value with MatchList along with the **matchList**.    
+    * e.g. MaxIndexMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns FALSE.
+
+* **GetIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as GetIndexNotNull but tests the value with MatchList along with the **matchList**.
+    * e.g. GetIndexMatchList({1990, 2000, 2010}, {'a', 'b', 'c}, {'c','d','e','f','g'}, 3) returns TRUE.
+
+* **MinIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MinIndexNotNull but tests the value with NotMatchList along with the **matchList**.    
+    * e.g. MinIndexNotMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns FALSE.
+    
+* **MaxIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as MaxIndexNotNull but tests the value with NotMatchList along with the **matchList**.    
+    * e.g. MaxIndexNotMatchList({1990, 2000}, {'a', 'b'}, {'a','c','d','g'}) returns TRUE.
+
+* **GetIndexNotMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
+    * Same as GetIndexNotNull but tests the value with NotMatchList along with the **matchList**.
+    * e.g. GetIndexNotMatchList({1990, 2000, 2010}, {'a', 'b', 'c}, {'c','d','e','f','g'}, 3) returns FALSE.
     
 * **CoalesceIsInt**(*stringList* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Return TRUE if the first non-NULL value in the **srcValList** string list is an integer.
@@ -625,6 +666,18 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
 
 Default error codes for translation functions are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric ones and NULL for others.
 
+* **NothingText**()
+    * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
+    * e.g. NothingText()
+
+* **NothingDouble**()
+    * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
+    * e.g. NothingDouble()
+
+* **NothingInt**()
+    * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
+    * e.g. NothingInt()
+
 * **CopyText**(*text* **srcVal**)
     * Returns **srcVal** as text without any transformation.
     * e.g. CopyText('sp1')
@@ -651,10 +704,6 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Returns integer value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
     * When **ignoreCase** is TRUE, case is ignored.
     * e.g. LookupInt(20, 'public', 'species_lookup', 'sp_percent', TRUE)
-
-* **LookupTextSubstring**(*text* **srcVal**, *integer* **startChar**, *integer* **forLength**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
-    * Takes the substring of **srcVal** using **startChar** and **forLength** and passes it to lookupText.
-    * e.g. LookupTextSubstring('sp1', '1', '2', 'public', 'species_lookup', 'target_sp', FALSE, FALSE)
 
 * **MapText**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value from **returnList** that matches index of **srcVal** in **matchList**. 
@@ -704,7 +753,12 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **Multiply**(*double precision* **val1**, *double precision* **val2**)
     * Multiplies val1 by val2.
     * Return type is double precision.
-    * e.g. Multiply(2, 3)
+    * e.g. Multiply(2.5, 2) returns 5.
+
+* **MultiplyInt**(*double precision* **val1**, *double precision* **val2**)
+    * Calls **Multiply** and casts to integer.
+    * Return type is integer.
+    * e.g. Multiply(2, 3) returns 6.
 
 * **DivideDouble**(*double precision* **srcVal**, *double precision* **divideBy**)
     * Divides **srcVal** by **divideBy**.
@@ -731,18 +785,6 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * If **upperCase** is TRUE, all characters are converted to upper case.
     * If **includeEmpty** is FALSE, any empty strings in **srcValList** are dropped from the concatenation. 
     * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE)  -- returns 'xstr1-xstr2-000str3'
-
-* **NothingText**()
-    * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingText()
-
-* **NothingDouble**()
-    * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingDouble()
-
-* **NothingInt**()
-    * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingInt()
 
 * **CountOfNotNull**(*stringList* **scrVals1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
     * Returns the number of string list input arguments that have at least one list element that is not NULL or empty string. Up to a maximum of 15.
@@ -788,63 +830,45 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return the highest integer in the **srcValList** string list. 
     * e.g. MaxInt({1990, 2000})
 
-* **MinIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the lowest value in **intList**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
     * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
     * e.g. MaxIndexCopyText({1990, NULL}, {burn, wind}, 2000, 'NULL')
 
-* **MaxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the highest value in **intList**.
     * If setNullTo is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * If there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
     * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
     * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 1990)
 
-* **MinIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexCopyText() but returns an integer.
   
-* **MaxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexCopyText() but returns an integer.
 
-* **MinIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from **returnList** matching the index of the lowest value in **intList** to MapText(). Runs MapText() using **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
     * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
     * e.g. MinIndexMapText({NULL, 0}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 2020)
 
-* **MaxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\])
+* **MaxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to MapText(). Runs MapText() with mapVals and targetVals.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
     * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
     * e.g. MaxIndexMapText({1990, NULL}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 'NULL')
     
-* **MinIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MinIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexMapText() but returning an integer.
 
-* **MaxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *text* **setNullTo**\[default NULL\], *text* **setZeroTo**\[default NULL\])
+* **MaxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexMapText() but returning an integer.
-
-* **MinIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\],  *text* **setZeroTo**\[default NULL\])
-    * Passes value from **returnList** matching the index of the lowest value in **intList** to LookupText(). Runs LookupText() with **lookupSchemaName**, **lookupTableName**, **lookupColName** and **retrieveColName**.
-    * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
-    * A 6-argument variant sets **lookupColName** to **source_val** by default. A 5-argument variant sets **lookupColName** to **source_val**, **setNullTo** to **NULL** and **setZeroTo** to **NULL**.
-    * e.g. MinIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'source_val', 'target_col', 'NULL', 'NULL')
-    * e.g. MinIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val', 'NULL', 'NULL')
-    * e.g. MinIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val')
-
-* **MaxIndexLookupText**(*stringList* **intList**, *stringList* **returnList**, *text* **lookupSchemaName**\[default public\], *text* **lookupTableName**, *text* **lookupColName**\[default 'source_val'\], *text* **retrieveColName**, *text* **setNullTo**\[default NULL\],  *text* **setZeroTo**\[default NULL\])
-    * Passes value from returnList matching the index of the highest value in intList to lookupText. Runs lookupText using the lookupSchemaName, lookupTableName, lookupColName and retrieveColName.
-    * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
-    * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the lowest value is tested.
-    * A 6-argument variant sets **lookupColName** to **source_val** by default. A 5-argument variant sets **lookupColName** to **source_val**, **etNullTo** to **NULL** and **setZeroTo** to **NULL**.
-    * e.g. MaxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'source_val', 'target_col', 'NULL', 'NULL')
-    * e.g. MaxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val', 'NULL', 'NULL')
-    * e.g. MaxIndexLookupText({1990, 2000}, {burn, wind}, 'public', 'table', 'target_val')
 
 * **CoalesceText**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Returns the first non-NULL value in the **srcValList** string list.
