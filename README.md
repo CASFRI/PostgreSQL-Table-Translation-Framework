@@ -853,6 +853,13 @@ HasCountOfNotNull({col1, col2}, 1|NULL_VALUE_ERROR); MatchList(col1, {'A', 'B'},
       * GeoIntersects(geom, intersectSchemaName, intersectTableName)
       * GeoIntersects(geom, intersectTableName)
     * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo) returns TRUE is POLYGON intersects with the intersect_geo
+  
+* **GeoIntersectionGreaterThan**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geomCol**, *text* **returnCol**, *text* **method**, *numeric* **lowerBound**)
+    * Runs GeoIntersection and passes the **returnCol** from the intersecting polygon to IsGreaterThan. See GeoIntersectionText for full details.
+    * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
+    * Variants are:
+      * GeoIntersectionGreaterThan(geom, intersectSchemaName, intersectTableName, geomCol, returnCol, method, lowerBound)
+    * GeoIntersectionGreaterThan(POLYGON, public, intersect_tab, intersect_geo, NUMBER, GREATEST_AREA, 10)
       
 ## Translation Functions
 
@@ -989,211 +996,392 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 * **Length**(*text* **srcVal**, *boolean* **trimSpaces**)
     * Returns the length of the **srcVal** string.
     * When **trimSpaces** is TRUE, removes any leading or trailing spaces before calculating length.
-    * e.g. Length('12345')
+    * Return type is integer.
+    * Variants are:
+      * Length(srcVal, trimSpaces)
+      * Length(srcVal)
+    * e.g. Length('12345') returns 5
 
 * **LengthMapInt**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **removeSpaces**\[default FALSE\])
     * Calculates length of string then pass the length to MapInt().
-    * Return type is integer.
     * When **removeSpaces** is TRUE, removes any spaces before calculating length.
-    * e.g. Length('12345', {5, 6, 7}, {1, 2, 3})
+    * Return type is integer.
+    * Variants are:
+      * LengthMapInt(srcVal, matchList, returnList, removeSpaces)
+      * LengthMapInt(srcVal, matchList, returnList)
+    * e.g. Length('12345', {5, 6, 7}, {1, 2, 3}) returns 1
     
 * **Multiply**(*numeric* **val1**, *numeric* **val2**)
     * Multiplies val1 by val2.
     * Return type is double precision.
-    * e.g. Multiply(2.5, 2) returns 5.
+    * Variants are:
+      * Multiply(val1, val2)
+    * e.g. Multiply(2.5, 2) returns 5
 
 * **MultiplyInt**(*numeric* **val1**, *numeric* **val2**)
     * Calls **Multiply** and casts to integer.
     * Return type is integer.
-    * e.g. Multiply(2, 3) returns 6.
+    * Variants are:
+      * MultiplyInt(val1, val2)
+    * e.g. Multiply(2, 3) returns 6
 
 * **SubstringMultiplyInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *numeric* **val2**)
     * Runs Substring using **srcVal**, **startChar** and **forLength**, then multiplies the result by **val2** and casts to an integer.
     * Return type is integer.
-    * e.g. SubstringMultiplyInt('xx2', 3, 1, 2) returns 4.
+    * Variants:
+      * SubstringMultiplyInt(srcVal, startChar, forLength, vals)
+    * e.g. SubstringMultiplyInt('xx2', 3, 1, 2) returns 4
 
 * **DivideDouble**(*numeric* **srcVal**, *numeric* **divideBy**)
     * Divides **srcVal** by **divideBy**.
     * Return type is double precision.
-    * e.g. DivideDouble(2.2, 1.1)
+    * Variants are:
+      * DivideDouble(srcVal, divideBy)
+    * e.g. DivideDouble(10, 4) returns 2.5
 
 * **DivideInt**(*numeric* **srcVal**, *numeric* **divideBy**)
     * A wrapper around DivideDouble() that returns an integer.
-    * e.g. DivideInt(2.2, 1.1)
+    * Return type is integer.
+    * Variants are:
+      * DivideInt(srcVal, divideBy)
+    * e.g. DivideInt(2.2, 1.1) returns 2
 
 * **XMinusYDouble**(*numeric* **x**, *numeric* **y**)
     * Returns the result of **x** minus **y**.
     * Return type is double precision.
+    * Variants are:
+      * XMinusYDouble(x, y)
     * e.g. XMinusYDouble(2.2, 1.1) returns 1.1.
 
 * **XMinusYInt**(*numeric* **x**, *numeric* **y**)
     * Casts the result of **x** minus **y** to an integer.
     * Return type is integer.
-    * e.g. XMinusYDouble(2, 1) returns 1.
+    * Variants are:
+      * XMinusYInt(x, y)
+    * e.g. XMinusYInt(2, 1) returns 1.
 
 * **Pad**(*text* **srcVal**, *int* **targetLength**, *text* **padChar**, *boolean* **trunc**\[default TRUE\])
     * Returns a string of length **targetLength** made up of **srcVal** preceeded with **padChar**.
-    * When **trunc** is TRUE and **srcVal** length > **targetLength**, trunc **srcVal** to **targetLength**. Returns **srcVal** otherwise. 
-    * e.g. Pad('tab1', 10, 'x') -- returns 'xxxxxxtab1'
-    * e.g. Pad('tab1', 2, 'x', TRUE) -- returns 'ta'
-    * e.g. Pad('tab1', 2, 'x', FALSE) -- returns 'tab1'
+    * When **trunc** is TRUE and **srcVal** length > **targetLength**, truncate **srcVal** to **targetLength**. Returns **srcVal** otherwise. 
+    * Return type is text.
+    * Variants are:
+      * Pad(srcVal, targetLength, padChar, trunc)
+      * Pad(srcVal, targetLength, padChar)
+    * e.g. Pad('tab1', 10, 'x') returns 'xxxxxxtab1'
+    * e.g. Pad('tab1', 2, 'x', TRUE) returns 'ta'
+    * e.g. Pad('tab1', 2, 'x', FALSE) returns 'tab1'
 
-* **Concat**(*stringList* **srcValList**, *text* **separator**)
-    * Concatenate all values in the **srcValList** string list, interspersed with **separator**. 
-    * e.g. Concat('{'str1','str2','str3'}', '-')
+* **Concat**(*stringList* **srcValList**, *text* **separator**, *boolean* **nullToEmpty**\[default FALSE\])
+    * Concatenate all values in the **srcValList** string list, interspersed with **separator**.
+    * If **nullToEmpty** is TRUE, NULLs are converted to empty strings ('').
+    * Return type is text.
+    * Variants are:
+      * Concat(srcValList, separator, nullToEmpty)
+      * Concat(srcValList, separator)
+    * e.g. Concat('{'str1','str2','str3'}', '-') returns 'str1-str2-str3'
 
 * **PadConcat**(*stringList* **srcValList**, *stringList* **lengthList**, *stringList* **padList**, *text* **separator**, *boolean* **upperCase**, *boolean* **includeEmpty**\[default TRUE\])
     * Pad all values in the **srcValList** string list according to the respective **lengthList** and **padList** values and then concatenate them with the **separator**. 
     * If **upperCase** is TRUE, all characters are converted to upper case.
-    * If **includeEmpty** is FALSE, any empty strings in **srcValList** are dropped from the concatenation. 
-    * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE)  -- returns 'xstr1-xstr2-000str3'
+    * If **includeEmpty** is FALSE, any empty strings in **srcValList** are dropped from the concatenation.
+    * Return type is text.
+    * Variants are:
+      *  PadConcat(srcValList, lengthList, padList, separator, upperCase, includeEmpty)
+      *  PadConcat(srcValList, lengthList, padList, separator, upperCase)
+    * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE) returns 'xstr1-xstr2-000str3'
 
 * **CountOfNotNull**(*stringList* **scrVals1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
-    * Returns the number of string list input arguments that have at least one list element that is not NULL or empty string. Up to a maximum of 15.
+    * Returns the number of string list input arguments that have at least one list element that is not NULL or an empty string. Up to a maximum of 15.
     * Between 1 and 15 string lists can be provided.
-    * Only the first **maxRankToConsider** string lists will be considered for the calculation. For example, if **maxRankToConsider** is one, only the first string list will be considered and the maximum values that could be returned would be 1.
-    * When **zeroIsNull** is TRUE, zero values ('0') are counted as NULL.
+    * Only the first **maxRankToConsider** string lists will be considered for the calculation. For example, if **maxRankToConsider** is 1, only the first string list will be considered and the maximum values that could be returned would be 1.
+    * When **zeroIsNull** is TRUE, zero values are counted as NULLs.
     * **maxRankToConsider** and **zeroIsNull** always need to provided.
-    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE)
+    * Return type is integer.
+    * Variants are:
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, srcVals11, srcVals12, srcVals13, srcVals14, srcVals15, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, srcVals11, srcVals12, srcVals13, srcVals14, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, srcVals11, srcVals12, srcVals13, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, srcVals11, srcVals12, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, srcVals11, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, srcVals10, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, srcVals9, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, srcVals8, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, srcVals7, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, srcVals6, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, srcVals5, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, srcVals4, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, srcVals3, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, srcVals2, maxRankToConsider, zeroIsNull)
+      * CountOfNotNull(srcVals1, maxRankToConsider, zeroIsNull)
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE) returns 7
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 2, FALSE) returns 2
  
 * **IfElseCountOfNotNullText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
-    * Calls CountOfNotNull() and tests if the returned value matches the count.
-    * If returned value is less than or equal to count, returns **returnIf**, else returns **returnElse**.
+    * Calls CountOfNotNull() and tests if the returned value matches **count**. Up to a maximum of 7 **val** string lists.
+    * If returned value is less than or equal to **count**, returns **returnIf**, else returns **returnElse**.
     * zeroIsNull in countOfNotNull is set to FALSE.
-    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 1, 'S', 'M')
+    * Return type is text.
+    * Variants are:
+      * IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, vals2, vals3, vals4, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, vals2, vals3, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, vals2, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullText(vals1, maxRankToConsider, count, returnIf, returnElse)
+    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 8, 'S', 'M') returns 'S'
 
 * **IfElseCountOfNotNullInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Simple wrapper around IfElseCountOfNotNullText() that returns an int.
+    * Return type is integer.
+    * Variants are:
+      * IfElseCountOfNotNullInt(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, vals2, vals3, vals4, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, vals2, vals3, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, vals2, maxRankToConsider, count, returnIf, returnElse)
+      * IfElseCountOfNotNullInt(vals1, maxRankToConsider, count, returnIf, returnElse)
     
 * **CountOfNotNullMapText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
-    * Calls CountOfNotNull() and passes the returned value to mapText using the resultList and mappingList.
+    * Calls CountOfNotNull() and passes the returned value to MapText using the **resultList** and **mappingList**.
     * zeroIsNull in countOfNotNull is set to FALSE.
-    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {a,b,c,d,e,f,g})
+    * Return type is text.
+    * Variants are:
+      * CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, vals2, vals3, vals4, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, vals2, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapText(vals1, maxRankToConsider, resultList, mappingList)
+    * e.g. CountOfNotNullMapText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {'a','b','c','d','e','f','g'}) returns 'g'
 
 * **CountOfNotNullMapInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
     * Simple wrapper around CountOfNotNullMapText returning int.
+    * Return type is integer.
+    * Variants are:
+      * CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, vals2, vals3, vals4, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, vals2, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapInt(vals1, maxRankToConsider, resultList, mappingList)
+    * e.g. CountOfNotNullMapInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {10,20,30,40,50,60,70}) returns 70
     
 * **CountOfNotNullMapDouble**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
     * Simple wrapper around CountOfNotNullMapText returning double precision.
+    * Return type is double precision.
+    * Variants are:
+      * CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, vals7, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, vals6, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, vals5, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, vals2, vals3, vals4, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, vals2, maxRankToConsider, resultList, mappingList)
+      * CountOfNotNullMapDouble(vals1, maxRankToConsider, resultList, mappingList)
+    * e.g. CountOfNotNullMapDouble({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {1.0,2.0,3.0,4.0,5.0,6.0,7.0}) returns 7.0
     
 * **SubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *boolean* **removeSpaces**\[default FALSE\])
     * Returns a substring of **srcVal** from **startChar** for **forLength**.
     * When **removeSpaces** is TRUE, spaces are removed from **srcVal** before taking the substring.
-    * e.g. SubstringText('abcd', 2, 2)
+    * Return type is text.
+    * Variants are:
+      * SubstringText(srcVal, startChar, forLength, removeSpaces)
+      * SubstringText(srcVal, startChar, forLength)
+    * e.g. SubstringText('abcd', 2, 2) returns 'bc'
 
 * **SubstringInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**)
     * Simple wrapper around **SubstringText** that returns an int.
+    * Return type is text.
+    * Variants are:
+      * SubstringInt(srcVal, startChar, forLength, removeSpaces)
+      * SubstringInt(srcVal, startChar, forLength)
+    * e.g. SubstringInt('a55d', 2, 2) returns 55
     
 * **MinInt**(*stringList* **srcValList**)
     * Return the lowest integer in the **srcValList** string list. 
-    * e.g. minInt({1990, 2000})
+    * Return type is integer.
+    * Variants are:
+      * MinInt(srcValList)
+    * e.g. MinInt({1990, 2000}) returns 1990
 
 * **MaxInt**(*stringList* **srcValList**)
     * Return the highest integer in the **srcValList** string list. 
-    * e.g. MaxInt({1990, 2000})
+    * Return type is integer.
+    * Variants are:
+      * MaxInt(srcValList)
+    * e.g. MaxInt({1990, 2000}) returns 2000
 
 * **MinIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the lowest value in **intList**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
     * Return type is text.
-    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
-    * e.g. MaxIndexCopyText({1990, NULL}, {burn, wind}, 2000, 'NULL')
+    * Variants are:
+      * MinIndexCopyText(intList, returnList, setNullTo, setZeroTo)
+      * MinIndexCopyText(intList, returnList)
+    * e.g. MinIndexCopyText({1990, 2000}, {burn, wind}) returns 'burn'
+    * e.g. MinIndexCopyText({1990, NULL}, {burn, wind}, 1000, 'NULL') returns 'wind'
 
 * **MaxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the highest value in **intList**.
     * If setNullTo is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * If there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
     * Return type is text.
-    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
-    * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 1990)
+    * Variants are:
+      * MaxIndexCopyText(intList, returnList, setNullTo, setZeroTo)
+      * MaxIndexCopyText(intList, returnList)
+    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind}) returns 'wind'
+    * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 2001) returns 'burn'
 
 * **GetIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
     * Return the value from the reordered **returnList** that matches the index of **indexToReturn**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs are ignored when calculating max value. Zeros can also be replaced using setZeroTo. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.    
     * Return type is text.
-    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind})
-    * e.g. MaxIndexCopyText({1990, NULL}, {burn, wind}, 2000, 'NULL')
+    * Variants are:
+      * GetIndexCopyText(intList, returnList, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexCopyText(intList, returnList, indexToReturn)
+    * e.g. GetIndexCopyText({1990, 2000, 2020}, {burn, wind, insect}, 2) returns 'wind'
 
 * **MinIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexCopyText() but returns an integer.
   * Return type is integer.
+  * Variants are:
+    * MinIndexCopyInt(intList, returnList, setNullTo, setZeroTo)
+    * MinIndexCopyInt(intList, returnList)
+  * e.g. MinIndexCopyInt({1990, 2000}, {1, 2}) returns 1 
   
 * **MaxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexCopyText() but returns an integer.
   * Return type is integer.
+  * Variants are:
+    * MaxIndexCopyInt(intList, returnList, setNullTo, setZeroTo)
+    * MaxIndexCopyInt(intList, returnList)
+  * e.g. MaxIndexCopyInt({1990, 2000}, {1, 2}) returns 2 
 
 * **GetIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
   * Same as GetIndexCopyText() but returns an integer.
   * Return type is integer.
+  * * Variants are:
+    * GetIndexCopyInt(intList, returnList, setNullTo, setZeroTo, indexToReturn)
+    * GetIndexCopyInt(intList, returnList, indexToReturn)
+  * e.g. GetIndexCopyInt({1990, 2000, 2010}, {1, 2, 3}, 2) returns 2
 
 * **MinIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from **returnList** matching the index of the lowest value in **intList** to MapText(). Runs MapText() using **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating min value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the lowest value, the **first** non-NULL value with an index matching the lowest value is tested.
     * Return type is text.
-    * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
-    * e.g. MinIndexMapText({NULL, 0}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 2020)
+    * Variants are:
+      * MinIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
+      * MinIndexMapText(intList, returnList, mapVals, targetVals, setNullTo)
+    * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns 'BU'
 
 * **MaxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to MapText(). Runs MapText() with **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * When there are multiple occurrences of the highest value, the **last** non-NULL value with an index matching the highest value is tested.
     * Return type is text.
-    * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT})
-    * e.g. MaxIndexMapText({1990, NULL}, {burn, wind}, {burn, wind}, {BU, WT}, 2020, 'NULL')
+    * Variants are:
+      * MaxIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
+      * MaxIndexMapText(intList, returnList, mapVals, targetVals, setNullTo)
+    * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns WT
 
 * **GetIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
     * Pass the value from the reordered **returnList** that matches the index of **indexToReturn** to MapText along with **mapVals** and **targetVals**.
     * When **setNullTo** is provided as an integer, NULLs in **intList** are replaced with **setNullTo**. Otherwise NULLs ignored when calculating max value. Zeros can also be replaced using **setZeroTo**. Either both, or neither of these values need to be provided. If only one is required the other can be set to the 'NULL' default value.
     * Return type is text.
+    * Variants are:
+      * GetIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo, indexToReturn)
+      * GetIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, indexToReturn)
     * e.g. GetIndexMapText({1990, 1995, 2000}, {burn, wind, insect}, {burn, wind, insect}, {BU, WT, IN}, 2) returns WT.
 
 * **MinIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexMapText() but returning an integer.
   * Return type is integer.
+  * Variants are:
+    * MinIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
+    * MinIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo)
+  * e.g. MinIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 22
 
 * **MaxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexMapText() but returning an integer.
   * Return type is integer.
+  * Variants are:
+    * MaxIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
+    * MaxIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo)
+  * e.g. MaxIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 23
 
 * **GetIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
   * Same as GetIndexMapText() but returns an integer.
   * Return type is integer.
+  * Variants are:
+    * GetIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo, indexToReturn)
+    * GetIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, indexToReturn)
+  * e.g. GetIndexMapInt({1990, 2000, 2001}, {burn, wind, insect}, {burn, wind, insect}, {22, 23, 24}, 3) returns 24
 
 * **CoalesceText**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Returns the first non-NULL value in the **srcValList** string list.
     * When **zeroAsNull** is set to TRUE, strings evaluated to zero ('0', '00', '0.0') are treated as NULL.
-    * e.g. CoalesceText({NULL, '0.0', 'abcd'}, TRUE) -- returns 'abcd'
+    * Return type is text.
+    * Variants are:
+      * CoalesceText(srcValList, zeroAsNull)
+      * CoalesceText(srcValList)
+    * e.g. CoalesceText({NULL, '0.0', 'abcd'}, TRUE) returns 'abcd'
 
 * **CoalesceInt**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Simple wrapper around CoalesceText() that returns an int.
+    * Return type is integer.
+    * Variants are:
+      * CoalesceInt(srcValList, zeroAsNull)
+      * CoalesceInt(srcValList)
+    * e.g. CoalesceInt({NULL, 7, 5}) returns 7
 
 * **AlphaNumeric**(*stringList* **srcVal**)
     * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'.
-    * e.g. AlphaNumeric('bf50ws50') returns 'xx00xx00'.
+    * Return type is text.
+    * Variants are:
+      * AlphaNumeric(srcVal)
+    * e.g. AlphaNumeric('bf50ws50') returns 'xx00xx00'
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns the value of the **returnCol** column of the **intersectSchemaName**.**intersectTableName** table where the geometry in the **geoCol** column intersects **geom**.
     * When multiple polygons intersect, the value from the polygon with the largest area can be returned by setting **method** to 'GREATEST_AREA'; the lowest intersecting value can be returned by setting **method** to'LOWEST_VALUE', or the highest value can be returned by setting method to 'HIGHEST_VALUE'. The 'LOWEST_VALUE' and 'HIGHEST_VALUE' methods only work when **returnCol** is numeric.
+    * Return type is text.
+    * Variants are:
+      * GeoIntersectionText(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
     * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
     
 * **GeoIntersectionDouble**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
-    * Returns a double precision value from an intersecting polygon. Parameters are the same as **GeoIntersectionText()**.
-    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, LENGTH, HIGHEST_VALUE)
+    * Returns a double precision value from an intersecting polygon. Parameters are the same as GeoIntersectionText.
+    * Return type is double precision.
+    * Variants are:
+      * GeoIntersectionDouble(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
+    * e.g. GeoIntersectionDouble(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
 
 * **GeoIntersectionInt**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
-    * Returns an integer value from an intersecting polygon. Parameters are the same as **GeoIntersectionText()**.
-    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, YEAR, LOWEST_VALUE)
+    * Returns an integer value from an intersecting polygon. Parameters are the same as GeoIntersectionText.
+    * Return type is integer.
+    * Variants are:
+      * GeoIntersectionInt(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
+    * e.g. GeoIntersectionInt(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
 
 * **GeoMakeValid**(*geometry* **geom**)
     * Returns a valid version of **geom**. If **geom** cannot be validated, returns NULL.
+    * Return type is geometry.
+    * Variants are:
+      * GeoMakeValid(geom)
     * e.g. GeoMakeValid(POLYGON)
     
 * **GeoMakeValidMultiPolygon**(*geometry* **geom**)
     * Returns a valid version of **geom** of type ST_MultiPolygon. If **geom** cannot be validated, returns NULL.
+    * Return type is geometry.
+    * Variants are:
+      * GeoMakeValidMultiPolygon(geom)
     * e.g. GeoMakeValidMultiPolygon(POLYGON)
 
 
