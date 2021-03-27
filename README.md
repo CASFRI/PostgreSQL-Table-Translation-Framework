@@ -207,17 +207,18 @@ CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
        'SPECIES_1' AS target_attribute, 
        'text' AS target_attribute_type, 
-       'notNull(sp1|STOP);matchTable(sp1,'public','species_lookup'|INVALID_SPECIES)' AS validation_rules, 
-       'lookupText(sp1, 'public', 'species_lookup', 'target_sp')' AS translation_rules, 
+       'notNull(sp1|STOP);matchTable(sp1,''public'',''species_lookup'', ''source_val''|INVALID_SPECIES)' AS validation_rules, 
+       'lookupText(sp1, ''public'', ''species_lookup'', ''source_val'', ''target_sp'')' AS translation_rules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS desc_uptodate_with_rules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
-          'notNull(sp1_per|STOP);between(sp1_per,'0','100')', 
+          'notNull(sp1_per|STOP);isBetween(sp1_per,''0'',''100'')', 
           'copyInt(sp1_per)', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
+
 ```
 
 Create an example source table:
@@ -230,25 +231,15 @@ UNION ALL
 SELECT 2, 'LP', 60;
 ```
 
-Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema, source table name and source column ID name to TT_Translate.
+Run the translation engine by providing the schema and translation table names to TT_Prepare, and the source table schema and source table name to TT_Translate.
 ```sql
 SELECT TT_Prepare('public', 'translation_table');
 
 CREATE TABLE target_table AS
-SELECT * FROM TT_Translate('public', 'source_example', 'ID');
-```
-
-Since you provided a unique identifier column name, a log was generated. You can then check this log like this:
-
-```sql
-SELECT * FROM TT_ShowLastLog('public', 'translation_table');
+SELECT * FROM TT_Translate('public', 'source_example');
 ```
 
 # Main Translation Functions Reference
-Two groups of function are of interest here:
-
-* functions associated with the translation process: TT_Prepare(), TT_Translate() and TT_DropAllTranslateFct().
-* functions useful to work with logging tables: TT_ShowLastLog() and TT_DeleteAllLogs().
 
 * **TT_Prepare(**  
                  *name* **translationTableSchema**,  
@@ -272,27 +263,12 @@ Two groups of function are of interest here:
                          *boolean* **resume**[default FALSE],  
                          *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
                          **)**
-    * Prepared translation function translating a source table according to the content of a translation table. Logging is activated by providing a "sourceRowIdColumn". Log entries of type 'PROGRESS' happen every "logFrequency" rows. Log entries of type 'INVALID_VALUE' and 'TRANSLATION_ERROR' are grouped according to "dupLogEntriesHandling" which can be 'ALL_GROUPED', 'ALL_OWN_ROW' or an single quoted integer specifying the maximum nomber of similar entry to log in the same row. Logging table name can be incremented or overwrited by setting "incrementLog" to TRUE or FALSE. Translation can be stopped by setting "stopOnInvalidSource" or "stopOnTranslationError" to TRUE. When "ignoreDescUpToDateWithRules" is set to FALSE, the translation engine will stop as soon as one attribute's "desc_uptodate_with_rules" is marked as FALSE in the translation table. 'resume' is yet to be implemented.
-    * e.g. SELECT TT_TranslateSuffix('source', 'ab16', 'ogc_fid', FALSE, FALSE, 200);
+    * Prepared translation function translating a source table according to the content of a translation table. Translation can be stopped by setting "stopOnInvalidSource" or "stopOnTranslationError" to TRUE. When "ignoreDescUpToDateWithRules" is set to FALSE, the translation engine will stop as soon as one attribute's "desc_uptodate_with_rules" is marked as FALSE in the translation table. 'dupLogEntriesHandling', 'logFrequency', 'incrementLog' and 'resume' are depreciated.
+    * e.g. SELECT TT_TranslateSuffix('source', 'ab16');
 
 * **TT_DropAllTranslateFct**()
     * Delete all translation functions prepared with TT_Prepare().
     * e.g. SELECT TT_DropAllTranslateFct();
-
-* **TT_ShowLastLog(**  
-                 *name* **schemaName**,  
-                 *name* **tableName**,  
-                 *text* **logNb**[default NULL]  
-                 **)**
-    * Display the last log table generated after using the provided translation table or the one corresponding to the provided "logNb".
-    * e.g. SELECT * FROM TT_ShowLastLog('translation', 'ab06_avi01_lyr', 1); 
-
-* **TT_DeleteAllLogs(**  
-                      *name* **schemaName**,  
-                      *name* **tableName**  
-                      **)**
-    * Delete all logging table associated with the specified translation table.
-    * e.g. SELECT TT_DeleteAllLog('translation', 'ab06_avi01_lyr');
 
 # Helper Function Syntax and Reference
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
