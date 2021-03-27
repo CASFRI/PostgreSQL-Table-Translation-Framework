@@ -182,7 +182,7 @@ Here is how to set those stopping parameters in two very different translation s
 # How to write a lookup table?
 * Some helper functions (e.g. MatchTable(), LookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
-* Helper functions using lookup tables will by default look for the source values in the column named "source_val". The LookupText() function will return the corresponding value in the specified column.
+* Helper functions using lookup tables will look for the source values in the column specified in the function call. The LookupText() function will return the corresponding value in the specified return column.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
 
