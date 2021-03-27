@@ -64,9 +64,9 @@ The current version is v1.0.0 and is available for download at https://github.co
 
 *Translation row* - One row of the translation table.
 
-*Validation rule* - The set of validation helper functions used to validating the sources values of an attribute. There is one set of validation rule per row in the translation table.
+*Validation rule* - The set of validation helper functions used to validate the source values of an attribute. There is one set of validation rules per row in the translation table.
 
-*Translation rule* - The translation helper functions used to translate the sources values to the target attribute. There is only one translation rule per translation row in the translation table.
+*Translation rule* - The translation helper function used to translate the sources values to the target attribute. There is only one translation rule per translation row in the translation table.
 
 *Lookup table* - User created table of lookup values used by some helper functions to convert source values into target values.
 
