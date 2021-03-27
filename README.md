@@ -159,7 +159,7 @@ By default the prepared function will always be named TT_Translate(). If you are
 
 If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process.
 
-# How to control errors, warnings and logging?
+# How to control errors and warnings?
 
 Two types of error can stop the engine during a translation process:
 
