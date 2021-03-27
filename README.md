@@ -139,7 +139,7 @@ SELECT TT_Prepare(translationTableSchema, translationTable);
 
 It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of columns of arbitrary types. The translation function prepared by TT_Prepare() has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new attribute is defined in the translation table, or when a target attribute type is changed.
 
-When you have many tables to translate into a commun table, and hence many translation tables, you normally want all the target tables to have the same schema (same number of attributes, same attribute names, same attribute types). To make sure your translation tables all produce the same schema, you can reference another translation table (generally the first one) when preparing them. TT_Prepare() will compare all attributes from the current translation table with the attributes of the reference translation table and report any difference. Here is how to reference another translation table when invoquing TT_Prepare():
+When you have many tables to translate into a common table, and hence many translation tables, you normally want all the target tables to have the same schema (same number of attributes, same attribute names, same attribute types). To make sure your translation tables all produce the same schema, you can reference another translation table (generally the first one) when preparing them. TT_Prepare() will compare all attributes from the current translation table with the attributes of the reference translation table and report any differences. Here is how to reference another translation table when invoking TT_Prepare():
 
 ```sql
 SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuffix, refTranslationTableSchema, refTranslationTable);
@@ -157,17 +157,17 @@ The TT_Translate() function returns the translated target table. It is designed 
 
 By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '_02') will prepare the TT_Translate_02() function). You would normally provide a different suffix for each of your translation tables.
 
-If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process. You should also enable logging as described in the following section.
+If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process.
 
 # How to control errors, warnings and logging?
 
 Two types of error can stop the engine during a translation process:
 
-**1) Translation table syntax errors -** Any syntax error in the translation table will make the engine to stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
+**1) Translation table syntax errors -** Any syntax error in the translation table will make the engine stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
 
-**2) Helper function errors -**  The second case is usually due to source value that cannot be or are badly handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the "stopOnTranslationError" TT_Translate() parameter. If "stopOnTranslationError" is set to FALSE (default behavior), the engine will log these errors every time it encounters one instead of stopping. These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
+**2) Helper function errors -**  The second case is usually due to source value that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the "stopOnTranslationError" TT_Translate() parameter. If "stopOnTranslationError" is set to FALSE (default behavior), the engine will return the generic translation error code (TRANSLATION_ERROR or -3333). These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
 
-**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule. You can control if they should stop the engine with the "stopOnInvalidSource" TT_Translate() parameter. If "stopOnInvalidSource" is set to FALSE (default behavior), the engine will log these warnings in the log table instead of stopping. You can therefore translate a source table in its entirety (which can takes hours or days) without errors and get a final report of invalidated values only at the end of the whole process. You can then fix the source table or the translation table accordingly and restart the translation process.
+**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule (i.e. a validation rule returns FALSE). You can control if they should stop the engine with the "stopOnInvalidSource" TT_Translate() parameter. If "stopOnInvalidSource" is set to FALSE (default behavior), the engine will return the designated error code and continue translating. The user would then need to review any error codes after the translation ends, fix the source table or the translation table accordingly, and restart the translation process.
 
 You can also add 'STOP' directly in the translation table helper functions in order to implement a faster "write, test, fix, retest" cycle. 
 
@@ -175,48 +175,9 @@ Here is how to set those stopping parameters in two very different translation s
 
 **Scenario 1: Fixing values at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the "stopOnTranslationError" and the "stopOnInvalidSource" TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
 
-**Scenario 2: Fixing the translation table -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you to move forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, STOP)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will not stop anymore when invalidation occurs. It will write the error code in the target table in place of the translated value and log the invalid value in the log table. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
+**Scenario 2: Fixing the translation table -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you from moving forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, STOP)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will no longer stop invalidation occurs. It will write the error code in the target table in place of the translated value. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
 
-**Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define a error code for each possible types (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
-
-**Logging -** Logging is activated as soon as you provide the name of a unique ID column for the source table as the third parameter to your TT_Translate() function:
-
-```sql
-CREATE TABLE target_table AS
-SELECT * FROM TT_Translate(sourceTableSchema, sourceTable, sourceRowIdColumn);
-```
-
-A logging table has the following attributes:
-
-1. **logid** - Incremental unique integer identifier of the log entry.
-2. **logtime** - Date and hour stamp  of the log entry.
-3. **logtype** - 'PROGRESS', 'INVALID_VALUE' or 'TRANSLATION_ERROR'.
-4. **firstrowid** - In the case of a group of matching entries, the first source row ID of the group.
-5. **message** - Detailed logging message.
-6. **currentrownb** - Number of the row being processed when this log entry was created. Different from 'firstrowid' which is an identifier.
-7. **count** - Number of rows pertaining to this log entry group. Equal to logFrequency for 'PROGRESS' entries. Equal to the number of identical invalidations or errors for 'INVALID_VALUE' and 'TRANSLATION_ERROR' entries.
-
-The "sourceRowIdColumn" parameter is necessary for logging to be enabled. It is used by the logging system to identify, in the "firstrowid" column, the first source table row having triggered this type of log entry. If "sourceRowIdColumn" is not provided, logging is disabled.
-
-Invalidation and translation errors can happen millions of time in some translation projects. Log entries of of the same type are grouped together in order to avoid generating a huge number of identical rows in the log table. The "count" attribute of the logging table reflects the number of time an identical error has happened during the translation process. By default the logging system will log only the first 100 entries of the same type. You can change this behavior by adding the "dupLogEntriesHandling" parameter to TT_Translate() specifying how to handle duplicate log entries. "ALL_GROUPED" will log all entries (not only the first 100 ones) grouped together. It is the slowest option. "ALL_OWN_ROW" will log each entry into its own row. It is the fastest option but it might result in a huge number of rows in the logging table. Between these two options, you can instead specify a maximum number of entries per similar invalid rows as a single quoted integer. The default value for "dupLogEntriesHandling" is '100'.
-
-Logging tables are created beside the translation table for which the translation function was created (with TT_Prepare()). They have the same name as the translation table but with the '_log_00X' suffix.
-
-By default, every time you execute the translation function, a new log table is created with an incremental name. You can change this behavior by settting the TT_Translate() "incrementLog" parameter to FALSE. In this case the log table number '001' will be created or overwritten if it already exists. When "incrementLog" is set to TRUE, it's default value, and you execute TT_Translate() often, you will end up with many log tables. You can list the last one using the TT_ShowLastLog() function:
-
-```sql
-SELECT * FROM TT_ShowLastLog(translationTableSchema, translationTable);
-```
-
-If you produced many log tables but are still interested in listing a specific one, you can provide it's number with the "logNb" argument to TT_ShowLastLog().
-
-You can delete all log tables associated with a translation table with the TT_DeleteAllLogs() function:
-
-```sql
-SELECT TT_DeleteAllLogs(translationTableSchema, translationTable);
-```
-
-You can delete all log tables in the schema if you omit the "translationTable" parameter.
+**Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define an error code for each possible type (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
 
 # How to write a lookup table?
 * Some helper functions (e.g. MatchTable(), LookupText()) allow the use of lookup tables to support mapping between source and target values.
