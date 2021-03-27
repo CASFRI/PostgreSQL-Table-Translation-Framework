@@ -40,13 +40,11 @@ The current version is v1.0.0 and is available for download at https://github.co
   5. the helperFunctionsTest.sql file. All tests should pass.
   6. the helperFunctionsGISTest.sql file. All tests should pass.
   
-**Test**
-
-  In a postgreSQL query tool window, run, in this order, the engineTest.sql file, the helperFunctionsTest.sql file and, if GIS functions are required and PostGIS is installed, the helperFunctionsGIS.sql file. Only failing tests will be displayed.
-  
 **Uninstallation**
 
   In a postgreSQL query tool window do: DROP EXTENSION table_translation_framework;
+  
+  Alternatively the engineUninstall.sql, helperFunctionsUninstall.sql and helperFunctionsGISUninstall.sql can be run manually.
 
 
 # Vocabulary
