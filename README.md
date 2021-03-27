@@ -111,13 +111,13 @@ Translation tables are themselves validated by the translation engine while proc
 
 The following translation table defines a target table composed of two columns: "SPECIES_1" of type text and "SPECIES_1_PER" of type integer.
 
-The ROW_TRANSLATION_RULE special row specifies that only source rows for which the "sp1" attribute is not NULL must be translated. Other source rows (where "sp1" is NULL) must be ignored.
+The ROW_TRANSLATION_RULE special row specifies that only source rows for which the "sp1" attribute is not NULL must be translated. Other source rows (where "sp1" is NULL) will be ignored.
 
-The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTab() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
+The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTable() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
 If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. In this example, this rule will also make the engine to STOP if "sp1" is NULL. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
 
-Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. The engine will STOP if "sp1_per" is NULL. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". '-8888', the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. '-9999' is returned if the second validation rule fails.
+Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. The engine will STOP if "sp1_per" is NULL. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". -8888, the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. -9999 is returned if the second validation rule fails.
 
 A textual description of the rules is provided and the flag indicating that the description is in sync with the rules is set to TRUE.
 
@@ -125,7 +125,7 @@ A textual description of the rules is provided and the flag indicating that the 
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
 |0        |ROW_TRANSLATION_RULE        |NA                 |notNull(sp1) |NA |Translate row only when sp1 is not NULL|TRUE|
 |1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
-|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,'0','100')|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,0,100)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
 # How to actually translate a source table?
 
