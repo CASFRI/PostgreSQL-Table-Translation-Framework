@@ -115,17 +115,17 @@ The ROW_TRANSLATION_RULE special row specifies that only source rows for which t
 
 The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTable() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
-If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. In this example, this rule will also make the engine to STOP if "sp1" is NULL. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
+If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
 
-Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. The engine will STOP if "sp1_per" is NULL. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". -8888, the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. -9999 is returned if the second validation rule fails.
+Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". -8888, the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. -9999 is returned if the second validation rule fails.
 
 A textual description of the rules is provided and the flag indicating that the description is in sync with the rules is set to TRUE.
 
 | rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
 |0        |ROW_TRANSLATION_RULE        |NA                 |notNull(sp1) |NA |Translate row only when sp1 is not NULL|TRUE|
-|1        |SPECIES_1        |text                 |notNull(sp1\|STOP); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
-|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\|STOP); between(sp1_per,0,100)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
+|1        |SPECIES_1        |text                 |notNull(sp1\); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
+|2        |SPECIES_1_PER    |integer              |notNull(sp1_per\); between(sp1_per,0,100)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
 # How to actually translate a source table?
 
@@ -159,23 +159,13 @@ By default the prepared function will always be named TT_Translate(). If you are
 
 If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process.
 
-# How to control errors and warnings?
+# How to fix errors?
 
 Two types of error can stop the engine during a translation process:
 
 **1) Translation table syntax errors -** Any syntax error in the translation table will make the engine stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
 
-**2) Helper function errors -**  The second case is usually due to source value that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. This is why you can control if the engine should stop or not with the "stopOnTranslationError" TT_Translate() parameter. If "stopOnTranslationError" is set to FALSE (default behavior), the engine will return the generic translation error code (TRANSLATION_ERROR or -3333). These errors can often be avoided by catching them with a proper validation rule (e.g. notNull()).
-
-**Invalidation warnings -** Invalidation warnings happen when a source value gets invalidated by a validation rule (i.e. a validation rule returns FALSE). You can control if they should stop the engine with the "stopOnInvalidSource" TT_Translate() parameter. If "stopOnInvalidSource" is set to FALSE (default behavior), the engine will return the designated error code and continue translating. The user would then need to review any error codes after the translation ends, fix the source table or the translation table accordingly, and restart the translation process.
-
-You can also add 'STOP' directly in the translation table helper functions in order to implement a faster "write, test, fix, retest" cycle. 
-
-Here is how to set those stopping parameters in two very different translation scenarios:
-
-**Scenario 1: Fixing values at the source  -** In a scenario where you want to fix the source data in order to have a clean target table without error codes, you must repeat this "modify translation rules, test, fix source table, retest" cycle until all source values pass the validation rules. You can achieve this by setting the "stopOnTranslationError" and the "stopOnInvalidSource" TT_Translate() parameters to TRUE until completion of the translation. When all source values are fixed and pass every validation rules, the engine will not stop anymore.
-
-**Scenario 2: Fixing the translation table -** In a scenario where you do not want to modify the source table and prefer the engine to replace invalid values with error codes (the default ones or the ones defined in the translation table), it is better not to leave TT_Translate() "stopOnInvalidSource" to TRUE. It would stop the engine every time a source value is invalidated and prevent you from moving forward with the translation table. In this scenario it is preferable to keep the TT_Translate() "stopOnInvalidSource" parameter to FALSE (it's default value) and add 'STOP' directly in the translation table after the validation rule error code. e.g. "notNull(attribute|ERROR_CODE, STOP)". When you are happy with the validation rules and error codes set for an attribute, you can remove 'STOP' from this rule and the engine will no longer stop invalidation occurs. It will write the error code in the target table in place of the translated value. You can then set 'STOP' for a next validation rule and go on until you are happy with all the validation rules and error codes.
+**2) Helper function errors -**  The second case is usually due to source value that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. It is therefore important to use well written helper functions. All translation helper functions should be written such that they do not produce errors, they should return NULL instead. Ideally any invalid data types that could cause an error in a translation helper function should be trapped by a validation function so that invalid data never reaches the translation function. Any translation helper function returning NULL will return the generic translation error code values in the target table (TRANSLATION_ERROR or -3333). Once translation is complete the user can review the target table for any TRANSLATION_ERROR or -3333 error codes and either fix the translation helper functions that created them, or modify the validation helper functions to catch the errors. For larget translations, we recommend testing the translation tables on a random subset of data to identify as many errors as possible before running the full translation.
 
 **Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define an error code for each possible type (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
 
@@ -207,14 +197,14 @@ CREATE TABLE translation_table AS
 SELECT 1 AS rule_id, 
        'SPECIES_1' AS target_attribute, 
        'text' AS target_attribute_type, 
-       'notNull(sp1|STOP);matchTable(sp1,''public'',''species_lookup'', ''source_val''|INVALID_SPECIES)' AS validation_rules, 
+       'notNull(sp1);matchTable(sp1,''public'',''species_lookup'', ''source_val''|INVALID_SPECIES)' AS validation_rules, 
        'lookupText(sp1, ''public'', ''species_lookup'', ''source_val'', ''target_sp'')' AS translation_rules, 
        'Maps source value to SPECIES_1 using lookup table' AS description, 
        TRUE AS desc_uptodate_with_rules
 UNION ALL
 SELECT 2, 'SPECIES_1_PER', 
           'integer', 
-          'notNull(sp1_per|STOP);isBetween(sp1_per,''0'',''100'')', 
+          'notNull(sp1_per);isBetween(sp1_per,''0'',''100'')', 
           'copyInt(sp1_per)', 
           'Copies source value to SPECIES_PER_1', 
           TRUE;
@@ -253,17 +243,9 @@ SELECT * FROM TT_Translate('public', 'source_example');
 
 * **TT_TranslateSuffix(**  
                          *name* **sourceTableSchema**,  
-                         *name* **sourceTable**,  
-                         *name* **sourceRowIdColumn**[default NULL],  
-                         *boolean* **stopOnInvalidSource**[default FALSE],  
-                         *boolean* **stopOnTranslationError**[default FALSE],  
-                         *text* **dupLogEntriesHandling**[default '100'],  
-                         *int* **logFrequency**[default 500],  
-                         *boolean* **incrementLog**[default TRUE],  
-                         *boolean* **resume**[default FALSE],  
-                         *boolean* **ignoreDescUpToDateWithRules**[default FALSE]  
+                         *name* **sourceTable** 
                          **)**
-    * Prepared translation function translating a source table according to the content of a translation table. Translation can be stopped by setting "stopOnInvalidSource" or "stopOnTranslationError" to TRUE. When "ignoreDescUpToDateWithRules" is set to FALSE, the translation engine will stop as soon as one attribute's "desc_uptodate_with_rules" is marked as FALSE in the translation table. 'dupLogEntriesHandling', 'logFrequency', 'incrementLog' and 'resume' are depreciated.
+    * Prepared translation function translating a source table according to the content of a translation table.
     * e.g. SELECT TT_TranslateSuffix('source', 'ab16');
 
 * **TT_DropAllTranslateFct**()
@@ -294,7 +276,6 @@ Helper function parameters are grouped into three classes, each of which have a 
   * When the engine encounters a valid column name, it searches the source table for that column and returns the corresponding value for the row being processed. This value is then passed as an argument to the helper function.
     * e.g. CopyText(column_A)
     * This would return the text value from column_A in the source table for each row being translated.
-  * If the column name is not found as a column in the source table, it is processed as a string. **IS THIS CORRECT??**
   * Note that the column name syntax only applies to columns in the source table. Any arguments specifying columns in lookup tables for example should be provided as strings.
 
 **3. String lists**
