@@ -283,7 +283,7 @@ Helper function parameters are grouped into three classes, each of which have a 
   * Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
   * String lists can contain both basic types and column names following the rules described above.
   * e.g. Concat({column_A, column_B, 'joined'}, '-')
-    * The Concat function takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
+    * This Concat function call takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
     * This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
