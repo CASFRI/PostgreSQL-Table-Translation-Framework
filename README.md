@@ -115,7 +115,7 @@ The ROW_TRANSLATION_RULE special row specifies that only source rows for which t
 
 The source attribute "sp1" is validated by checking it is not NULL and that it matches a value in the specified lookup table. This is done using the notNull() and the matchTable() [helper functions](#helper-functions) described further in this document. If all validation tests pass, "sp1" is then translated into the target attribute "SPECIES_1" using the lookupText() helper function. This function uses the "species_lookup" column from the "species_lookup" lookup table located in the "public" schema to map the source value to the target value.
 
-If the first notNull() rules fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
+If the first notNull() rule fails, this function's default text error code ('NULL_VALUE') is returned instead of the translated value. If the first rule passes but the second validation rule fails, the 'INVALID_SPECIES' error code is returned, overwriting the matchTable() default error code (NOT_IN_SET). 
 
 Similarly, in the second row of the translation table, the source attribute "sp1_per" is validated by checking it is not NULL and that it falls between 0 and 100. It is then translated by simply copying the value to the target attribute "SPECIES_1_PER". -8888, the default integer error code for notNull(), equivalent to 'NULL_VALUE' for text attributes, is returned if the first rule fails. -9999 is returned if the second validation rule fails.
 
@@ -137,7 +137,7 @@ The translation is done in two steps:
 SELECT TT_Prepare(translationTableSchema, translationTable);
 ```
 
-It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of columns of arbitrary types. The translation function prepared by TT_Prepare() has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table. This step is necessary only when a new translation table is being used, when a new attribute is defined in the translation table, or when a target attribute type is changed.
+It is necessary to dynamically prepare the actual translation function because PostgreSQL does not allow a function to return an arbitrary number of columns of arbitrary types. The translation function prepared by TT_Prepare() has to explicitly declare what it is going to return at declaration time. Since every translation table can get the translation function to return a different set of columns, it is necessary to define a new translation function for every translation table.
 
 When you have many tables to translate into a common table, and hence many translation tables, you normally want all the target tables to have the same schema (same number of attributes, same attribute names, same attribute types). To make sure your translation tables all produce the same schema, you can reference another translation table (generally the first one) when preparing them. TT_Prepare() will compare all attributes from the current translation table with the attributes of the reference translation table and report any differences. Here is how to reference another translation table when invoking TT_Prepare():
 
@@ -165,7 +165,7 @@ Two types of error can stop the engine during a translation process:
 
 **1) Translation table syntax errors -** Any syntax error in the translation table will make the engine stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
 
-**2) Helper function errors -**  The second case is usually due to source value that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. It is therefore important to use well written helper functions. All translation helper functions should be written such that they do not produce errors, they should return NULL instead. Ideally any invalid data types that could cause an error in a translation helper function should be trapped by a validation function so that invalid data never reaches the translation function. Any translation helper function returning NULL will return the generic translation error code values in the target table (TRANSLATION_ERROR or -3333). Once translation is complete the user can review the target table for any TRANSLATION_ERROR or -3333 error codes and either fix the translation helper functions that created them, or modify the validation helper functions to catch the errors. For larget translations, we recommend testing the translation tables on a random subset of data to identify as many errors as possible before running the full translation.
+**2) Helper function errors -**  The second case is usually due to source values that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. It is therefore important to use well written helper functions. All translation helper functions should be written such that they do not produce errors, they should return NULL instead. Ideally any invalid data types that could cause an error in a translation helper function should be trapped by a validation function so that invalid data never reaches the translation function. Any translation helper function returning NULL will return the generic translation error code values in the target table (TRANSLATION_ERROR or -3333). Once translation is complete the user can review the target table for any TRANSLATION_ERROR or -3333 error codes and either fix the translation helper functions that created them, or modify the validation helper functions to catch the errors. For large translations, we recommend testing the translation tables on a random subset of data to identify as many errors as possible before running the full translation.
 
 **Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define an error code for each possible type (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
 
@@ -173,6 +173,8 @@ Two types of error can stop the engine during a translation process:
 * Some helper functions (e.g. MatchTable(), LookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
 * Helper functions using lookup tables will look for the source values in the column specified in the function call. The LookupText() function will return the corresponding value in the specified return column.
+* Lookup tables can inlude geometries for use in functions such as GeoIntersects() and GeoIntersectionInt() described below.
+* All lookup table must be validated before use. For example no source values can be duplicated, and any geometries must be valid.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
 
@@ -288,7 +290,11 @@ Helper function parameters are grouped into three classes, each of which have a 
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
 
-Some validation helper functions have an optional 'acceptNull' parameter that returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns (Note this feature may be depreciated following #243, see #247).
+**Nested helper functions**
+
+Helper functions can be nested within other helper functions, this reduces the need to write many different helper functions that call each other internally. Note that this is a new feature ([#243](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/243)) and many of the included helper functions will be depreceated in future versions. For example, the function ```MatchListSubstring(srcVal, startChar, forLength, matchList)``` can now be replaced in a translation table with ```MatchList(SubstringText(srcVal, startChar, forLength), matchList)```.
+
+Some validation helper functions have an optional 'acceptNull' parameter that returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns (Note this feature may also be depreciated following [#243](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/243), see [#247](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/247)).
 
 # Provided Helper Functions
 ## Validation Functions
@@ -343,7 +349,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * IsNumeric(srcVal, acceptNull)
       * IsNumeric(srcVal)
-    * e.g. IsNumeric('1.1')
+    * e.g. IsNumeric('1.1') returns TRUE.
    
 * **IsBetween**(*numeric* **srcVal**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **srcVal** is between **min** and **max**. FALSE otherwise.
@@ -354,7 +360,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       * IsBetween(srcVal, min, max, includeMin, includeMax, acceptNull)
       * IsBetween(srcVal, min, max, includeMin, includeMax)
       * IsBetween(srcVal, min, max)
-    * e.g. IsBetween(5, 0, 100) returns TRUE
+    * e.g. IsBetween(5, 0, 100) returns TRUE.
 
 * **IsXMinusYBetween**(*numeric* **x**, *numeric* **y**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if **x** minus **y** is between **min** and **max**. FALSE otherwise.
@@ -466,8 +472,8 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Default error codes are 'NOT_IN_SET' for text attributes, -9998 for numeric attributes and NULL for other types.
     * Variants are:
       * MatchListTwice(srcVal1, matchList1, srcVal2, matchList2)
-    * e.g. MatchListTwice('a', {'a','b','c'}, 'x', {'a','b','c'}) returns TRUE
-    * e.g. MatchListTwice('x', {'a','b','c'}, 'y', {'a','b','c'}) returns FALSE
+    * e.g. MatchListTwice('a', {'a','b','c'}, 'x', {'a','b','c'}) returns TRUE.
+    * e.g. MatchListTwice('x', {'a','b','c'}, 'y', {'a','b','c'}) returns FALSE.
     
 * **NotMatchList**(*text* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * A wrapper around MatchList() that sets **matches** to FALSE.
@@ -567,7 +573,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       * LengthMatchList(srcVal, matchList, trim, removeSpaces)
       * LengthMatchList(srcVal, matchList, trim)
       * LengthMatchList(srcVal, matchList)
-    * e.g. LengthMatchList('12345', {5})
+    * e.g. LengthMatchList('12345', {5}) returns TRUE.
     
 * **MinIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the lowest integer in **intList**. Pass it to NotNull(). 
@@ -577,7 +583,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MinIndexNotNull(intList, testList, setNullTo, setZeroTo)
       * MinIndexNotNull(intList, testList)
-    * e.g. MinIndexNotNull({1990, 2000}, {burn, NULL}) returns TRUE
+    * e.g. MinIndexNotNull({1990, 2000}, {burn, NULL}) returns TRUE.
     
 * **MaxIndexNotNull**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Find the target values from **testList** with a matching index to the highest integer in **intList**. Pass it to NotNull(). 
@@ -605,7 +611,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MinIndexNotEmpty(intList, testList, setNullTo, setZeroTo)
       * MinIndexNotEmpty(intList, testList)
-    * e.g. MinIndexNotEmpty({1990, 2000}, {burn, ''}) returns TRUE
+    * e.g. MinIndexNotEmpty({1990, 2000}, {burn, ''}) returns TRUE.
 
 * **MaxIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull() but tests the value with NotEmpty().
@@ -613,7 +619,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MaxIndexNotEmpty(intList, testList, setNullTo, setZeroTo)
       * MaxIndexNotEmpty(intList, testList)
-    * e.g. MaxIndexNotEmpty({1990, 2000}, {burn, ''}) returns FALSE
+    * e.g. MaxIndexNotEmpty({1990, 2000}, {burn, ''}) returns FALSE.
 
 * **GetIndexNotEmpty**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull() but tests the value with NotEmpty().
@@ -629,7 +635,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MinIndexIsInt(intList, testList, setNullTo, setZeroTo)
       * MinIndexIsInt(intList, testList)
-    * e.g. MinIndexIsInt({1990, 2000}, {111, xxx}) returns TRUE
+    * e.g. MinIndexIsInt({1990, 2000}, {111, xxx}) returns TRUE.
     
 * **MaxIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull but tests the value with IsInt().
@@ -637,7 +643,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MaxIndexIsInt(intList, testList, setNullTo, setZeroTo)
       * MaxIndexIsInt(intList, testList)
-    * e.g. MaxIndexIsInt({1990, 2000}, {111, xxx}) returns FALSE
+    * e.g. MaxIndexIsInt({1990, 2000}, {111, xxx}) returns FALSE.
 
 * **GetIndexIsInt**(*stringList* **intList**, *stringList* **testList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull but tests the value with IsInt().
@@ -645,7 +651,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * GetIndexIsInt(intList, testList, setNullTo, setZeroTo, indexToReturn)
       * GetIndexIsInt(intList, testList, indexToReturn)
-    * e.g. GetIndexNotNull({1990, 2000, 2005}, {111, 222, 333}) returns TRUE
+    * e.g. GetIndexNotNull({1990, 2000, 2005}, {111, 222, 333}) returns TRUE.
 
 * **MinIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MinIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()). 
@@ -653,8 +659,8 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MinIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo)
       * MinIndexIsBetween(intList, testList, min, max)
-    * e.g. MinIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns TRUE
-    * e.g. MinIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns FALSE
+    * e.g. MinIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns TRUE.
+    * e.g. MinIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns FALSE.
 
 * **MaxIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MaxIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()).
@@ -662,8 +668,8 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * MaxIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo)
       * MaxIndexIsBetween(intList, testList, min, max)
-    * e.g. MaxIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns FALSE
-    * e.g. MaxIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns TRUE
+    * e.g. MaxIndexIsBetween({1990, 2000}, {1000, 3000}, 0, 2000) returns FALSE.
+    * e.g. MaxIndexIsBetween({1990, 2000}, {3000, 1000}, 0, 2000) returns TRUE.
 
 * **GetIndexIsBetween**(*stringList* **intList**, *stringList* **testList**, *numeric* **min**, *numeric* **max**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Same as GetIndexNotNull but tests the value with IsBetween along with **min** and **max** which are considered inclusive (i.e. the default behavior of isBetween()).
@@ -671,8 +677,8 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * GetIndexIsBetween(intList, testList, min, max, setNullTo, setZeroTo, indexToReturn)
       * GetIndexIsBetween(intList, testList, min, max, indexToReturn)
-    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 1000, 3000}, 0, 2000, 2) returns TRUE
-    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 3000, 1000}, 0, 2000, 2) returns FALSE
+    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 1000, 3000}, 0, 2000, 2) returns TRUE.
+    * e.g. GetIndexIsBetween({1990, 1995, 2000}, {0, 3000, 1000}, 0, 2000, 2) returns FALSE.
 
 * **MinIndexMatchList**(*stringList* **intList**, *stringList* **testList**, *stringList* **matchList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Same as MinIndexNotNull but tests the value with MatchList along with the **matchList**.
@@ -729,7 +735,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * CoalesceIsInt(srcValList, zeroAsNull)
       * CoalesceIsInt(srcValList)
-    * e.g. CoalesceIsInt({NULL, 0, 2000}, TRUE) returns TRUE
+    * e.g. CoalesceIsInt({NULL, 0, 2000}, TRUE) returns TRUE.
 
 * **CoalesceIsBetween**(*stringList* **srcValList**, *numeric* **min**, *numeric* **max**, *boolean* **includeMin**\[default TRUE\], *boolean* **includeMax**\[default TRUE\], , *boolean* **zeroAsNull**\[default FALSE\])
     * Returns TRUE if the first non-NULL value in the **srcValList** string list is between **min** and **max**.
@@ -740,9 +746,9 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       * CoalesceIsBetween(srcValList, min, max, includeMin, mincludeMax, zeroAsNull)
       * CoalesceIsBetween(srcValList, min, max, includeMin, mincludeMax)
       * CoalesceIsBetween(srcValList, min, max)
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100) returns TRUE because 0 is between 0 and 100 and 0 which are both included in the valid interval
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE) returns FALSE because 0 is not included in the valid interval
-    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE, TRUE) returns TRUE because 0 is ignored and 5 is between 0 and 100
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100) returns TRUE because 0 is between 0 and 100 and 0 which are both included in the valid interval.
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE) returns FALSE because 0 is not included in the valid interval.
+    * e.g. CoalesceIsBetween({NULL, 0, 5}, 0, 100, FALSE, FALSE, TRUE) returns TRUE because 0 is ignored and 5 is between 0 and 100.
 
 * **GeoIsValid**(*geometry* **geom**, *boolean* **fixable**\[default TRUE\])
     * Returns TRUE if **geom** is a valid geometry.
@@ -751,7 +757,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
     * Variants are:
       * GeoIsValid(geom, fixable)
       * GeoIsValid(geom)
-    * e.g. GeoIsValid(POLYGON, TRUE) returns TRUE is geom is fixable to a valid geometry
+    * e.g. GeoIsValid(POLYGON, TRUE) returns TRUE is geom is fixable to a valid geometry.
     
 * **GeoIntersects**(*geometry* **geom**, *text* **intersectSchemaName**\[default public\], *text* **intersectTableName**, *geometry* **geomCol**\[default geom\])
     * Returns TRUE if **geom** intersects with any features in the **geomCol** column of the **intersectSchemaName**.**intersectTableName** table. Otherwise returns FALSE. Invalid geometries are validated before running the intersection test.
@@ -760,14 +766,14 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       * GeoIntersects(geom, intersectSchemaName, intersectTableName, geomCol)
       * GeoIntersects(geom, intersectSchemaName, intersectTableName)
       * GeoIntersects(geom, intersectTableName)
-    * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo) returns TRUE is POLYGON intersects with the intersect_geo
+    * e.g. GeoIntersects(POLYGON, public, intersect_tab, intersect_geo) returns TRUE is POLYGON intersects with the intersect_geo.
   
 * **GeoIntersectionGreaterThan**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geomCol**, *text* **returnCol**, *text* **method**, *numeric* **lowerBound**)
     * Runs GeoIntersection and passes the **returnCol** from the intersecting polygon to IsGreaterThan. See GeoIntersectionText for full details.
     * Default error codes are 'OUT_OF_RANGE' for text attributes, -9999 for numeric attributes and NULL for other types.
     * Variants are:
       * GeoIntersectionGreaterThan(geom, intersectSchemaName, intersectTableName, geomCol, returnCol, method, lowerBound)
-    * GeoIntersectionGreaterThan(POLYGON, public, intersect_tab, intersect_geo, NUMBER, GREATEST_AREA, 10)
+    * GeoIntersectionGreaterThan(POLYGON, public, intersect_tab, intersect_geo, NUMBER, GREATEST_AREA, 10) returns TRUE if the intersecting polygon has a value greater than 10.
       
 ## Translation Functions
 
@@ -775,36 +781,36 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
 
 * **NothingText**()
     * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingText()
+    * e.g. NothingText().
 
 * **NothingDouble**()
     * Returns NULL of type double precision. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingDouble()
+    * e.g. NothingDouble().
 
 * **NothingInt**()
     * Returns NULL of type integer. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
-    * e.g. NothingInt()
+    * e.g. NothingInt().
 
 * **CopyText**(*text* **srcVal**)
     * Returns **srcVal** as text without any transformation.
     * Return type is text.
     * Variants are:
       * CopyText(srcVal)
-    * e.g. CopyText('sp1') returns 'sp1'
+    * e.g. CopyText('sp1') returns 'sp1'.
       
 * **CopyDouble**(*numeric* **srcVal**)
     * Returns **srcVal** as double precision without any transformation.
     * Return type is double precision
     * Variants are:
       * CopyDouble(srcVal)
-    * e.g. CopyDouble(1.1) returns 1.1
+    * e.g. CopyDouble(1.1) returns 1.1.
 
 * **CopyInt**(*integer* **srcVal**)
     * Returns **srcVal** as integer without any transformation.
     * Return type is integer
     * Variants are:
       * CopyInt(srcVal)
-    * e.g. CopyInt(1) returns 1
+    * e.g. CopyInt(1) returns 1.
       
 * **LookupText**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns text value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
@@ -813,7 +819,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * LookupText(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
       * LookupText(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
-    * e.g. LookupText('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the sp1 value in the lookupCol 
+    * e.g. LookupText('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the sp1 value in the lookupCol.
       
 * **LookupDouble**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, *boolean* **ignoreCase**\[default FALSE\])
     * Returns double precision value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
@@ -822,7 +828,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * LookupDouble(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
       * LookupDouble(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
-    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol
+    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol.
 
 * **LookupInt**(*text* **srcVal**, *text* **lookupSchemaName**, *text* **lookupTableName**, *text* **lookupColName**, *text* **retrieveColName**, boolean **ignoreCase**\[default FALSE\])
     * Returns integer value from the **retrieveColName** column in **lookupSchemaName**.**lookupTableName** that matches **srcVal** in the **lookupColName** column.
@@ -831,7 +837,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * LookupInt(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName, ignoreCase)
       * LookupInt(srcVal, lookupSchemaName, lookupTableName, lookupColName, retrieveColName)
-    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol
+    * e.g. LookupDouble('sp1', 'public', 'species_lookup', 'lookupCol', 'returnCol', TRUE) returns the returnCol value matching the 'sp1' value in the lookupCol.
 
 * **MapText**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return text value from **returnList** that matches index of **srcVal** in **matchList**. 
@@ -842,7 +848,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * MaptText(srcVal, matchList, returnList, ignoreCase, removeSpaces)
       * MaptText(srcVal, matchList, returnList, ignoreCase)
       * MaptText(srcVal, matchList, returnList)
-    * e.g. Map('A','{'A','B','C'}','{'D','E','F'}', TRUE) returns 'D'
+    * e.g. MapText('A','{'A','B','C'}','{'D','E','F'}', TRUE) returns 'D'.
     
 * **MapSubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Calculates substring of **srcVal** and passes to MapText() using **matchList** and **returnList**.
@@ -851,14 +857,14 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * MapSubstringText(srcVal, startChar, forLength, matchList, returnList, ignoreCase, removeSpaces)
       * MapSubstringText(srcVal, startChar, forLength, matchList, returnList, ignoreCase)
       * MapSubstringText(srcVal, startChar, forLength, matchList, returnList)
-    * e.g. MapSubstringText('ABC',1,1,'{'A','B','C'}','{'D','E','F'}') returns 'D'
+    * e.g. MapSubstringText('ABC',1,1,'{'A','B','C'}','{'D','E','F'}') returns 'D'.
     
 * **SumIntMapText**(*stringList* **srcValList**, *stringList* **matchList**, *stringList* **returnList**)
     * Calculates the sum  of the values in the **srcValList** string list and passes the sum to MapText() with **matchList** amd **returnList**.
     * Return type is text.
     * Variants are:
       * SumIntMapText(srcValList, matchList, returnList)
-    * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'}) returns 'three'
+    * e.g. SumIntMapText({1, 2},{3, 4, 5},{'three','four','five'}) returns 'three'.
     
 * **MapTextNotNullIndex**(*text* **srcVal1**, *stringList* **matchList1**, *stringList* **returnList1**, *text* **srcVal2**, *stringList* **matchList2**, *stringList* **returnList2**, *text* **srcVal3**, *stringList* **matchList3**, *stringList* **returnList3**, *text* **srcVal4**, *stringList* **matchList4**, *stringList* **returnList4**, *text* **srcVal5**, *stringList* **matchList5**, *stringList* **returnList5**, *text* **srcVal6**, *stringList* **matchList6**, *stringList* **returnList6**, *text* **srcVal7**, *stringList* **matchList7**, *stringList* **returnList7**, *text* **srcVal8**, *stringList* **matchList8**, *stringList* **returnList8**, *text* **srcVal9**, *stringList* **matchList9**, *stringList* **returnList9**, *text* **srcVal10**, *stringList* **matchList10**, *stringList* **returnList10**, *integer* indexToReturn)
     * Runs MapText for each set of val, matchList and returnList, then returns the ith non-null result where i = indexToReturn.
@@ -888,7 +894,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * MapDouble(srcVal, matchList, returnList, ignoreCase, removeSpaces)
       * MapDouble(srcVal, matchList, returnList, ignoreCase)
       * MapDouble(srcVal, matchList, returnList)
-    * e.g. MapDouble('A',{'A','B','C'},{1.1,1.2,1.3}, TRUE) returns 1.1
+    * e.g. MapDouble('A',{'A','B','C'},{1.1,1.2,1.3}, TRUE) returns 1.1.
       
 * **MapInt**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
     * Return integer value in **returnList** that matches index of **srcVal** in **matchList**. 
@@ -899,7 +905,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * MapInt(srcVal, matchList, returnList, ignoreCase, removeSpaces)
       * MapInt(srcVal, matchList, returnList, ignoreCase)
       * MapInt(srcVal, matchList, returnList)
-    * e.g. Map('A',{'A','B','C'},{1,2,3}) returns 1
+    * e.g. Map('A',{'A','B','C'},{1,2,3}) returns 1.
       
 * **Length**(*text* **srcVal**, *boolean* **trimSpaces**)
     * Returns the length of the **srcVal** string.
@@ -908,7 +914,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * Length(srcVal, trimSpaces)
       * Length(srcVal)
-    * e.g. Length('12345') returns 5
+    * e.g. Length('12345') returns 5.
 
 * **LengthMapInt**(*text* **srcVal**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **removeSpaces**\[default FALSE\])
     * Calculates length of string then pass the length to MapInt().
@@ -917,42 +923,42 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * LengthMapInt(srcVal, matchList, returnList, removeSpaces)
       * LengthMapInt(srcVal, matchList, returnList)
-    * e.g. Length('12345', {5, 6, 7}, {1, 2, 3}) returns 1
+    * e.g. Length('12345', {5, 6, 7}, {1, 2, 3}) returns 1.
     
 * **Multiply**(*numeric* **val1**, *numeric* **val2**)
     * Multiplies val1 by val2.
     * Return type is double precision.
     * Variants are:
       * Multiply(val1, val2)
-    * e.g. Multiply(2.5, 2) returns 5
+    * e.g. Multiply(2.5, 2) returns 5.
 
 * **MultiplyInt**(*numeric* **val1**, *numeric* **val2**)
     * Calls **Multiply** and casts to integer.
     * Return type is integer.
     * Variants are:
       * MultiplyInt(val1, val2)
-    * e.g. Multiply(2, 3) returns 6
+    * e.g. Multiply(2, 3) returns 6.
 
 * **SubstringMultiplyInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *numeric* **val2**)
     * Runs Substring using **srcVal**, **startChar** and **forLength**, then multiplies the result by **val2** and casts to an integer.
     * Return type is integer.
     * Variants:
       * SubstringMultiplyInt(srcVal, startChar, forLength, vals)
-    * e.g. SubstringMultiplyInt('xx2', 3, 1, 2) returns 4
+    * e.g. SubstringMultiplyInt('xx2', 3, 1, 2) returns 4.
 
 * **DivideDouble**(*numeric* **srcVal**, *numeric* **divideBy**)
     * Divides **srcVal** by **divideBy**.
     * Return type is double precision.
     * Variants are:
       * DivideDouble(srcVal, divideBy)
-    * e.g. DivideDouble(10, 4) returns 2.5
+    * e.g. DivideDouble(10, 4) returns 2.5.
 
 * **DivideInt**(*numeric* **srcVal**, *numeric* **divideBy**)
     * A wrapper around DivideDouble() that returns an integer.
     * Return type is integer.
     * Variants are:
       * DivideInt(srcVal, divideBy)
-    * e.g. DivideInt(2.2, 1.1) returns 2
+    * e.g. DivideInt(2.2, 1.1) returns 2.
 
 * **XMinusYDouble**(*numeric* **x**, *numeric* **y**)
     * Returns the result of **x** minus **y**.
@@ -975,9 +981,9 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * Pad(srcVal, targetLength, padChar, trunc)
       * Pad(srcVal, targetLength, padChar)
-    * e.g. Pad('tab1', 10, 'x') returns 'xxxxxxtab1'
-    * e.g. Pad('tab1', 2, 'x', TRUE) returns 'ta'
-    * e.g. Pad('tab1', 2, 'x', FALSE) returns 'tab1'
+    * e.g. Pad('tab1', 10, 'x') returns 'xxxxxxtab1'.
+    * e.g. Pad('tab1', 2, 'x', TRUE) returns 'ta'.
+    * e.g. Pad('tab1', 2, 'x', FALSE) returns 'tab1'.
 
 * **Concat**(*stringList* **srcValList**, *text* **separator**, *boolean* **nullToEmpty**\[default FALSE\])
     * Concatenate all values in the **srcValList** string list, interspersed with **separator**.
@@ -986,7 +992,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * Concat(srcValList, separator, nullToEmpty)
       * Concat(srcValList, separator)
-    * e.g. Concat('{'str1','str2','str3'}', '-') returns 'str1-str2-str3'
+    * e.g. Concat('{'str1','str2','str3'}', '-') returns 'str1-str2-str3'.
 
 * **PadConcat**(*stringList* **srcValList**, *stringList* **lengthList**, *stringList* **padList**, *text* **separator**, *boolean* **upperCase**, *boolean* **includeEmpty**\[default TRUE\])
     * Pad all values in the **srcValList** string list according to the respective **lengthList** and **padList** values and then concatenate them with the **separator**. 
@@ -996,7 +1002,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       *  PadConcat(srcValList, lengthList, padList, separator, upperCase, includeEmpty)
       *  PadConcat(srcValList, lengthList, padList, separator, upperCase)
-    * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE) returns 'xstr1-xstr2-000str3'
+    * e.g. PadConcat({'str1','str2','str3'}, {'5','5','7'}, {'x','x','0'}, '-', TRUE, TRUE) returns 'xstr1-xstr2-000str3'.
 
 * **CountOfNotNull**(*stringList* **scrVals1/2/3/4/5/6/7/8/9/10/11/12/13/14/15**, *int* **maxRankToConsider**, *boolean* **zeroIsNull**)
     * Returns the number of string list input arguments that have at least one list element that is not NULL or an empty string. Up to a maximum of 15.
@@ -1021,8 +1027,8 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * CountOfNotNull(srcVals1, srcVals2, srcVals3, maxRankToConsider, zeroIsNull)
       * CountOfNotNull(srcVals1, srcVals2, maxRankToConsider, zeroIsNull)
       * CountOfNotNull(srcVals1, maxRankToConsider, zeroIsNull)
-    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE) returns 7
-    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 2, FALSE) returns 2
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 7, FALSE) returns 7.
+    * e.g. CountOfNotNull({'a', 'b'}, {'c', 'd'}, {'e', 'f'}, {'g', 'h'}, {'i', 'j'}, {'k', 'l'}, {'m', 'n'}, 2, FALSE) returns 2.
  
 * **IfElseCountOfNotNullText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Calls CountOfNotNull() and tests if the returned value matches **count**. Up to a maximum of 7 **val** string lists.
@@ -1037,7 +1043,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * IfElseCountOfNotNullText(vals1, vals2, vals3, maxRankToConsider, count, returnIf, returnElse)
       * IfElseCountOfNotNullText(vals1, vals2, maxRankToConsider, count, returnIf, returnElse)
       * IfElseCountOfNotNullText(vals1, maxRankToConsider, count, returnIf, returnElse)
-    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 8, 'S', 'M') returns 'S'
+    * e.g. IfElseCountOfNotNullText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 8, 'S', 'M') returns 'S'.
 
 * **IfElseCountOfNotNullInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *int* **count**, *text* **returnIf**, *text* **returnElse**)
     * Simple wrapper around IfElseCountOfNotNullText() that returns an int.
@@ -1050,6 +1056,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * IfElseCountOfNotNullInt(vals1, vals2, vals3, maxRankToConsider, count, returnIf, returnElse)
       * IfElseCountOfNotNullInt(vals1, vals2, maxRankToConsider, count, returnIf, returnElse)
       * IfElseCountOfNotNullInt(vals1, maxRankToConsider, count, returnIf, returnElse)
+    * * e.g. IfElseCountOfNotNullInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, 8, 1, 2) returns '1.
     
 * **CountOfNotNullMapText**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
     * Calls CountOfNotNull() and passes the returned value to MapText using the **resultList** and **mappingList**.
@@ -1063,7 +1070,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * CountOfNotNullMapText(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapText(vals1, vals2, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapText(vals1, maxRankToConsider, resultList, mappingList)
-    * e.g. CountOfNotNullMapText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {'a','b','c','d','e','f','g'}) returns 'g'
+    * e.g. CountOfNotNullMapText({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {'a','b','c','d','e','f','g'}) returns 'g'.
 
 * **CountOfNotNullMapInt**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
     * Simple wrapper around CountOfNotNullMapText returning int.
@@ -1076,7 +1083,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * CountOfNotNullMapInt(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapInt(vals1, vals2, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapInt(vals1, maxRankToConsider, resultList, mappingList)
-    * e.g. CountOfNotNullMapInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {10,20,30,40,50,60,70}) returns 70
+    * e.g. CountOfNotNullMapInt({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {10,20,30,40,50,60,70}) returns 70.
     
 * **CountOfNotNullMapDouble**(*stringList* **vals1/2/3/4/5/6/7**, *int* **maxRankToConsider**, *stringList* **resultList**, *stringList* **mappingList**)
     * Simple wrapper around CountOfNotNullMapText returning double precision.
@@ -1089,7 +1096,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
       * CountOfNotNullMapDouble(vals1, vals2, vals3, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapDouble(vals1, vals2, maxRankToConsider, resultList, mappingList)
       * CountOfNotNullMapDouble(vals1, maxRankToConsider, resultList, mappingList)
-    * e.g. CountOfNotNullMapDouble({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {1.0,2.0,3.0,4.0,5.0,6.0,7.0}) returns 7.0
+    * e.g. CountOfNotNullMapDouble({'a','b'}, {'c','d'}, {'e','f'}, {'g','h'}, {'i','j'}, {'k','l'}, {'m','n'}, 7, {1,2,3,4,5,6,7}, {1.0,2.0,3.0,4.0,5.0,6.0,7.0}) returns 7.0.
     
 * **SubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *boolean* **removeSpaces**\[default FALSE\])
     * Returns a substring of **srcVal** from **startChar** for **forLength**.
@@ -1098,7 +1105,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * SubstringText(srcVal, startChar, forLength, removeSpaces)
       * SubstringText(srcVal, startChar, forLength)
-    * e.g. SubstringText('abcd', 2, 2) returns 'bc'
+    * e.g. SubstringText('abcd', 2, 2) returns 'bc'.
 
 * **SubstringInt**(*text* **srcVal**, *int* **startChar**, *int* **forLength**)
     * Simple wrapper around **SubstringText** that returns an int.
@@ -1106,21 +1113,21 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * SubstringInt(srcVal, startChar, forLength, removeSpaces)
       * SubstringInt(srcVal, startChar, forLength)
-    * e.g. SubstringInt('a55d', 2, 2) returns 55
+    * e.g. SubstringInt('a55d', 2, 2) returns 55.
     
 * **MinInt**(*stringList* **srcValList**)
     * Return the lowest integer in the **srcValList** string list. 
     * Return type is integer.
     * Variants are:
       * MinInt(srcValList)
-    * e.g. MinInt({1990, 2000}) returns 1990
+    * e.g. MinInt({1990, 2000}) returns 1990.
 
 * **MaxInt**(*stringList* **srcValList**)
     * Return the highest integer in the **srcValList** string list. 
     * Return type is integer.
     * Variants are:
       * MaxInt(srcValList)
-    * e.g. MaxInt({1990, 2000}) returns 2000
+    * e.g. MaxInt({1990, 2000}) returns 2000.
 
 * **MinIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the lowest value in **intList**.
@@ -1130,8 +1137,8 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * MinIndexCopyText(intList, returnList, setNullTo, setZeroTo)
       * MinIndexCopyText(intList, returnList)
-    * e.g. MinIndexCopyText({1990, 2000}, {burn, wind}) returns 'burn'
-    * e.g. MinIndexCopyText({1990, NULL}, {burn, wind}, 1000, 'NULL') returns 'wind'
+    * e.g. MinIndexCopyText({1990, 2000}, {burn, wind}) returns 'burn'.
+    * e.g. MinIndexCopyText({1990, NULL}, {burn, wind}, 1000, 'NULL') returns 'wind'.
 
 * **MaxIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Returns value from **returnList** matching the index of the highest value in **intList**.
@@ -1141,8 +1148,8 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * MaxIndexCopyText(intList, returnList, setNullTo, setZeroTo)
       * MaxIndexCopyText(intList, returnList)
-    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind}) returns 'wind'
-    * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 2001) returns 'burn'
+    * e.g. MaxIndexCopyText({1990, 2000}, {burn, wind}) returns 'wind'.
+    * e.g. MaxIndexCopyText({0, 2000}, {burn, wind}, 'NULL', 2001) returns 'burn'.
 
 * **GetIndexCopyText**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
@@ -1152,7 +1159,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * GetIndexCopyText(intList, returnList, setNullTo, setZeroTo, indexToReturn)
       * GetIndexCopyText(intList, returnList, indexToReturn)
-    * e.g. GetIndexCopyText({1990, 2000, 2020}, {burn, wind, insect}, 2) returns 'wind'
+    * e.g. GetIndexCopyText({1990, 2000, 2020}, {burn, wind, insect}, 2) returns 'wind'.
 
 * **MinIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MinIndexCopyText() but returns an integer.
@@ -1160,7 +1167,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * Variants are:
     * MinIndexCopyInt(intList, returnList, setNullTo, setZeroTo)
     * MinIndexCopyInt(intList, returnList)
-  * e.g. MinIndexCopyInt({1990, 2000}, {1, 2}) returns 1 
+  * e.g. MinIndexCopyInt({1990, 2000}, {1, 2}) returns 1.
   
 * **MaxIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexCopyText() but returns an integer.
@@ -1168,7 +1175,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * Variants are:
     * MaxIndexCopyInt(intList, returnList, setNullTo, setZeroTo)
     * MaxIndexCopyInt(intList, returnList)
-  * e.g. MaxIndexCopyInt({1990, 2000}, {1, 2}) returns 2 
+  * e.g. MaxIndexCopyInt({1990, 2000}, {1, 2}) returns 2.
 
 * **GetIndexCopyInt**(*stringList* **intList**, *stringList* **returnList**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
   * Same as GetIndexCopyText() but returns an integer.
@@ -1176,7 +1183,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * * Variants are:
     * GetIndexCopyInt(intList, returnList, setNullTo, setZeroTo, indexToReturn)
     * GetIndexCopyInt(intList, returnList, indexToReturn)
-  * e.g. GetIndexCopyInt({1990, 2000, 2010}, {1, 2, 3}, 2) returns 2
+  * e.g. GetIndexCopyInt({1990, 2000, 2010}, {1, 2, 3}, 2) returns 2.
 
 * **MinIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from **returnList** matching the index of the lowest value in **intList** to MapText(). Runs MapText() using **mapVals** and **targetVals**.
@@ -1186,7 +1193,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * MinIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
       * MinIndexMapText(intList, returnList, mapVals, targetVals, setNullTo)
-    * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns 'BU'
+    * e.g. MinIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns 'BU'.
 
 * **MaxIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
     * Passes value from returnList matching the index of the highest value in intList to MapText(). Runs MapText() with **mapVals** and **targetVals**.
@@ -1196,7 +1203,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * MaxIndexMapText(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
       * MaxIndexMapText(intList, returnList, mapVals, targetVals, setNullTo)
-    * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns WT
+    * e.g. MaxIndexMapText({1990, 2000}, {burn, wind}, {burn, wind}, {BU, WT}) returns WT.
 
 * **GetIndexMapText**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
     * Reorder the **returnList** by the **intList**, matching values in **intList** stay in the original order.
@@ -1214,7 +1221,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * Variants are:
     * MinIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
     * MinIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo)
-  * e.g. MinIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 22
+  * e.g. MinIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 22.
 
 * **MaxIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\])
   * Same as MaxIndexMapText() but returning an integer.
@@ -1222,7 +1229,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * Variants are:
     * MaxIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo)
     * MaxIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo)
-  * e.g. MaxIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 23
+  * e.g. MaxIndexMapInt({1990, 2000}, {burn, wind}, {burn, wind}, {22, 23}) returns 23.
 
 * **GetIndexMapInt**(*stringList* **intList**, *stringList* **returnList**, *stringList* **mapVals**, *stringList* **targetVals**, *numeric* **setNullTo**\[default NULL\], *numeric* **setZeroTo**\[default NULL\], *int* **indexToReturn**)
   * Same as GetIndexMapText() but returns an integer.
@@ -1230,7 +1237,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
   * Variants are:
     * GetIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, setZeroTo, indexToReturn)
     * GetIndexMapInt(intList, returnList, mapVals, targetVals, setNullTo, indexToReturn)
-  * e.g. GetIndexMapInt({1990, 2000, 2001}, {burn, wind, insect}, {burn, wind, insect}, {22, 23, 24}, 3) returns 24
+  * e.g. GetIndexMapInt({1990, 2000, 2001}, {burn, wind, insect}, {burn, wind, insect}, {22, 23, 24}, 3) returns 24.
 
 * **CoalesceText**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Returns the first non-NULL value in the **srcValList** string list.
@@ -1239,7 +1246,7 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * CoalesceText(srcValList, zeroAsNull)
       * CoalesceText(srcValList)
-    * e.g. CoalesceText({NULL, '0.0', 'abcd'}, TRUE) returns 'abcd'
+    * e.g. CoalesceText({NULL, '0.0', 'abcd'}, TRUE) returns 'abcd'.
 
 * **CoalesceInt**(*text* **srcValList**, *boolean* **zeroAsNull**\[default FALSE\])
     * Simple wrapper around CoalesceText() that returns an int.
@@ -1247,14 +1254,14 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Variants are:
       * CoalesceInt(srcValList, zeroAsNull)
       * CoalesceInt(srcValList)
-    * e.g. CoalesceInt({NULL, 7, 5}) returns 7
+    * e.g. CoalesceInt({NULL, 7, 5}) returns 7.
 
 * **AlphaNumeric**(*stringList* **srcVal**)
     * Creates an alpha numeric code by converting all **srcVal** letters to 'x' and all integers to '0'.
     * Return type is text.
     * Variants are:
       * AlphaNumeric(srcVal)
-    * e.g. AlphaNumeric('bf50ws50') returns 'xx00xx00'
+    * e.g. AlphaNumeric('bf50ws50') returns 'xx00xx00'.
 
 * **GeoIntersectionText**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *text* **returnCol**, *text* **method**)
     * Returns the value of the **returnCol** column of the **intersectSchemaName**.**intersectTableName** table where the geometry in the **geoCol** column intersects **geom**.
@@ -1262,35 +1269,35 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * Return type is text.
     * Variants are:
       * GeoIntersectionText(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
-    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
+    * e.g. GeoIntersectionText(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA).
     
 * **GeoIntersectionDouble**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
     * Returns a double precision value from an intersecting polygon. Parameters are the same as GeoIntersectionText.
     * Return type is double precision.
     * Variants are:
       * GeoIntersectionDouble(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
-    * e.g. GeoIntersectionDouble(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
+    * e.g. GeoIntersectionDouble(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA).
 
 * **GeoIntersectionInt**(*geometry* **geom**, *text* **intersectSchemaName**, *text* **intersectTableName**, *geometry* **geoCol**, *numeric* **returnCol**, *text* **method**)
     * Returns an integer value from an intersecting polygon. Parameters are the same as GeoIntersectionText.
     * Return type is integer.
     * Variants are:
       * GeoIntersectionInt(geom, intersectSchemaName, intersectTableName, geCol, returnCol, method)
-    * e.g. GeoIntersectionInt(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA)
+    * e.g. GeoIntersectionInt(POLYGON, public, intersect_tab, intersect_geo, TYPE, GREATEST_AREA).
 
 * **GeoMakeValid**(*geometry* **geom**)
     * Returns a valid version of **geom**. If **geom** cannot be validated, returns NULL.
     * Return type is geometry.
     * Variants are:
       * GeoMakeValid(geom)
-    * e.g. GeoMakeValid(POLYGON)
+    * e.g. GeoMakeValid(POLYGON).
     
 * **GeoMakeValidMultiPolygon**(*geometry* **geom**)
     * Returns a valid version of **geom** of type ST_MultiPolygon. If **geom** cannot be validated, returns NULL.
     * Return type is geometry.
     * Variants are:
       * GeoMakeValidMultiPolygon(geom)
-    * e.g. GeoMakeValidMultiPolygon(POLYGON)
+    * e.g. GeoMakeValidMultiPolygon(POLYGON).
 
 
 # Adding Custom Helper Functions
@@ -1305,9 +1312,6 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
   * **Return value -** 1) Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. When they return FALSE, an error code will be set as target value in the translated table. Default error codes are provided for each validation helper function in the TT_DefaultErrorCode() function or directly after the rule in the translation table. 2) Translation functions must return a specific type. For now only "int", "numeric", "text", "boolean" and "geometry" are supported. If any errors happen during translation, the translation function must return NULL and the engine will translate the value to the generic "TRANSLATION_ERROR" (-3333) code, or a user defined error code if one is provided directly after the rule in the tranlation table.
 
 If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper funciton file.
-
-# Dependency Table Validation
-Some helper functions use dependency tables to facilitate validation or translations. Examples include lookup tables for functions such as MatchTable() and LookupText(), and intersect tables for spatial functions such as GeoIntersects() and GeoIntersectionText(). These dependency tables need to be valid in order for the helper functions to work correctly. We can use the validation functionality of the translation engine to achieve this by creating validation-only translation tables. Each row of the validation-only translation table implement one validation rule to be run on the dependency table. For example a validation of an intersect table may be to check that all the geometries are valid. The validation rule for this row would use GeoIsValid(). Since we only care about the validation, we can simply use a translation rule such as copyText('PASS') for each row. When we run the validation-only translation table on the dependency table through the engine, any rows failing a validation will produce an error code, all passing rows will return 'PASS'. We can then fix any invalid rows before running the main translation using the dependency table. An example of a validation-only translation table can be seen in the [CASFRI 5.0](https://github.com/edwardsmarc/CASFRI/blob/master/translation/tables/ab_photoyear_validation.csv) project.
 
 # Credit
 **Pierre Racine** - Center for forest research, University Laval.
