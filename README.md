@@ -396,7 +396,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
 * **IsUnique**(*text* **srcVal**, *text* **lookupSchemaName**\[default 'public'\], *text* **lookupTableName**, *int* **occurrences**\[default 1\], *boolean* **acceptNull**\[default FALSE\])
     * Returns TRUE if number of occurrences of **srcVal** in "source_val" column of **lookupSchemaName**.**lookupTableName** equals **occurrences**. Useful for validating lookup tables to make sure **srcVal** only occurs once for example. Often paired with LookupText(), LookupInt(), and LookupDouble().
     * When **acceptNull** is TRUE, NULL **srcVal** values make IsUnique() return TRUE.
-    * Default error code is 'NOT_UNIQUE' for text attributes and NULL for other types.
+    * Default error code is 'INVALID_VALUE' for text attributes and NULL for other types.
     * Variants are:
       * IsUnique(srcVal, lookupSchemaName, lookupTableName, occurrences, acceptNull)
       * IsUnique(srcVal, lookupSchemaName, lookupTableName, occurrences)
