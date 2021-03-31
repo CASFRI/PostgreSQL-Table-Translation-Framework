@@ -15,13 +15,13 @@ The primary components of the framework are:
 </pre>
 
 # Requirements
-PostgreSQL 9.6+ and PostGIS 2.3+. Recommended versions are PostgreSQL 13 and Post GIS 3.x, or PostgreSQL 11 or 12 and PostGIS 2.3+.
+Recommended versions are PostgreSQL 13 and PostGIS 3.x, or PostgreSQL 11 or 12 and PostGIS 2.3+.
 
-# Version Releases
+# Version Number Scheme
 
-The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increments in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes. Minor version increments will not break backward compatibility with existing translation tables. Increments in major version numbers are for changes that break backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
+The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increments in minor version numbers are for new features, changes to the helper functions (the API) and bug fixes. Minor version increments will not break backward compatibility with existing translation tables. Increments in major version numbers are for changes that break backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
 
-The current version is v1.0.0 and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v1.0.0
+The current version is v2.0.0 and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v2.0.0
 
 # Installation/Test/Uninstallation
 **Installation** 
@@ -95,7 +95,7 @@ Validation and translation rules are helper function calls of the form "rule(src
 
 Each rule defines a default error code to be returned when the rule fails. These default error codes are listed in the "Provided Helper Functions" section below. You can overwrite some or all default error codes by providing a TT_DefaultProjectErrorCode() function in your project. You can also overwrite the default error code for a specific validation and translation rule directly in the translation table by setting a value preceded by a vertical bar ('|') after the list of parameters (e.g. notNull(sp1_per|-8888)). Validation error codes are always required and must be of the same type as the target attribute.
 
-A special optional row in the translation table can be defined to determine which rows from the source table should be included in the translation. In this row, 'target_attribute' must be set to ROW_TRANSLATION_RULE. The row will be translated if and only if at least one ROW_TRANSLATION_RULE 'validation_rules' is validated (like if there was a OR operator between them). Rows not fulfilling any rules from the ROW_TRANSLATION_RULE 'validation_rules' are skipped by the engine and hence, not translated. If no ROW_TRANSLATION_RULE is provided, all rows from the source table are translated. The 'target_attribute_type' and the 'translation_rules' of a ROW_TRANSLATION_RULE line should be set to NA.
+A special optional row in the translation table can be defined to determine which rows from the source table should be included in the translation. In this row, 'target_attribute' must be set to ROW_TRANSLATION_RULE. The row will be translated if and only if at least one of the ROW_TRANSLATION_RULE 'validation_rules' is validated (like if there was a OR operator between them). Rows not fulfilling any rules from the ROW_TRANSLATION_RULE 'validation_rules' are skipped by the engine and hence, not translated. If no ROW_TRANSLATION_RULE is provided, all rows from the source table are translated. The 'target_attribute_type' and the 'translation_rules' of a ROW_TRANSLATION_RULE line should be set to NA.
 
 Translation tables are themselves validated by the translation engine while processing the first source row. Any error in the translation table stops the validation/translation process with a message explaining the problem. The engine checks that:
 
@@ -155,17 +155,17 @@ SELECT * FROM TT_Translate(sourceTableSchema, sourceTable);
 
 The TT_Translate() function returns the translated target table. It is designed to be used in place of any table in an SQL statement.
 
-By default the prepared function will always be named TT_Translate(). If you are dealing with many tranlation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '_02') will prepare the TT_Translate_02() function). You would normally provide a different suffix for each of your translation tables.
+By default the prepared function will always be named TT_Translate(). If you are dealing with many translation tables at the same time, you might want to prepare a translation function for each of them. You can do this by adding a suffix as the third parameter of the TT_Prepare() function (e.g. TT_Prepare('public', 'translation_table', '_02') will prepare the TT_Translate_02() function). You would normally provide a different suffix for each of your translation tables.
 
-If your source table is very big, we suggest developing and testing your translation table on a random sample of the source table to speed up the create, edit, test, generate process.
+If your source table is very big, you should develop and test your translation table on a random sample of the source table to speed up the create, edit, test, generate process.
 
 # How to fix errors?
 
 Two types of error can stop the engine during a translation process:
 
-**1) Translation table syntax errors -** Any syntax error in the translation table will make the engine stop at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer) or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
+**1) Translation table syntax errors -** Any syntax error in the translation table will stop the engine at the very beginning of a translation process with a meaningful error message. This could be due to the translation table refering to a non-existing helper function, specifying an incorrect number of parameters, refering to a non-existing source value, passing a badly formed parameter (e.g. '1a' as integer), or using a helper function returning a type different than what is specified as the 'target_attribute_type'. It is up to the writer of the translation table to avoid and fix these errors. 
 
-**2) Helper function errors -**  The second case is usually due to source values that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. It is therefore important to use well written helper functions. All translation helper functions should be written such that they do not produce errors, they should return NULL instead. Ideally any invalid data types that could cause an error in a translation helper function should be trapped by a validation function so that invalid data never reaches the translation function. Any translation helper function returning NULL will return the generic translation error code values in the target table (TRANSLATION_ERROR or -3333). Once translation is complete the user can review the target table for any TRANSLATION_ERROR or -3333 error codes and either fix the translation helper functions that created them, or modify the validation helper functions to catch the errors. For large translations, we recommend testing the translation tables on a random subset of data to identify as many errors as possible before running the full translation.
+**2) Helper function errors -**  The second case is usually due to source values that cannot be handled by the specified translation helper function (e.g. a NULL value). It might happen at any moment during the translation, even after hours. It is therefore important to use well written helper functions. All translation helper functions should be written such that they do not produce errors, they should return NULL instead. Ideally any invalid data types that could cause an error in a translation helper function should be trapped by a validation function so that invalid data never reaches the translation function. Any translation helper function returning NULL will return the generic translation error code values in the target table (TRANSLATION_ERROR or -3333). Once translation is complete the user can review the target table for any TRANSLATION_ERROR or -3333 error codes and either fix the translation helper functions that created them, or modify the validation helper functions to catch the errors. For large translations project, translation tables should be tested on a random subset of data to identify as many errors as possible before running the full translation.
 
 **Overwriting default error codes -** Default error codes for the provided helper functions are defined in the TT_DefaultErrorCode() function in the helperFunctions.sql file. This function is itself called by the engine TT_DefaultProjectErrorCode() function. You can redefine all default error codes by overwritting the TT_DefaultErrorCode() function or you can redefine only some of them by overwritting the TT_DefaultProjectErrorCode() function (other error codes will still be defined by TT_DefaultErrorCode()). Simply copy the TT_DefaultErrorCode() or the TT_DefaultProjectErrorCode() function in your project and define an error code for each possible type (text, integer, double precision, geometry) for every helper function for which you want to redefine the error code.
 
@@ -257,9 +257,9 @@ SELECT * FROM TT_Translate('public', 'source_example');
 # Helper Function Syntax and Reference
 Helper functions are used in translation tables to validate and translate source values. When the translation engine encounters a helper function in the translation table, it runs that function with the given parameters.
 
-Helper functions are of two types: validation helper functions are used in the **validation_rules** column of the translation table. They validate the source values and always return TRUE or FALSE. Multiple validation helper functions can be provided by separating them with semi colons. They will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translation_rules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table. Translation helper functions can optionally include a user defined error code.
+Helper functions are of two types: validation helper functions are used in the **validation_rules** column of the translation table. They validate the source values and always return TRUE or FALSE. Multiple validation helper functions can be provided by separating them with semi colons. They will run in order from left to right. If a validation fails, an error code is returned. If all validations pass, the translation helper function in the **translation_rules** column is run. Only one translation function can be provided per row. Translation helper functions take a source value as input and return a translated target value for the target table.
 
-Helper functions are generally called with the names of the source value attributes to validate or translate as the first argument, and some other optional arguments controling  aspects of the validation and translation process. 
+Helper functions are generally called with the names of the source value attributes to validate or translate as the first argument, and some other optional arguments controlling  aspects of the validation and translation process. 
 
 Helper function parameters are grouped into three classes, each of which have a different syntax in the translation table:
 
@@ -285,7 +285,7 @@ Helper function parameters are grouped into three classes, each of which have a 
   * Since the helper functions need to receive a fixed number of arguments, when variable numbers of input values are required they are provided as a comma separated string list of values wrapped in '{}'.
   * String lists can contain both basic types and column names following the rules described above.
   * e.g. Concat({column_A, column_B, 'joined'}, '-')
-    * This Concat function call takes two arguments, a comma separated list of values that we provide inside {}, and a separator character.
+    * This Concat function call takes two arguments, a comma separated list of values provided inside {}, and a separator character.
     * This example would concatenate the values from column_A and column_B, followed by the string 'joined' and separated with '-'. If row 1 had values of 'one' and 'two' for column_A and column_B, the string 'one-two-joined' would be returned.
 
 One feature of the translation engine is that the return type of a translation function must be of the same type as the target attribute type defined in the **target_attribute_type** column of the translation table. This means some translation functions have multiple versions that each return a different type (e.g. CopyText, CopyDouble, CopyInt). More specific versions (e.g. CopyDouble, CopyInt) are generally implemented as wrappers around more generic versions (e.g. CopyText).
@@ -448,7 +448,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase, acceptNull)
       * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName, ignoreCase)
       * MatchTable(srcVal, lookupSchemaName, lookupTableName, lookupColumnName)
-    * e.g. MatchTable('sp1', public, species_lookup, lookup_column) returns TRUE is value 'sp1' is in the llokup_column.
+    * e.g. MatchTable('sp1', public, species_lookup, lookup_column) returns TRUE is value 'sp1' is in the lookup_column.
 
 * **MatchList**(*stringList* **srcVal**, *stringList* **matchList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **acceptNull**\[default FALSE\], *boolean* **matches**\[default TRUE\], *boolean* **removeSpaces**\[default FALSE\])
     * Returns TRUE if **srcVal** is in **matchList**.
@@ -777,7 +777,7 @@ Some validation helper functions have an optional 'acceptNull' parameter that re
       
 ## Translation Functions
 
-Default error codes for translation functions are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric ones and NULL for others.
+Default error codes for translation functions are 'TRANSLATION_ERROR' for text attributes, -3333 for numeric attributes and NULL for others.
 
 * **NothingText**()
     * Returns NULL of type text. Used with the validation rule False() and will therefore not be called, but all rows require a valid translation function with a return type matching the **target_attribute_type**.
@@ -1306,12 +1306,12 @@ Additional helper functions can be written in PL/pgSQL. They must follow the fol
   * **Namespace -** All helper function names must be prefixed with "TT_". This is necessary to create a restricted namespace for helper functions so that no standard PostgreSQL functions (which do not necessarily comply to the following conventions) can be used. This prefix must not be used when referring to the function in the translation table.
   * **Parameter Types -** All helper functions (validation and translation) must accept only text parameters (the engine converts everything to text before calling the function). This greatly simplifies the development of helper functions and the parsing and validation of translation tables.
   * **Variable number of parameters -** Helper functions should NOT be implemented as VARIADIC functions accepting an arbitrary number of parameters. If an arbitrary number of parameters must be supported, it should be implemented as a list of text values separated by a comma. This is to avoid the hurdle of finding, when validating the translation table, if the function exists in the PostgreSQL catalog. Note that when passing arguments from the translation table to the helper functions, the engine strips the '{}' from any argument lists. So helper functions of this type need only process the comma separated list of values.
-  * **Default value -** Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If signatures with default parameter are required, a separate function signature should be created as a wrapper around the function supporting all the parameters. This is to avoid the hurdle of finding, when validating the translation table, if the function exists in the PostgreSQL catalog.
+  * **Default value -** Helper functions should NOT use DEFAULT parameter values. The catalog needs to contain explicit helper function signatures for all functions it could receive. If signatures with default parameters are required, a separate function signature should be created as a wrapper around the function supporting all the parameters. This is to avoid the hurdle of finding, when validating the translation table, if the function exists in the PostgreSQL catalog.
   * **Polymorphic translation functions -** If a translation helper function must be written to return different types (e.g. int and text), as many different functions with corresponding names must be written (e.g. TT_CopyInt() and TT_CopyText()). The use of the generic "any" PostgreSQL type is forbidden. This ensures that the engine can explicitly know that the translation function returns the correct type.
   * **Error handling -** All helper functions (validation and translation) must raise an exception when parameters other than the source value are NULL or of an invalid type. This is to avoid badly written translation tables. All helper functions (validation and translation) should handle any source data values (always passed as text) without failing. This is to avoid crashing of the engine when translating big source files. 
   * **Return value -** 1) Validation functions must always return a boolean. They must handle NULL and empty values and in those cases return the appropriate boolean value. When they return FALSE, an error code will be set as target value in the translated table. Default error codes are provided for each validation helper function in the TT_DefaultErrorCode() function or directly after the rule in the translation table. 2) Translation functions must return a specific type. For now only "int", "numeric", "text", "boolean" and "geometry" are supported. If any errors happen during translation, the translation function must return NULL and the engine will translate the value to the generic "TRANSLATION_ERROR" (-3333) code, or a user defined error code if one is provided directly after the rule in the tranlation table.
 
-If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper funciton file.
+If you think some of your custom helper functions could be of general interest to other users of the framework, you can submit them to the project team. They could be integrated in the helper function file.
 
 # Credit
 **Pierre Racine** - Center for forest research, University Laval.

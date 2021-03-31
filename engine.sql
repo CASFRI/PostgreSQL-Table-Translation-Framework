@@ -402,9 +402,10 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Format pased number of seconds into a pretty print time interval
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PrettyDuration(int);
+--DROP FUNCTION IF EXISTS TT_PrettyDuration(double precision);
 CREATE OR REPLACE FUNCTION TT_PrettyDuration(
-  seconds int
+  seconds double precision,
+  decDigits int DEFAULT NULL
 )
 RETURNS text AS $$
   DECLARE
@@ -412,6 +413,13 @@ RETURNS text AS $$
     nbHours int;
     nbMinutes int;
   BEGIN
+    IF seconds < 5 THEN
+      IF NOT decDigits IS NULL THEN
+        RETURN round(seconds::numeric, decDigits) || 's';
+      ELSE
+        RETURN seconds || 's';
+      END IF;
+    END IF;
     nbDays = seconds/(24*3600);
     seconds = seconds - nbDays*24*3600;
     nbHours = seconds/3600;
@@ -423,14 +431,21 @@ RETURNS text AS $$
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
            CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
            CASE WHEN nbMinutes > 0 OR ((nbDays > 0 OR nbHours > 0) AND (seconds > 0)) THEN lpad(nbMinutes::text, 2, '0') || 'm' ELSE '' END ||
-           CASE WHEN seconds > 0 OR (nbDays = 0 AND nbHours = 0 AND nbMinutes = 0) THEN lpad(seconds::text, 2, '0') || 's' ELSE '' END;
+           CASE WHEN seconds > 0 OR (nbDays = 0 AND nbHours = 0 AND nbMinutes = 0) THEN lpad(seconds::int::text, 2, '0') || 's' ELSE '' END;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 /*
-SELECT TT_PrettyDuration(1); -- '01s'
+SELECT TT_PrettyDuration(0.654); -- '0.654s'
+SELECT TT_PrettyDuration(0.6547437); -- '0.6547437s'
+SELECT TT_PrettyDuration(0.6547437, 3); -- '0.654s'
 SELECT TT_PrettyDuration(0); -- '00s'
+SELECT TT_PrettyDuration(1); -- '01s'
+SELECT TT_PrettyDuration(1, 3); -- '1.000s'
+SELECT TT_PrettyDuration(1.4536); -- '1.4536s'
+SELECT TT_PrettyDuration(3, 4); -- '3.0000s'
 SELECT TT_PrettyDuration(60); -- '01m'
 SELECT TT_PrettyDuration(61); -- '01m01s'
+SELECT TT_PrettyDuration(61, 3); -- '01m01s'
 SELECT TT_PrettyDuration(3600); -- '01h'
 SELECT TT_PrettyDuration(3603); -- '01h00m03s'
 SELECT TT_PrettyDuration(3661); -- '01h01m01s'
@@ -2821,7 +2836,10 @@ RETURNS SETOF RECORD AS $$
     debug boolean = TT_Debug();
     startTime timestamptz;
     percentDone numeric;
-    remainingSeconds int;
+    remainingTime double precision;
+    elapsedTime double precision;
+    countTime double precision;
+    analyseTime double precision;
     expectedRowNb int;
     countQuery text;
   BEGIN
@@ -2832,27 +2850,38 @@ RETURNS SETOF RECORD AS $$
     countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
 
     RAISE NOTICE 'Counting the number of rows to translate... (%)', countQuery;
-    EXECUTE countQuery INTO expectedRowNb;
-    RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
-
     startTime = clock_timestamp();
+    EXECUTE countQuery INTO expectedRowNb;
+    RAISE NOTICE '% ROWS TO TRANSLATE. Preprocessing query...', expectedRowNb;
+    countTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
+    startTime = clock_timestamp();
+
     -- Main loop
 		FOR translatedRow IN EXECUTE translationQuery
     LOOP
+      IF currentRowNb = 1 THEN
+        analyseTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
+        startTime = clock_timestamp();
+      END IF;
       IF currentRowNb % 100 = 0 THEN
-        percentDone = currentRowNb::numeric/expectedRowNb*100;
-        remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-        RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
-             TT_PrettyDuration(remainingSeconds);
+        percentDone = currentRowNb::numeric/expectedRowNb * 100;
+        elapsedTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
+        remainingTime = ((100 - percentDone) * elapsedTime)/percentDone;
+        RAISE NOTICE '%(%): %/% rows translated (% %%) - % elapsed, % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
+             TT_PrettyDuration(elapsedTime, 3), TT_PrettyDuration(remainingTime, 3);
       END IF;
       currentRowNb = currentRowNb + 1;
 			RETURN NEXT translatedRow;
     END LOOP;
-    RAISE NOTICE 'TOTAL TIME: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - startTime)::int);
+    elapsedTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
+
+    RAISE NOTICE 'TOTAL TIME COUNTING ROWS: %', TT_PrettyDuration(countTime, 4);
+    RAISE NOTICE 'TOTAL TIME ANALYING QUERY: %', TT_PrettyDuration(coalesce(analyseTime, EXTRACT(EPOCH FROM clock_timestamp() - startTime)), 4);
+    RAISE NOTICE 'TOTAL TIME PROCESSING QUERY: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, now())), 4);
+    RAISE NOTICE 'MEAN TIME PER ROW: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, clock_timestamp()))/(currentRowNb - 1), 6);
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
-                                    
 ------------------------------------------------------------------------------
 -- _TT_Translate
 --
