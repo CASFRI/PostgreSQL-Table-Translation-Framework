@@ -17,7 +17,7 @@ The primary components of the framework are:
 # Requirements
 Recommended versions are PostgreSQL 13 and PostGIS 3.x, or PostgreSQL 11 or 12 and PostGIS 2.3+.
 
-# Version Releases
+# Version Number Scheme
 
 The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increments in minor version numbers are for new features, changes to the helper functions (our API) and bug fixes. Minor version increments will not break backward compatibility with existing translation tables. Increments in major version numbers are for changes that break backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
 
