@@ -140,7 +140,7 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'           THEN 'OUT_OF_RANGE'
                   WHEN rule = 'islessthan'              THEN 'OUT_OF_RANGE'
                   WHEN rule = 'haslength'               THEN 'INVALID_VALUE'
-                  WHEN rule = 'isunique'                THEN 'NOT_UNIQUE'
+                  WHEN rule = 'isunique'                THEN 'INVALID_VALUE'
                   WHEN rule = 'matchtable'              THEN 'NOT_IN_SET'
                   WHEN rule = 'matchlist'               THEN 'NOT_IN_SET'
                   WHEN rule = 'lengthmatchlist'         THEN 'NOT_IN_SET'
@@ -3135,7 +3135,6 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- x - input x numeric
 -- y - input y numeric
--- for_length text - length of substring to take
 -- min text - lower between bound
 -- max text - upper between bound
 -- includeMin text - boolean for including lower bound
@@ -3823,20 +3822,7 @@ CREATE OR REPLACE FUNCTION TT_AlphaNumericMatchList(
 RETURNS boolean AS $$  	
 	SELECT TT_AlphaNumericMatchList(val, lst, 'FALSE', 'TRUE', 'FALSE')
 $$ LANGUAGE sql IMMUTABLE;
--------------------------------------------------------------------------------
--- TT_AlphaNumeric(text)
---
--- srcVal text
---
--- convert srcVal to alpha numeric code
-------------------------------------------------------------
-CREATE OR REPLACE FUNCTION TT_AlphaNumeric(
-  srcVal text
-)
-RETURNS text AS $$
-  SELECT replace(translate(srcVal, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), ' ', '');
-$$ LANGUAGE sql STABLE;
--------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -7446,6 +7432,21 @@ CREATE OR REPLACE FUNCTION TT_LookupDouble(
 )
 RETURNS double precision AS $$
   SELECT TT_LookupText(val, lookupSchemaName, lookupTableName, lookupCol, retrieveCol, FALSE::text, 'TT_LookupDouble')::double precision;
+$$ LANGUAGE sql STABLE;
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- TT_AlphaNumeric(text)
+--
+-- srcVal text
+--
+-- convert srcVal to alpha numeric code
+------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_AlphaNumeric(
+  srcVal text
+)
+RETURNS text AS $$
+  SELECT replace(translate(srcVal, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0000000000'), ' ', '');
 $$ LANGUAGE sql STABLE;
 -------------------------------------------------------------------------------
 
