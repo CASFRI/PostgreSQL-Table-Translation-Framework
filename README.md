@@ -124,7 +124,7 @@ A textual description of the rules is provided and the flag indicating that the 
 | rule_id | target_attribute | target_attribute_type | validation_rules | translation_rules | description | desc_uptodate_with_rules |
 |:--------|:----------------|:--------------------|:----------------|:-----------------|:------------|:----------------------|
 |0        |ROW_TRANSLATION_RULE        |NA                 |notNull(sp1) |NA |Translate row only when sp1 is not NULL|TRUE|
-|1        |SPECIES_1        |text                 |notNull(sp1\); matchTable(sp1,'public','species_lookup'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
+|1        |SPECIES_1        |text                 |notNull(sp1\); matchTable(sp1,'public','species_lookup', 'lookup_col'\|INVALID_SPECIES)|lookupText(sp1, 'public', 'species_lookup', 'source_val', 'target_sp')|Maps source value to SPECIES_1 using lookup table|TRUE|
 |2        |SPECIES_1_PER    |integer              |notNull(sp1_per\); between(sp1_per,0,100)|copyInt(sp1_per)|Copies source value to SPECIES_PER_1|TRUE|
  
 # How to actually translate a source table?
