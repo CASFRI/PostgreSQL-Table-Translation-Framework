@@ -173,7 +173,7 @@ Two types of error can stop the engine during a translation process:
 * Some helper functions (e.g. MatchTable(), LookupText()) allow the use of lookup tables to support mapping between source and target values.
 * An example is a list of source value species codes and a corresponding list of target value species names.
 * Helper functions using lookup tables will look for the source values in the column specified in the function call. The LookupText() function will return the corresponding value in the specified return column.
-* Lookup tables can inlude geometries for use in functions such as GeoIntersects() and GeoIntersectionInt() described below.
+* Lookup tables can include geometries for use in functions such as GeoIntersects() and GeoIntersectionInt() described below.
 * All lookup table must be validated before use. For example no source values can be duplicated, and any geometries must be valid.
 
 Example lookup table. Source values for species codes in the "source_val" column are matched to their target values in the "target_sp_1"  or the "target_sp_2" column.
