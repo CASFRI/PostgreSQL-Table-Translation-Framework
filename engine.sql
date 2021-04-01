@@ -2878,7 +2878,9 @@ RETURNS SETOF RECORD AS $$
     RAISE NOTICE 'TOTAL TIME COUNTING ROWS: %', TT_PrettyDuration(countTime, 4);
     RAISE NOTICE 'TOTAL TIME ANALYING QUERY: %', TT_PrettyDuration(coalesce(analyseTime, EXTRACT(EPOCH FROM clock_timestamp() - startTime)), 4);
     RAISE NOTICE 'TOTAL TIME PROCESSING QUERY: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, now())), 4);
-    RAISE NOTICE 'MEAN TIME PER ROW: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, clock_timestamp()))/(currentRowNb - 1), 6);
+    IF currentRowNb > 1 THEN
+      RAISE NOTICE 'MEAN TIME PER ROW: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, clock_timestamp()))/currentRowNb, 6);
+    END IF;
     RETURN;
   END;
 $$ LANGUAGE plpgsql VOLATILE;
