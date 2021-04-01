@@ -183,7 +183,7 @@ Example lookup table. Source values for species codes in the "source_val" column
 |TA        |PopuTrem |POPTRE   |
 |LP        |PinuCont |PINCON   |
 
-# A Complete Example
+# Complete Example
 Create an example lookup table:
 ```sql
 CREATE TABLE species_lookup AS
