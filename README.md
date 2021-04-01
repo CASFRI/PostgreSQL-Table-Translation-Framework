@@ -15,7 +15,7 @@ The primary components of the framework are:
 </pre>
 
 # Requirements
-Recommended versions are PostgreSQL 13+ and PostGIS 3.1+, or PostgreSQL 11.3+ or 12 and PostGIS 2.3+.
+Recommended versions are PostgreSQL 13.1+ and PostGIS 3.1+, or PostgreSQL 11.3+ or 12 and PostGIS 2.3+.
 
 # Version Number Scheme
 
