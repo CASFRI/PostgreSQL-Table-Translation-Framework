@@ -496,12 +496,13 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- If setNullTo is provided as an integer, nulls
 -- are replaced with the integer in intList.
 ------------------------------------------------------------
--- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text, text, text);
+-- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text, text, text, text);
 CREATE OR REPLACE FUNCTION TT_GetIndexTestVal(
   intList text,
   testList text,
   setNullTo text,
   setZeroTo text,
+  orderIncreasing text,
   indexToReturn text
 )
 RETURNS text AS $$
@@ -510,8 +511,9 @@ RETURNS text AS $$
     _testList text[];
 	_setNullTo double precision;
     _setZeroTo double precision;
+	_order text;
   BEGIN
-  
+	
     -- parse lists to arrays
     _intList = TT_ParseStringList(intList, TRUE);
     _testList = TT_ParseStringList(testList, TRUE);
@@ -528,18 +530,69 @@ RETURNS text AS $$
       _intList = array_replace(_intList, 0::double precision, _setZeroTo);
     END IF;
     
-    RETURN (ARRAY( -- converts table to array
+	-- run with specified order
+	IF orderIncreasing::boolean IS FALSE THEN
+	
+	  RETURN (ARRAY( -- converts table to array
       SELECT testVal FROM(
         SELECT a testVal, b intVal, a IS NULL::int not_null_order, ROW_NUMBER() OVER () org_order -- concatenates values in column a and b, add index
         FROM unnest(
           _testList, 
           _intList
         ) AS t(a,b) -- converts arrays to a table
-        ORDER BY intVal, not_null_order, org_order asc -- order by the values, ties are ordered by not null values first, then ordered by their original order in the string
+        ORDER BY intVal DESC, not_null_order, org_order ASC -- order by the values, ties are ordered by not null values first, then ordered by their original order in the string
       ) x
     ))[indexToReturn::int];
+	
+	ELSE
+	
+	  RETURN (ARRAY( -- converts table to array
+      SELECT testVal FROM(
+        SELECT a testVal, b intVal, a IS NULL::int not_null_order, ROW_NUMBER() OVER () org_order -- concatenates values in column a and b, add index
+        FROM unnest(
+          _testList, 
+          _intList
+        ) AS t(a,b) -- converts arrays to a table
+        ORDER BY intVal ASC, not_null_order, org_order ASC -- order by the values, ties are ordered by not null values first, then ordered by their original order in the string
+      ) x
+    ))[indexToReturn::int];
+	
+	END IF;
   END; 
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexTestVal(
+  intList text,
+  testList text,
+  setNullTo text,
+  setZeroTo text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexTestVal(intList, testList, setNullTo, setZeroTo, 'TRUE', indexToReturn);
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexTestVal(
+  intList text,
+  testList text,
+  orderIncreasing text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexTestVal(intList, testList, NULL::text, NULL::text, orderIncreasing, indexToReturn);
+$$ LANGUAGE sql IMMUTABLE;
+
+-- DROP FUNCTION IF EXISTS TT_GetIndexTestVal(text, text, text);
+CREATE OR REPLACE FUNCTION TT_GetIndexTestVal(
+  intList text,
+  testList text,
+  indexToReturn text
+)
+RETURNS text AS $$
+  SELECT TT_GetIndexTestVal(intList, testList, NULL::text, NULL::text, 'TRUE', indexToReturn);
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- Begin Validation Function Definitions...
@@ -4689,7 +4742,7 @@ RETURNS text AS $$
     END IF;
 
     -- validate source value (return NULL if not valid)
-    IF TT_NotNull(val) AND NOT TT_IsStringList(val) THEN
+    IF val IS NULL AND NOT TT_IsStringList(val) THEN
       RETURN NULL;
     END IF;
 
@@ -4708,7 +4761,14 @@ RETURNS text AS $$
     -- for each val in array, pad and merge to comma separated string
     _result = '{';
     FOR i IN 1..array_length(_vals,1) LOOP
-      _trimmedVal = replace(_vals[i], ' ', '');
+      
+	  -- nulls cause fail so change them to empty strings
+	  IF _vals[i] IS NULL THEN
+	    _trimmedVal = '';
+      ELSE
+	    _trimmedVal = replace(_vals[i], ' ', '');
+	  END IF;
+	  
 	  IF _trimmedVal = '' AND _includeEmpty = FALSE THEN
         -- do nothing
       ELSE
