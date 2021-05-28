@@ -420,13 +420,17 @@ RETURNS text AS $$
         RETURN seconds || 's';
       END IF;
     END IF;
-    nbDays = seconds/(24*3600);
+    nbDays = floor(seconds/(24*3600));
     seconds = seconds - nbDays*24*3600;
-    nbHours = seconds/3600;
+    nbHours = floor(seconds/3600);
     seconds = seconds - nbHours*3600;
-    nbMinutes = seconds/60;
+    nbMinutes = floor(seconds::int/60);
     seconds = seconds - nbMinutes*60;
-    
+--RAISE NOTICE 'nbDays=%', nbDays;
+--RAISE NOTICE 'nbHours=%', nbHours;
+--RAISE NOTICE 'nbMinutes=%', nbMinutes;
+--RAISE NOTICE 'seconds=%', seconds;
+
     -- Display unit when is different than 0 or when in between two units different than 0
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
            CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
@@ -437,7 +441,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 /*
 SELECT TT_PrettyDuration(0.654); -- '0.654s'
 SELECT TT_PrettyDuration(0.6547437); -- '0.6547437s'
-SELECT TT_PrettyDuration(0.6547437, 3); -- '0.654s'
+SELECT TT_PrettyDuration(0.6547437, 3); -- '0.655s'
 SELECT TT_PrettyDuration(0); -- '00s'
 SELECT TT_PrettyDuration(1); -- '01s'
 SELECT TT_PrettyDuration(1, 3); -- '1.000s'
@@ -451,6 +455,8 @@ SELECT TT_PrettyDuration(3603); -- '01h00m03s'
 SELECT TT_PrettyDuration(3661); -- '01h01m01s'
 SELECT TT_PrettyDuration(24*3600); -- '1d'
 SELECT TT_PrettyDuration(24*3602); -- '1d00h00m48s'
+SELECT TT_PrettyDuration(111.297334221); -- '01m51s'
+SELECT TT_PrettyDuration(59.9); -- '60s'
 */
 -------------------------------------------------------------------------------
 
