@@ -7,6 +7,9 @@ The primary components of the framework are:
 * A user produced translation table defining the structure of the target table and all the validation and translation rules.
 * Optionally, some user produced value lookup tables that accompany the translation table.
 
+# Citation
+CASFRI Project Team (2021). PostgreSQL Table Translation Framework. Université Laval, QC, Canada. URL https://github.com/CASFRI/PostgreSQL-Table-Translation-Framework. DOI: 
+
 # Directory Structure
 <pre>
 ./             .sql files for loading, testing, and uninstalling the engine and helper functions.
