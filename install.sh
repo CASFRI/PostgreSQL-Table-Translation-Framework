@@ -14,8 +14,6 @@
 # DROP EXTENSION IF EXISTS table_translation_framework;
 #
 
-tt_version=0.0.4
-pghome="C:/Program Files/PostgreSQL\11"
 ext_name=table_translation_framework
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
