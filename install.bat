@@ -13,8 +13,6 @@
 :: DROP EXTENSION IF EXISTS table_translation_framework;
 ::
 
-SET tt_version=0.0.4
-SET pghome=C:\Program Files\PostgreSQL\11
 SET ext_name=table_translation_framework
 
 :: Load config variables from local config file
