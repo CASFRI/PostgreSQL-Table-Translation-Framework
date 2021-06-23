@@ -5942,6 +5942,14 @@ RETURNS text AS $$
     _removeSpaces = removeSpaces::boolean;
 
     -- process
+    
+    -- Normally TT_SubstringText() should return '' when val = '' but this 
+    -- is making LEFT JOIN involving this function very slow. Returning NULL 
+    -- instead mysteriousy make them much faster. See See https://github.com/CASFRI/CASFRI/issues/695
+    IF NOT TT_NotEmpty(val) THEN
+      RETURN NULL;
+    END IF;
+
     IF _removeSpaces THEN
       RETURN substring(replace(val, ' ', '') from _startChar for _forLength);
     ELSE

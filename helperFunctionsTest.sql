@@ -140,7 +140,7 @@ WITH test_nb AS (
   SELECT 'TT_NothingInt'::text,            120,          1         UNION ALL
   SELECT 'TT_CountOfNotNull'::text,        121,          6         UNION ALL
   SELECT 'TT_IfElseCountOfNotNullText'::text,122,        4         UNION ALL
-  SELECT 'TT_SubstringText'::text,         123,         10         UNION ALL
+  SELECT 'TT_SubstringText'::text,         123,         11         UNION ALL
   SELECT 'TT_SubstringInt'::text,          124,          3         UNION ALL
   SELECT 'TT_MapSubstringText'::text,      125,         12         UNION ALL
   SELECT 'TT_SumIntMapText'::text,         126,          7         UNION ALL
@@ -3204,6 +3204,12 @@ SELECT '123.10'::text number,
        'TT_SubstringText'::text function_tested,
        'Remove spaces true'::text description,
        TT_SubstringText(' abcd'::text, '3'::text, '2'::text, TRUE::text) = 'cd' passed
+---------------------------------------------------------
+UNION ALL
+SELECT '123.11'::text number,
+       'TT_SubstringText'::text function_tested,
+       'Remove spaces true'::text description,
+       TT_SubstringText(NULL::text, '3'::text, '2'::text, TRUE::text) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 124 - TT_SubstringInt
