@@ -836,6 +836,9 @@ $$ LANGUAGE sql IMMUTABLE;
 --
 -- val text - value to test.
 -- length - Length to test against
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- removeSpace text - remove spaces. Default FALSE
+
 --
 -- Count characters in string and compare to length_test 
 -- e.g. TT_HasLength('12345', 5)
@@ -843,12 +846,16 @@ $$ LANGUAGE sql IMMUTABLE;
 CREATE OR REPLACE FUNCTION TT_HasLength(
   val text,
   length_test text,
-  acceptNull text
+  acceptNull text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
   DECLARE
+    _val text;
     _length_test int;
     _acceptNull boolean;
+    _removeSpaces boolean;
+    
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_HasLength',
@@ -856,12 +863,21 @@ RETURNS boolean AS $$
                                    'length_test', length_test, 'int']);
     _acceptNull = acceptNull::boolean;
     _length_test = length_test::int;
-    
-    IF TT_Length(val) = _length_test THEN
+    _removeSpaces = removeSpaces::boolean;
+ 
+     -- get val
+     IF removeSpaces THEN
+       _val = replace(val, ' ', '');
+     ELSE
+       _val = val;
+      END IF;
+
+    IF TT_Length(_val) = _length_test THEN
       RETURN TRUE;
     ELSE
       RETURN FALSE;
     END IF;
+        
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 

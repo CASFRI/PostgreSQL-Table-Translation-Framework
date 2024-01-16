@@ -104,7 +104,7 @@ DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text, text
 DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchListSubstring(text, text, text, text);
-DROP FUNCTION IF EXISTS TT_HasLength(text, text, text);
+DROP FUNCTION IF EXISTS TT_HasLength(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_HasLength(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexNotNull(text, text, text, text);

@@ -1566,6 +1566,21 @@ SELECT '21.6'::text number,
        'TT_HasLength'::text function_tested,
        'FALSE test'::text description,
        TT_HasLength('43215'::text, '4') IS FALSE passed
+ ---------------------------------------------------------
+UNION ALL  
+--test remove space
+SELECT '21.7'::text number,
+        'TT_HasLength'::text function_tested,
+        'FALSE test'::text description,
+        TT_HasLength('43215 '::text, '5'::text, 'FALSE', 'TRUE') IS TRUE passed
+---------------------------------------------------------
+UNION ALL
+--test remove space
+SELECT '21.8'::text number,
+        'TT_HasLength'::text function_tested,
+        'FALSE test'::text description,
+        TT_HasLength('43215 '::text, '5'::text, 'FALSE', 'FALSE') IS FALSE passed
+
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 22 - TT_SumIntMatchList
