@@ -848,9 +848,9 @@ Default error codes for translation functions are 'TRANSLATION_ERROR' for text a
     * When **removeSpaces** is TRUE, removes any spaces from string before testing.
     * Return type is text.
     * Variants are:
-      * MaptText(srcVal, matchList, returnList, ignoreCase, removeSpaces)
-      * MaptText(srcVal, matchList, returnList, ignoreCase)
-      * MaptText(srcVal, matchList, returnList)
+      * MapText(srcVal, matchList, returnList, ignoreCase, removeSpaces)
+      * MapText(srcVal, matchList, returnList, ignoreCase)
+      * MapText(srcVal, matchList, returnList)
     * e.g. MapText('A','{'A','B','C'}','{'D','E','F'}', TRUE) returns 'D'.
     
 * **MapSubstringText**(*text* **srcVal**, *int* **startChar**, *int* **forLength**, *stringList* **matchList**, *stringList* **returnList**, *boolean* **ignoreCase**\[default FALSE\], *boolean* **removeSpaces**\[default FALSE\])
