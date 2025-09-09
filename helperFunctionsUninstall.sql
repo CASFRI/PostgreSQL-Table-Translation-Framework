@@ -169,6 +169,7 @@ DROP FUNCTION IF EXISTS TT_MinIndexNotMatchList(text, text, text);
 -- translation helper functions
 DROP FUNCTION IF EXISTS TT_CopyText(text);
 DROP FUNCTION IF EXISTS TT_CopyDouble(text);
+DROP FUNCTION IF EXISTS TT_CopyDouble(text, text);
 DROP FUNCTION IF EXISTS TT_CopyInt(text);
 DROP FUNCTION IF EXISTS TT_LookupInt(text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_LookupInt(text, text, text, text, text, text);

@@ -4063,16 +4063,27 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 --
 --  val text  - Value to return.
 --
--- Return the value as double precision.
+-- Return the value as double precision rounded to a certain number of decimal.
 ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION TT_CopyDouble(
+  val text,
+  prec text
+)
+RETURNS double precision AS $$
+  BEGIN
+    IF prec IS NOT NULL THEN
+      RETURN round(val::numeric, prec::int)::double precision;
+    END IF;
+    RETURN val::double precision;
+  END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION TT_CopyDouble(
   val text
 )
 RETURNS double precision AS $$
-  BEGIN
-    RETURN val::double precision;
-  END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+  SELECT TT_CopyDouble(val, null::text)
+$$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------

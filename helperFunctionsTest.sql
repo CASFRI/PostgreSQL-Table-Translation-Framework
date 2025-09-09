@@ -127,7 +127,7 @@ WITH test_nb AS (
 
   -- Translation functions
   SELECT 'TT_CopyText'::text,              101,          3         UNION ALL
-  SELECT 'TT_CopyDouble'::text,            102,          2         UNION ALL
+  SELECT 'TT_CopyDouble'::text,            102,          7         UNION ALL
   SELECT 'TT_CopyInt'::text,               103,          5         UNION ALL
   SELECT 'TT_MapText'::text,               107,         19         UNION ALL
   SELECT 'TT_MapDouble'::text,             108,         16         UNION ALL
@@ -2663,6 +2663,36 @@ SELECT '102.2'::text number,
        'TT_CopyDouble'::text function_tested,
        'Null'::text description,
        TT_CopyDouble(NULL::text) IS NULL passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.3'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Null precision'::text description,
+       TT_CopyDouble('1.111'::text, NULL::text) = 1.111::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.4'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'One decimal'::text description,
+       TT_CopyDouble('1.123456'::text, 1::text) = 1.1::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.5'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'One decimal'::text description,
+       TT_CopyDouble('1.123456'::text, 2::text) = 1.12::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.6'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Too many decimal'::text description,
+       TT_CopyDouble('1.123'::text, 5::text) = 1.123::double precision passed
+---------------------------------------------------------
+UNION ALL
+SELECT '102.7'::text number,
+       'TT_CopyDouble'::text function_tested,
+       'Both parameters null'::text description,
+       TT_CopyDouble(NULL::text, NULL::text) IS NULL passed
 ---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 103 - TT_CopyInt
