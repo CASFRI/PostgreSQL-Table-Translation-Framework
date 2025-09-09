@@ -40,7 +40,7 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'           THEN '-9999'
                   WHEN rule = 'islessthan'              THEN '-9999'
                   WHEN rule = 'haslength'               THEN '-9997'
-				  WHEN rule = 'isunique'                THEN '-9997'
+				          WHEN rule = 'isunique'                THEN '-9997'
                   WHEN rule = 'matchtable'              THEN '-9998'
                   WHEN rule = 'matchlist'               THEN '-9998'
                   WHEN rule = 'sumintmatchlist'         THEN '-9998'
@@ -91,7 +91,7 @@ RETURNS text AS $$
                   WHEN rule = 'isgreaterthan'           THEN NULL
                   WHEN rule = 'islessthan'              THEN NULL
                   WHEN rule = 'haslength'               THEN NULL
-				  WHEN rule = 'isunique'                THEN NULL
+				          WHEN rule = 'isunique'                THEN NULL
                   WHEN rule = 'matchtable'              THEN NULL
                   WHEN rule = 'matchlist'               THEN NULL
                   WHEN rule = 'sumintmatchlist'         THEN NULL
@@ -1729,7 +1729,7 @@ RETURNS boolean AS $$
       RETURN FALSE;
     END IF;
 
-    SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, removeSpaces);
+    RETURN TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, removeSpaces);
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -1740,7 +1740,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   acceptNull text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, acceptNull, FALSE::text, TRUE::text)
+  SELECT TT_NotMatchList(val, lst, ignoreCase, acceptNull, TRUE::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
@@ -1749,7 +1749,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   ignoreCase text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, ignoreCase, FALSE::text, FALSE::text, TRUE::text)
+  SELECT TT_NotMatchList(val, lst, ignoreCase, FALSE::text, TRUE::text)
 $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION TT_NotMatchList(
@@ -1757,7 +1757,7 @@ CREATE OR REPLACE FUNCTION TT_NotMatchList(
   lst text
 )
 RETURNS boolean AS $$
-  SELECT TT_MatchList(val, lst, FALSE::text, FALSE::text, FALSE::text, TRUE::text)
+  SELECT TT_NotMatchList(val, lst, FALSE::text, FALSE::text, TRUE::text)
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 

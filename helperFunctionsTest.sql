@@ -97,7 +97,7 @@ WITH test_nb AS (
   SELECT 'TT_IsIntSubstring'::text,         16,         10         UNION ALL
   SELECT 'TT_IsBetweenSubstring'::text,     17,         23         UNION ALL
   SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
-  SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
+  SELECT 'TT_NotMatchList'::text,           19,         32         UNION ALL
   SELECT 'TT_MatchListSubstring'::text,     20,         18         UNION ALL
   SELECT 'TT_HasLength'::text,              21,         10         UNION ALL
   SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
@@ -1496,8 +1496,21 @@ SELECT '19.29'::text number,
 UNION ALL
 SELECT '19.30'::text number,
        'TT_NotMatchList'::text function_tested,
-       'Tets NULL with acceptNull true'::text description,
+       'Test NULL with acceptNull true'::text description,
        TT_NotMatchList(NULL::text, '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text, TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.31'::text number,
+       'TT_NotMatchList'::text function_tested,
+       'Test the removespace parameter set to TRUE'::text description,
+       TT_NotMatchList('1.4', '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text, TRUE::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '19.32'::text number,
+       'TT_NotMatchList'::text function_tested,
+       'Test the removespace parameter set to TRUE'::text description,
+       TT_NotMatchList('1.4 ', '{''1.4'', ''1.7'', ''1.6''}'::text, FALSE::text, TRUE::text, TRUE::text) IS FALSE passed
+---------------------------------------------------------
 ---------------------------------------------------------
 -- Test 20 - TT_MatchListSubstring
 ---------------------------------------------------------
