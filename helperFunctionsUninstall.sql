@@ -321,5 +321,8 @@ DROP FUNCTION IF EXISTS TT_Max_Internal(double precision[]);
 DROP FUNCTION IF EXISTS TT_Min_Max_Indexes_Internal(double precision[], text);
 DROP FUNCTION IF EXISTS TT_minIndex_getTestVal(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_maxIndex_getTestVal(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_getIndexTestVal(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_getIndexTestVal(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_getIndexTestVal(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_getIndexTestVal(text, text, text);
 

@@ -60,7 +60,7 @@ DROP FUNCTION IF EXISTS TT_RuleToSQL(text, text[]);
 DROP FUNCTION IF EXISTS TT_ReportError(text, name, name, text, text, text[], jsonb, text, text, int, text, boolean, boolean);
 DROP FUNCTION IF EXISTS TT_DefaultProjectErrorCode(text, text);
 DROP FUNCTION IF EXISTS TT_GetGeomColName(text, text);
-DROP FUNCTION IF EXISTS TT_PrettyDuration(int);
+DROP FUNCTION IF EXISTS TT_PrettyDuration(double precision, int);
 DROP FUNCTION IF EXISTS TT_ShowProgress(name, text, text, name, name);
 DROP FUNCTION IF EXISTS TT_LastJoinAdded(text[][]);
 DROP FUNCTION IF EXISTS TT_AppendParsedJoinToArr(text[][], text[], boolean);
