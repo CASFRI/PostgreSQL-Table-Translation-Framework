@@ -216,9 +216,8 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
       subnbr = subnbr + 1;
       number = baseNumber::text || '.' || subnbr::text;
       paramName = params[(i - 1) * 2 + 1];
-      description = 'NULL ' || paramName;
       -- test not NULL
-      query = 'SELECT TT_IsError(''SELECT ' || function_tested || '(''''val'''', ';
+      query = 'SELECT ' || function_tested || '(''''val'''', ';
       FOR j IN 1..array_upper(params, 1)/2 LOOP
         paramType = params[(j - 1) * 2 + 2];
         IF j = i THEN -- set this parameter to NULL
@@ -242,19 +241,19 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
         END IF;
       END LOOP;
       -- remove the last comma.
-      query = left(query, char_length(query) - 2);
+      query = left(query, char_length(query) - 2) || ');';
+      description = 'Test NULL ' || paramName || ' "' || query || '"';
 
-      query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
+      query = 'SELECT TT_IsError(''' || query || ''') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is NULL'';';
 
       EXECUTE query INTO passed;
       RETURN NEXT;
 
       -- test wrong type (not necessary to test text as everything is valid text)
       IF params[(i - 1) * 2 + 2] != 'text' THEN
-      subnbr = subnbr + 1;
-      number = baseNumber::text || '.' || subnbr::text;
-        description = paramName || ' wrong type';
-        query = 'SELECT TT_IsError(''SELECT ' || function_tested || '(''''val'''', ';
+        subnbr = subnbr + 1;
+        number = baseNumber::text || '.' || subnbr::text;
+        query = 'SELECT ' || function_tested || '(''''val'''', ';
         FOR j IN 1..array_upper(params, 1)/2 LOOP
           paramType = params[(j - 1) * 2 + 2];
           IF j = i THEN
@@ -286,9 +285,11 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
           END IF;
         END LOOP;
         -- remove the last comma.
-        query = left(query, char_length(query) - 2);
+        query = left(query, char_length(query) - 2) || ');';
+        description = 'Test wrong type for ' || paramName || ' "' || query || '"';
+
         paramType = params[(i - 1) * 2 + 2];
-        query = query || ');'') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is not a ' || paramType || ' value'';';
+        query = 'SELECT TT_IsError(''' || query || ''') = ''ERROR in ' || function_tested || '(): ' || paramName || ' is not a ' || paramType || ' value'';';
 
         EXECUTE query INTO passed;
         RETURN NEXT;
@@ -855,7 +856,6 @@ RETURNS boolean AS $$
     _length_test int;
     _acceptNull boolean;
     _removeSpaces boolean;
-    
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_HasLength',
