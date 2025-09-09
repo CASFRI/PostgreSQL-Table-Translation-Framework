@@ -860,7 +860,8 @@ RETURNS boolean AS $$
     -- validate parameters (trigger EXCEPTION)
     PERFORM TT_ValidateParams('TT_HasLength',
                               ARRAY['acceptNull', acceptNull, 'boolean',
-                                   'length_test', length_test, 'int']);
+                                   'length_test', length_test, 'int',
+                                   'removeSpaces', removeSpaces, 'boolean']);
     _acceptNull = acceptNull::boolean;
     _length_test = length_test::int;
     _removeSpaces = removeSpaces::boolean;
@@ -886,7 +887,7 @@ CREATE OR REPLACE FUNCTION TT_HasLength(
   length_test text
 )
 RETURNS boolean AS $$
-  SELECT TT_HasLength(val, length_test, FALSE::text);
+  SELECT TT_HasLength(val, length_test, FALSE::text, FALSE::text);
 $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 

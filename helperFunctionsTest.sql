@@ -99,7 +99,7 @@ WITH test_nb AS (
   SELECT 'TT_IsName'::text,                 18,          8         UNION ALL
   SELECT 'TT_NotMatchList'::text,           19,         30         UNION ALL
   SELECT 'TT_MatchListSubstring'::text,     20,         18         UNION ALL
-  SELECT 'TT_HasLength'::text,              21,          6         UNION ALL
+  SELECT 'TT_HasLength'::text,              21,         10         UNION ALL
   SELECT 'TT_SumIntMatchList'::text,        22,         10         UNION ALL
   SELECT 'TT_LengthMatchList'::text,        23,         19         UNION ALL
   SELECT 'TT_MinIndexNotNull'::text,        24,          8         UNION ALL
@@ -1552,31 +1552,32 @@ SELECT '20.18'::text number,
 UNION ALL
 -- test all NULLs and wrong types (4 tests)
 SELECT (TT_TestNullAndWrongTypeParams(21, 'TT_HasLength', ARRAY['length_test', 'int',
-                                                                'acceptNull', 'boolean'
+                                                                'acceptNull', 'boolean',
+                                                                'removeSpaces', 'boolean'
                                                                 ])).*
 ---------------------------------------------------------
 UNION ALL
-SELECT '21.5'::text number,
+SELECT '21.7'::text number,
        'TT_HasLength'::text function_tested,
        'TRUE test'::text description,
        TT_HasLength('4321'::text, '4') passed
 ---------------------------------------------------------
 UNION ALL
-SELECT '21.6'::text number,
+SELECT '21.8'::text number,
        'TT_HasLength'::text function_tested,
        'FALSE test'::text description,
        TT_HasLength('43215'::text, '4') IS FALSE passed
  ---------------------------------------------------------
 UNION ALL  
 --test remove space
-SELECT '21.7'::text number,
+SELECT '21.9'::text number,
         'TT_HasLength'::text function_tested,
         'FALSE test'::text description,
         TT_HasLength('43215 '::text, '5'::text, 'FALSE', 'TRUE') IS TRUE passed
 ---------------------------------------------------------
 UNION ALL
 --test remove space
-SELECT '21.8'::text number,
+SELECT '21.10'::text number,
         'TT_HasLength'::text function_tested,
         'FALSE test'::text description,
         TT_HasLength('43215 '::text, '5'::text, 'FALSE', 'FALSE') IS FALSE passed
