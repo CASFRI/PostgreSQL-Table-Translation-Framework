@@ -1625,7 +1625,7 @@ RETURNS boolean AS $$
     END IF;
     
     -- get val
-    IF removeSpaces THEN
+    IF _removeSpaces THEN
       _val = replace(array_to_string(_vals, ''), ' ', '');
     ELSE
       _val = array_to_string(_vals, '');
@@ -1954,6 +1954,10 @@ $$ LANGUAGE sql IMMUTABLE;
 -- val2 text - second value to test. Can be text or stringlist.
 -- lst1 text (stringList) - list of values to test val1 against
 -- lst2 text (stringList) - list of values to test val2 against
+-- ignoreCase - text default FALSE. Should upper/lower case be ignored?
+-- acceptNull text - should NULL value return TRUE? Default FALSE.
+-- matches text - default TRUE. Should a match return true or false?
+-- removeSpaces text - remove all empty spaces? Default True.
 --
 -- If matchList(val1, lst1) is true return true,
 -- else run matchList(val2, lst2)
@@ -1962,28 +1966,89 @@ CREATE OR REPLACE FUNCTION TT_MatchListTwice(
   val1 text,
   val2 text,
   lst1 text,
-  lst2 text
+  lst2 text,
+  ignoreCase text,
+  acceptNull text,
+  matches text,
+  removeSpaces text
 )
 RETURNS boolean AS $$
   DECLARE
+    _ignoreCase boolean;
+    _acceptNull boolean;
+    _matches boolean;
+    _removeSpaces boolean;
     _return boolean;
   BEGIN
     -- validate parameters (trigger EXCEPTION)
     -- Note that tests need to be done manually due to 2 source vals
     PERFORM TT_ValidateParams('TT_MatchListTwice',
                               ARRAY['lst1', lst1, 'stringlist',
-                                    'lst2', lst2, 'stringlist']);
-    
-    _return = TT_MatchList(val1, lst1);
+                                    'lst2', lst2, 'stringlist',
+                                    'ignoreCase', ignoreCase, 'boolean',
+                                    'acceptNull', acceptNull, 'boolean',
+                                    'matches', matches, 'boolean',
+                                    'removeSpaces', removeSpaces, 'boolean']);
+
+    _return = TT_MatchList(val1, lst1, ignoreCase, acceptNull, matches, removeSpaces);
     
     IF _return THEN
       RETURN TRUE;
     ELSE
-      RETURN TT_MatchList(val2, lst2);
+      RETURN TT_MatchList(val2, lst2, ignoreCase, acceptNull, matches, removeSpaces);
     END IF;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
--------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION TT_MatchListTwice(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListTwice(val1, val2, lst1, lst2, FALSE::text, FALSE::text, TRUE::text, TRUE::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION TT_MatchListTwice(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListTwice(val1, val2, lst1, lst2, ignoreCase, FALSE::text, TRUE::text, TRUE::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION TT_MatchListTwice(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text,
+  acceptNull text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListTwice(val1, val2, lst1, lst2, ignoreCase, acceptNull, TRUE::text, TRUE::text)
+$$ LANGUAGE sql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION TT_MatchListTwice(
+  val1 text,
+  val2 text,
+  lst1 text,
+  lst2 text,
+  ignoreCase text,
+  acceptNull text,
+  matches text
+)
+RETURNS boolean AS $$
+  SELECT TT_MatchListTwice(val1, val2, lst1, lst2, ignoreCase, acceptNull, matches, TRUE::text)
+$$ LANGUAGE sql IMMUTABLE;
 
 -------------------------------------------------------------------------------
 -- TT_False

@@ -105,7 +105,7 @@ WITH test_nb AS (
   SELECT 'TT_MinIndexNotNull'::text,        24,          8         UNION ALL
   SELECT 'TT_MaxIndexNotNull'::text,        25,          8         UNION ALL
   SELECT 'TT_IsXMinusYBetween'::text,       26,         11         UNION ALL
-  SELECT 'TT_MatchListTwice'::text,         27,          9         UNION ALL
+  SELECT 'TT_MatchListTwice'::text,         27,         14         UNION ALL
   SELECT 'TT_HasCountOfNotNullOrZero'::text,28,         11         UNION ALL
   SELECT 'TT_MinIndexIsInt'::text,          30,          5         UNION ALL
   SELECT 'TT_MaxIndexIsInt'::text,          31,          5         UNION ALL
@@ -1925,6 +1925,36 @@ SELECT '27.9'::text number,
        'TT_MatchListTwice'::text function_tested,
        'val1 and val2 null'::text description,
        TT_MatchListTwice(NULL::text, NULL::text, '{''a''}', '{''b''}') IS FALSE passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.10'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val1 ignore case passes'::text description,
+       TT_MatchListTwice('A', 'b', '{''a''}', '{''b''}',TRUE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.11'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val2 ignore case passes'::text description,
+       TT_MatchListTwice(NULL::text, 'B', '{''a''}', '{''b''}',TRUE::text)  passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.12'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val1 and val2 acceptNull passes'::text description,
+       TT_MatchListTwice(NULL::text, NULL::text, '{''a''}', '{''b''}',FALSE::text,TRUE::text)  passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.13'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val1 removeSpaces false passes'::text description,
+       TT_MatchListTwice('A C', 'b', '{''A C''}', '{''b''}', FALSE::text,FALSE::text,TRUE::text,FALSE::text) passed
+---------------------------------------------------------
+UNION ALL
+SELECT '27.14'::text number,
+       'TT_MatchListTwice'::text function_tested,
+       'val2 removeSpaces false passes'::text description,
+       TT_MatchListTwice(NULL::text, 'b c', '{''a''}', '{''b c''}', FALSE::text,FALSE::text,TRUE::text,FALSE::text) passed
 ---------------------------------------------------------
 -- Test 28 - TT_HasCountOfNotNullOrZero
 ---------------------------------------------------------
