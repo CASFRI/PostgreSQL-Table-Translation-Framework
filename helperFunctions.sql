@@ -1050,7 +1050,7 @@ $$ LANGUAGE sql IMMUTABLE;
 -------------------------------------------------------------------------------
 -- TT_IsStringList
 --
--- Return TRUE if val is a stringlist (or a simple string if strict = TRUE)
+-- Return TRUE if val is a stringlist (or a simple string if strict = FALSE)
 -- e.g. TT_IsStringList('{''val1'', ''val2'', ''val3''}')
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_IsStringList(
