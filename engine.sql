@@ -2573,13 +2573,14 @@ SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 
 
 */
 ------------------------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name);
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name, boolean);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
   fctNameSuf text,
   refTranslationTableSchema name,
-  refTranslationTable name
+  refTranslationTable name,
+  showProgress boolean
 )
 RETURNS text AS $f$
   DECLARE
@@ -2769,13 +2770,26 @@ RETURNS text AS $f$
                                                 ''''  || translationQuery || ''', ' ||
                                                 ''''  || rowTranslationRuleClause || ''', 
                                                 sourceTableSchema,
-                                                sourceTable) AS t(' || array_to_string(paramlist, ', ') || ');
+                                                sourceTable, ' || 
+                                                showProgress || ') AS t(' || array_to_string(paramlist, ', ') || ');
               $$ LANGUAGE sql VOLATILE;';
     EXECUTE fctQuery;
     RETURN 'SELECT * FROM TT_Translate' || coalesce(fctNameSuf, '') || '(''schemaName'', ''tableName'');';
   END;
 $f$ LANGUAGE plpgsql VOLATILE;
 
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, boolean);
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  refTranslationTable name,
+  showProgress boolean
+)
+RETURNS text AS $$
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable, showProgress);
+$$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name);
 CREATE OR REPLACE FUNCTION TT_Prepare(
@@ -2785,7 +2799,18 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
   refTranslationTable name
 )
 RETURNS text AS $$
-  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable);
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable, TRUE);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, boolean);
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  showProgress boolean
+)
+RETURNS text AS $$
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name, showProgress);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text);
@@ -2795,7 +2820,7 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
   fctNameSuf text
 )
 RETURNS text AS $$
-  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name);
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name, TRUE);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name);
@@ -2804,14 +2829,14 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTable name
 )
 RETURNS text AS $$
-  SELECT TT_Prepare(translationTableSchema, translationTable, NULL, NULL::name, NULL::name);
+  SELECT TT_Prepare(translationTableSchema, translationTable, NULL, NULL::name, NULL::name, TRUE);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTable name
 )
 RETURNS text AS $$
-  SELECT TT_Prepare('public', translationTable, NULL::text, NULL::name, NULL::name);
+  SELECT TT_Prepare('public', translationTable, NULL::text, NULL::name, NULL::name, TRUE);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------------------------
 
@@ -2827,13 +2852,14 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- Translate a source table according to the rules defined in a tranlation table.
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_ShowProgress(text, text, name, name, name, name);
+--DROP FUNCTION IF EXISTS TT_ShowProgress(name, text, text, name, name, boolean);
 CREATE OR REPLACE FUNCTION TT_ShowProgress(
   callingFctName name,
   translationQuery text,
   rowTranslationRuleClause text,
   sourceTableSchema name,
-  sourceTable name
+  sourceTable name,
+  showProgress boolean DEFAULT TRUE
 )
 RETURNS SETOF RECORD AS $$
   DECLARE
@@ -2848,20 +2874,24 @@ RETURNS SETOF RECORD AS $$
     analyseTime double precision;
     expectedRowNb int;
     countQuery text;
+    frequency int = 5;
   BEGIN
     IF debug THEN RAISE NOTICE 'DEBUG ACTIVATED...';END IF;
     IF debug THEN RAISE NOTICE 'TT_ShowProgress BEGIN';END IF;
 
-    -- Estimate the number of rows to return
-    countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
+    IF showProgress THEN
+      -- Estimate the number of rows to return
+      countQuery = 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || ' maintable' || CHR(10) || rowTranslationRuleClause;
 
-    RAISE NOTICE 'Counting the number of rows to translate... (%)', countQuery;
+      RAISE NOTICE 'Counting the number of rows to translate... (%)', countQuery;
+      startTime = clock_timestamp();
+      EXECUTE countQuery INTO expectedRowNb;
+      RAISE NOTICE '% ROWS TO TRANSLATE. Preprocessing query...', expectedRowNb;
+      countTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
+      frequency = GREATEST(expectedRowNb / 500, frequency);
+    END IF;
     startTime = clock_timestamp();
-    EXECUTE countQuery INTO expectedRowNb;
-    RAISE NOTICE '% ROWS TO TRANSLATE. Preprocessing query...', expectedRowNb;
-    countTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
-    startTime = clock_timestamp();
-
+    
     -- Main loop
 		FOR translatedRow IN EXECUTE translationQuery
     LOOP
@@ -2869,7 +2899,7 @@ RETURNS SETOF RECORD AS $$
         analyseTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
         startTime = clock_timestamp();
       END IF;
-      IF currentRowNb % 100 = 0 THEN
+      IF showProgress AND currentRowNb % frequency = 0 THEN
         percentDone = currentRowNb::numeric/expectedRowNb * 100;
         elapsedTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
         remainingTime = ((100 - percentDone) * elapsedTime)/percentDone;
@@ -2881,8 +2911,10 @@ RETURNS SETOF RECORD AS $$
     END LOOP;
     elapsedTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
 
-    RAISE NOTICE 'TOTAL TIME COUNTING ROWS: %', TT_PrettyDuration(countTime, 4);
-    RAISE NOTICE 'TOTAL TIME ANALYING QUERY: %', TT_PrettyDuration(coalesce(analyseTime, EXTRACT(EPOCH FROM clock_timestamp() - startTime)), 4);
+    IF showProgress THEN
+      RAISE NOTICE 'TOTAL TIME COUNTING ROWS: %', TT_PrettyDuration(countTime, 4);
+    END IF;
+    RAISE NOTICE 'TOTAL TIME ANALYZING QUERY: %', TT_PrettyDuration(coalesce(analyseTime, EXTRACT(EPOCH FROM clock_timestamp() - startTime)), 4);
     RAISE NOTICE 'TOTAL TIME PROCESSING QUERY: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, now())), 4);
     IF currentRowNb > 1 THEN
       RAISE NOTICE 'MEAN TIME PER ROW: %', TT_PrettyDuration(EXTRACT(EPOCH FROM clock_timestamp() - coalesce(startTime, clock_timestamp()))/currentRowNb, 6);
