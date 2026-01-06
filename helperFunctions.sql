@@ -191,10 +191,26 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- Test helper functions
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- Create a generic NULL and wrong type tester function
+-- TT_TestNullAndWrongTypeParams(int, text, text[])
+--
+-- baseTestNumber integer - Base number of the series of test being performed.
+-- fctName string - Name of the function to be tested.
+-- params text[] - Array of parameter names and their respective types. Must be 
+--                 a multiple of 2.
+--
+-- Test a function assigning NULL and wrong types to every parameters in turn 
+-- starting at the second parameter. The first parameter of the function must
+-- always of type text and it is not tested.
+
+--
+-- e.g. SELECT (TT_TestNullAndWrongTypeParams(21, 'TT_HasLength', ARRAY['length_test', 'int',
+--                                                                      'acceptNull', 'boolean',
+--                                                                      'removeSpaces', 'boolean'
+--                                                                     ])).*
+-------------------------------------------------------------- 
 --DROP FUNCTION IF EXISTS TT_TestNullAndWrongTypeParams(int, text, text[]);
 CREATE OR REPLACE FUNCTION TT_TestNullAndWrongTypeParams(
-  baseNumber int,
+  baseTestNumber int,
   fctName text,
   params text[]
 )
@@ -214,7 +230,7 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
     END IF;
     FOR i IN 1..array_upper(params, 1)/2 LOOP
       subnbr = subnbr + 1;
-      number = baseNumber::text || '.' || subnbr::text;
+      number = baseTestNumber::text || '.' || subnbr::text;
       paramName = params[(i - 1) * 2 + 1];
       -- test not NULL
       query = 'SELECT ' || function_tested || '(''''val'''', ';
@@ -252,7 +268,7 @@ RETURNS TABLE(number text, function_tested text, description text, passed boolea
       -- test wrong type (not necessary to test text as everything is valid text)
       IF params[(i - 1) * 2 + 2] != 'text' THEN
         subnbr = subnbr + 1;
-        number = baseNumber::text || '.' || subnbr::text;
+        number = baseTestNumber::text || '.' || subnbr::text;
         query = 'SELECT ' || function_tested || '(''''val'''', ';
         FOR j IN 1..array_upper(params, 1)/2 LOOP
           paramType = params[(j - 1) * 2 + 2];
