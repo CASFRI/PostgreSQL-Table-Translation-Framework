@@ -2573,14 +2573,15 @@ SELECT TT_BuildJoinExpr('fct(', ARRAY[ARRAY['value', 'schemaName', 'tableName', 
 
 */
 ------------------------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name, boolean);
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, name, name, boolean, boolean);
 CREATE OR REPLACE FUNCTION TT_Prepare(
   translationTableSchema name,
   translationTable name,
   fctNameSuf text,
   refTranslationTableSchema name,
   refTranslationTable name,
-  showProgress boolean
+  showProgress boolean DEFAULT TRUE,
+  showTQuery boolean DEFAULT TRUE
 )
 RETURNS text AS $f$
   DECLARE
@@ -2606,7 +2607,6 @@ RETURNS text AS $f$
     IF NOT TT_NotEmpty(translationTable) THEN
       RETURN NULL;
     END IF;
-
     -- Validate the translation table
     PERFORM TT_ValidateTTable(translationTableSchema, translationTable);
 
@@ -2746,19 +2746,22 @@ RETURNS text AS $f$
       END LOOP;
     END IF;
 
-    RAISE NOTICE 'translationQuery=%', translationQuery || CHR(10) || 
-                                       'FROM sourceTableSchema.sourceTable maintable ' || CHR(10) || 
-                                       leftJoinClause || 
-                                       rowTranslationRuleClause || CHR(10);
-
+    IF showTQuery THEN
+      RAISE NOTICE 'TT_Prepare(): translationQuery=%', translationQuery || CHR(10) || 
+                   'FROM sourceTableSchema.sourceTable maintable ' || CHR(10) || 
+                    leftJoinClause || 
+                    rowTranslationRuleClause || CHR(10);
+    END IF;
     translationQuery = TT_EscapeSingleQuotes(translationQuery) || CHR(10) || 
                        'FROM '' || TT_FullTableName(sourceTableSchema, sourceTable) || '' maintable ' || CHR(10) || 
                        TT_EscapeSingleQuotes(leftJoinClause) || 
                        TT_EscapeSingleQuotes(rowTranslationRuleClause);
 
-    RAISE NOTICE 'rowTranslationRuleClause=%', whereLeftJoinClause  || 
-                                               rowTranslationRuleClause;
-    
+    IF showTQuery THEN
+      RAISE NOTICE 'TT_Prepare(): rowTranslationRuleClause=%', 
+                    whereLeftJoinClause  || 
+                    rowTranslationRuleClause;
+    END IF;
     rowTranslationRuleClause = TT_EscapeSingleQuotes(whereLeftJoinClause) || 
                                TT_EscapeSingleQuotes(rowTranslationRuleClause);
 
@@ -2800,6 +2803,18 @@ CREATE OR REPLACE FUNCTION TT_Prepare(
 )
 RETURNS text AS $$
   SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, translationTableSchema, refTranslationTable, TRUE);
+$$ LANGUAGE sql VOLATILE;
+------------------------------------------------------------
+--DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, boolean, boolean);
+CREATE OR REPLACE FUNCTION TT_Prepare(
+  translationTableSchema name,
+  translationTable name,
+  fctNameSuf text,
+  showProgress boolean,
+  showTQuery boolean
+)
+RETURNS text AS $$
+  SELECT TT_Prepare(translationTableSchema, translationTable, fctNameSuf, NULL::name, NULL::name, showProgress, showTQuery);
 $$ LANGUAGE sql VOLATILE;
 ------------------------------------------------------------
 --DROP FUNCTION IF EXISTS TT_Prepare(name, name, text, boolean);
