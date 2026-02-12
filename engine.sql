@@ -2926,6 +2926,7 @@ RETURNS SETOF RECORD AS $$
     END LOOP;
     elapsedTime = EXTRACT(EPOCH FROM clock_timestamp() - startTime);
 
+    RAISE NOTICE 'TRANSLATION COMPLETED: % rows translated...', currentRowNb - 1;
     IF showProgress THEN
       RAISE NOTICE 'TOTAL TIME COUNTING ROWS: %', TT_PrettyDuration(countTime, 4);
     END IF;
@@ -2974,11 +2975,11 @@ RETURNS SETOF RECORD AS $$
 --RAISE NOTICE '_TT_Translate BEGIN';
 
     -- Estimate the number of rows to return
-    RAISE NOTICE 'Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause;
+    RAISE NOTICE '_TT_Translate(): Computing the number of rows to translate... (%)', 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause;
 
     EXECUTE 'SELECT count(*) FROM ' || TT_FullTableName(sourceTableSchema, sourceTable) || CHR(10) || rowTranslationRuleClause
     INTO expectedRowNb;
-    RAISE NOTICE '% ROWS TO TRANSLATE...', expectedRowNb;
+    RAISE NOTICE '_TT_Translate(): % ROWS TO TRANSLATE...', expectedRowNb;
 
     startTime = clock_timestamp();
     -- Main loop
@@ -2987,7 +2988,7 @@ RETURNS SETOF RECORD AS $$
        IF currentRowNb % 100 = 0 THEN
          percentDone = currentRowNb::numeric/expectedRowNb*100;
          remainingSeconds = (100 - percentDone)*(EXTRACT(EPOCH FROM clock_timestamp() - startTime))/percentDone;
-         RAISE NOTICE '%(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
+         RAISE NOTICE '_TT_Translate(): %(%): %/% rows translated (% %%) - % remaining...', callingFctName, sourceTable, currentRowNb, expectedRowNb, round(percentDone, 3), 
               TT_PrettyDuration(remainingSeconds);
        END IF;
        currentRowNb = currentRowNb + 1;
