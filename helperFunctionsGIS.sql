@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 -- PostgreSQL Table Tranlation Engine - GIS helper functions installation file
 -- Version 0.1 for PostgreSQL 9.x
--- https://github.com/edwardsmarc/postTranslationEngine
+-- https://github.com/CASFRI/postTranslationEngine
 --
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.

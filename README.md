@@ -24,7 +24,7 @@ Recommended versions are PostgreSQL 13.1+ and PostGIS 3.1+, or PostgreSQL 11.3+ 
 
 The framework follows the [Semantic Versioning 2.0.0](https://semver.org/) versioning scheme (major.minor.revision). Increments in revision version numbers are for bug fixes. Increments in minor version numbers are for new features, changes to the helper functions (the API) and bug fixes. Minor version increments will not break backward compatibility with existing translation tables. Increments in major version numbers are for changes that break backward compatibility in the helper functions (meaning users have to make some changes in their translation tables).
 
-The current version is v2.0.0 and is available for download at https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/releases/tag/v2.0.0
+The current version is v2.0.0 and is available for download at https://github.com/CASFRI/PostgreSQL-Table-Translation-Framework/releases/tag/v2.0.0
 
 # Installation/Test/Uninstallation
 **Installation** 
@@ -295,9 +295,9 @@ One feature of the translation engine is that the return type of a translation f
 
 **Nested helper functions**
 
-Helper functions can be nested within other helper functions, this reduces the need to write many different helper functions that call each other internally. Note that this is a new feature ([#243](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/243)) and many of the included helper functions will be deprecated in future versions. For example, the function ```MatchListSubstring(srcVal, startChar, forLength, matchList)``` can now be replaced in a translation table with ```MatchList(SubstringText(srcVal, startChar, forLength), matchList)```.
+Helper functions can be nested within other helper functions, this reduces the need to write many different helper functions that call each other internally. Note that this is a new feature ([#243](https://github.com/CASFRI/PostgreSQL-Table-Translation-Framework/issues/243)) and many of the included helper functions will be deprecated in future versions. For example, the function ```MatchListSubstring(srcVal, startChar, forLength, matchList)``` can now be replaced in a translation table with ```MatchList(SubstringText(srcVal, startChar, forLength), matchList)```.
 
-Some validation helper functions have an optional 'acceptNull' parameter that returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns (Note this feature may also be deprecated following [#243](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/243), see [#247](https://github.com/edwardsmarc/PostgreSQL-Table-Translation-Framework/issues/247)).
+Some validation helper functions have an optional 'acceptNull' parameter that returns TRUE if the source value is NULL. This allows multiple validation functions to be strung together in cases where the value to be evaluated could occur in one of multiple columns (Note this feature may also be deprecated following [#243](https://github.com/CASFRI/PostgreSQL-Table-Translation-Framework/issues/243), see [#247](https://github.com/CASFRI/PostgreSQL-Table-Translation-Framework/issues/247)).
 
 # Provided Helper Functions
 ## Validation Functions
