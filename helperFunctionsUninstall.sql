@@ -118,6 +118,10 @@ DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text, text, text, 
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_IsXMinusYBetween(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MatchListTwice(text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListTwice(text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListTwice(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListTwice(text, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS TT_MatchListTwice(text, text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexIsInt(text, text);
 DROP FUNCTION IF EXISTS TT_MaxIndexIsInt(text, text, text, text);
 DROP FUNCTION IF EXISTS TT_MinIndexIsInt(text, text);
