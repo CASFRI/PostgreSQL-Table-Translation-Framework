@@ -344,7 +344,7 @@ table.
     counted and their count is reported instead of reporting one row per
     invalidation.
 -   The translation engine may be configured to continue even if an
-    invalid value is encountered. This behavior is usefull to get a
+    invalid value is encountered. This behavior is useful to get a
     complete report of invalid values.
 -   Progress is reported every “logFrequency” lines. This is a
     configuration variable defaulting to 500.

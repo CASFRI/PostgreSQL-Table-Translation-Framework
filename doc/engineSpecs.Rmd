@@ -136,7 +136,7 @@ kable(tab2)
 - If the translation engine is stopped by an invalidation condition, or because of a system failure, it can resume its process in a subsequent execution starting at the row having triggered the invalid entry or after the last row processed. In the first case this row is determined by the "rowNumber" logging table attribute. In the last case this row is computed from the first row triggering the last PROGRESS entry (equally stored as "rowNumber") + the "count" of processed rows for this entry.
 - All invalid values are reported in the log even if invalidation rules are defined for those values and the engine is not set to stop on invalidation.
 - If the translation engine is not set to stop when encountering an invalid value, it may generate thousands, even millions of similar log entries. To avoid this, entries of the same type are simply counted and their count is reported instead of reporting one row per invalidation.
-- The translation engine may be configured to continue even if an invalid value is encountered. This behavior is usefull to get a complete report of invalid values.
+- The translation engine may be configured to continue even if an invalid value is encountered. This behavior is useful to get a complete report of invalid values.
 - Progress is reported every "logFrequency" lines. This is a configuration variable defaulting to 500.
 
  
