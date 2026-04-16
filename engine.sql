@@ -400,25 +400,31 @@ $$ LANGUAGE sql VOLATILE;
 --
 -- seconds int
 --
--- Format pased number of seconds into a pretty print time interval
+-- Format passed number of seconds into a pretty print time interval
 ------------------------------------------------------------
---DROP FUNCTION IF EXISTS TT_PrettyDuration(double precision);
+--DROP FUNCTION IF EXISTS TT_PrettyDuration(double precision, int, int) CASCADE;
 CREATE OR REPLACE FUNCTION TT_PrettyDuration(
   seconds double precision,
-  decDigits int DEFAULT NULL
+  secDigits int DEFAULT NULL,
+  levels int DEFAULT NULL
 )
 RETURNS text AS $$
   DECLARE
     nbDays int;
     nbHours int;
     nbMinutes int;
+    formatedDuration text = '';
+    firstLevelSet boolean := FALSE;
   BEGIN
     IF seconds < 5 THEN
-      IF NOT decDigits IS NULL THEN
-        RETURN round(seconds::numeric, decDigits) || 's';
+      IF NOT secDigits IS NULL THEN
+        RETURN round(seconds::numeric, secDigits) || 's';
       ELSE
         RETURN seconds || 's';
       END IF;
+    END IF;
+    IF NOT levels IS NULL THEN
+      levels := greatest(least(levels, 4), 1);
     END IF;
     nbDays = floor(seconds/(24*3600));
     seconds = seconds - nbDays*24*3600;
@@ -431,32 +437,80 @@ RETURNS text AS $$
 --RAISE NOTICE 'nbMinutes=%', nbMinutes;
 --RAISE NOTICE 'seconds=%', seconds;
 
-    -- Display unit when is different than 0 or when in between two units different than 0
+    -- Display time units only when they are different from 0 or when they are in between two units different than 0
+    -- and when there are some remaining significant levels to display (if specified)
+    IF nbDays > 0 THEN
+      formatedDuration = nbDays || 'd';
+      IF NOT levels IS NULL THEN
+        levels = levels - 1;
+      END IF;
+      firstLevelSet := TRUE;
+    END IF;
+
+    IF ((nbHours > 0 AND (levels IS NULL OR levels > 0)) OR 
+       (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0) AND (levels IS NULL OR levels > 1)))  THEN
+      formatedDuration = formatedDuration || lpad(nbHours::text, CASE WHEN nbDays > 0 OR nbHours > 9 THEN 2 ELSE 1 END, '0') || 'h';
+      firstLevelSet := TRUE;
+    END IF;
+    IF NOT levels IS NULL AND firstLevelSet THEN
+      levels = levels - 1;
+    END IF;
+
+    IF ((nbMinutes > 0 AND (levels IS NULL OR levels > 0)) OR 
+       ((nbDays > 0 OR nbHours > 0) AND (seconds > 0) AND (levels IS NULL OR levels > 1))) THEN
+      formatedDuration = formatedDuration || lpad(nbMinutes::text, CASE WHEN nbDays > 0 OR nbHours > 0 OR nbMinutes > 9 THEN 2 ELSE 1 END, '0') || 'm';
+      firstLevelSet := TRUE;
+    END IF;
+    IF NOT levels IS NULL AND firstLevelSet THEN
+      levels = levels - 1;
+    END IF;
+
+    IF ((seconds > 0 AND (levels IS NULL OR levels > 0)) OR 
+       (nbDays = 0 AND nbHours = 0 AND nbMinutes = 0) AND (levels IS NULL OR levels > 1)) THEN
+      formatedDuration = formatedDuration || lpad(seconds::int::text, CASE WHEN nbDays > 0 OR nbHours > 0 OR nbMinutes > 0 OR seconds > 9 THEN 2 ELSE 1 END, '0') || 's';
+    END IF;
+    /*
     RETURN CASE WHEN nbDays > 0 THEN nbDays || 'd' ELSE '' END ||
            CASE WHEN nbHours > 0 OR (nbDays > 0 AND (nbMinutes > 0 OR seconds > 0)) THEN lpad(nbHours::text, 2, '0') || 'h' ELSE '' END ||
            CASE WHEN nbMinutes > 0 OR ((nbDays > 0 OR nbHours > 0) AND (seconds > 0)) THEN lpad(nbMinutes::text, 2, '0') || 'm' ELSE '' END ||
            CASE WHEN seconds > 0 OR (nbDays = 0 AND nbHours = 0 AND nbMinutes = 0) THEN lpad(seconds::int::text, 2, '0') || 's' ELSE '' END;
+           */
+    RETURN formatedDuration;
   END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 /*
 SELECT TT_PrettyDuration(0.654); -- '0.654s'
 SELECT TT_PrettyDuration(0.6547437); -- '0.6547437s'
 SELECT TT_PrettyDuration(0.6547437, 3); -- '0.655s'
-SELECT TT_PrettyDuration(0); -- '00s'
-SELECT TT_PrettyDuration(1); -- '01s'
+SELECT TT_PrettyDuration(0); -- '0s'
+SELECT TT_PrettyDuration(1); -- '1s'
 SELECT TT_PrettyDuration(1, 3); -- '1.000s'
 SELECT TT_PrettyDuration(1.4536); -- '1.4536s'
 SELECT TT_PrettyDuration(3, 4); -- '3.0000s'
-SELECT TT_PrettyDuration(60); -- '01m'
-SELECT TT_PrettyDuration(61); -- '01m01s'
-SELECT TT_PrettyDuration(61, 3); -- '01m01s'
-SELECT TT_PrettyDuration(3600); -- '01h'
-SELECT TT_PrettyDuration(3603); -- '01h00m03s'
-SELECT TT_PrettyDuration(3661); -- '01h01m01s'
+SELECT TT_PrettyDuration(60); -- '1m'
+SELECT TT_PrettyDuration(61); -- '1m01s'
+SELECT TT_PrettyDuration(61, 3); -- '1m01s'
+SELECT TT_PrettyDuration(3600); -- '1h'
+SELECT TT_PrettyDuration(3603); -- '1h00m03s'
+SELECT TT_PrettyDuration(3661); -- '1h01m01s'
 SELECT TT_PrettyDuration(24*3600); -- '1d'
 SELECT TT_PrettyDuration(24*3602); -- '1d00h00m48s'
-SELECT TT_PrettyDuration(111.297334221); -- '01m51s'
-SELECT TT_PrettyDuration(59.9); -- '60s'
+SELECT TT_PrettyDuration(111.297334221); -- '1m51s'
+SELECT TT_PrettyDuration(59.9); -- '1m'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2); -- '1d02h02m02s'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 5); -- '1d02h02m02s'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 4); -- '1d02h02m02s'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 3); -- '1d02h02m'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 2); -- '1d02h'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 1); -- '1d'
+SELECT TT_PrettyDuration(26*3600 + 2*60 + 2, NULL, 0); -- '1d'
+SELECT TT_PrettyDuration(2*3600 + 2*60 + 2, NULL, 3); -- '2h02m02s'
+SELECT TT_PrettyDuration(2*3600 + 2*60 + 2, NULL, 2); -- '2h02m'
+SELECT TT_PrettyDuration(2*3600 + 2*60 + 2, NULL, 1); -- '2h'
+SELECT TT_PrettyDuration(2*60 + 2, NULL, 2); -- '2m02s'
+SELECT TT_PrettyDuration(2*60 + 2, NULL, 1); -- '2m'
+SELECT TT_PrettyDuration(501, NULL, 2); -- '2m'
+SELECT TT_PrettyDuration(601, NULL, 2); -- '2m'
 */
 -------------------------------------------------------------------------------
 
