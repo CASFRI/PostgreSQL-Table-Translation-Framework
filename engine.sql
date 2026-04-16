@@ -997,7 +997,7 @@ RETURNS SETOF text AS $$
   DECLARE
     res RECORD;
   BEGIN
-    FOR res IN SELECT 'DROP FUNCTION ' || oid::regprocedure::text || ';' query
+    FOR res IN SELECT 'DROP ' || CASE WHEN prokind = 'p' THEN 'PROCEDURE' ELSE 'FUNCTION' END || ' IF EXISTS ' || oid::regprocedure::text || ';' query
                FROM pg_proc WHERE left(proname, 12) = 'tt_translate' AND pg_function_is_visible(oid) LOOP
       EXECUTE res.query;
       RETURN NEXT res.query;
