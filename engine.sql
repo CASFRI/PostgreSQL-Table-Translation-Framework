@@ -709,7 +709,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- currentRowNb int  - Number of the row being processed
 -- count int         - Number of rows associated with this log entry
 --
--- Return boolean  -- Succees or failure.
+-- Return boolean  -- Success or failure.
 -- Log an entry in the log table.
 -- The log table has the following structure:
 --   logid integer NOT NULL DEFAULT nextval('source_log_001_logid_seq'::regclass),
